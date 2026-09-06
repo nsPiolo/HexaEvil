@@ -53,16 +53,35 @@ export type InitialTileDef = Readonly<{
   exits: readonly DirectionName[]
 }>
 
+/**
+ * `C1b` — cadence d'une Manche : elle démarre à `start` et s'allonge de `step`
+ * toutes les `delay` **Manches**, jusqu'au plafond `max`. Donne au joueur des
+ * poses rapprochées au début, quand le réseau se construit, et des Manches
+ * longues ensuite, quand il n'y a plus qu'à observer.
+ */
+export type TicksPerRound = Readonly<{
+  start: number
+  max: number
+  /** Ce qu'on ajoute à chaque palier. */
+  step: number
+  /** Nombre de Manches entre deux paliers. */
+  delay: number
+}>
+
 /** Contenu du fichier de configuration unique (`G1`, `G2`). */
 export type GameConfig = Readonly<{
-  ticksPerRound: number
+  ticksPerRound: TicksPerRound
   soulBudget: number
   minionBudget: number
   stairwayTarget: number
   carryCapacity: Readonly<Record<Side, number>>
   resources: readonly ResourceDef[]
   tileTypes: readonly TileTypeDef[]
-  board: Readonly<{ radius: number; spaces?: readonly HexCoord[] }>
+  board: Readonly<{
+    radius: number
+    /** `B11` — Espaces existants mais **non constructibles** : des obstacles. */
+    blocked: readonly HexCoord[]
+  }>
   initialTiles: readonly InitialTileDef[]
   catalog: readonly TileTypeId[]
 }>

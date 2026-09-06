@@ -140,6 +140,24 @@ matériau que le démon livre à l'`Escalier` est **le Sbire lui-même** (`X3`).
 - `B9` 🧪 Corollaire technique : le chargement de la configuration **refuse** un
   terrain qui viole `B8` (validation `G1`), plutôt que de laisser le moteur
   arbitrer un cas de croisement qui n'a aucune règle.
+- `B11` ✅ **Un Espace peut exister mais être non constructible** (`blocked` en
+  configuration). Ce n'est pas un trou du Plateau (`B2`) : l'Espace est dessiné,
+  il fait partie du relief. Rien ne s'y pose, donc aucune Tuile ne s'y trouve,
+  donc **rien ne le traverse** (`D5`) — c'est un mur, et c'est ce qui permet de
+  dessiner des couloirs et de séparer les deux réseaux autrement que par la
+  distance. Le chargement refuse un relief hors Plateau ou sous une Tuile
+  pré-posée.
+- `B12` ✅ **On ne pose qu'à côté d'une chaîne reliée au `Puits des âmes`.** Un
+  Espace est constructible s'il est libre, hors relief, et **voisin d'une Tuile
+  reliée au `Puits` par une suite de Tuiles adjacentes**. Le réseau pousse donc
+  depuis sa source au lieu d'apparaître par îlots.
+    - La chaîne suit l'**adjacence**, pas les Sorties : une Tuile posée nue
+      (`U9`) prolonge la chaîne, ce qui permet de préparer un tracé avant de le
+      brancher. Sinon il faudrait orienter chaque Tuile avant de poser la
+      suivante, alors que `D8b` invite justement à brancher après coup.
+    - Les Tuiles du démon n'y participent **jamais** : son couloir ne sert pas de
+      relais au joueur. Les Tuiles neutres, si — atteindre l'`Escalier` ouvre
+      donc ses abords.
 - `B10` 🧪 Forme opérationnelle de `B8`, celle qu'applique le moteur : **une
   Sortie ne peut pas déboucher sur une Tuile du camp adverse**. C'est vérifié à
   la pose et à chaque reconfiguration (`T5`), et au chargement de la
@@ -242,7 +260,20 @@ matériau que le démon livre à l'`Escalier` est **le Sbire lui-même** (`X3`).
 ## 7. Cycle de jeu
 
 - `C1` ✅ Une **Manche** = le joueur pose (ou reconfigure) **une** Tuile, puis
-  on déroule **N Ticks** de simulation. `N = 5` au départ (configurable).
+  on déroule **N Ticks** de simulation.
+- `C1b` ✅ **N croît au fil des Manches** : `start` Ticks au départ, puis `+step`
+  toutes les `delay` **Manches**, jusqu'au plafond `max`. Réglage actuel
+  `{start: 1, max: 5, step: 1, delay: 2}`, soit la cadence
+  **1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 5…** Les poses sont donc rapprochées tant que
+  le réseau se construit, et les Manches s'allongent ensuite, quand il n'y a plus
+  qu'à observer.
+  La forme numérique simple (`"ticksPerRound": 5`) reste acceptée et vaut cadence
+  constante.
+  Effet mesuré sur la chaîne de référence : la chaîne est achevée avant qu'aucune
+  Âme ne se perde, soit **4 Âmes économisées** par rapport à une cadence
+  constante de 5 — assez pour faire passer la voie du `Dégrossi` de 192 à 201 sur
+  une cible de 200. Le regroupement des Ticks en Manches ne change pas leur
+  nombre total : la cadence déplace les **poses**, pas la durée de la partie.
 - `C2` ✅ Un **Tick** déroule 6 phases, dans cet ordre strict :
 
 | # | Phase | Camp |
@@ -434,9 +465,10 @@ combien de progression le joueur arrive-t-il à extraire de 100 Âmes ?
   peut donc s'écouler de nombreux Ticks entre la dernière apparition et la
   défaite : les Âmes en transit ou en production continuent de jouer, et une
   livraison de dernière minute peut encore faire gagner.
-- `E4` ✅ **Conséquence du budget sur la durée de partie** : à 1 Âme par Tick et
-  `ticksPerRound = 5`, la réserve de 100 s'épuise en ~20 Manches, donc le joueur
-  pose ~20 Tuiles dans une partie. Le budget fixe donc *aussi* la longueur de la
+- `E4` ✅ **Conséquence du budget sur la durée de partie** : à 1 Âme par Tick,
+  la réserve de 100 s'épuise en ~100 Ticks, soit **~25 Manches** avec la cadence
+  croissante actuelle (`C1b`) — le joueur pose donc ~25 Tuiles, dont les
+  premières très rapprochées. Le budget fixe donc *aussi* la longueur de la
   partie et la taille du réseau constructible : c'est la cadence d'apparition,
   pas le budget, qu'il faut bouger pour découpler les deux.
 - `E5` ✅ **Cible : `stairwayTarget = 200`** (configurable, `G2`). Le
@@ -587,6 +619,14 @@ produit, en cours de partie et pas seulement à la fin.
   pas avoir à quitter le plateau des yeux pour la suivre. L'affichage est déduit
   des Recettes — toute Tuile dont une Recette fait varier la progression
   l'affiche — et non d'un identifiant en dur.
+- `U15` ✅ **Choisir un Bâtiment au catalogue montre ses Recettes** — ce qu'il
+  consomme, ce qu'il produit, en combien de Ticks — avant la pose. Régler une
+  économie suppose de comparer des Recettes ; les découvrir en posant la Tuile
+  coûterait une Manche à chaque essai. Le même affichage sert dans le détail
+  d'une Tuile posée (`U2`).
+- `U14` ✅ **Le relief se distingue à l'œil d'un Espace libre** (`B11`), et les
+  Espaces posables (`B12`) sont mis en évidence : sans ça, on clique au hasard
+  pour découvrir où l'on a le droit de construire.
 - `U13` ✅ **Cliquer une Sortie déjà désignée la conserve et referme l'édition.**
   Le geste vaut confirmation, pas bascule : on ne retire pas par mégarde une
   Sortie correcte en la re-cliquant pour vérifier.
@@ -713,6 +753,9 @@ et sont volontairement absents ici.
 | 2026-09-06 | Mise au propre de `gameplay.md` : numérotation des règles, séparation Manche/Tick, table des Sorties, trace de référence, 9 points à trancher. |
 | 2026-09-06 | Réserve de 100 Âmes (`C5`) et défaite à réserve épuisée (`E2`) : les Âmes deviennent la ressource épuisable de la Rencontre. `Q3` et `Q6` tranchées, `Q7` réduite à la valeur de la cible, `Q10`/`Q11` ouvertes. Ajout des métriques (§12). |
 | 2026-09-06 | Ajout `E8` : la Recette du démon (`X3`) ponctionne ~100 progression par partie, ce qui remet la cible de 200 en question. |
+| 2026-09-06 | `C1b` précisé : `delay` dit toutes les combien de **Manches** on ajoute `step`. À `delay = 2`, la cadence est 1, 1, 2, 2, 3, 3, 4, 4, 5… |
+| 2026-09-06 | Ajout `U15` : les Recettes du Bâtiment choisi au catalogue sont affichées avant la pose. |
+| 2026-09-06 | Ajout `B11` (Espaces non constructibles), `B12` (on ne pose qu'à côté d'une chaîne reliée au `Puits`) et `C1b` (cadence croissante 1→5 Ticks par Manche). La cadence croissante économise 4 Âmes sur la chaîne de référence, ce qui fait passer la voie du `Dégrossi` de 192 à 201. |
 | 2026-09-06 | Ajout `T8` : un type de Tuile peut avoir ses Sorties figées par la configuration (`fixedExits`) — appliqué au `Puits des âmes`. Le droit d'éditer devient une règle du Core. |
 | 2026-09-06 | Ajout `U13` : cliquer une Sortie déjà désignée la conserve et referme l'édition ; le nombre de Sorties d'une Tuile ne diminue donc plus. |
 | 2026-09-06 | Ajout `U12` : le mode d'édition des Sorties s'ouvre par un bouton « Éditer », plus à la sélection — sauf juste après une pose. |

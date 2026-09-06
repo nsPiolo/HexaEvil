@@ -8,6 +8,7 @@ import { directionBetween, key, neighbors, type HexCoord } from '../core/hex/hex
 import { tileAt } from '../core/rules/board'
 import { tileType } from '../core/rules/recipes'
 import {
+  buildableSpaces,
   createGame,
   exitChangeRefusal,
   exitEditRefusal,
@@ -16,6 +17,7 @@ import {
   runRound,
   runTick,
   setExits,
+  ticksForRound,
 } from '../core/rules/encounter'
 import type { GameConfig, GameState, TileTypeId } from '../core/rules/types'
 
@@ -149,10 +151,10 @@ export const useGame = (config: GameConfig, initialText: string) => {
    */
   const wiring = state.phase === 'placement' ? wiringAt : undefined
 
-  const wireTargets = useMemo(
-    () => (wiring ? neighbors(wiring).map(key) : []),
-    [wiring],
-  )
+  const wireTargets = useMemo(() => (wiring ? neighbors(wiring).map(key) : []), [wiring])
+
+  /** `B12` — Espaces posables, calculés une fois par état plutôt qu'à chaque case. */
+  const buildable = useMemo(() => new Set(buildableSpaces(state).map(key)), [state])
 
   /** Désigne la Sortie d'une Tuile posée vers `direction` (`U9`, `U13`). */
   const setExitTo = useCallback(
@@ -262,7 +264,7 @@ export const useGame = (config: GameConfig, initialText: string) => {
   const step = useCallback(() => setQueued((q) => q + 1), [])
   const round = useCallback(() => {
     if (state.phase === 'placement') {
-      setQueued(state.config.ticksPerRound)
+      setQueued(ticksForRound(state.config, state.round))
       return
     }
     setQueued((q) => q + state.ticksLeftInRound)
@@ -325,6 +327,9 @@ export const useGame = (config: GameConfig, initialText: string) => {
     speed,
     tickMs,
     notice,
+    buildable,
+    ticksThisRound:
+      state.phase === 'placement' ? ticksForRound(state.config, state.round) : state.ticksLeftInRound,
     wireTargets,
     wiring,
     /** Vrai quand la Tuile inspectée est celle qu'on est en train de câbler. */

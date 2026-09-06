@@ -56,6 +56,8 @@ body {
 
 .cell polygon { fill: #2b2320; stroke: #453832; stroke-width: 1.5; transition: fill 120ms ease; }
 .cell--free polygon { fill: #1f1917; stroke-dasharray: 3 3; }
+.cell--blocked polygon { fill: #100c0b; stroke: #2b2320; stroke-width: 1; }
+.cell__blocked { font-size: 14px; fill: #3c322d; text-anchor: middle; pointer-events: none; }
 .cell--player polygon { fill: #253442; stroke: var(--player); stroke-width: 2; }
 .cell--demon polygon { fill: #3c221e; stroke: var(--demon); stroke-width: 2; }
 .cell--neutral polygon { fill: #3a3226; stroke: var(--neutral); stroke-width: 2; }
@@ -182,6 +184,13 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 .catalog__item--on { background: #3a2a20; border-color: var(--ember); }
 .catalog__glyph { font-size: 1.1rem; }
 .catalog__name { font-size: 0.66rem; color: var(--muted); text-align: center; line-height: 1.2; }
+
+.catalog__detail { margin-top: 0.55rem; padding-top: 0.5rem; border-top: 1px dashed #ffffff12; }
+.catalog__detail h4 {
+  margin: 0 0 0.35rem; font-size: 0.78rem; display: flex; justify-content: space-between;
+  align-items: baseline; gap: 0.5rem;
+}
+.catalog__exits { font-size: 0.66rem; color: var(--dim); font-weight: 400; white-space: nowrap; }
 
 .exits { display: flex; gap: 0.25rem; margin-top: 0.4rem; flex-wrap: wrap; }
 .exit { min-width: 40px; font-size: 0.72rem; padding: 0.3rem 0.35rem; }

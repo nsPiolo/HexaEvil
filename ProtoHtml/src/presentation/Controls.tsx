@@ -4,11 +4,13 @@
  */
 import { useState } from 'react'
 import { tileType } from '../core/rules/recipes'
+import { RecipeList } from './RecipeList'
 import type { GameState, TileTypeId } from '../core/rules/types'
 import { SPEEDS, type Speed } from './useGame'
 
 type Props = {
   state: GameState
+  ticksThisRound: number
   pendingType: TileTypeId
   canUndo: boolean
   playing: boolean
@@ -28,6 +30,7 @@ type Props = {
 
 export const Controls = ({
   state,
+  ticksThisRound,
   pendingType,
   canUndo,
   playing,
@@ -55,7 +58,7 @@ export const Controls = ({
           1 Tick
         </button>
         <button type="button" onClick={onRound} disabled={over}>
-          Manche ({state.config.ticksPerRound} Ticks)
+          Manche ({ticksThisRound} Tick{ticksThisRound > 1 ? 's' : ''})
         </button>
         <button type="button" onClick={onUndo} disabled={!canUndo}>
           Annuler
@@ -102,6 +105,16 @@ export const Controls = ({
               </button>
             )
           })}
+        </div>
+        <div className="catalog__detail">
+          <h4>
+            {tileType(state.config, pendingType).glyph} {tileType(state.config, pendingType).name}
+            <span className="catalog__exits">
+              {tileType(state.config, pendingType).maxExits} Sortie
+              {tileType(state.config, pendingType).maxExits > 1 ? 's' : ''} max
+            </span>
+          </h4>
+          <RecipeList config={state.config} type={tileType(state.config, pendingType)} />
         </div>
         <p className="controls__hint">
           La Tuile est posée <strong>sans Sortie</strong> : clique ensuite un hexagone voisin pour

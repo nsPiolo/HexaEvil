@@ -5,15 +5,15 @@
  * comportement d'un réseau doit être lisible ici.
  */
 import { DIRECTION_NAMES, type HexCoord } from '../core/hex/hexCoord'
-import { progressPerTick, recipesFor, tileType, tracksProgress } from '../core/rules/recipes'
+import { isBlocked } from '../core/rules/encounter'
+import { recipesFor, tileType, tracksProgress } from '../core/rules/recipes'
 import { stockEntries } from '../core/rules/storage'
-import type { EntityState, GameState, RecipeDef, Side, Stock, TileState } from '../core/rules/types'
+import type { EntityState, GameState, Stock, TileState } from '../core/rules/types'
+import { resourceGlyph as glyphOf, resourceName as nameOf } from './labels'
+import { RecipeList } from './RecipeList'
 
-const resourceName = (state: GameState, id: string): string =>
-  state.config.resources.find((r) => r.id === id)?.name ?? id
-
-const resourceGlyph = (state: GameState, id: string): string =>
-  state.config.resources.find((r) => r.id === id)?.glyph ?? '?'
+const resourceName = (state: GameState, id: string): string => nameOf(state.config, id)
+const resourceGlyph = (state: GameState, id: string): string => glyphOf(state.config, id)
 
 const StockLine = ({ state, label, stock }: { state: GameState; label: string; stock: Stock }) => {
   const entries = stockEntries(stock)
@@ -33,21 +33,6 @@ const StockLine = ({ state, label, stock }: { state: GameState; label: string; s
       )}
     </div>
   )
-}
-
-const describeRecipe = (state: GameState, recipe: RecipeDef): string => {
-  const ins = recipe.consumesSelf
-    ? "l'entité elle-même"
-    : stockEntries(recipe.in ?? {})
-        .map(([id, qty]) => `${qty} × ${resourceName(state, id)}`)
-        .join(' + ') || 'rien'
-  const outs = [
-    ...stockEntries(recipe.out ?? {}).map(([id, qty]) => `${qty} × ${resourceName(state, id)}`),
-    ...(recipe.progress !== undefined
-      ? [`${recipe.progress >= 0 ? '+' : ''}${recipe.progress} progression`]
-      : []),
-  ].join(' + ')
-  return `${ins} → ${outs}`
 }
 
 /** Pourquoi cette entité ne produit pas — l'information de débogage clé (`U2`). */
@@ -123,13 +108,20 @@ export const TileInspector = ({
   }
 
   if (!tile) {
+    const blocked = isBlocked(state, coord)
     return (
       <section className="inspector">
         <header className="inspector__head">
-          <h2>Espace ({coord.q},{coord.r})</h2>
-          <span className="inspector__owner">libre</span>
+          <h2>
+            Espace ({coord.q},{coord.r})
+          </h2>
+          <span className="inspector__owner">{blocked ? 'non constructible' : 'libre'}</span>
         </header>
-        <p className="inspector__hint">Aucune Tuile ici. Choisis un type au catalogue et clique pour poser.</p>
+        <p className="inspector__hint">
+          {blocked
+            ? 'Cet Espace fait partie du relief : rien ne s’y pose, et rien ne le traverse (B11).'
+            : 'Aucune Tuile ici. On ne peut poser qu’à côté d’une chaîne reliée au Puits des âmes (B12).'}
+        </p>
       </section>
     )
   }
@@ -139,7 +131,6 @@ export const TileInspector = ({
     .filter((e) => e.space.q === coord.q && e.space.r === coord.r)
     .sort((a, b) => a.id - b.id)
   const editable = wiring
-  const bySide: Side[] = ['player', 'demon']
 
   return (
     <section className="inspector">
@@ -211,22 +202,7 @@ export const TileInspector = ({
       {(type.recipes?.length ?? 0) > 0 && (
         <div className="inspector__block">
           <h3>Recettes</h3>
-          <ul className="recipes">
-            {bySide.flatMap((side) =>
-              recipesFor(type, side).map((recipe, i) => (
-                <li key={`${side}-${i}`} className={`recipe recipe--${side}`}>
-                  <span className="recipe__side">{side === 'player' ? 'Âmes' : 'Sbires'}</span>
-                  <span className="recipe__body">{describeRecipe(state, recipe)}</span>
-                  <span className="recipe__ticks">
-                    {recipe.ticks} Tick{recipe.ticks > 1 ? 's' : ''}
-                    {recipe.progress !== undefined && (
-                      <em> · {progressPerTick(recipe).toFixed(2)}/Tick</em>
-                    )}
-                  </span>
-                </li>
-              )),
-            )}
-          </ul>
+          <RecipeList config={state.config} type={type} />
           <p className="inspector__meta">Productions terminées ici : {tile.productionsDone}</p>
         </div>
       )}

@@ -1,3 +1,4 @@
+import { key } from '../core/hex/hexCoord'
 import type { GameConfig } from '../core/rules/types'
 import { BoardView } from './BoardView'
 import { Controls } from './Controls'
@@ -32,7 +33,7 @@ export const Game = ({ config, configText }: Props) => {
           <BoardView
             state={state}
             selected={game.selected}
-            placeable={(coord) => game.placementRefusalAt(coord) === undefined}
+            placeable={(coord) => game.buildable.has(key(coord))}
             wireTargets={game.wireTargets}
             moves={anim.moves}
             ghosts={anim.ghosts}
@@ -56,6 +57,7 @@ export const Game = ({ config, configText }: Props) => {
           <MetricsPanel state={state} />
           <Controls
             state={state}
+            ticksThisRound={game.ticksThisRound}
             pendingType={game.pendingType}
             canUndo={game.canUndo}
             playing={game.playing}

@@ -5,14 +5,72 @@
  *
  * Toutes les valeurs de gameplay viennent de la configuration (`G3`).
  */
-import { directionIndex, hex, key, type HexCoord } from '../hex/hexCoord'
-import { exitsRefusal, isFree, tileAt } from './board'
+import { directionIndex, hex, key, neighbors, type HexCoord } from '../hex/hexCoord'
+import { exitsRefusal, isFree, isOnBoard, tileAt } from './board'
 import { tileType } from './recipes'
 import { runTickInPlace } from './tick'
 import type { GameConfig, GameState, Owner, Side, TileState, TileTypeId } from './types'
 import { range } from '../hex/hexCoord'
 
 const clone = <T>(value: T): T => structuredClone(value)
+
+/**
+ * `C1b` — durée de la Manche `round` (la première vaut 1) : `start` Ticks, plus
+ * `step` par tranche de `delay` Manches écoulées, plafonné à `max`.
+ */
+export const ticksForRound = (config: GameConfig, round: number): number => {
+  const { start, max, step, delay } = config.ticksPerRound
+  const paliers = Math.floor(Math.max(0, round - 1) / delay)
+  return Math.min(max, start + paliers * step)
+}
+
+/** `B11` — Espace existant mais fermé à la construction. */
+export const isBlocked = (state: GameState, coord: HexCoord): boolean =>
+  state.config.board.blocked.some((b) => b.q === coord.q && b.r === coord.r)
+
+/**
+ * `B12` — Espaces reliés au `Puits des âmes` par une **chaîne de Tuiles
+ * adjacentes**. La chaîne ignore les Sorties : c'est une continuité de terrain,
+ * pas un chemin praticable — on peut donc préparer un tracé avant de le brancher.
+ * Les Tuiles du démon n'y participent jamais.
+ */
+export const connectedToSource = (state: GameState): Set<string> => {
+  const reached = new Set<string>()
+  const queue: HexCoord[] = []
+  for (const tile of Object.values(state.tiles)) {
+    if (tileType(state.config, tile.typeId).spawns === 'player') {
+      reached.add(key(tile.coord))
+      queue.push(tile.coord)
+    }
+  }
+  while (queue.length > 0) {
+    const current = queue.shift()!
+    for (const next of neighbors(current)) {
+      const k = key(next)
+      if (reached.has(k)) continue
+      const tile = state.tiles[k]
+      if (!tile || tile.owner === 'demon') continue
+      reached.add(k)
+      queue.push(next)
+    }
+  }
+  return reached
+}
+
+/**
+ * `B12` — Espaces où le joueur peut poser : libres, constructibles, et voisins
+ * d'une Tuile reliée au `Puits`. Le réseau ne pousse donc qu'à partir de sa
+ * source, il n'apparaît pas par îlots.
+ */
+export const buildableSpaces = (state: GameState): HexCoord[] => {
+  const connected = connectedToSource(state)
+  return state.spaces.filter(
+    (space) =>
+      isFree(state, space) &&
+      !isBlocked(state, space) &&
+      neighbors(space).some((n) => connected.has(key(n))),
+  )
+}
 
 const emptySpend = () => ({ delivered: 0, blocked: 0, backtrack: 0 })
 
@@ -50,7 +108,7 @@ export const createGame = (config: GameConfig): GameState => {
     tick: 0,
     round: 1,
     phase: 'placement',
-    ticksLeftInRound: config.ticksPerRound,
+    ticksLeftInRound: ticksForRound(config, 1),
     spaces,
     tiles,
     entities: [],
@@ -76,7 +134,12 @@ export const placementRefusal = (
   if (state.phase !== 'placement') return 'la pose n’est possible que pendant la phase de pose (C1)'
   if (state.placedThisRound) return 'une seule Tuile par Manche (C1)'
   if (!state.config.catalog.includes(typeId)) return `« ${typeId} » n’est pas au catalogue posable (T7)`
-  if (!isFree(state, coord)) return `l’Espace (${coord.q},${coord.r}) est occupé ou hors Plateau (B4)`
+  if (!isOnBoard(state, coord)) return `l’Espace (${coord.q},${coord.r}) est hors du Plateau`
+  if (!isFree(state, coord)) return `l’Espace (${coord.q},${coord.r}) est déjà occupé (B4)`
+  if (isBlocked(state, coord)) return `l’Espace (${coord.q},${coord.r}) n’est pas constructible (B11)`
+  if (!neighbors(coord).some((n) => connectedToSource(state).has(key(n)))) {
+    return `l’Espace (${coord.q},${coord.r}) n’est relié au Puits des âmes par aucune chaîne de Tuiles (B12)`
+  }
   return exitsRefusal(state, coord, typeId, 'player', exits)
 }
 
@@ -147,7 +210,7 @@ export const startRound = (state: GameState): GameState => {
   if (state.phase !== 'placement') return state
   const next = clone(state)
   next.phase = 'running'
-  next.ticksLeftInRound = next.config.ticksPerRound
+  next.ticksLeftInRound = ticksForRound(next.config, next.round)
   return next
 }
 
@@ -157,14 +220,14 @@ export const runTick = (state: GameState): GameState => {
   const next = clone(state)
   if (next.phase === 'placement') {
     next.phase = 'running'
-    next.ticksLeftInRound = next.config.ticksPerRound
+    next.ticksLeftInRound = ticksForRound(next.config, next.round)
   }
   runTickInPlace(next)
   next.ticksLeftInRound -= 1
   if (next.outcome === 'ongoing' && next.ticksLeftInRound <= 0) {
     next.phase = 'placement'
     next.round += 1
-    next.ticksLeftInRound = next.config.ticksPerRound
+    next.ticksLeftInRound = ticksForRound(next.config, next.round)
     next.placedThisRound = false
   }
   return next
@@ -173,7 +236,8 @@ export const runTick = (state: GameState): GameState => {
 /** Les N Ticks d'une Manche d'un coup (`C1`). */
 export const runRound = (state: GameState): GameState => {
   let next = startRound(state)
-  let guard = next.config.ticksPerRound
+  // Le budget vient de `startRound` : pas de recalcul qui pourrait diverger.
+  let guard = next.ticksLeftInRound
   while (next.phase === 'running' && next.outcome === 'ongoing' && guard-- > 0) {
     next = runTick(next)
   }

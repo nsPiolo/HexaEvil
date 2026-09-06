@@ -55,7 +55,8 @@ describe('Interface (rendu de fumée)', () => {
   it('affiche le catalogue posable et le pas-à-pas (T7, U5)', () => {
     const out = html()
     expect(out).toContain('1 Tick')
-    expect(out).toContain(`Manche (${config.ticksPerRound} Ticks)`)
+    // La première Manche est courte : la cadence s'allonge ensuite (C1b).
+    expect(out).toContain(`Manche (${config.ticksPerRound.start} Tick`)
     for (const name of ['Carrière', 'Tailleur de pierre', 'Atelier', 'Sculpteur', 'Aiguillage']) {
       expect(out).toContain(name)
     }
@@ -69,6 +70,15 @@ describe('Interface (rendu de fumée)', () => {
     // À l'accueil, aucune Tuile n'est sélectionnée : pas de bouton « Terminer ».
     const out = html()
     expect(out).not.toContain('edit-toggle--on')
+  })
+
+  it('montre les Recettes du Bâtiment choisi au catalogue (U15)', () => {
+    // Type par défaut : la Carrière. Sa Recette doit être lisible sans avoir
+    // posé quoi que ce soit.
+    const out = html()
+    expect(out).toContain('2 × Basalte brut')
+    expect(out).toContain('1 Tick')
+    expect(out).toContain('Sortie max')
   })
 
   it('annonce que la pose se fait sans Sortie (U9)', () => {

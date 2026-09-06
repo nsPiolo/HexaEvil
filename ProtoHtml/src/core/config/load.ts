@@ -18,6 +18,7 @@ import {
 } from '../hex/hexCoord'
 import type {
   GameConfig,
+  TicksPerRound,
   InitialTileDef,
   Owner,
   RecipeDef,
@@ -179,6 +180,25 @@ function parseInitialTile(raw: unknown, index: number, types: Map<string, TileTy
   return { q, r, type: typeId, owner: asOwner(t.owner, `${at}.owner`), exits }
 }
 
+/**
+ * `ticksPerRound` accepte un nombre (cadence constante) ou `{start, max, step}`
+ * (cadence croissante, `C1b`). Les deux formes vivent en configuration : aucune
+ * valeur de rythme n'est écrite dans le code (`G3`).
+ */
+function parseTicksPerRound(raw: unknown): TicksPerRound {
+  if (typeof raw === 'number') {
+    const ticks = asInt(raw, 'ticksPerRound', 1)
+    return { start: ticks, max: ticks, step: 0, delay: 1 }
+  }
+  const o = asRecord(raw, 'ticksPerRound')
+  const start = asInt(o.start, 'ticksPerRound.start', 1)
+  const max = asInt(o.max, 'ticksPerRound.max', 1)
+  const step = asInt(o.step, 'ticksPerRound.step', 0)
+  const delay = asInt(o.delay, 'ticksPerRound.delay', 1)
+  if (max < start) fail(`ticksPerRound.max (${max}) est inférieur à start (${start})`)
+  return { start, max, step, delay }
+}
+
 function parseResource(raw: unknown, index: number): ResourceDef {
   const res = asRecord(raw, `resources[${index}]`)
   return {
@@ -205,12 +225,28 @@ export const parseConfig = (raw: unknown): GameConfig => {
   const radius = asInt(board.radius, 'board.radius', 1)
   const spaceKeys = new Set(range(hex(0, 0), radius).map(key))
 
+  const blocked = (board.blocked === undefined ? [] : asArray(board.blocked, 'board.blocked')).map(
+    (b, i) => {
+      const o = asRecord(b, `board.blocked[${i}]`)
+      const coord = hex(asSignedInt(o.q, `board.blocked[${i}].q`), asSignedInt(o.r, `board.blocked[${i}].r`))
+      if (!spaceKeys.has(key(coord))) {
+        fail(`board.blocked (${coord.q},${coord.r}) est hors du Plateau de rayon ${radius}`)
+      }
+      return coord
+    },
+  )
+  const blockedKeys = new Set(blocked.map(key))
+  if (blockedKeys.size !== blocked.length) fail('board.blocked contient deux fois le même Espace')
+
   const initialTiles = asArray(c.initialTiles, 'initialTiles').map((t, i) => parseInitialTile(t, i, types))
   const seen = new Set<string>()
   for (const t of initialTiles) {
     const k = key(hex(t.q, t.r))
     if (!spaceKeys.has(k)) fail(`initialTiles (${t.q},${t.r}) est hors du Plateau de rayon ${radius}`)
     if (seen.has(k)) fail(`deux Tuiles pré-posées en (${t.q},${t.r}) — un Espace n'en porte qu'une (B4)`)
+    if (blockedKeys.has(k)) {
+      fail(`la Tuile pré-posée en (${t.q},${t.r}) occupe un Espace non constructible (B11)`)
+    }
     seen.add(k)
   }
 
@@ -229,7 +265,7 @@ export const parseConfig = (raw: unknown): GameConfig => {
 
   const carry = asRecord(c.carryCapacity, 'carryCapacity')
   const config: GameConfig = {
-    ticksPerRound: asInt(c.ticksPerRound, 'ticksPerRound', 1),
+    ticksPerRound: parseTicksPerRound(c.ticksPerRound),
     soulBudget: asInt(c.soulBudget, 'soulBudget', 1),
     minionBudget: asInt(c.minionBudget, 'minionBudget', 0),
     stairwayTarget: asInt(c.stairwayTarget, 'stairwayTarget', 1),
@@ -239,7 +275,7 @@ export const parseConfig = (raw: unknown): GameConfig => {
     },
     resources,
     tileTypes,
-    board: { radius },
+    board: { radius, blocked },
     initialTiles,
     catalog,
   }

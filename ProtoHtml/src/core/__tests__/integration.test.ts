@@ -44,30 +44,33 @@ describe('Partie complète (configuration livrée)', () => {
     // de régression. Si le réglage change, ces nombres doivent changer aussi.
     expect(state.outcome).toBe('defeat')
     expect(state.spawned.player).toBe(100)
-    expect(state.spent.player.delivered).toBe(96)
-    expect(state.spent.player.blocked).toBe(4) // perdues pendant la Manche 1, réseau incomplet
+    expect(state.spent.player.delivered).toBe(100)
+    // La cadence courte des premières Manches (C1b) laisse achever la chaîne
+    // avant qu'aucune Âme ne se perde.
+    expect(state.spent.player.blocked).toBe(0)
     // +1 par Âme à 1 Âme par Tick contre −1 par Tick : les deux flux s'annulent.
     expect(state.progress).toBe(0)
-    expect(state.drain.applied).toBe(96)
+    expect(state.drain.applied).toBe(100)
     expect(progressPerSoulSpent(state)).toBe(0)
     // Le « ×2 » de la Carrière part entièrement en surplus mort.
-    expect(state.tiles['-2,0']!.output.rawBasalt).toBe(104)
+    expect(state.tiles['-2,0']!.output.rawBasalt).toBe(100)
   })
 
-  it('voie du Basalte dégrossi : 192 sur 200, la cible est juste hors d’atteinte', () => {
+  it('voie du Basalte dégrossi : la cible est atteinte de justesse', () => {
     // Puits(-3,0) → Carrière(-2,0) → Tailleur(-1,0) → Escalier(0,0)
     const state = playOut([
       { q: -2, r: 0, type: 'quarry' },
       { q: -1, r: 0, type: 'stonecutter' },
     ])
 
-    expect(state.outcome).toBe('defeat')
-    expect(state.spent.player.delivered).toBe(96)
-    // 96 livraisons × 3 = 288 brut, moins 96 de ponction = 192.
-    expect(state.progress).toBe(192)
-    expect(state.drain.applied).toBe(96)
-    expect(progressPerSoulSpent(state)).toBeCloseTo(1.92, 2)
-    expect(totalSpent(state, 'player')).toBe(100)
+    expect(state.outcome).toBe('victory')
+    // 99 livraisons × 3 = 297 brut, moins 99 de ponction = 198… plus les 3 de la
+    // livraison qui franchit la cible : 201 pour 200 demandés.
+    expect(state.progress).toBe(201)
+    expect(state.spent.player.delivered).toBe(99)
+    expect(state.drain.applied).toBe(99)
+    expect(totalSpent(state, 'player')).toBe(99) // gagné avec une Âme encore en jeu
+    expect(progressPerSoulSpent(state)).toBeCloseTo(2.03, 2)
   })
 
   it('réseau inachevé : la partie se termine quand même (D16, E7)', () => {

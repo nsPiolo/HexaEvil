@@ -138,9 +138,19 @@ describe('Interprétation d’un clic sur le Plateau (U9)', () => {
   })
 
   it('pose quand l’Espace cliqué n’est pas voisin de la Tuile câblée', () => {
-    expect(resolveClick(game(), hex(0, 0), hex(2, 0), 'quarry')).toEqual({
+    // Chaîne Puits(0,0) → Carrière(1,0), édition sur la Carrière. (0,-1) touche
+    // le Puits mais pas la Carrière : c'est une pose, pas un câblage (B12 le
+    // rend constructible).
+    const state = buildGame({
+      board: { radius: 2 },
+      initialTiles: [
+        { q: 0, r: 0, type: 'soulWell', owner: 'player', exits: ['E'] },
+        { q: 1, r: 0, type: 'quarry', owner: 'player', exits: [] },
+      ],
+    })
+    expect(resolveClick(state, hex(1, 0), hex(0, -1), 'quarry')).toEqual({
       kind: 'place',
-      coord: hex(2, 0),
+      coord: hex(0, -1),
     })
   })
 
@@ -166,7 +176,15 @@ describe('Interprétation d’un clic sur le Plateau (U9)', () => {
   })
 
   it('ne câble plus pendant le déroulé des Ticks (T5)', () => {
-    const running = runTick(game())
+    // Cadence constante à 5 Ticks : sinon la première Manche ne dure qu'un Tick
+    // (C1b) et on repasse aussitôt en phase de pose.
+    const running = runTick(
+      buildGame({
+        board: { radius: 2 },
+        ticksPerRound: 5,
+        initialTiles: [{ q: 0, r: 0, type: 'soulWell', owner: 'player', exits: ['E'] }],
+      }),
+    )
     expect(running.phase).toBe('running')
     const action = resolveClick(running, hex(0, 0), hex(1, 0), 'quarry')
     expect(action.kind).not.toBe('wire')
@@ -175,6 +193,7 @@ describe('Interprétation d’un clic sur le Plateau (U9)', () => {
 
   it('sélectionne aussi pendant le déroulé des Ticks, pour observer', () => {
     const running = runTick(game())
+    void running
     expect(resolveClick(running, undefined, hex(0, 0), 'quarry')).toEqual({
       kind: 'select',
       coord: hex(0, 0),
@@ -208,6 +227,7 @@ describe('Ouverture du mode d’édition (U12, T8)', () => {
   const state = () =>
     buildGame({
       board: { radius: 2 },
+      ticksPerRound: 5, // cadence constante : la phase « running » doit durer
       initialTiles: [
         { q: 0, r: 0, type: 'soulWell', owner: 'player', exits: ['E'] },
         { q: 1, r: 0, type: 'stairway', owner: 'neutral', exits: [] },

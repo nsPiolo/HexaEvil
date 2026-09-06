@@ -4,12 +4,14 @@
  *
  * `U1` — compteurs d'Âmes et de Sbires par Tuile.
  * `U11` — l'Escalier affiche sa progression sur le Plateau.
+ * `U14` — les Espaces non constructibles (`B11`) se distinguent des Espaces libres.
  * `U9` — cliquer un hexagone voisin de la Tuile sélectionnée oriente sa Sortie.
  * `U6` — déplacements interpolés entre deux Espaces.
  * `U7` — étiquettes « +x » / « −n » sur les mouvements de Ressources.
  */
 import { key, type HexCoord } from '../core/hex/hexCoord'
 import { cornersToPoints, exitMarker, hexCorners, hexToPixel, type Point } from '../core/hex/layout'
+import { isBlocked } from '../core/rules/encounter'
 import { tileType, tracksProgress } from '../core/rules/recipes'
 import { totalStock } from '../core/rules/storage'
 import type { EntityState, GameState, ResourceId } from '../core/rules/types'
@@ -102,11 +104,12 @@ export const BoardView = ({
         const isSelected = selected !== undefined && key(selected) === k
         const canPlace = tile === undefined && placeable(coord)
         const isWireTarget = wireable.has(k)
+        const blocked = tile === undefined && isBlocked(state, coord)
         const stored = tile ? totalStock(tile.input) + totalStock(tile.output) : 0
 
         const classes = [
           'cell',
-          tile ? `cell--${tile.owner}` : 'cell--free',
+          tile ? `cell--${tile.owner}` : blocked ? 'cell--blocked' : 'cell--free',
           canPlace && !isWireTarget ? 'cell--placeable' : '',
           isWireTarget ? 'cell--wire' : '',
           isSelected ? 'cell--selected' : '',
@@ -119,7 +122,9 @@ export const BoardView = ({
             key={k}
             className={classes}
             role="gridcell"
-            aria-label={`Espace ${coord.q}, ${coord.r}${type ? ` — ${type.name}` : ' — libre'}`}
+            aria-label={`Espace ${coord.q}, ${coord.r}${
+              type ? ` — ${type.name}` : blocked ? ' — non constructible' : ' — libre'
+            }`}
             onClick={() => onSpaceClick(coord)}
           >
             <polygon points={cornersToPoints(hexCorners(p, SIZE - 2))} />
@@ -131,6 +136,12 @@ export const BoardView = ({
             {type && (
               <text x={p.x} y={p.y - 8} className="cell__glyph">
                 {type.glyph}
+              </text>
+            )}
+
+            {blocked && (
+              <text x={p.x} y={p.y + 4} className="cell__blocked" aria-hidden="true">
+                ✖
               </text>
             )}
 

@@ -18,7 +18,7 @@ commentaire. Si le code et le GDD divergent, c'est le GDD qui a raison.
 cd ProtoHtml
 npm install
 npm run dev      # http://localhost:5180
-npm test         # 104 tests : mécaniques, trace de référence, parties complètes, affichage
+npm test         # 120 tests : mécaniques, trace de référence, parties complètes, affichage
 npm run build    # typecheck + build de prod
 ```
 
@@ -46,7 +46,8 @@ changer une recette, si — et c'est le signal attendu.
 ## Comment on joue
 
 1. **Phase de pose, en deux clics** (`U9`) : choisir un type au catalogue, puis
-   cliquer un Espace libre pour y poser la Tuile — elle arrive **sans aucune
+   cliquer un Espace **posable** — libre, hors relief, et voisin d'une chaîne
+   reliée au Puits des âmes (`B11`, `B12`) — pour y poser la Tuile — elle arrive **sans aucune
    Sortie**, sélectionnée, et ses six voisins deviennent cliquables. Cliquer l'un
    d'eux oriente sa Sortie vers lui. Une Tuile par Manche (`C1`), sans coût
    (`T6`).
@@ -60,7 +61,9 @@ changer une recette, si — et c'est le signal attendu.
    Certaines Tuiles ont leurs Sorties **figées par la configuration**
    (`fixedExits`, `T8`) : le Puits des âmes est orienté par le terrain, pas par
    le joueur. Le panneau affiche alors la raison au lieu du bouton.
-2. **Dérouler** : `1 Tick` pour le pas-à-pas (`U5`), ou `Manche` pour les 5 Ticks
+2. **Dérouler** : `1 Tick` pour le pas-à-pas (`U5`), ou `Manche` pour les Ticks
+   de la Manche courante — 1 au départ, puis +1 toutes les 2 Manches jusqu'à 5
+   (`C1b`) —
    — joués **en séquence et animés** (`U6`), les âmes glissant d'un hexagone au
    suivant avec leur charge visible. La vitesse est réglable (`lent` à
    `instantané`), et `Fin` déroule la partie entière d'un coup pour la mesurer.
@@ -104,7 +107,8 @@ src/
     BoardView.tsx         Plateau SVG, Sorties, compteurs, entités animées       [U1, U6, U7]
     TileInspector.tsx     Détail d'une Tuile                                     [U2, U3]
     MetricsPanel.tsx      Métriques du proto                                     [K1-K5]
-    Controls.tsx          Catalogue, pas-à-pas, éditeur de configuration         [U5, G4]
+    Controls.tsx          Catalogue et Recettes, pas-à-pas, éditeur de config    [U5, U15, G4]
+    RecipeList.tsx        Recettes d'un type de Bâtiment (catalogue + détail)     [U15]
   App.tsx               Démarrage : valide la config, ou affiche l'erreur au lieu de planter
   main.tsx  index.css
 ```
@@ -123,6 +127,7 @@ Règles de dépendance (les mêmes que côté Unity) :
 ```
 config.test.ts        Validation de la configuration, refus de terrain croisé (B8)
 spawn.test.ts         Apparition, réserve, budget de partie (C4, C5, C5b, X1)
+placement.test.ts     Relief, croissance depuis le Puits, cadence des Manches (B11, B12, C1b)
 production.test.ts    P1-P8, dont le remboursement sur destruction (P8)
 movement.test.ts      D4-D18 : Sorties face à face, tourniquet et Sorties mortes, dépôt/ramassage, retour en arrière
 stairway.test.ts      Tri des Recettes, plancher à 0, consommation du Sbire (R5, R6, R8, X3)
@@ -143,12 +148,13 @@ l'Escalier :
 
 | Voie jouée | Livraisons | Brut | Ponction du démon | Final |
 | --- | --- | --- | --- | --- |
-| `Basalte brut` | 96 | 96 | −96 | **0 / 200** |
-| `Basalte dégrossi` | 96 | 288 | −96 | **192 / 200** |
+| `Basalte brut` | 100 | 100 | −100 | **0 / 200** |
+| `Basalte dégrossi` | 99 | 297 | −99 | **201 / 200** ✅ |
 
 La voie brute est *exactement* annulée par le démon (+1 par Âme à 1 Âme/Tick
-contre −1/Tick). La voie dégrossie échoue à 8 points de la cible. Le réglage se
-fera sur ces nombres (`E9` du GDD) — d'où l'éditeur de configuration.
+contre −1/Tick) : elle ne décolle jamais de 0. La voie dégrossie franchit la
+cible de 1 point. Le réglage se fera sur ces nombres (`E9` du GDD) — d'où
+l'éditeur de configuration.
 
 ## Ce que le proto ne cherche pas à valider
 
