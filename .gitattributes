@@ -1,0 +1,49 @@
+# --- Normalisation texte ---------------------------------------------------
+* text=auto eol=lf
+
+*.cs      text diff=csharp eol=lf
+*.md      text eol=lf
+*.json    text eol=lf
+*.yml     text eol=lf
+*.yaml    text eol=lf
+
+# --- Fichiers Unity : texte, mais mergés via UnityYAMLMerge -----------------
+# (voir CONTRIBUTING.md pour la configuration du merge driver)
+*.unity      text eol=lf merge=unityyamlmerge
+*.prefab     text eol=lf merge=unityyamlmerge
+*.asset      text eol=lf merge=unityyamlmerge
+*.meta       text eol=lf merge=unityyamlmerge
+*.controller text eol=lf merge=unityyamlmerge
+*.anim       text eol=lf merge=unityyamlmerge
+*.mat        text eol=lf merge=unityyamlmerge
+*.physicMaterial text eol=lf merge=unityyamlmerge
+
+# --- Binaires volumineux : Git LFS ------------------------------------------
+# Art / concept art
+*.png filter=lfs diff=lfs merge=lfs -text
+*.psd filter=lfs diff=lfs merge=lfs -text
+*.tga filter=lfs diff=lfs merge=lfs -text
+*.exr filter=lfs diff=lfs merge=lfs -text
+*.tif filter=lfs diff=lfs merge=lfs -text
+*.tiff filter=lfs diff=lfs merge=lfs -text
+
+# 3D (Tripo3D exports, Blender)
+*.fbx filter=lfs diff=lfs merge=lfs -text
+*.blend filter=lfs diff=lfs merge=lfs -text
+*.glb filter=lfs diff=lfs merge=lfs -text
+*.gltf filter=lfs diff=lfs merge=lfs -text
+*.obj filter=lfs diff=lfs merge=lfs -text
+*.fbm filter=lfs diff=lfs merge=lfs -text
+
+# Audio / vidéo
+*.wav filter=lfs diff=lfs merge=lfs -text
+*.mp3 filter=lfs diff=lfs merge=lfs -text
+*.ogg filter=lfs diff=lfs merge=lfs -text
+*.mp4 filter=lfs diff=lfs merge=lfs -text
+
+# Unity build artefacts si jamais committés par erreur
+*.unitypackage filter=lfs diff=lfs merge=lfs -text
+
+# --- Fichiers générés, pas de diff utile ------------------------------------
+*.blend1 -diff
+*.blend2 -diff

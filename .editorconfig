@@ -1,0 +1,26 @@
+root = true
+
+[*]
+indent_style = space
+indent_size = 4
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+end_of_line = lf
+
+[*.cs]
+indent_size = 4
+csharp_new_line_before_open_brace = all
+csharp_indent_case_contents = true
+csharp_style_namespace_declarations = file_scoped:suggestion
+
+[*.{md,markdown}]
+trim_trailing_whitespace = false
+
+[*.{yml,yaml,json}]
+indent_size = 2
+
+[*.{asset,unity,prefab,mat,controller,anim,meta}]
+# Fichiers YAML générés par Unity : ne pas reformater, laisser tel quel.
+insert_final_newline = false
+trim_trailing_whitespace = false

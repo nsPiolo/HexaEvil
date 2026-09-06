@@ -1,0 +1,91 @@
+# ============================================================================
+# Unity (officiel https://github.com/github/gitignore/blob/main/Unity.gitignore)
+# ============================================================================
+.utmp/
+UnityProject/[Ll]ibrary/
+UnityProject/[Tt]emp/
+UnityProject/[Oo]bj/
+UnityProject/[Bb]uild/
+UnityProject/[Bb]uilds/
+UnityProject/[Ll]ogs/
+UnityProject/[Uu]ser[Ss]ettings/
+UnityProject/[Mm]emoryCaptures/
+UnityProject/[Rr]ecordings/
+*.log
+
+*.blend1
+*.blend1.meta
+*.blend2
+*.blend2.meta
+
+UnityProject/[Aa]ssets/Plugins/Editor/JetBrains*
+*.DotSettings.user
+
+.vs/
+.vscode/*
+!.vscode/extensions.json
+.gradle/
+
+ExportedObj/
+.consulo/
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+sysinfo.txt
+mono_crash.*
+
+*.apk
+*.aab
+*.app
+
+crashlytics-build.properties
+
+UnityProject/[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
+
+UnityProject/[Ss]erverData/
+UnityProject/[Aa]ssets/StreamingAssets/aa*
+UnityProject/[Aa]ssets/AddressableAssetsData/link.xml*
+UnityProject/[Aa]ssets/Addressables_Temp*
+UnityProject/[Aa]ssets/AddressableAssetsData/*/*.bin*
+
+UnityProject/[Aa]ssets/Unity.VisualScripting.Generated/
+UnityProject/[Aa]ssets/[Ss]ceneDependencyCache*
+
+# ============================================================================
+# Blender
+# ============================================================================
+*.blend@
+Blender/**/autosave/
+
+# ============================================================================
+# Node (scripts des hooks, aucune installation npm requise, mais au cas où)
+# ============================================================================
+node_modules/
+
+# ============================================================================
+# OS / éditeurs
+# ============================================================================
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+*.swp
+
+# ============================================================================
+# Divers projet
+# ============================================================================
+*.tmp
+_ls.txt
+_dirlist.txt
