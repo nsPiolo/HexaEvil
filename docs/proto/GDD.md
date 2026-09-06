@@ -140,6 +140,11 @@ matériau que le démon livre à l'`Escalier` est **le Sbire lui-même** (`X3`).
 - `B9` 🧪 Corollaire technique : le chargement de la configuration **refuse** un
   terrain qui viole `B8` (validation `G1`), plutôt que de laisser le moteur
   arbitrer un cas de croisement qui n'a aucune règle.
+- `B10` 🧪 Forme opérationnelle de `B8`, celle qu'applique le moteur : **une
+  Sortie ne peut pas déboucher sur une Tuile du camp adverse**. C'est vérifié à
+  la pose et à chaque reconfiguration (`T5`), et au chargement de la
+  configuration pour les Tuiles pré-posées. Une Sortie vers un Espace vide ou
+  hors Plateau reste permise — `D5`/`D6` s'en chargent.
 
 ## 4. Orientation des hexagones
 
@@ -461,8 +466,24 @@ régler dès que la simulation tourne.
   réserve alors qu'une Âme n'en porte qu'une : il faut donc au moins trois Âmes
   par `Pavé`. Pire, l'`Atelier` consomme un `Dégrossi` qui valait déjà +3 pour
   fabriquer un outil : le `Pavé` coûte ~6 de valeur en pierres pour rapporter 7.
-  Si le proto le confirme, raffiner jusqu'au `Pavé` est une mauvaise affaire, et
-  trois leviers rétablissent la hiérarchie : monter le `Pavé` au-delà de +9,
+  **Mesures du proto** (parties complètes, configuration livrée, chaîne posée en
+  ligne droite — `ProtoHtml/src/core/__tests__/integration.test.ts`) :
+
+| Voie jouée | Livraisons | Progression brute | Ponction | **Final** |
+| --- | --- | --- | --- | --- |
+| `Basalte brut` | 96 | 96 | −96 | **0 / 200** |
+| `Basalte dégrossi` | 96 | 288 | −96 | **192 / 200** |
+
+  Deux enseignements chiffrés. D'abord, la voie du `Basalte brut` est
+  **exactement annulée** par le démon : +1 par Âme à 1 Âme par Tick contre −1
+  par Tick, la progression ne décolle jamais de 0. Ensuite, la voie du
+  `Dégrossi` échoue à **192 sur 200** — la cible est hors d'atteinte de 8
+  points, ce qui rend le `Pavé` (ou un tracé plus fin) obligatoire, mais de
+  très peu.
+
+  Si le proto le confirme sur la voie `Pavé`, raffiner jusqu'au bout est une
+  mauvaise affaire, et trois leviers rétablissent la hiérarchie : monter le
+  `Pavé` au-delà de +9,
   augmenter la capacité de portage (`R7`) pour qu'une Âme puisse approvisionner
   seule le `Sculpteur`, ou baisser le rendement des pierres brutes à
   l'`Escalier`. Tous les trois sont dans le fichier de configuration (`G2`) :
@@ -530,10 +551,11 @@ main**, hors du code :
   (coller/importer le JSON, relancer la Rencontre), pour comparer deux réglages
   à la suite.
 
-## 14. Trace de référence 🧪
+## 14. Trace de référence
 
 Cette trace n'est pas une règle : c'est le **test d'acceptation** du moteur. Si
-le proto ne produit pas exactement ça, une règle est mal implémentée.
+le proto ne produit pas exactement ça, une règle est mal implémentée. Elle est
+vérifiée automatiquement par `ProtoHtml/src/core/__tests__/trace.test.ts`.
 
 Disposition **propre à la trace** (ce n'est pas la disposition par défaut
 `B7b`) : `SoulWell(0,0)` Sortie E → `Quarry(1,0)` Sortie E → `Stairway(2,0)`
@@ -545,13 +567,14 @@ déclenche donc jamais ici.
 | 1 | Âme#1 sur `SoulWell` | rien (`SoulWell` sans Recette) | Âme#1 → `Quarry` | Âme#1 sur `Quarry`, mains vides |
 | 2 | Âme#2 sur `SoulWell` | Âme#1 démarre *et finit* la Recette `Quarry` (`P5`) → 2 `RawBasalt` en sortie | Âme#1 ramasse 1 `RawBasalt` (`D12`) → `Stairway`, y dépose (`D10`). Âme#2 → `Quarry` | `Quarry` : 1 `RawBasalt` en sortie. `Stairway` : 1 `RawBasalt` en entrée |
 | 3 | Âme#3 | Âme#1 démarre *et finit* la Recette `Stairway` 1 Tick → **progression 1**. Âme#2 démarre *et finit* `Quarry` → sortie à 3 | Âme#1 quitte le `Stairway` : aucune Sortie → **détruite** (`D6`). Âme#2 ramasse → `Stairway`. Âme#3 → `Quarry` | Progression 1, une Âme perdue |
-| 4 | Âme#4 | Âme#3 produit dans `Quarry` | Âme#2 dépose et sera détruite au Tick 5 | Le régime permanent coûte **1 Âme par livraison** |
+| 4 | Âme#4 | Âme#2 finit la Recette `Stairway` → **progression 2**. Âme#3 produit à la `Quarry` | Âme#2 se consume à l’`Escalier`. Âme#3 ramasse → `Stairway`. Âme#4 → `Quarry` | Progression 2, deux Âmes perdues, surplus de la `Quarry` à 3 |
 
-Ce que la trace rend visible : le régime permanent consomme **une Âme par
-livraison** (`D6` + `T4`), et cette trace ne rapporte que **+1 progression par
-Âme** — la voie la plus coûteuse. Avec `soulBudget = 100`, ce tracé plafonne à
-~100 progression : sous une cible de 200 (`E6`), il perd la partie. C'est le
-comportement attendu, et la démonstration que le raffinage est obligatoire.
+Ce que la trace rend visible, à partir du Tick 3, est un **régime permanent** à
++1 progression et −1 Âme par Tick, avec un surplus de `Basalte brut` qui grossit
+d'une unité par Tick à la `Quarry` : le « ×2 » de la Recette est perdu tant
+qu'aucune Âme ne vient le hâler, `D12` ne se déclenchant que si l'Âme ne peut
+pas produire. C'est le comportement attendu, et la démonstration que le
+raffinage est obligatoire.
 
 ## 15. Journal des questions de revue
 
@@ -606,6 +629,7 @@ et sont volontairement absents ici.
 | 2026-09-06 | Mise au propre de `gameplay.md` : numérotation des règles, séparation Manche/Tick, table des Sorties, trace de référence, 9 points à trancher. |
 | 2026-09-06 | Réserve de 100 Âmes (`C5`) et défaite à réserve épuisée (`E2`) : les Âmes deviennent la ressource épuisable de la Rencontre. `Q3` et `Q6` tranchées, `Q7` réduite à la valeur de la cible, `Q10`/`Q11` ouvertes. Ajout des métriques (§12). |
 | 2026-09-06 | Ajout `E8` : la Recette du démon (`X3`) ponctionne ~100 progression par partie, ce qui remet la cible de 200 en question. |
+| 2026-09-06 | Moteur implémenté dans `ProtoHtml/` (48 tests unitaires + 3 parties complètes). Trace §14 corrigée sur le comportement réel du Tick 4. Ajout `B10` (forme opérationnelle de `B8`). `E9` complété par les mesures : voie brute annulée à 0, voie dégrossie à 192/200. |
 | 2026-09-06 | `E9` acté : les valeurs de recettes restent en place, le réglage se fera sur le proto en marche ; l'analyse devient une hypothèse à vérifier via `K3`. |
 | 2026-09-06 | Deuxième revue : `Q1`, `Q5`, `Q8`-`Q12` tranchées — **les 12 questions sont closes**. Le démon perd toute économie (`X4` : `Gouffre` + 2 Tuiles vides, `minionBudget = 200`), son matériau est le Sbire lui-même (`X3`). Nouvelle règle `D16` : mémoire de chemin, une entité qui revient sur un Espace visité est détruite — la terminaison est garantie (`E7`). Disposition du Plateau en configuration (`B6`, `B7b`). Exigences d'interface ajoutées (`U1`-`U5` : compteurs par Tuile, panneau de détail). Analyse `E9` : au barème actuel le `Pavé` rapporte moins par Âme que le `Dégrossi`. |
 | 2026-09-06 | Première revue : validation de `B3`-`B5`, `B7`, `T4`-`T6`, `R3`-`R6`, `C4`, `C5b`, `C5c`, `C6`, `D9`, `D11`, `D13`, `P4`, `P6`, `P7`, `X5`, `E3`, `E4`, `E6`, `G1`-`G4`. Modifications : `P8` inversé (les Ressources IN sont **remboursées**), `D14` tranché par la disposition du terrain (réseaux disjoints, `B8`/`B9`/`D15`), `X3` défini (Recette du démon à l'`Escalier`, −1 progression). `Q2`, `Q4`, `Q7` tranchées ; `Q1` recentrée sur la chaîne du démon ; `Q12` ouverte sur la nature de « 1 démon ». Ajouts : `R8` (progression bornée à 0), `T7` (catalogue restreint plus tard). |

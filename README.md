@@ -42,6 +42,7 @@ dépôt met donc en place, dès la structure de base :
 ```
 docs/                 Documentation (GDD, architecture, lexique, ADR, pipeline art)
 UnityProject/         Projet Unity (créé à l'étape suivante de l'itération)
+ProtoHtml/            Prototype React/TypeScript pour tester les mécaniques hors Unity
 Blender/              Fichiers sources .blend (organisés par cercle / entité)
 Art/                  Concept art (Gemini) et exports bruts Tripo3D avant intégration
 tools/hooks/          Scripts Node utilisés par les hooks Git

@@ -1,0 +1,80 @@
+{
+  "_lecture": "Fichier unique de réglage du proto (GDD §13). Toute valeur de gameplay vit ici, aucune n'est écrite en dur dans le code. Directions : E, NE, NW, W, SW, SE.",
+
+  "ticksPerRound": 5,
+  "soulBudget": 100,
+  "minionBudget": 200,
+  "stairwayTarget": 200,
+  "carryCapacity": { "player": 1, "demon": 1 },
+
+  "resources": [
+    { "id": "rawBasalt",   "name": "Basalte brut",     "glyph": "🪨" },
+    { "id": "cutBasalt",   "name": "Basalte dégrossi", "glyph": "🧱" },
+    { "id": "basaltTool",  "name": "Outil en basalte", "glyph": "🔨" },
+    { "id": "basaltBlock", "name": "Pavé en basalte",  "glyph": "⬛" }
+  ],
+
+  "tileTypes": [
+    {
+      "id": "empty", "name": "Vide", "glyph": "·", "side": "neutral",
+      "maxExits": 1,
+      "_role": "Convoyeur : fait avancer le flux (GDD T4)."
+    },
+    {
+      "id": "splitter", "name": "Aiguillage", "glyph": "⑄", "side": "neutral",
+      "minExits": 2, "maxExits": 3,
+      "_role": "Répartit le flux entrant en tourniquet (D8). Ne diffère du Vide que par ce nombre (Q9)."
+    },
+    {
+      "id": "soulWell", "name": "Puits des âmes", "glyph": "🕯️", "side": "player",
+      "maxExits": 1, "spawns": "player"
+    },
+    {
+      "id": "chasm", "name": "Gouffre", "glyph": "🕳️", "side": "demon",
+      "maxExits": 1, "spawns": "demon"
+    },
+    {
+      "id": "quarry", "name": "Carrière", "glyph": "⛏️", "side": "player",
+      "maxExits": 1,
+      "recipes": [{ "out": { "rawBasalt": 2 }, "ticks": 1 }]
+    },
+    {
+      "id": "stonecutter", "name": "Tailleur de pierre", "glyph": "🪚", "side": "player",
+      "maxExits": 1,
+      "recipes": [{ "in": { "rawBasalt": 1 }, "out": { "cutBasalt": 2 }, "ticks": 2 }]
+    },
+    {
+      "id": "workshop", "name": "Atelier", "glyph": "🛠️", "side": "player",
+      "maxExits": 1,
+      "recipes": [{ "in": { "cutBasalt": 1 }, "out": { "basaltTool": 1 }, "ticks": 1 }]
+    },
+    {
+      "id": "sculptor", "name": "Sculpteur", "glyph": "🗿", "side": "player",
+      "maxExits": 1,
+      "recipes": [{ "in": { "cutBasalt": 1, "basaltTool": 1 }, "out": { "basaltBlock": 1 }, "ticks": 1 }]
+    },
+    {
+      "id": "stairway", "name": "Escalier", "glyph": "🪜", "side": "neutral",
+      "maxExits": 0,
+      "_role": "Bâtiment neutre à recettes par camp (R5, X3). Sans Sortie : livrer coûte une entité (D6).",
+      "recipes": [
+        { "side": "player", "in": { "rawBasalt": 1 },   "progress": 1,  "ticks": 1 },
+        { "side": "player", "in": { "cutBasalt": 1 },   "progress": 3,  "ticks": 2 },
+        { "side": "player", "in": { "basaltBlock": 1 }, "progress": 7,  "ticks": 3 },
+        { "side": "demon",  "consumesSelf": true,       "progress": -1, "ticks": 1 }
+      ]
+    }
+  ],
+
+  "board": { "radius": 3 },
+
+  "initialTiles": [
+    { "q": 0,  "r": 0, "type": "stairway", "owner": "neutral", "exits": [] },
+    { "q": 3,  "r": 0, "type": "chasm",    "owner": "demon",   "exits": ["W"] },
+    { "q": 2,  "r": 0, "type": "empty",    "owner": "demon",   "exits": ["W"] },
+    { "q": 1,  "r": 0, "type": "empty",    "owner": "demon",   "exits": ["W"] },
+    { "q": -3, "r": 0, "type": "soulWell", "owner": "player",  "exits": ["E"] }
+  ],
+
+  "catalog": ["empty", "splitter", "quarry", "stonecutter", "workshop", "sculptor"]
+}
