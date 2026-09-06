@@ -11,7 +11,17 @@ import { key } from '../hex/hexCoord'
 import { destinationThrough, isWorkableBy, spawnersOf, tileAt } from './board'
 import { acceptsAsInput, chooseRecipeIndex, tileType } from './recipes'
 import { addTo, firstAvailable, removeFrom, removeOne } from './storage'
-import type { EntityState, GameState, RecipeDef, Side, SpendCause, TileState } from './types'
+import type {
+  EntityState,
+  GameState,
+  RecipeDef,
+  ResourceId,
+  Side,
+  SpendCause,
+  Stock,
+  TickEvent,
+  TileState,
+} from './types'
 
 const SIDE_ORDER: readonly Side[] = ['player', 'demon']
 
@@ -23,6 +33,23 @@ const nameOf = (side: Side): string => (side === 'player' ? 'Âme' : 'Sbire')
 const log = (state: GameState, side: Side | 'system', text: string): void => {
   state.log.push({ tick: state.tick, side, text })
   if (state.log.length > 400) state.log.splice(0, state.log.length - 400)
+}
+
+const emit = (state: GameState, event: TickEvent): void => {
+  state.events.push(event)
+}
+
+/** Un événement de stock par Ressource touchée (`U7` : les « +x » et « −n »). */
+const emitStock = (
+  state: GameState,
+  tile: TileState,
+  stock: Stock,
+  sign: 1 | -1,
+  reason: 'produced' | 'consumed' | 'deposited' | 'picked',
+): void => {
+  for (const [resource, qty] of Object.entries(stock)) {
+    if (qty > 0) emit(state, { kind: 'stock', coord: tile.coord, resource, delta: sign * qty, reason })
+  }
 }
 
 const recipeOf = (state: GameState, tile: TileState, index: number): RecipeDef => {
@@ -46,9 +73,17 @@ export const destroyEntity = (state: GameState, entity: EntityState, cause: Spen
     const recipe = tile ? recipeOf(state, tile, entity.production.recipeIndex) : undefined
     if (tile && recipe?.in) {
       addTo(tile.input, recipe.in)
+      emitStock(state, tile, recipe.in, 1, 'produced')
       log(state, entity.side, `${nameOf(entity.side)} #${entity.id} détruite : production remboursée (P8).`)
     }
   }
+  emit(state, {
+    kind: 'destroy',
+    entityId: entity.id,
+    side: entity.side,
+    coord: entity.space,
+    cause,
+  })
   state.entities = state.entities.filter((e) => e.id !== entity.id)
   state.spent[entity.side][cause] += 1
 }
@@ -67,6 +102,7 @@ export const spawnPhase = (state: GameState, side: Side): void => {
     }
     state.entities.push(entity)
     state.spawned[side] += 1
+    emit(state, { kind: 'spawn', entityId: entity.id, side, coord: spawner.coord })
   }
 }
 
@@ -85,9 +121,13 @@ const applyProgress = (state: GameState, amount: number): void => {
 
 /** `P4`, `P5` — dépose les OUT, fait varier la progression, libère l'entité. */
 const completeProduction = (state: GameState, entity: EntityState, tile: TileState, recipe: RecipeDef): void => {
-  if (recipe.out) addTo(tile.output, recipe.out)
+  if (recipe.out) {
+    addTo(tile.output, recipe.out)
+    emitStock(state, tile, recipe.out, 1, 'produced')
+  }
   if (recipe.progress !== undefined) {
     applyProgress(state, recipe.progress)
+    emit(state, { kind: 'progress', coord: tile.coord, delta: recipe.progress })
     const verb = recipe.progress >= 0 ? 'fait progresser de' : 'retire'
     log(
       state,
@@ -125,7 +165,10 @@ export const productionPhase = (state: GameState, side: Side): void => {
     if (index === undefined) continue // P2 — réserve insuffisante, l'entité n'est pas bloquée (P7)
 
     const recipe = recipeOf(state, tile, index)
-    if (recipe.in) removeFrom(tile.input, recipe.in) // P2
+    if (recipe.in) {
+      removeFrom(tile.input, recipe.in) // P2
+      emitStock(state, tile, recipe.in, -1, 'consumed')
+    }
     entity.production = { recipeIndex: index, ticksDone: 1 }
     if (recipe.ticks <= 1) completeProduction(state, entity, tile, recipe) // P5
   }
@@ -145,6 +188,7 @@ const pickUp = (state: GameState, entity: EntityState, tile: TileState): void =>
   if (resource === undefined) return
   removeOne(tile.output, resource)
   entity.carrying = resource
+  emit(state, { kind: 'stock', coord: tile.coord, resource, delta: -1, reason: 'picked' })
 }
 
 /** `D10`, `D11` — dépôt à l'arrivée si la Ressource est un IN de la Recette. */
@@ -153,8 +197,10 @@ const deposit = (state: GameState, entity: EntityState, tile: TileState): void =
   if (!isWorkableBy(tile, entity.side)) return
   const type = tileType(state.config, tile.typeId)
   if (!acceptsAsInput(type, entity.side, entity.carrying)) return // D11 — elle la conserve
-  addTo(tile.input, { [entity.carrying]: 1 })
+  const deposited: ResourceId = entity.carrying
+  addTo(tile.input, { [deposited]: 1 })
   entity.carrying = undefined
+  emit(state, { kind: 'stock', coord: tile.coord, resource: deposited, delta: 1, reason: 'deposited' })
 }
 
 /** Phase 3 / 6 — Déplacement (`D4`-`D18`). */
@@ -195,6 +241,14 @@ export const movementPhase = (state: GameState, side: Side): void => {
 
     pickUp(state, entity, tile) // D12 — au départ
     tile.roundRobin += 1 // D9 — le compteur n'avance que sur un départ effectif
+    emit(state, {
+      kind: 'move',
+      entityId: entity.id,
+      side: entity.side,
+      from: entity.space,
+      to: target,
+      carrying: entity.carrying,
+    })
     entity.space = target
     entity.visited.push(key(target))
     entity.producedHere = false
@@ -241,6 +295,7 @@ export const checkDefeat = (state: GameState): void => {
 /** Un Tick complet : les 6 phases de `C2`, puis le test de défaite (`E3`). */
 export const runTickInPlace = (state: GameState): void => {
   if (state.outcome !== 'ongoing') return
+  state.events = [] // les événements ne décrivent que le Tick courant
   state.tick += 1
   for (const side of SIDE_ORDER) {
     spawnPhase(state, side)

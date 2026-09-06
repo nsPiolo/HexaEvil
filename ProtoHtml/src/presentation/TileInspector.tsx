@@ -4,8 +4,8 @@
  * tourniquet. C'est l'outil d'observation du proto : tout ce qui explique le
  * comportement d'un réseau doit être lisible ici.
  */
-import { DIRECTION_NAMES, directionName, type HexCoord } from '../core/hex/hexCoord'
-import { progressPerTick, recipesFor, tileType } from '../core/rules/recipes'
+import { DIRECTION_NAMES, type HexCoord } from '../core/hex/hexCoord'
+import { progressPerTick, recipesFor, tileType, tracksProgress } from '../core/rules/recipes'
 import { stockEntries } from '../core/rules/storage'
 import type { EntityState, GameState, RecipeDef, Side, Stock, TileState } from '../core/rules/types'
 
@@ -88,9 +88,8 @@ type Props = {
   coord: HexCoord | undefined
   tile: TileState | undefined
   onToggleExit: (direction: number) => void
-  exitRefusalFor: (direction: number) => string | undefined
-  pendingType: string
-  pendingExits: readonly number[]
+  /** Vrai quand la Tuile sélectionnée est câblable (`U9`). */
+  wiring: boolean
 }
 
 export const TileInspector = ({
@@ -98,9 +97,7 @@ export const TileInspector = ({
   coord,
   tile,
   onToggleExit,
-  exitRefusalFor,
-  pendingType,
-  pendingExits,
+  wiring,
 }: Props) => {
   if (!coord) {
     return (
@@ -110,9 +107,8 @@ export const TileInspector = ({
           production, réserves, Sorties.
         </p>
         <p className="inspector__hint">
-          Sans sélection, les boutons de direction règlent les Sorties de la <strong>prochaine</strong> pose
-          (« {tileType(state.config, pendingType).name} » :{' '}
-          {pendingExits.length === 0 ? 'aucune' : pendingExits.map(directionName).join(', ')}).
+          Une Tuile posée arrive <strong>sans Sortie</strong> : c’est le clic suivant, sur un
+          hexagone voisin, qui l’oriente.
         </p>
       </section>
     )
@@ -134,7 +130,7 @@ export const TileInspector = ({
   const entities = state.entities
     .filter((e) => e.space.q === coord.q && e.space.r === coord.r)
     .sort((a, b) => a.id - b.id)
-  const editable = state.phase === 'placement' && tile.owner === 'player'
+  const editable = wiring
   const bySide: Side[] = ['player', 'demon']
 
   return (
@@ -151,14 +147,19 @@ export const TileInspector = ({
         <div className="exits">
           {DIRECTION_NAMES.map((name, direction) => {
             const active = tile.exits.includes(direction)
-            const refusal = editable ? exitRefusalFor(direction) : 'phase de pose uniquement (T5)'
             return (
               <button
                 key={name}
                 type="button"
                 className={`exit ${active ? 'exit--on' : ''}`}
-                disabled={!editable || (refusal !== undefined && !active)}
-                title={refusal ?? (active ? 'Retirer cette Sortie' : 'Désigner cette Sortie')}
+                disabled={!editable}
+                title={
+                  editable
+                    ? active
+                      ? 'Retirer cette Sortie'
+                      : 'Désigner cette Sortie (ou clique l’hexagone voisin)'
+                    : 'Phase de pose uniquement (T5)'
+                }
                 onClick={() => onToggleExit(direction)}
               >
                 {name}
@@ -166,6 +167,19 @@ export const TileInspector = ({
             )
           })}
         </div>
+        {editable ? (
+          <p className="inspector__hint">
+            Clique l’hexagone voisin visé. Au-delà de {type.maxExits} Sortie
+            {type.maxExits > 1 ? 's' : ''}, la plus ancienne est remplacée. Le mode se referme dès
+            qu’une direction est choisie.
+          </p>
+        ) : (
+          state.phase === 'placement' &&
+          tile.owner === 'player' &&
+          type.maxExits > 0 && (
+            <p className="inspector__hint">Re-clique cette Tuile pour régler ses Sorties.</p>
+          )
+        )}
         <p className="inspector__meta">
           {type.maxExits === 0
             ? 'Ce type n’autorise aucune Sortie : on y livre, on y meurt (T4, D6).'
@@ -195,6 +209,20 @@ export const TileInspector = ({
             )}
           </ul>
           <p className="inspector__meta">Productions terminées ici : {tile.productionsDone}</p>
+        </div>
+      )}
+
+      {tracksProgress(type) && (
+        <div className="inspector__block">
+          <h3>Construction</h3>
+          <p className="inspector__progress">
+            <strong>{state.progress}</strong> / {state.config.stairwayTarget}
+            <span className="inspector__meta">
+              {' '}
+              — ponction du démon : {state.drain.applied} appliquée, {state.drain.absorbed} absorbée
+              par le plancher à 0 (R8)
+            </span>
+          </p>
         </div>
       )}
 

@@ -33,7 +33,6 @@ export type TileTypeDef = Readonly<{
   name: string
   glyph: string
   side: Owner
-  minExits?: number
   maxExits: number
   /** Tuile d'apparition : `Puits des âmes` / `Gouffre` (`C4`, `X1`). */
   spawns?: Side
@@ -101,6 +100,32 @@ export type LogEntry = Readonly<{
   text: string
 }>
 
+/**
+ * Ce qui s'est passé pendant un Tick. Le moteur l'énonce, l'interface l'anime :
+ * sans ça, la Presentation devrait deviner les mouvements en comparant deux
+ * états, c'est-à-dire raisonner sur les règles (ADR-0003).
+ */
+export type TickEvent =
+  | { kind: 'spawn'; entityId: number; side: Side; coord: HexCoord }
+  | {
+      kind: 'move'
+      entityId: number
+      side: Side
+      from: HexCoord
+      to: HexCoord
+      carrying?: ResourceId | undefined
+    }
+  | { kind: 'destroy'; entityId: number; side: Side; coord: HexCoord; cause: SpendCause }
+  | {
+      kind: 'stock'
+      coord: HexCoord
+      resource: ResourceId
+      /** Signé : positif quand la Ressource entre, négatif quand elle sort. */
+      delta: number
+      reason: 'produced' | 'consumed' | 'deposited' | 'picked'
+    }
+  | { kind: 'progress'; coord: HexCoord; delta: number }
+
 export type Outcome = 'ongoing' | 'victory' | 'defeat'
 
 /** Phase de jeu : pose de Tuile, puis déroulé des Ticks (`C1`). */
@@ -124,6 +149,8 @@ export type GameState = {
   drain: { applied: number; absorbed: number }
   /** Une seule pose par Manche (`C1`). */
   placedThisRound: boolean
+  /** Événements du dernier Tick déroulé, pour l'animation (`U6`, `U7`). */
+  events: TickEvent[]
   log: LogEntry[]
   outcome: Outcome
 }

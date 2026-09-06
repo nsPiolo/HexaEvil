@@ -51,6 +51,17 @@ export const directionName = (index: number): DirectionName => {
  */
 export const oppositeAccess = (index: number): number => (index + 3) % 6
 
+/**
+ * L'Accès de `from` qui mène à `to`, ou `undefined` si `to` n'est pas voisin.
+ * Sert à désigner une Sortie en cliquant l'hexagone visé (`U9`).
+ */
+export const directionBetween = (from: HexCoord, to: HexCoord): number | undefined => {
+  const dq = to.q - from.q
+  const dr = to.r - from.r
+  const index = HEX_DIRECTIONS.findIndex((d) => d.q === dq && d.r === dr)
+  return index === -1 ? undefined : index
+}
+
 export const add = (a: HexCoord, b: HexCoord): HexCoord => ({ q: a.q + b.q, r: a.r + b.r })
 
 export const equals = (a: HexCoord, b: HexCoord): boolean => a.q === b.q && a.r === b.r

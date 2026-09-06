@@ -65,13 +65,61 @@ body {
 .cell--player, .cell--demon, .cell--neutral { cursor: pointer; }
 .cell--selected polygon { stroke: var(--ember); stroke-width: 3; }
 
+/* Voisins câblables de la Tuile sélectionnée (U9) */
+.cell--wire { cursor: crosshair; }
+.cell--wire polygon { stroke: #d9a54a; stroke-width: 2; stroke-dasharray: 5 4; }
+.cell--wire:hover polygon { fill: #3d3320; stroke: #f5cf62; stroke-dasharray: none; }
+
 .cell__exit { fill: var(--ember); stroke: none; opacity: 0.85; }
 .cell__glyph { font-size: 20px; text-anchor: middle; dominant-baseline: middle; pointer-events: none; }
 .cell__coord { font-size: 8px; fill: var(--dim); text-anchor: middle; pointer-events: none; }
 .cell__stock { font-size: 9px; fill: #d9c98f; text-anchor: end; pointer-events: none; }
+.cell__progress {
+  font-size: 13px; font-weight: 700; fill: #f5cf62; text-anchor: middle;
+  pointer-events: none; font-variant-numeric: tabular-nums;
+}
+.cell__progress-target { font-size: 9px; font-weight: 400; fill: #a08a52; }
 .cell__entities { font-size: 11px; text-anchor: middle; pointer-events: none; font-weight: 600; }
 .cell__souls { fill: var(--player); }
 .cell__minions { fill: var(--demon); }
+
+.app__notice {
+  margin: 0.5rem 0 0; padding: 0.4rem 0.55rem; font-size: 0.75rem;
+  background: #3a2c18; border: 1px solid #8a6a2f; border-radius: 6px; color: #f3ddb0;
+}
+.app__legend { margin: 0.5rem 0 0.15rem; font-size: 0.74rem; color: var(--muted); line-height: 1.4; }
+
+/* ---------- Entités animées (U6) ---------- */
+
+.entity {
+  stroke: #14100f;
+  stroke-width: 1.2;
+  pointer-events: none;
+}
+.entity--player { fill: var(--player); }
+.entity--demon { fill: var(--demon); }
+.entity--busy { stroke: #f4e3c0; stroke-width: 1.6; }
+.entity--ghost { fill: none; stroke-width: 2; }
+.entity--ghost.entity--player { stroke: var(--player); }
+.entity--ghost.entity--demon { stroke: var(--demon); }
+.entity__load { font-size: 9px; dominant-baseline: middle; pointer-events: none; }
+
+/* ---------- Étiquettes temporaires (U7) ---------- */
+
+.floater {
+  font-size: 13px;
+  font-weight: 700;
+  text-anchor: middle;
+  pointer-events: none;
+  paint-order: stroke;
+  stroke: #14100f;
+  stroke-width: 3;
+  stroke-linejoin: round;
+}
+.floater--gain { fill: #7fca6a; }
+.floater--loss { fill: #e0a44a; }
+.floater--progress-up { fill: #f5cf62; font-size: 16px; }
+.floater--progress-down { fill: #ef7b68; font-size: 16px; }
 
 /* ---------- Blocs de panneau ---------- */
 
@@ -124,6 +172,11 @@ button {
 button:hover:not(:disabled) { background: #342924; }
 button:disabled { opacity: 0.4; cursor: not-allowed; }
 
+.controls__row--speed { align-items: center; margin-top: 0.4rem; }
+.controls__label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.speed { font-size: 0.7rem; padding: 0.25rem 0.4rem; text-transform: capitalize; }
+.speed--on { background: #4a2c1c; border-color: var(--ember); color: #ffd9c6; }
+
 .catalog { display: grid; grid-template-columns: repeat(auto-fit, minmax(72px, 1fr)); gap: 0.3rem; }
 .catalog__item { display: flex; flex-direction: column; align-items: center; gap: 0.1rem; padding: 0.4rem 0.2rem; }
 .catalog__item--on { background: #3a2a20; border-color: var(--ember); }
@@ -152,6 +205,9 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 .inspector__owner--neutral { color: var(--neutral); }
 .inspector__block { margin-top: 0.8rem; border-top: 1px solid #ffffff10; padding-top: 0.6rem; }
 .inspector__meta { margin: 0.4rem 0 0; font-size: 0.72rem; color: var(--dim); }
+.inspector__progress { margin: 0; font-size: 0.8rem; }
+.inspector__progress strong { font-size: 1.15rem; color: #f5cf62; font-variant-numeric: tabular-nums; }
+.inspector__progress .inspector__meta { display: inline; }
 
 .recipes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.3rem; }
 .recipe {

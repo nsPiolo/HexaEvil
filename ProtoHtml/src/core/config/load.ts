@@ -85,7 +85,13 @@ function asOwner(value: unknown, what: string): Owner {
 
 function asDirection(value: unknown, what: string): DirectionName {
   const s = asString(value, what)
-  if (!isDirectionName(s)) fail(`${what} contient « ${s} » (attendu ${DIRECTION_NAMES.join(', ')})`)
+  if (!isDirectionName(s)) {
+    fail(
+      `${what} contient « ${s} » : attendu ${DIRECTION_NAMES.join(', ')}. ` +
+        `Les hexagones sont en pointy-top (B7) — ils ont deux côtés horizontaux (E, W) et quatre ` +
+        `diagonaux (NE, NW, SE, SW), donc pas de face N ni S.`,
+    )
+  }
   return s
 }
 
@@ -134,7 +140,6 @@ function parseTileType(raw: unknown, index: number, resourceIds: Set<string>): T
     name: string
     glyph: string
     side: Owner
-    minExits?: number
     maxExits: number
     spawns?: Side
     recipes?: RecipeDef[]
@@ -146,11 +151,6 @@ function parseTileType(raw: unknown, index: number, resourceIds: Set<string>): T
     maxExits,
   }
 
-  if (t.minExits !== undefined) {
-    const minExits = asInt(t.minExits, `tileTypes.${id}.minExits`, 0)
-    if (minExits > maxExits) fail(`tileTypes.${id}.minExits (${minExits}) dépasse maxExits (${maxExits})`)
-    def.minExits = minExits
-  }
   if (t.spawns !== undefined) def.spawns = asSide(t.spawns, `tileTypes.${id}.spawns`)
   if (t.recipes !== undefined) {
     def.recipes = asArray(t.recipes, `tileTypes.${id}.recipes`).map((r, i) =>

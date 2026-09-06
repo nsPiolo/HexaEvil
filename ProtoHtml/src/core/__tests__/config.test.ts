@@ -3,21 +3,23 @@ import { ConfigError, parseConfig } from '../config/load'
 import { buildConfig, rawGameplay } from './helpers'
 
 describe('Configuration (G1-G3, B8-B9)', () => {
-  it('accepte le fichier de configuration livré', () => {
+  it('le fichier de configuration livré est valide', () => {
+    // Garde-fou du réglage : s'il rougit, le message dit exactement quelle
+    // valeur du JSON est en cause. Aucune valeur de gameplay n'est asservie
+    // ici — recettes, budgets et disposition sont à toi.
+    expect(() => buildConfig()).not.toThrow()
+  })
+
+  it('fournit les types de Tuile dont les règles ont besoin', () => {
     const config = buildConfig()
-    expect(config.ticksPerRound).toBe(5)
-    expect(config.soulBudget).toBe(100)
-    expect(config.minionBudget).toBe(200)
-    expect(config.stairwayTarget).toBe(200)
-    expect(config.carryCapacity.player).toBe(1)
-    // La disposition par défaut B7b : Escalier au centre, Gouffre à 3 Espaces.
-    expect(config.initialTiles.map((t) => t.type)).toEqual([
-      'stairway',
-      'chasm',
-      'empty',
-      'empty',
-      'soulWell',
-    ])
+    const ids = config.tileTypes.map((t) => t.id)
+    for (const id of ['soulWell', 'chasm', 'stairway', 'empty', 'quarry']) {
+      expect(ids).toContain(id)
+    }
+    // L'Escalier reste neutre et sans Sortie : c'est une règle, pas un réglage.
+    const stairway = config.tileTypes.find((t) => t.id === 'stairway')!
+    expect(stairway.side).toBe('neutral')
+    expect(stairway.maxExits).toBe(0)
   })
 
   it('refuse une Recette qui référence une Ressource inconnue', () => {

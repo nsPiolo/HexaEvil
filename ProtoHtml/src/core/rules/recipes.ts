@@ -52,6 +52,14 @@ export const chooseRecipeIndex = (
   return best
 }
 
+/**
+ * Vrai si ce type de Bâtiment fait varier `StairwayProgress` (`R6`). Déduit des
+ * Recettes, pas d'un identifiant en dur : un second Bâtiment de ce genre
+ * s'afficherait de la même façon.
+ */
+export const tracksProgress = (type: TileTypeDef): boolean =>
+  (type.recipes ?? []).some((r) => r.progress !== undefined)
+
 /** Vrai si `resource` est un IN d'une Recette de `side` sur ce type (`D10`). */
 export const acceptsAsInput = (type: TileTypeDef, side: Side, resource: string): boolean =>
   recipesFor(type, side).some((r) => r.in !== undefined && (r.in[resource] ?? 0) > 0)

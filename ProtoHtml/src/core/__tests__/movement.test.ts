@@ -89,6 +89,29 @@ describe('Déplacement (D4-D18)', () => {
     expect(tile(state, at(0, 0)).roundRobin).toBe(0)
   })
 
+  it('bloque durablement une voie dès qu’une Sortie du tourniquet est morte (D9)', () => {
+    // Conséquence cumulée de D9, mesurée sur un Aiguillage dont la 2e Sortie ne
+    // mène nulle part : le compteur s'arrête dessus et **toutes** les entités
+    // suivantes y passent. Ce n'est pas une perte de 50 %, c'est un arrêt total.
+    let state = buildGame({
+      board: { radius: 3 },
+      soulBudget: 8,
+      initialTiles: [
+        { q: -1, r: 0, type: 'soulWell', owner: 'player', exits: ['E'] },
+        { q: 0, r: 0, type: 'splitter', owner: 'player', exits: ['SE', 'NW'] },
+        { q: 0, r: 1, type: 'empty', owner: 'player', exits: [] },
+        // Rien en (0,-1) : la Sortie NW est morte.
+      ],
+    })
+    while (state.outcome === 'ongoing') state = runTick(state)
+
+    // Le compteur à 1 prouve qu'un seul départ a réussi : la première Âme est
+    // partie au SE, puis toutes les suivantes se sont écrasées sur le NW.
+    expect(tile(state, at(0, 0)).roundRobin).toBe(1)
+    expect(state.spent.player.blocked).toBe(8)
+    expect(state.spent.player.backtrack).toBe(0)
+  })
+
   it('dépose à l’arrivée et ramasse au départ, jamais les deux dans le même Tick (D10, D12, D13)', () => {
     let state = buildGame({
       board: { radius: 2 },

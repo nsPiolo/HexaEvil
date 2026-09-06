@@ -15,6 +15,25 @@ export const rawGameplay = (): Record<string, unknown> =>
 export const buildConfig = (overrides: Record<string, unknown> = {}): GameConfig =>
   parseConfig({ ...rawGameplay(), ...overrides })
 
+/**
+ * Disposition de référence du GDD `B7b`, avec les recettes et budgets livrés.
+ * Les tests l'utilisent au lieu de la disposition du fichier : le terrain est ce
+ * qu'on manipule le plus en réglant, et un terrain en cours d'édition ne doit
+ * pas faire rougir toute la suite. La validité du fichier livré est vérifiée
+ * par un test dédié (`config.test.ts`).
+ */
+export const referenceConfig = (): GameConfig =>
+  buildConfig({
+    board: { radius: 3 },
+    initialTiles: [
+      { q: 0, r: 0, type: 'stairway', owner: 'neutral', exits: [] },
+      { q: 3, r: 0, type: 'chasm', owner: 'demon', exits: ['W'] },
+      { q: 2, r: 0, type: 'empty', owner: 'demon', exits: ['W'] },
+      { q: 1, r: 0, type: 'empty', owner: 'demon', exits: ['W'] },
+      { q: -3, r: 0, type: 'soulWell', owner: 'player', exits: ['E'] },
+    ],
+  })
+
 /** Une Rencontre dont on maîtrise entièrement la disposition. */
 export const buildGame = (overrides: Record<string, unknown> = {}): GameState =>
   createGame(buildConfig({ minionBudget: 0, ...overrides }))

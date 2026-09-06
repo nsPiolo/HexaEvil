@@ -1,20 +1,24 @@
 /**
- * Parties complètes avec **la configuration livrée** (disposition `B7b`, démon
- * inclus). Ces tests ne vérifient pas une règle isolée : ils mesurent ce que le
- * réglage actuel produit, et servent de garde-fou aux hypothèses `E8`/`E9`.
+ * Parties complètes avec **les recettes et les budgets livrés**, sur une
+ * disposition épinglée par le test (celle de `B7b`).
+ *
+ * Pourquoi épingler le Plateau plutôt que prendre celui de la configuration :
+ * la disposition est ce qu'on manipule le plus en réglant, et ces tests
+ * mesurent l'économie, pas le terrain. En revanche les recettes, les budgets et
+ * la cible viennent bien du fichier livré : changer un de ces nombres **doit**
+ * faire bouger les mesures ci-dessous, et c'est le signal attendu.
  */
 import { describe, expect, it } from 'vitest'
 import { directionIndex, hex } from '../hex/hexCoord'
 import { createGame, placeTile, progressPerSoulSpent, runRound, totalSpent } from '../rules/encounter'
-import { parseConfig } from '../config/load'
-import { rawGameplay } from './helpers'
+import { referenceConfig } from './helpers'
 import type { GameState } from '../rules/types'
 
 const E = [directionIndex('E')]
 
 /** Joue la partie jusqu'au bout après avoir posé la chaîne demandée. */
 const playOut = (chain: { q: number; r: number; type: string }[], maxRounds = 200): GameState => {
-  let state = createGame(parseConfig(rawGameplay()))
+  let state = createGame(referenceConfig())
   for (const step of chain) {
     const placed = placeTile(state, hex(step.q, step.r), step.type, E)
     expect(placed).not.toBe(state) // la pose doit être acceptée

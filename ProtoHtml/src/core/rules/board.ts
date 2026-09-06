@@ -66,9 +66,6 @@ export const exitsRefusal = (
   if (exits.length > type.maxExits) {
     return `« ${type.name} » n’autorise que ${type.maxExits} Sortie(s) (T4)`
   }
-  if (type.minExits !== undefined && exits.length > 0 && exits.length < type.minExits) {
-    return `« ${type.name} » demande au moins ${type.minExits} Sorties (T4)`
-  }
   for (const exit of exits) {
     const refusal = exitRefusal(state, coord, owner, exit)
     if (refusal) return refusal

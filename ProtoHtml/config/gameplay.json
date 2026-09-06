@@ -22,8 +22,8 @@
     },
     {
       "id": "splitter", "name": "Aiguillage", "glyph": "⑄", "side": "neutral",
-      "minExits": 2, "maxExits": 3,
-      "_role": "Répartit le flux entrant en tourniquet (D8). Ne diffère du Vide que par ce nombre (Q9)."
+      "maxExits": 3,
+      "_role": "Répartit le flux entrant en tourniquet (D8). Jusqu'à 3 Sorties ; avec une seule, il se comporte comme un Vide (Q9)."
     },
     {
       "id": "soulWell", "name": "Puits des âmes", "glyph": "🕯️", "side": "player",
@@ -66,14 +66,15 @@
     }
   ],
 
-  "board": { "radius": 3 },
+  "board": { "radius": 4 },
 
   "initialTiles": [
     { "q": 0,  "r": 0, "type": "stairway", "owner": "neutral", "exits": [] },
     { "q": 3,  "r": 0, "type": "chasm",    "owner": "demon",   "exits": ["W"] },
-    { "q": 2,  "r": 0, "type": "empty",    "owner": "demon",   "exits": ["W"] },
+    { "q": 2,  "r": 0, "type": "splitter",    "owner": "demon",   "exits": ["W","NW"] },
+    { "q": 2,  "r": -1, "type": "empty",    "owner": "demon",   "exits": ["SW"] },
     { "q": 1,  "r": 0, "type": "empty",    "owner": "demon",   "exits": ["W"] },
-    { "q": -3, "r": 0, "type": "soulWell", "owner": "player",  "exits": ["E"] }
+    { "q": -3, "r": 0, "type": "soulWell", "owner": "player",  "exits": ["NE"] }
   ],
 
   "catalog": ["empty", "splitter", "quarry", "stonecutter", "workshop", "sculptor"]

@@ -18,7 +18,7 @@ commentaire. Si le code et le GDD divergent, c'est le GDD qui a raison.
 cd ProtoHtml
 npm install
 npm run dev      # http://localhost:5180
-npm test         # 51 tests : mécaniques + trace de référence + parties complètes
+npm test         # 95 tests : mécaniques, trace de référence, parties complètes, affichage
 npm run build    # typecheck + build de prod
 ```
 
@@ -32,17 +32,40 @@ portage, disposition du Plateau, catalogue posable. Aucune de ces valeurs n'est
 Le panneau « Configuration » de l'interface permet de coller un JSON modifié et
 de relancer la Rencontre **sans recompiler** (`G4`). Une configuration
 incohérente est refusée avec un message explicite plutôt que de produire une
-simulation silencieusement fausse.
+simulation silencieusement fausse — y compris au démarrage, où l'erreur
+s'affiche dans un écran corrigeable au lieu de laisser une page blanche.
+
+Les tests ne s'asservissent pas à ta disposition : un seul test vérifie que le
+fichier livré est **valide**, tous les autres utilisent la disposition de
+référence du GDD (`B7b`). Régler le terrain ne fait donc pas rougir la suite ;
+changer une recette, si — et c'est le signal attendu.
+
+⚠️ Les six directions sont celles d'un hexagone *pointy-top* (`B7`) : `E`, `NE`,
+`NW`, `W`, `SW`, `SE`. Il n'y a **pas** de face `N` ni `S`.
 
 ## Comment on joue
 
-1. **Phase de pose** : choisir un type de Tuile au catalogue, régler ses Sorties
-   (boutons `E`, `NE`, …), cliquer un Espace libre. Une Tuile par Manche (`C1`),
-   sans coût (`T6`). Les Sorties de n'importe quelle Tuile du joueur restent
-   reconfigurables pendant n'importe quelle phase de pose (`T5`).
+1. **Phase de pose, en deux clics** (`U9`) : choisir un type au catalogue, puis
+   cliquer un Espace libre pour y poser la Tuile — elle arrive **sans aucune
+   Sortie**, sélectionnée, et ses six voisins deviennent cliquables. Cliquer l'un
+   d'eux oriente sa Sortie vers lui. Une Tuile par Manche (`C1`), sans coût
+   (`T6`).
+   Pour réorienter une Tuile déjà posée : cliquer la Tuile (ça ouvre le mode
+   d'orientation), puis cliquer le voisin visé (`T5`). Sur une Tuile à Sortie
+   unique, une autre direction fait **basculer** la Sortie ; sur un Aiguillage,
+   les clics s'accumulent jusqu'à son maximum puis remplacent la plus ancienne.
+   Le mode se referme après chaque direction choisie (`U10`) — un clic sur la
+   Tuile le ré-ouvre.
 2. **Dérouler** : `1 Tick` pour le pas-à-pas (`U5`), ou `Manche` pour les 5 Ticks
-   d'un coup.
-3. **Observer** : cliquer une Tuile ouvre son détail — Recettes, entités
+   — joués **en séquence et animés** (`U6`), les âmes glissant d'un hexagone au
+   suivant avec leur charge visible. La vitesse est réglable (`lent` à
+   `instantané`), et `Fin` déroule la partie entière d'un coup pour la mesurer.
+   Chaque mouvement de ressource s'affiche en étiquette temporaire sur la tuile :
+   `+x` quand une ressource entre (production, dépôt), `−n` quand elle sort
+   (consommation d'une recette, ramassage), et `+7` / `−1` pour la progression de
+   l'Escalier (`U7`).
+3. **Observer** : l'Escalier porte sa progression (`42/200`) directement sur sa
+   tuile (`U11`). Cliquer une Tuile ouvre son détail — Recettes, entités
    présentes avec l'avancement de leur production ou la raison de leur
    inactivité, réserves d'entrée et de sortie, Sorties et position du tourniquet.
 
@@ -62,6 +85,7 @@ src/
       layout.ts           axial -> pixel + marqueurs de Sortie (affichage seul)
     rules/
       types.ts            Vocabulaire : Side, TileState, EntityState, GameState  [LEXIQUE]
+                          + TickEvent : ce que le moteur énonce pour l'animation [U8]
       board.ts            Espaces, Accès, destination d'une Sortie (D1-D5, B8-B10)
       storage.ts          Réserves d'entrée / de sortie (R3, R4)
       recipes.ts          Choix de Recette, tri de l'Escalier (R1, R5)
@@ -70,12 +94,15 @@ src/
       commands.ts         GameCommand + replay                                   [ADR-0002]
     __tests__/            Mécaniques, trace de référence (§14), parties complètes
   presentation/          React uniquement. Ne décide jamais d'une règle.
-    useGame.ts            Historique d'états (annulation), sélection, rechargement de config
-    BoardView.tsx         Plateau SVG, Sorties, compteurs d'Âmes et de Sbires    [U1]
+    Game.tsx              L'écran de jeu (monté seulement sur une config valide)
+    useGame.ts            Historique d'états (annulation), lecture séquencée, clics du Plateau
+    useAnimation.ts       Interpolation des déplacements et étiquettes +x / −n   [U6, U7]
+    BoardView.tsx         Plateau SVG, Sorties, compteurs, entités animées       [U1, U6, U7]
     TileInspector.tsx     Détail d'une Tuile                                     [U2, U3]
     MetricsPanel.tsx      Métriques du proto                                     [K1-K5]
     Controls.tsx          Catalogue, pas-à-pas, éditeur de configuration         [U5, G4]
-  App.tsx  main.tsx  index.css
+  App.tsx               Démarrage : valide la config, ou affiche l'erreur au lieu de planter
+  main.tsx  index.css
 ```
 
 Règles de dépendance (les mêmes que côté Unity) :
@@ -96,10 +123,13 @@ production.test.ts    P1-P8, dont le remboursement sur destruction (P8)
 movement.test.ts      D4-D18 : Sorties face à face, tourniquet, dépôt/ramassage, retour en arrière
 stairway.test.ts      Tri des Recettes, plancher à 0, consommation du Sbire (R5, R6, R8, X3)
 outcome.test.ts       Victoire, défaite, terminaison garantie (E1, E2, E3, E7)
+events.test.ts        Le moteur énonce apparitions, déplacements, stocks, progression [U8]
 trace.test.ts         Test d'acceptation : la trace de référence du GDD §14
 integration.test.ts   Parties complètes avec la configuration livrée
 hexCoord.test.ts      Coordonnées axiales / cubiques
-render.test.tsx       Rendu de fumée de l'interface
+animation.test.ts     Agrégation des étiquettes « +x » / « −n »             [U7]
+exits.test.ts         Interprétation d'un clic, bascule des Sorties          [U9]
+render.test.tsx       Rendu de fumée de l'interface, plateau animé à mi-course
 ```
 
 ## Ce que le proto mesure aujourd'hui

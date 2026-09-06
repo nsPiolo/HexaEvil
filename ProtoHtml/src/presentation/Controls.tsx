@@ -3,22 +3,23 @@
  * la configuration sans recompiler (`G4`).
  */
 import { useState } from 'react'
-import { DIRECTION_NAMES, directionName } from '../core/hex/hexCoord'
 import { tileType } from '../core/rules/recipes'
 import type { GameState, TileTypeId } from '../core/rules/types'
+import { SPEEDS, type Speed } from './useGame'
 
 type Props = {
   state: GameState
   pendingType: TileTypeId
-  pendingExits: readonly number[]
-  selectedIsTile: boolean
   canUndo: boolean
+  playing: boolean
+  speed: Speed
   configText: string
   configError: string | undefined
   onPendingType: (id: TileTypeId) => void
-  onToggleExit: (direction: number) => void
   onStep: () => void
   onRound: () => void
+  onFinish: () => void
+  onSpeed: (speed: Speed) => void
   onUndo: () => void
   onReset: () => void
   onApplyConfig: (text: string) => boolean
@@ -28,15 +29,16 @@ type Props = {
 export const Controls = ({
   state,
   pendingType,
-  pendingExits,
-  selectedIsTile,
   canUndo,
+  playing,
+  speed,
   configText,
   configError,
   onPendingType,
-  onToggleExit,
   onStep,
   onRound,
+  onFinish,
+  onSpeed,
   onUndo,
   onReset,
   onApplyConfig,
@@ -63,6 +65,24 @@ export const Controls = ({
         </button>
       </div>
 
+      <div className="controls__row controls__row--speed">
+        <span className="controls__label">Vitesse</span>
+        {(Object.keys(SPEEDS) as Speed[]).map((name) => (
+          <button
+            key={name}
+            type="button"
+            className={`speed ${speed === name ? 'speed--on' : ''}`}
+            onClick={() => onSpeed(name)}
+          >
+            {name}
+          </button>
+        ))}
+        <button type="button" onClick={onFinish} disabled={over} title="Dérouler la partie entière">
+          Fin
+        </button>
+      </div>
+      {playing && <p className="controls__hint">Lecture en cours…</p>}
+
       <div className="controls__block">
         <h3>Catalogue {placing ? '' : '— pose indisponible'}</h3>
         <div className="catalog">
@@ -84,23 +104,9 @@ export const Controls = ({
           })}
         </div>
         <p className="controls__hint">
-          Sorties de la prochaine pose :{' '}
-          <strong>{pendingExits.length === 0 ? 'aucune' : pendingExits.map(directionName).join(', ')}</strong>
-          {selectedIsTile && ' — désélectionne la Tuile pour les régler'}
+          La Tuile est posée <strong>sans Sortie</strong> : clique ensuite un hexagone voisin pour
+          l’orienter.
         </p>
-        <div className="exits">
-          {DIRECTION_NAMES.map((name, direction) => (
-            <button
-              key={name}
-              type="button"
-              className={`exit ${pendingExits.includes(direction) ? 'exit--on' : ''}`}
-              disabled={selectedIsTile}
-              onClick={() => onToggleExit(direction)}
-            >
-              {name}
-            </button>
-          ))}
-        </div>
       </div>
 
       <div className="controls__block">

@@ -166,7 +166,7 @@ matériau que le démon livre à l'`Escalier` est **le Sbire lui-même** (`X3`).
 | Type de tuile | Bâtiment | Sorties autorisées | Rôle |
 | --- | --- | --- | --- |
 | `Empty` | — | 1 | Convoyeur : fait avancer le flux. |
-| `Splitter` | — | 2 ou 3 | Répartit le flux entrant (`D8`). Ne se distingue du `Vide` **que** par ce nombre de Sorties (`Q9`) ; la différence deviendra structurante quand le catalogue sera restreint (`T7`). |
+| `Splitter` | — | jusqu'à 3 | Répartit le flux entrant (`D8`). Ne se distingue du `Vide` **que** par ce nombre de Sorties (`Q9`) ; la différence deviendra structurante quand le catalogue sera restreint (`T7`). Aucun minimum n'est imposé : avec une seule Sortie il se comporte comme un `Vide`, ce qui permet de le câbler Sortie par Sortie (`U9`). |
 | `Quarry` | oui | 1 | Produit du `RawBasalt`. |
 | `Stonecutter` | oui | 1 | `RawBasalt` → `CutBasalt`. |
 | `Workshop` | oui | 1 | `CutBasalt` → `BasaltTool`. |
@@ -175,10 +175,12 @@ matériau que le démon livre à l'`Escalier` est **le Sbire lui-même** (`X3`).
 | `Chasm` | oui | 1 | Fait apparaître les Sbires. |
 | `Stairway` | oui, **neutre** | **0** | Consomme les pierres et les entités : sans Sortie, toute Âme ou Sbire qui y a livré est détruit (`D6`). |
 
-- `T5` ✅ C'est le **joueur** qui désigne les Sorties d'une Tuile, au moment de
-  la poser, pendant sa phase de pose (`C1`). Il peut les **reconfigurer
-  librement pendant n'importe quelle phase de pose ultérieure**, sans coût :
-  le proto cherche à explorer des tracés, pas à punir l'erreur de pose.
+- `T5` ✅ C'est le **joueur** qui désigne les Sorties d'une Tuile, pendant sa
+  phase de pose (`C1`). Une Tuile **arrive sans aucune Sortie** : elle est posée
+  d'abord, orientée ensuite (`U9`) — pas de direction par défaut à corriger
+  après coup. Il peut les **reconfigurer librement pendant n'importe quelle
+  phase de pose ultérieure**, sans coût : le proto cherche à explorer des
+  tracés, pas à punir l'erreur de pose.
 - `T6` ✅ Le joueur pose une Tuile **au choix dans un catalogue illimité**, sur
   n'importe quel Espace vide, **sans coût en Ressource**. L'économie de pose
   n'est pas l'objet du proto ; si elle doit exister, elle viendra après.
@@ -290,6 +292,14 @@ S'appliquent identiquement aux Âmes et aux Sbires. ✅ sauf mention.
   la Sortie désignée est impraticable (`D5`), l'entité est détruite (`D6`) et le
   compteur reste sur cette Sortie. Alternative : essayer les autres Sorties
   avant de détruire — plus permissif, mais rend le tracé moins lisible.
+- `D9b` 🧪 **Conséquence mesurée de `D9`, à confirmer.** Le compteur restant sur
+  une Sortie impraticable, **toutes** les entités suivantes s'y écrasent : une
+  seule Sortie mal branchée sur un `Aiguillage` n'en coûte pas la moitié du flux,
+  elle arrête la voie **définitivement**. Constaté sur un Plateau où le chemin du
+  démon passait par un `Aiguillage` dont une Sortie ne menait nulle part : 77
+  Sbires sur 79 détruits, un seul arrivé à l'`Escalier`, démon neutralisé. La
+  règle est légitime et lisible, mais si cette sévérité n'est pas voulue,
+  l'alternative est d'essayer les autres Sorties avant de détruire.
 - `D10` **Dépôt.** Quand une entité arrive sur un Bâtiment de son camp en
   portant une Ressource figurant dans les IN de la Recette, elle la dépose dans
   l'`inputStorage`.
@@ -530,6 +540,45 @@ produit, en cours de partie et pas seulement à la fin.
 - `U5` 🧪 Les Ticks se déroulent **un par un, à la demande** (bouton), en plus du
   déroulé automatique des N Ticks d'une Manche (`C1`) : une chaîne de production
   ne se comprend qu'en pas-à-pas.
+- `U6` ✅ **Les déplacements sont animés** : une entité glisse d'un Espace au
+  suivant au lieu de sauter, et les N Ticks d'une Manche se déroulent en
+  séquence, pas d'un bloc. La vitesse de lecture est réglable, jusqu'à
+  « instantané » pour mesurer une partie entière sans attendre. Chaque entité est
+  visible individuellement (pastille par camp, charge portée affichée), en plus
+  des compteurs de `U1`.
+- `U7` ✅ **Les mouvements de Ressources s'affichent en étiquettes temporaires**
+  sur la Tuile concernée : un `+x` quand une Ressource entre (production
+  terminée, dépôt) et un `−n` quand elle sort (IN consommés au démarrage,
+  ramassage au départ). La progression de l'`Escalier` a son étiquette propre,
+  `+7` ou `−1`. Les mouvements d'un même Tick sur une même Tuile sont agrégés en
+  une seule étiquette par signe : un `+2`, pas deux `+1` superposés.
+- `U9` ✅ **Une Tuile est posée nue, puis orientée en cliquant l'hexagone visé.**
+  Aucune Sortie n'est pré-réglée à la pose. Sélectionner
+  une Tuile du joueur pendant la phase de pose rend ses six voisins cliquables :
+  cliquer l'un d'eux oriente la Sortie vers lui, le re-cliquer la retire. Poser
+  une Tuile se fait donc **en deux temps** — cliquer l'Espace libre, puis cliquer
+  le voisin visé. Quand la Tuile est déjà à son maximum de Sorties, désigner une
+  direction de plus **remplace la plus ancienne** : sur une Tuile à Sortie
+  unique, cliquer une autre direction la fait donc basculer. Les boutons de
+  direction restent disponibles pour les cas qu'aucun hexagone ne couvre (Sortie
+  vers l'extérieur du Plateau).
+- `U11` ✅ **L'`Escalier` affiche sa progression sur le Plateau** (`42/200`), en
+  plus du compteur global de `K2` : c'est là que se joue la partie, on ne doit
+  pas avoir à quitter le plateau des yeux pour la suivre. L'affichage est déduit
+  des Recettes — toute Tuile dont une Recette fait varier la progression
+  l'affiche — et non d'un identifiant en dur.
+- `U10` ✅ **Le mode d'orientation se referme dès qu'une direction est choisie**,
+  et il est suspendu pendant le déroulé des Ticks. Sans ça, il resterait armé au
+  retour en phase de pose et le premier clic de la Manche suivante réorienterait
+  une Sortie au lieu de poser une Tuile. Pour régler une deuxième Sortie (un
+  `Aiguillage`), on re-clique la Tuile : ça ré-arme le mode sans perdre
+  l'inspection en cours (`U4`).
+- `U8` 🧪 Pour que `U6` et `U7` soient possibles sans que l'interface raisonne sur
+  les règles, **le moteur énonce ce qui s'est passé** pendant le Tick — un flux
+  d'événements (apparition, déplacement `from`/`to`, mouvement de stock signé,
+  progression, destruction avec sa cause). L'interface anime ce flux ; elle ne le
+  déduit pas en comparant deux états, ce qui reviendrait à réimplémenter les
+  règles côté affichage (ADR-0003).
 
 ## 13. Paramétrage ✅ (exigence forte du brouillon)
 
@@ -629,6 +678,11 @@ et sont volontairement absents ici.
 | 2026-09-06 | Mise au propre de `gameplay.md` : numérotation des règles, séparation Manche/Tick, table des Sorties, trace de référence, 9 points à trancher. |
 | 2026-09-06 | Réserve de 100 Âmes (`C5`) et défaite à réserve épuisée (`E2`) : les Âmes deviennent la ressource épuisable de la Rencontre. `Q3` et `Q6` tranchées, `Q7` réduite à la valeur de la cible, `Q10`/`Q11` ouvertes. Ajout des métriques (§12). |
 | 2026-09-06 | Ajout `E8` : la Recette du démon (`X3`) ponctionne ~100 progression par partie, ce qui remet la cible de 200 en question. |
+| 2026-09-06 | Ajout `U11` : la progression est écrite sur la Tuile de l'`Escalier`. |
+| 2026-09-06 | Une Tuile est posée **sans aucune Sortie** (`T5`, `U9`) : plus de direction par défaut, l'orientation est strictement le second clic. |
+| 2026-09-06 | Ajout `U10` : le mode d'orientation se referme après chaque direction choisie et reste suspendu pendant les Ticks. |
+| 2026-09-06 | Ajout `U9` (Sorties désignées au clic sur l'hexagone voisin, pose en deux temps, bascule sur une Tuile à Sortie unique) et `D9b` (conséquence cumulée de `D9` : une Sortie morte arrête la voie définitivement). Minimum de Sorties retiré de l'`Aiguillage` (`T4`). |
+| 2026-09-06 | Ajout `U6`-`U8` : déplacements animés à vitesse réglable, étiquettes « +x » / « −n » sur les mouvements de Ressources, et flux d'événements émis par le moteur pour les rendre possibles sans logique de règles dans l'affichage. |
 | 2026-09-06 | Moteur implémenté dans `ProtoHtml/` (48 tests unitaires + 3 parties complètes). Trace §14 corrigée sur le comportement réel du Tick 4. Ajout `B10` (forme opérationnelle de `B8`). `E9` complété par les mesures : voie brute annulée à 0, voie dégrossie à 192/200. |
 | 2026-09-06 | `E9` acté : les valeurs de recettes restent en place, le réglage se fera sur le proto en marche ; l'analyse devient une hypothèse à vérifier via `K3`. |
 | 2026-09-06 | Deuxième revue : `Q1`, `Q5`, `Q8`-`Q12` tranchées — **les 12 questions sont closes**. Le démon perd toute économie (`X4` : `Gouffre` + 2 Tuiles vides, `minionBudget = 200`), son matériau est le Sbire lui-même (`X3`). Nouvelle règle `D16` : mémoire de chemin, une entité qui revient sur un Espace visité est détruite — la terminaison est garantie (`E7`). Disposition du Plateau en configuration (`B6`, `B7b`). Exigences d'interface ajoutées (`U1`-`U5` : compteurs par Tuile, panneau de détail). Analyse `E9` : au barème actuel le `Pavé` rapporte moins par Âme que le `Dégrossi`. |

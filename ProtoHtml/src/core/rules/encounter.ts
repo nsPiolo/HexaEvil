@@ -60,6 +60,7 @@ export const createGame = (config: GameConfig): GameState => {
     progress: 0,
     drain: { applied: 0, absorbed: 0 },
     placedThisRound: false,
+    events: [],
     log: [{ tick: 0, side: 'system', text: 'La Rencontre commence : pose ta première Tuile.' }],
     outcome: 'ongoing',
   }

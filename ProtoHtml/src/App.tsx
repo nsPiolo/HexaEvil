@@ -1,71 +1,65 @@
-import { BoardView } from './presentation/BoardView'
-import { Controls } from './presentation/Controls'
-import { LogView } from './presentation/LogView'
-import { MetricsPanel } from './presentation/MetricsPanel'
-import { TileInspector } from './presentation/TileInspector'
-import { useGame } from './presentation/useGame'
+/**
+ * Démarrage : la configuration livrée est validée **avant** de monter le jeu.
+ * Si elle est invalide, on affiche l'erreur et on laisse la corriger sur place
+ * plutôt que de planter sur une page blanche (`G1`, `G4`).
+ */
+import { useMemo, useState } from 'react'
+import rawGameplay from '../config/gameplay.json'
+import { parseConfig } from './core/config/load'
+import type { GameConfig } from './core/rules/types'
+import { Game } from './presentation/Game'
+
+type Boot = { ok: true; config: GameConfig } | { ok: false; error: string }
+
+const boot = (text: string): Boot => {
+  try {
+    return { ok: true, config: parseConfig(JSON.parse(text)) }
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error) }
+  }
+}
+
+const shippedText = JSON.stringify(rawGameplay, null, 2)
 
 export default function App() {
-  const game = useGame()
-  const { state } = game
+  const [text, setText] = useState(shippedText)
+  const [attempt, setAttempt] = useState(0)
+  // Ne revalide qu'à la demande : on ne veut pas d'erreur à chaque frappe.
+  const state = useMemo(() => boot(text), [attempt]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (state.ok) return <Game config={state.config} configText={text} />
 
   return (
-    <div className="app">
+    <div className="app app--boot">
       <header className="app__header">
         <div>
           <h1>Enfers — proto « l’Escalier »</h1>
           <p className="app__subtitle">
-            Règles conformes à <code>docs/proto/GDD.md</code>. Le moteur est dans <code>src/core</code>,
-            le gameplay dans <code>config/gameplay.json</code>.
+            La configuration ne peut pas être chargée. Corrige-la ci-dessous puis recharge.
           </p>
         </div>
       </header>
-
-      <main className="app__main">
-        <section className="app__board">
-          <BoardView
-            state={state}
-            selected={game.selected}
-            placeable={(coord) => game.placementRefusalAt(coord) === undefined}
-            onSelect={game.select}
-            onPlace={game.place}
-          />
-        </section>
-
-        <aside className="app__side">
-          <MetricsPanel state={state} />
-          <Controls
-            state={state}
-            pendingType={game.pendingType}
-            pendingExits={game.pendingExits}
-            selectedIsTile={game.selectedTile !== undefined}
-            canUndo={game.canUndo}
-            configText={game.configText}
-            configError={game.configError}
-            onPendingType={game.setPendingType}
-            onToggleExit={game.toggleExit}
-            onStep={game.step}
-            onRound={game.round}
-            onUndo={game.undo}
-            onReset={game.reset}
-            onApplyConfig={game.applyConfig}
-            onConfigText={game.setConfigText}
-          />
-        </aside>
-
-        <aside className="app__inspector">
-          <TileInspector
-            state={state}
-            coord={game.selected}
-            tile={game.selectedTile}
-            onToggleExit={game.toggleExit}
-            exitRefusalFor={game.exitRefusalFor}
-            pendingType={game.pendingType}
-            pendingExits={game.pendingExits}
-          />
-          <LogView log={state.log} />
-        </aside>
-      </main>
+      <p className="controls__error">{state.error}</p>
+      <textarea
+        className="config-editor config-editor--boot"
+        spellCheck={false}
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+      />
+      <div className="controls__row">
+        <button type="button" onClick={() => setAttempt((a) => a + 1)}>
+          Recharger
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setText(shippedText)
+            setAttempt((a) => a + 1)
+          }}
+        >
+          Revenir au fichier livré
+        </button>
+      </div>
     </div>
   )
 }
