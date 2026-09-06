@@ -25,7 +25,7 @@ section.
 | Tuile hexagonale                | `HexTile`          | 🧪     | Unité de base posée sur le Plateau. |
 | Coordonnée de tuile (axiale)     | `HexCoord`         | 🧪     | Coordonnées axiales (q, r) — voir `docs/ARCHITECTURE.md`. |
 | Démon (adversaire)              | `Demon`            | 🧪     | Adversaire géré par l'IA du jeu. |
-| Âme (le joueur, mort)           | `SoulActor` / `Player` | 🧪 | À trancher : le joueur est-il un "acteur" parmi d'autres ? |
+| Joueur              | `Player`            | 🧪     | Joueur |
 
 ## Mécanique de jeu de société
 
