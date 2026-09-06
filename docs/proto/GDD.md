@@ -171,12 +171,12 @@ matériau que le démon livre à l'`Escalier` est **le Sbire lui-même** (`X3`).
 | `Stonecutter` | oui | 1 | `RawBasalt` → `CutBasalt`. |
 | `Workshop` | oui | 1 | `CutBasalt` → `BasaltTool`. |
 | `Sculptor` | oui | 1 | `CutBasalt` + `BasaltTool` → `BasaltBlock`. |
-| `SoulWell` | oui | 1 | Fait apparaître les Âmes. |
-| `Chasm` | oui | 1 | Fait apparaître les Sbires. |
+| `SoulWell` | oui | 2, **figées** (`T8`) | Fait apparaître les Âmes. Deux Sorties pour alimenter deux voies dès la source, orientées par le terrain et non par le joueur. |
+| `Chasm` | oui | 2 | Fait apparaître les Sbires, deux Sorties comme le `Puits`. |
 | `Stairway` | oui, **neutre** | **0** | Consomme les pierres et les entités : sans Sortie, toute Âme ou Sbire qui y a livré est détruit (`D6`). |
 
-- `T5` ✅ C'est le **joueur** qui désigne les Sorties d'une Tuile, pendant sa
-  phase de pose (`C1`). Une Tuile **arrive sans aucune Sortie** : elle est posée
+- `T5` ✅ C'est le **joueur** qui désigne les Sorties d'une Tuile qu'il a posée,
+  pendant sa phase de pose (`C1`), sauf si son type a des Sorties figées (`T8`). Une Tuile **arrive sans aucune Sortie** : elle est posée
   d'abord, orientée ensuite (`U9`) — pas de direction par défaut à corriger
   après coup. Il peut les **reconfigurer librement pendant n'importe quelle
   phase de pose ultérieure**, sans coût : le proto cherche à explorer des
@@ -184,6 +184,17 @@ matériau que le démon livre à l'`Escalier` est **le Sbire lui-même** (`X3`).
 - `T6` ✅ Le joueur pose une Tuile **au choix dans un catalogue illimité**, sur
   n'importe quel Espace vide, **sans coût en Ressource**. L'économie de pose
   n'est pas l'objet du proto ; si elle doit exister, elle viendra après.
+- `T8` ✅ **Un type de Tuile peut avoir ses Sorties figées par la configuration**
+  (`fixedExits`). Elles font alors partie de l'énoncé du terrain et le joueur ne
+  les modifie pas, même si la Tuile lui appartient — c'est le cas du `Puits des
+  âmes`, dont l'orientation détermine par où le flux entre dans le réseau.
+  Conséquences :
+    - le droit d'éditer est **une règle du Core** (`exitEditRefusal`), pas une
+      grisaille d'interface : la commande de reconfiguration est refusée avec sa
+      raison, et l'interface ne fait que la refléter (`U12`) ;
+    - un type figé qui admet des Sorties **ne peut pas figurer au catalogue
+      posable** : on poserait une Tuile qu'on ne pourrait jamais orienter. Le
+      chargement de la configuration le refuse.
 - `T7` 🧪 Le catalogue posable sera **restreint** dans une itération ultérieure
   (liste réduite, voire main de Tuiles). Il vit donc en configuration (`G2`) et
   non en dur, pour que la restriction ne soit qu'un changement de données.
@@ -288,18 +299,26 @@ S'appliquent identiquement aux Âmes et aux Sbires. ✅ sauf mention.
 - `D8` Quand une Tuile a plusieurs Sorties, un **compteur par Tuile** répartit
   les entités équitablement entre les Sorties (tourniquet). Une règle spéciale
   d'un type de Tuile peut surcharger cette répartition.
-- `D9` ✅ Le compteur du tourniquet n'avance **que sur un départ effectif** ; si
-  la Sortie désignée est impraticable (`D5`), l'entité est détruite (`D6`) et le
-  compteur reste sur cette Sortie. Alternative : essayer les autres Sorties
-  avant de détruire — plus permissif, mais rend le tracé moins lisible.
-- `D9b` 🧪 **Conséquence mesurée de `D9`, à confirmer.** Le compteur restant sur
-  une Sortie impraticable, **toutes** les entités suivantes s'y écrasent : une
-  seule Sortie mal branchée sur un `Aiguillage` n'en coûte pas la moitié du flux,
-  elle arrête la voie **définitivement**. Constaté sur un Plateau où le chemin du
-  démon passait par un `Aiguillage` dont une Sortie ne menait nulle part : 77
-  Sbires sur 79 détruits, un seul arrivé à l'`Escalier`, démon neutralisé. La
-  règle est légitime et lisible, mais si cette sévérité n'est pas voulue,
-  l'alternative est d'essayer les autres Sorties avant de détruire.
+- `D8b` ✅ **Une Sortie qui ne débouche sur aucune Entrée (`D5`) n'existe pas
+  pour le tourniquet.** Elle n'est jamais désignée, et le flux se répartit sur
+  les seules Sorties praticables. Un `Aiguillage` à trois Sorties dont une est
+  morte alterne donc entre les deux autres, sans perte.
+  C'est une propriété de la **Tuile**, pas de l'entité : le retour en arrière
+  (`D16`) ne rend pas une Sortie impraticable, il tue l'entité qui l'emprunte.
+  La praticabilité est réévaluée à chaque déplacement — poser une Tuile en face
+  d'une Sortie morte la remet aussitôt dans la rotation.
+- `D9` ✅ Le compteur du tourniquet n'avance **que sur un départ effectif**.
+  Depuis `D8b`, le seul cas où plus rien ne bouge est celui où **aucune** Sortie
+  n'est praticable : l'entité est alors détruite (`D6`) et le compteur ne bouge
+  pas.
+- `D9b` ✅ **Résolu par `D8b`.** Avant cette règle, le compteur se figeait sur une
+  Sortie morte et toutes les entités suivantes s'y écrasaient : une seule Sortie
+  mal branchée n'arrêtait pas la moitié du flux mais la **voie entière**.
+  Mesuré sur un Plateau dont le chemin du démon passait par un `Aiguillage` à
+  Sortie morte : 77 Sbires détruits sur 79, un seul arrivé à l'`Escalier`, démon
+  neutralisé, partie gagnée 201/200. La même partie avec `D8b` : 103 Sbires
+  livrés sur 106, aucun perdu, et **défaite à 185/200**. Une erreur de tracé ne
+  supprime donc plus un adversaire.
 - `D10` **Dépôt.** Quand une entité arrive sur un Bâtiment de son camp en
   portant une Ressource figurant dans les IN de la Recette, elle la dépose dans
   l'`inputStorage`.
@@ -553,13 +572,14 @@ produit, en cours de partie et pas seulement à la fin.
   `+7` ou `−1`. Les mouvements d'un même Tick sur une même Tuile sont agrégés en
   une seule étiquette par signe : un `+2`, pas deux `+1` superposés.
 - `U9` ✅ **Une Tuile est posée nue, puis orientée en cliquant l'hexagone visé.**
-  Aucune Sortie n'est pré-réglée à la pose. Sélectionner
-  une Tuile du joueur pendant la phase de pose rend ses six voisins cliquables :
+  Aucune Sortie n'est pré-réglée à la pose. En mode d'édition (`U12`), les six
+  voisins de la Tuile deviennent cliquables :
   cliquer l'un d'eux oriente la Sortie vers lui, le re-cliquer la retire. Poser
   une Tuile se fait donc **en deux temps** — cliquer l'Espace libre, puis cliquer
   le voisin visé. Quand la Tuile est déjà à son maximum de Sorties, désigner une
   direction de plus **remplace la plus ancienne** : sur une Tuile à Sortie
-  unique, cliquer une autre direction la fait donc basculer. Les boutons de
+  unique, cliquer une autre direction la fait donc basculer. Cliquer une
+  direction **déjà désignée** ne la retire pas (`U13`). Les boutons de
   direction restent disponibles pour les cas qu'aucun hexagone ne couvre (Sortie
   vers l'extérieur du Plateau).
 - `U11` ✅ **L'`Escalier` affiche sa progression sur le Plateau** (`42/200`), en
@@ -567,6 +587,21 @@ produit, en cours de partie et pas seulement à la fin.
   pas avoir à quitter le plateau des yeux pour la suivre. L'affichage est déduit
   des Recettes — toute Tuile dont une Recette fait varier la progression
   l'affiche — et non d'un identifiant en dur.
+- `U13` ✅ **Cliquer une Sortie déjà désignée la conserve et referme l'édition.**
+  Le geste vaut confirmation, pas bascule : on ne retire pas par mégarde une
+  Sortie correcte en la re-cliquant pour vérifier.
+  Conséquence assumée : le nombre de Sorties d'une Tuile ne **diminue** jamais.
+  Une Sortie se remplace (`U9`), elle ne se supprime pas — un `Aiguillage` passé
+  à trois Sorties y reste. Si le besoin de retirer apparaît en jouant, il lui
+  faudra un geste dédié plutôt que la réutilisation du clic de désignation.
+- `U12` ✅ **Le mode d'édition des Sorties ne s'ouvre pas à la sélection** : il
+  faut le demander par un bouton « Éditer » dans le détail de la Tuile.
+  Sélectionner sert à **observer** (`U2`, `U4`) — pendant le déroulé des Ticks
+  comme en phase de pose — et il serait fâcheux qu'un clic d'inspection arme un
+  geste qui modifie le réseau. Seule exception : **poser une Tuile ouvre
+  l'édition tout de suite**, puisque la pose n'a de sens qu'une fois orientée
+  (`U9`). Le bouton n'apparaît que sur une Tuile du joueur qui admet des Sorties,
+  en phase de pose (`T5`, `T4`).
 - `U10` ✅ **Le mode d'orientation se referme dès qu'une direction est choisie**,
   et il est suspendu pendant le déroulé des Ticks. Sans ça, il resterait armé au
   retour en phase de pose et le premier clic de la Manche suivante réorienterait
@@ -678,6 +713,10 @@ et sont volontairement absents ici.
 | 2026-09-06 | Mise au propre de `gameplay.md` : numérotation des règles, séparation Manche/Tick, table des Sorties, trace de référence, 9 points à trancher. |
 | 2026-09-06 | Réserve de 100 Âmes (`C5`) et défaite à réserve épuisée (`E2`) : les Âmes deviennent la ressource épuisable de la Rencontre. `Q3` et `Q6` tranchées, `Q7` réduite à la valeur de la cible, `Q10`/`Q11` ouvertes. Ajout des métriques (§12). |
 | 2026-09-06 | Ajout `E8` : la Recette du démon (`X3`) ponctionne ~100 progression par partie, ce qui remet la cible de 200 en question. |
+| 2026-09-06 | Ajout `T8` : un type de Tuile peut avoir ses Sorties figées par la configuration (`fixedExits`) — appliqué au `Puits des âmes`. Le droit d'éditer devient une règle du Core. |
+| 2026-09-06 | Ajout `U13` : cliquer une Sortie déjà désignée la conserve et referme l'édition ; le nombre de Sorties d'une Tuile ne diminue donc plus. |
+| 2026-09-06 | Ajout `U12` : le mode d'édition des Sorties s'ouvre par un bouton « Éditer », plus à la sélection — sauf juste après une pose. |
+| 2026-09-06 | `D8b` : une Sortie qui ne débouche sur aucune Entrée est ignorée par le tourniquet — `D9b` est résolu. `Puits` et `Gouffre` passent à 2 Sorties (`T4`). |
 | 2026-09-06 | Ajout `U11` : la progression est écrite sur la Tuile de l'`Escalier`. |
 | 2026-09-06 | Une Tuile est posée **sans aucune Sortie** (`T5`, `U9`) : plus de direction par défaut, l'orientation est strictement le second clic. |
 | 2026-09-06 | Ajout `U10` : le mode d'orientation se referme après chaque direction choisie et reste suspendu pendant les Ticks. |

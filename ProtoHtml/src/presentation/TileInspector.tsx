@@ -88,8 +88,13 @@ type Props = {
   coord: HexCoord | undefined
   tile: TileState | undefined
   onToggleExit: (direction: number) => void
-  /** Vrai quand la Tuile sélectionnée est câblable (`U9`). */
+  /** Vrai quand la Tuile sélectionnée est en cours d'édition (`U9`). */
   wiring: boolean
+  /** Vrai quand elle peut y entrer (`U12`). */
+  canEdit: boolean
+  /** Sinon, pourquoi (`T5`, `T8`). */
+  editRefusal: string | undefined
+  onToggleWiring: () => void
 }
 
 export const TileInspector = ({
@@ -98,6 +103,9 @@ export const TileInspector = ({
   tile,
   onToggleExit,
   wiring,
+  canEdit,
+  editRefusal,
+  onToggleWiring,
 }: Props) => {
   if (!coord) {
     return (
@@ -143,7 +151,18 @@ export const TileInspector = ({
       </header>
 
       <div className="inspector__block">
-        <h3>Sorties {editable ? '' : '(non modifiables hors phase de pose)'}</h3>
+        <div className="inspector__block-head">
+          <h3>Sorties</h3>
+          {(canEdit || editable) && (
+            <button
+              type="button"
+              className={`edit-toggle ${editable ? 'edit-toggle--on' : ''}`}
+              onClick={onToggleWiring}
+            >
+              {editable ? 'Terminer' : 'Éditer'}
+            </button>
+          )}
+        </div>
         <div className="exits">
           {DIRECTION_NAMES.map((name, direction) => {
             const active = tile.exits.includes(direction)
@@ -156,7 +175,7 @@ export const TileInspector = ({
                 title={
                   editable
                     ? active
-                      ? 'Retirer cette Sortie'
+                      ? 'Sortie déjà désignée — la confirmer et fermer l’édition'
                       : 'Désigner cette Sortie (ou clique l’hexagone voisin)'
                     : 'Phase de pose uniquement (T5)'
                 }
@@ -170,15 +189,15 @@ export const TileInspector = ({
         {editable ? (
           <p className="inspector__hint">
             Clique l’hexagone voisin visé. Au-delà de {type.maxExits} Sortie
-            {type.maxExits > 1 ? 's' : ''}, la plus ancienne est remplacée. Le mode se referme dès
-            qu’une direction est choisie.
+            {type.maxExits > 1 ? 's' : ''}, la plus ancienne est remplacée. Cliquer une Sortie déjà
+            désignée la conserve. Le mode se referme dans les deux cas.
+          </p>
+        ) : canEdit ? (
+          <p className="inspector__hint">
+            « Éditer » ouvre le réglage des Sorties : les hexagones voisins deviennent cliquables.
           </p>
         ) : (
-          state.phase === 'placement' &&
-          tile.owner === 'player' &&
-          type.maxExits > 0 && (
-            <p className="inspector__hint">Re-clique cette Tuile pour régler ses Sorties.</p>
-          )
+          editRefusal && <p className="inspector__hint">{editRefusal}</p>
         )}
         <p className="inspector__meta">
           {type.maxExits === 0

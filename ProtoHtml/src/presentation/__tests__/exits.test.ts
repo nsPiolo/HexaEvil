@@ -4,9 +4,15 @@
  */
 import { describe, expect, it } from 'vitest'
 import { directionBetween, directionIndex, hex } from '../../core/hex/hexCoord'
-import { placeTile, runTick, setExits } from '../../core/rules/encounter'
-import { buildGame } from '../../core/__tests__/helpers'
-import { PLACEMENT_EXITS, nextExitsOnClick, resolveClick } from '../useGame'
+import { exitChangeRefusal, placeTile, runTick, setExits } from '../../core/rules/encounter'
+import { buildConfig, buildGame } from '../../core/__tests__/helpers'
+import {
+  PLACEMENT_EXITS,
+  canEditExits,
+  editRefusalAt,
+  nextExitsOnClick,
+  resolveClick,
+} from '../useGame'
 
 describe('Direction entre deux Espaces', () => {
   it('reconnaît les 6 voisins', () => {
@@ -40,9 +46,11 @@ describe('Bascule des Sorties au clic (U9)', () => {
     expect(nextExitsOnClick([3], 1, 1)).toEqual([1])
   })
 
-  it('retire la Sortie quand on re-clique la même direction', () => {
-    expect(nextExitsOnClick([2], 2, 1)).toEqual([])
-    expect(nextExitsOnClick([0, 2], 0, 3)).toEqual([2])
+  it('conserve une Sortie déjà désignée au lieu de la retirer (U13)', () => {
+    // Le clic vaut confirmation : la Sortie reste, et l'appelant ferme le mode.
+    expect(nextExitsOnClick([2], 2, 1)).toEqual([2])
+    expect(nextExitsOnClick([0, 2], 0, 3)).toEqual([0, 2])
+    expect(nextExitsOnClick([0, 1, 2], 1, 3)).toEqual([0, 1, 2])
   })
 
   it('accumule jusqu’au maximum, puis remplace la plus ancienne', () => {
@@ -53,6 +61,21 @@ describe('Bascule des Sorties au clic (U9)', () => {
 
   it('ne désigne rien sur une Tuile qui n’autorise aucune Sortie (l’Escalier)', () => {
     expect(nextExitsOnClick([], 0, 0)).toEqual([])
+  })
+
+  it('ne réduit jamais le nombre de Sorties d’une Tuile (U13)', () => {
+    // Conséquence assumée : une Sortie se remplace, elle ne se supprime pas.
+    for (const [current, direction, max] of [
+      [[0], 0, 1],
+      [[0], 3, 1],
+      [[0, 1], 1, 3],
+      [[0, 1], 4, 3],
+      [[0, 1, 2], 5, 3],
+    ] as const) {
+      expect(nextExitsOnClick(current, direction, max).length).toBeGreaterThanOrEqual(
+        Math.min(current.length, max),
+      )
+    }
   })
 })
 
@@ -92,23 +115,11 @@ describe('Interprétation d’un clic sur le Plateau (U9)', () => {
     })
   })
 
-  it('sélectionne une Tuile et arme son câblage si elle est au joueur', () => {
+  it('sélectionne une Tuile sans ouvrir l’édition (U12)', () => {
+    // La sélection sert à inspecter ; l'édition est un geste explicite.
     expect(resolveClick(game(), undefined, hex(0, 0), 'quarry')).toEqual({
       kind: 'select',
       coord: hex(0, 0),
-      arm: true,
-    })
-  })
-
-  it('n’arme pas le câblage sur une Tuile du démon', () => {
-    const state = buildGame({
-      board: { radius: 2 },
-      initialTiles: [{ q: 0, r: 0, type: 'chasm', owner: 'demon', exits: [] }],
-    })
-    expect(resolveClick(state, undefined, hex(0, 0), 'quarry')).toEqual({
-      kind: 'select',
-      coord: hex(0, 0),
-      arm: false,
     })
   })
 
@@ -133,11 +144,10 @@ describe('Interprétation d’un clic sur le Plateau (U9)', () => {
     })
   })
 
-  it('quitte le mode câblage en re-cliquant la Tuile câblée, sans la désélectionner', () => {
+  it('traite un clic sur la Tuile éditée comme une simple sélection', () => {
     expect(resolveClick(game(), hex(0, 0), hex(0, 0), 'quarry')).toEqual({
       kind: 'select',
       coord: hex(0, 0),
-      arm: false,
     })
   })
 
@@ -163,12 +173,11 @@ describe('Interprétation d’un clic sur le Plateau (U9)', () => {
     expect(action.kind).toBe('refused')
   })
 
-  it('n’arme pas le câblage hors phase de pose (T5)', () => {
+  it('sélectionne aussi pendant le déroulé des Ticks, pour observer', () => {
     const running = runTick(game())
     expect(resolveClick(running, undefined, hex(0, 0), 'quarry')).toEqual({
       kind: 'select',
       coord: hex(0, 0),
-      arm: false,
     })
   })
 
@@ -185,17 +194,75 @@ describe('Interprétation d’un clic sur le Plateau (U9)', () => {
     state = setExits(state, hex(1, 0), [directionIndex('E')])
     expect(state.tiles['1,0']!.exits).toEqual([directionIndex('E')])
 
-    // Ré-armer par un clic sur la Tuile, puis basculer vers une autre direction :
-    // la Carrière n'autorise qu'une Sortie.
-    expect(resolveClick(state, undefined, hex(1, 0), 'quarry')).toEqual({
-      kind: 'select',
-      coord: hex(1, 0),
-      arm: true,
-    })
+    // Ré-ouvrir l'édition passe par le bouton, pas par un clic sur la Tuile.
+    expect(canEditExits(state, hex(1, 0))).toBe(true)
     const third = resolveClick(state, hex(1, 0), hex(1, -1), 'quarry')
     expect(third).toEqual({ kind: 'wire', coord: hex(1, 0), direction: directionIndex('NW') })
     expect(nextExitsOnClick(state.tiles['1,0']!.exits, directionIndex('NW'), 1)).toEqual([
       directionIndex('NW'),
     ])
+  })
+})
+
+describe('Ouverture du mode d’édition (U12, T8)', () => {
+  const state = () =>
+    buildGame({
+      board: { radius: 2 },
+      initialTiles: [
+        { q: 0, r: 0, type: 'soulWell', owner: 'player', exits: ['E'] },
+        { q: 1, r: 0, type: 'stairway', owner: 'neutral', exits: [] },
+        { q: -1, r: 0, type: 'chasm', owner: 'demon', exits: [] },
+        { q: 0, r: -1, type: 'quarry', owner: 'player', exits: [] },
+      ],
+    })
+
+  it('s’ouvre sur une Tuile ordinaire du joueur, en phase de pose', () => {
+    expect(canEditExits(state(), hex(0, -1))).toBe(true)
+  })
+
+  it('reste fermé sur une Tuile dont les Sorties sont figées par la config (T8)', () => {
+    // Le Puits appartient au joueur, mais son orientation fait partie du terrain.
+    expect(canEditExits(state(), hex(0, 0))).toBe(false)
+    expect(editRefusalAt(state(), hex(0, 0))).toMatch(/fixées par la configuration \(T8\)/)
+  })
+
+  it('reste fermé sur une Tuile adverse ou neutre', () => {
+    expect(canEditExits(state(), hex(-1, 0))).toBe(false)
+    expect(canEditExits(state(), hex(1, 0))).toBe(false) // l'Escalier n'admet aucune Sortie (T4)
+  })
+
+  it('reste fermé sur un Espace vide ou sans sélection', () => {
+    expect(canEditExits(state(), hex(0, 1))).toBe(false)
+    expect(canEditExits(state(), undefined)).toBe(false)
+  })
+
+  it('reste fermé pendant le déroulé des Ticks (T5)', () => {
+    expect(canEditExits(runTick(state()), hex(0, -1))).toBe(false)
+  })
+})
+
+describe('Sorties figées par la configuration (T8)', () => {
+  const withWell = () =>
+    buildGame({
+      board: { radius: 2 },
+      initialTiles: [{ q: 0, r: 0, type: 'soulWell', owner: 'player', exits: ['E'] }],
+    })
+
+  it('le Core refuse la reconfiguration, pas seulement l’interface', () => {
+    const state = withWell()
+    expect(exitChangeRefusal(state, hex(0, 0), [directionIndex('NW')])).toMatch(/T8/)
+    // Et la commande est sans effet : l'état ne bouge pas.
+    expect(setExits(state, hex(0, 0), [directionIndex('NW')])).toBe(state)
+    expect(state.tiles['0,0']!.exits).toEqual([directionIndex('E')])
+  })
+
+  it('refuse au chargement un type figé mis au catalogue', () => {
+    // Une Tuile posable qu'on ne pourrait jamais orienter serait inutilisable.
+    expect(() =>
+      buildConfig({
+        catalog: ['soulWell'],
+        initialTiles: [],
+      }),
+    ).toThrow(/Sorties sont figées/)
   })
 })

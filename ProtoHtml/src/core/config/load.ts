@@ -141,6 +141,7 @@ function parseTileType(raw: unknown, index: number, resourceIds: Set<string>): T
     glyph: string
     side: Owner
     maxExits: number
+    fixedExits?: boolean
     spawns?: Side
     recipes?: RecipeDef[]
   } = {
@@ -151,6 +152,7 @@ function parseTileType(raw: unknown, index: number, resourceIds: Set<string>): T
     maxExits,
   }
 
+  if (t.fixedExits !== undefined) def.fixedExits = asBoolean(t.fixedExits, `tileTypes.${id}.fixedExits`)
   if (t.spawns !== undefined) def.spawns = asSide(t.spawns, `tileTypes.${id}.spawns`)
   if (t.recipes !== undefined) {
     def.recipes = asArray(t.recipes, `tileTypes.${id}.recipes`).map((r, i) =>
@@ -214,7 +216,14 @@ export const parseConfig = (raw: unknown): GameConfig => {
 
   const catalog = asArray(c.catalog, 'catalog').map((id, i) => {
     const typeId = asString(id, `catalog[${i}]`)
-    if (!types.has(typeId)) fail(`catalog référence le type de Tuile inconnu « ${typeId} »`)
+    const type = types.get(typeId)
+    if (!type) fail(`catalog référence le type de Tuile inconnu « ${typeId} »`)
+    if (type.fixedExits === true && type.maxExits > 0) {
+      fail(
+        `catalog contient « ${typeId} », dont les Sorties sont figées (fixedExits) alors qu'il en ` +
+          `admet ${type.maxExits} : une Tuile posable qu'on ne peut pas orienter est inutilisable (T8)`,
+      )
+    }
     return typeId
   })
 

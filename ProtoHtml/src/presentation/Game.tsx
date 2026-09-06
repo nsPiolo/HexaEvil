@@ -46,8 +46,8 @@ export const Game = ({ config, configText }: Props) => {
               ? `Orientation de (${game.wiring.q},${game.wiring.r}) : clique un hexagone voisin pour y envoyer le flux. Le mode se referme aussitôt.`
               : state.phase === 'placement' && !state.placedThisRound
                 ? 'Clique un Espace libre pour y poser la Tuile choisie, puis un voisin pour orienter sa Sortie.'
-                : state.phase === 'placement'
-                  ? 'Clique une Tuile du joueur pour régler ses Sorties, ou une autre pour l’inspecter.'
+                : game.canEditExits
+                  ? 'Tuile sélectionnée : « Éditer » dans le panneau pour régler ses Sorties.'
                   : 'Clique une Tuile pour l’inspecter.'}
           </p>
         </section>
@@ -81,6 +81,9 @@ export const Game = ({ config, configText }: Props) => {
             tile={game.selectedTile}
             onToggleExit={game.toggleExit}
             wiring={game.wiringSelected}
+            canEdit={game.canEditExits}
+            editRefusal={game.editRefusal}
+            onToggleWiring={game.toggleWiring}
           />
           <LogView log={state.log} />
         </aside>

@@ -18,7 +18,7 @@ commentaire. Si le code et le GDD divergent, c'est le GDD qui a raison.
 cd ProtoHtml
 npm install
 npm run dev      # http://localhost:5180
-npm test         # 95 tests : mécaniques, trace de référence, parties complètes, affichage
+npm test         # 104 tests : mécaniques, trace de référence, parties complètes, affichage
 npm run build    # typecheck + build de prod
 ```
 
@@ -50,12 +50,16 @@ changer une recette, si — et c'est le signal attendu.
    Sortie**, sélectionnée, et ses six voisins deviennent cliquables. Cliquer l'un
    d'eux oriente sa Sortie vers lui. Une Tuile par Manche (`C1`), sans coût
    (`T6`).
-   Pour réorienter une Tuile déjà posée : cliquer la Tuile (ça ouvre le mode
-   d'orientation), puis cliquer le voisin visé (`T5`). Sur une Tuile à Sortie
-   unique, une autre direction fait **basculer** la Sortie ; sur un Aiguillage,
-   les clics s'accumulent jusqu'à son maximum puis remplacent la plus ancienne.
-   Le mode se referme après chaque direction choisie (`U10`) — un clic sur la
-   Tuile le ré-ouvre.
+   Pour réorienter une Tuile déjà posée : la sélectionner, cliquer **« Éditer »**
+   dans son détail (`U12`), puis cliquer le voisin visé (`T5`). Sur une Tuile à
+   Sortie unique, une autre direction fait **basculer** la Sortie ; sur un
+   Aiguillage, les clics s'accumulent jusqu'à son maximum puis remplacent la plus
+   ancienne. Cliquer une Sortie déjà désignée la **conserve** (`U13`). Le mode se
+   referme après chaque direction choisie (`U10`).
+   Sélectionner une Tuile ne l'ouvre jamais : la sélection sert à observer.
+   Certaines Tuiles ont leurs Sorties **figées par la configuration**
+   (`fixedExits`, `T8`) : le Puits des âmes est orienté par le terrain, pas par
+   le joueur. Le panneau affiche alors la raison au lieu du bouton.
 2. **Dérouler** : `1 Tick` pour le pas-à-pas (`U5`), ou `Manche` pour les 5 Ticks
    — joués **en séquence et animés** (`U6`), les âmes glissant d'un hexagone au
    suivant avec leur charge visible. La vitesse est réglable (`lent` à
@@ -120,7 +124,7 @@ Règles de dépendance (les mêmes que côté Unity) :
 config.test.ts        Validation de la configuration, refus de terrain croisé (B8)
 spawn.test.ts         Apparition, réserve, budget de partie (C4, C5, C5b, X1)
 production.test.ts    P1-P8, dont le remboursement sur destruction (P8)
-movement.test.ts      D4-D18 : Sorties face à face, tourniquet, dépôt/ramassage, retour en arrière
+movement.test.ts      D4-D18 : Sorties face à face, tourniquet et Sorties mortes, dépôt/ramassage, retour en arrière
 stairway.test.ts      Tri des Recettes, plancher à 0, consommation du Sbire (R5, R6, R8, X3)
 outcome.test.ts       Victoire, défaite, terminaison garantie (E1, E2, E3, E7)
 events.test.ts        Le moteur énonce apparitions, déplacements, stocks, progression [U8]

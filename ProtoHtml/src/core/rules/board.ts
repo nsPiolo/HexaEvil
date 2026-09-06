@@ -29,6 +29,17 @@ export const destinationThrough = (state: GameState, tile: TileState, exit: numb
   return isEntrance(targetTile, oppositeAccess(exit)) ? target : undefined
 }
 
+/**
+ * `D8b` — les Sorties **praticables** : celles qui débouchent réellement sur une
+ * Entrée (`D5`). Le tourniquet ne considère qu'elles ; une Sortie qui ne mène
+ * nulle part est traitée comme inexistante, et non comme un tour perdu.
+ *
+ * C'est une propriété de la Tuile, pas de l'entité : le retour en arrière
+ * (`D16`) ne rend pas une Sortie impraticable, il tue l'entité qui l'emprunte.
+ */
+export const practicableExits = (state: GameState, tile: TileState): number[] =>
+  tile.exits.filter((exit) => destinationThrough(state, tile, exit) !== undefined)
+
 /** L'entité de `side` peut-elle travailler sur cette Tuile ? (`T2`, `D15`) */
 export const isWorkableBy = (tile: TileState, side: Side): boolean =>
   tile.owner === 'neutral' || tile.owner === side

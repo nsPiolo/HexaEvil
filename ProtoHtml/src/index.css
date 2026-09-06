@@ -204,6 +204,10 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 .inspector__owner--demon { color: var(--demon); }
 .inspector__owner--neutral { color: var(--neutral); }
 .inspector__block { margin-top: 0.8rem; border-top: 1px solid #ffffff10; padding-top: 0.6rem; }
+.inspector__block-head { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
+.inspector__block-head h3 { margin: 0 0 0.4rem; }
+.edit-toggle { font-size: 0.7rem; padding: 0.2rem 0.5rem; margin-bottom: 0.4rem; }
+.edit-toggle--on { background: #4a2c1c; border-color: var(--ember); color: #ffd9c6; }
 .inspector__meta { margin: 0.4rem 0 0; font-size: 0.72rem; color: var(--dim); }
 .inspector__progress { margin: 0; font-size: 0.8rem; }
 .inspector__progress strong { font-size: 1.15rem; color: #f5cf62; font-variant-numeric: tabular-nums; }

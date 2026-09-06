@@ -34,6 +34,12 @@ export type TileTypeDef = Readonly<{
   glyph: string
   side: Owner
   maxExits: number
+  /**
+   * `T8` — Sorties figées par la configuration : le joueur ne peut pas les
+   * modifier, même si la Tuile lui appartient. Sert aux Tuiles de terrain dont
+   * l'orientation fait partie de l'énoncé de la Rencontre (le `Puits`).
+   */
+  fixedExits?: boolean
   /** Tuile d'apparition : `Puits des âmes` / `Gouffre` (`C4`, `X1`). */
   spawns?: Side
   recipes?: readonly RecipeDef[]

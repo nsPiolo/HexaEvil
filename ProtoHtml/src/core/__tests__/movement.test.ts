@@ -72,44 +72,64 @@ describe('Déplacement (D4-D18)', () => {
     expect(tile(state, at(0, 0)).roundRobin).toBe(4)
   })
 
-  it('n’avance pas le tourniquet quand la Sortie est impraticable (D9)', () => {
+  it('ignore une Sortie qui ne mène nulle part (D8b)', () => {
     let state = buildGame({
       board: { radius: 2 },
       soulBudget: 2,
       initialTiles: [
         { q: -1, r: 0, type: 'soulWell', owner: 'player', exits: ['E'] },
-        // Une seule des deux Sorties mène quelque part... mais la première est morte.
+        // NW ne mène nulle part, SE mène au Vide : seule SE entre dans le tourniquet.
         { q: 0, r: 0, type: 'splitter', owner: 'player', exits: ['NW', 'SE'] },
         { q: 0, r: 1, type: 'empty', owner: 'player', exits: [] },
       ],
     })
     state = runTick(state) // Âme #1 → Aiguillage
-    state = runTick(state) // Âme #1 tente NW : rien en face → détruite, compteur figé
-    expect(state.spent.player.blocked).toBe(1)
-    expect(tile(state, at(0, 0)).roundRobin).toBe(0)
+    state = runTick(state) // elle emprunte SE, la seule praticable
+    expect(key(entity(state, 1).space)).toBe('0,1')
+    expect(state.spent.player.blocked).toBe(0)
+    expect(tile(state, at(0, 0)).roundRobin).toBe(1)
   })
 
-  it('bloque durablement une voie dès qu’une Sortie du tourniquet est morte (D9)', () => {
-    // Conséquence cumulée de D9, mesurée sur un Aiguillage dont la 2e Sortie ne
-    // mène nulle part : le compteur s'arrête dessus et **toutes** les entités
-    // suivantes y passent. Ce n'est pas une perte de 50 %, c'est un arrêt total.
+  it('ne bloque plus une voie quand une Sortie du tourniquet est morte (D8b)', () => {
+    // Ancien comportement : le compteur se figeait sur la Sortie morte et toutes
+    // les entités suivantes s'y écrasaient. Désormais elle n'existe pas pour le
+    // tourniquet, et tout le flux passe par la Sortie vivante.
     let state = buildGame({
       board: { radius: 3 },
       soulBudget: 8,
       initialTiles: [
         { q: -1, r: 0, type: 'soulWell', owner: 'player', exits: ['E'] },
-        { q: 0, r: 0, type: 'splitter', owner: 'player', exits: ['SE', 'NW'] },
+        { q: 0, r: 0, type: 'splitter', owner: 'player', exits: ['NW', 'SE'] },
         { q: 0, r: 1, type: 'empty', owner: 'player', exits: [] },
-        // Rien en (0,-1) : la Sortie NW est morte.
       ],
     })
     while (state.outcome === 'ongoing') state = runTick(state)
 
-    // Le compteur à 1 prouve qu'un seul départ a réussi : la première Âme est
-    // partie au SE, puis toutes les suivantes se sont écrasées sur le NW.
-    expect(tile(state, at(0, 0)).roundRobin).toBe(1)
-    expect(state.spent.player.blocked).toBe(8)
-    expect(state.spent.player.backtrack).toBe(0)
+    // 8 départs effectifs depuis l'Aiguillage : aucune Âme n'a été sacrifiée là.
+    expect(tile(state, at(0, 0)).roundRobin).toBe(8)
+    expect(state.spent.player.blocked).toBe(8) // elles meurent au bout du cul-de-sac (0,1)
+  })
+
+  it('alterne entre les seules Sorties praticables (D8, D8b)', () => {
+    let state = buildGame({
+      board: { radius: 3 },
+      soulBudget: 4,
+      initialTiles: [
+        { q: -1, r: 0, type: 'soulWell', owner: 'player', exits: ['E'] },
+        // NW morte, NE et SE vivantes : le tourniquet ne voit que ces deux-là.
+        { q: 0, r: 0, type: 'splitter', owner: 'player', exits: ['NW', 'NE', 'SE'] },
+        { q: 1, r: -1, type: 'empty', owner: 'player', exits: [] },
+        { q: 0, r: 1, type: 'empty', owner: 'player', exits: [] },
+      ],
+    })
+    const arrivals: string[] = []
+    for (let i = 0; i < 6; i++) {
+      state = runTick(state)
+      for (const e of state.entities) {
+        if (key(e.space) === '1,-1' || key(e.space) === '0,1') arrivals.push(key(e.space))
+      }
+    }
+    expect(arrivals.slice(0, 4)).toEqual(['1,-1', '0,1', '1,-1', '0,1'])
   })
 
   it('dépose à l’arrivée et ramasse au départ, jamais les deux dans le même Tick (D10, D12, D13)', () => {

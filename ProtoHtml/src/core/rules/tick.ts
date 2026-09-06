@@ -8,7 +8,7 @@
  * ainsi qu'en reconstruisant l'état à chaque entité.
  */
 import { key } from '../hex/hexCoord'
-import { destinationThrough, isWorkableBy, spawnersOf, tileAt } from './board'
+import { destinationThrough, isWorkableBy, practicableExits, spawnersOf, tileAt } from './board'
 import { acceptsAsInput, chooseRecipeIndex, tileType } from './recipes'
 import { addTo, firstAvailable, removeFrom, removeOne } from './storage'
 import type {
@@ -174,10 +174,15 @@ export const productionPhase = (state: GameState, side: Side): void => {
   }
 }
 
-/** La Sortie désignée par le tourniquet (`D8`), sans faire avancer le compteur. */
-const currentExit = (tile: TileState): number | undefined => {
-  if (tile.exits.length === 0) return undefined
-  return tile.exits[tile.roundRobin % tile.exits.length]
+/**
+ * La Sortie désignée par le tourniquet (`D8`), sans faire avancer le compteur.
+ * Seules les Sorties praticables entrent dans la rotation (`D8b`) : une Sortie
+ * qui ne mène nulle part n'est jamais désignée.
+ */
+const currentExit = (state: GameState, tile: TileState): number | undefined => {
+  const live = practicableExits(state, tile)
+  if (live.length === 0) return undefined
+  return live[tile.roundRobin % live.length]
 }
 
 /** `D12` — ramassage au départ, dans la limite de la capacité de portage (`R7`). */
@@ -211,7 +216,7 @@ export const movementPhase = (state: GameState, side: Side): void => {
     const tile = tileAt(state, entity.space)
     if (!tile) continue
 
-    const exit = currentExit(tile)
+    const exit = currentExit(state, tile)
     const target = exit === undefined ? undefined : destinationThrough(state, tile, exit)
 
     if (target === undefined) {

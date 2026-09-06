@@ -65,6 +65,12 @@ describe('Interface (rendu de fumée)', () => {
     expect(html().match(/role="gridcell"/g)).toHaveLength(spaceCount)
   })
 
+  it('n’ouvre pas l’édition des Sorties tant qu’on ne la demande pas (U12)', () => {
+    // À l'accueil, aucune Tuile n'est sélectionnée : pas de bouton « Terminer ».
+    const out = html()
+    expect(out).not.toContain('edit-toggle--on')
+  })
+
   it('annonce que la pose se fait sans Sortie (U9)', () => {
     // Les boutons de direction ne sont plus à l'écran d'accueil : ils vivent
     // dans le détail d'une Tuile, et la Sortie se désigne au clic sur un voisin.

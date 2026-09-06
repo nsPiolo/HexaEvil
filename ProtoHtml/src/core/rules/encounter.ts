@@ -99,16 +99,33 @@ export const placeTile = (
   return next
 }
 
-/** Refus éventuel d'une reconfiguration de Sorties (`T5`, `B8`). */
+/**
+ * Refus éventuel du **droit** de reconfigurer les Sorties d'une Tuile (`T5`,
+ * `T8`), indépendamment des Sorties visées. C'est ce que l'interface interroge
+ * pour savoir si elle peut proposer l'édition (`U12`).
+ */
+export const exitEditRefusal = (state: GameState, coord: HexCoord): string | undefined => {
+  if (state.phase !== 'placement') return 'les Sorties ne se règlent que pendant la phase de pose (T5)'
+  const tile = tileAt(state, coord)
+  if (!tile) return `aucune Tuile en (${coord.q},${coord.r})`
+  if (tile.owner !== 'player') return 'seules les Tuiles du joueur sont reconfigurables (T5)'
+  const type = tileType(state.config, tile.typeId)
+  if (type.fixedExits === true) {
+    return `les Sorties de « ${type.name} » sont fixées par la configuration (T8)`
+  }
+  if (type.maxExits === 0) return `« ${type.name} » n’admet aucune Sortie (T4)`
+  return undefined
+}
+
+/** Refus éventuel d'une reconfiguration de Sorties (`T5`, `T8`, `B8`). */
 export const exitChangeRefusal = (
   state: GameState,
   coord: HexCoord,
   exits: readonly number[],
 ): string | undefined => {
-  if (state.phase !== 'placement') return 'les Sorties ne se règlent que pendant la phase de pose (T5)'
-  const tile = tileAt(state, coord)
-  if (!tile) return `aucune Tuile en (${coord.q},${coord.r})`
-  if (tile.owner !== 'player') return 'seules les Tuiles du joueur sont reconfigurables (T5)'
+  const refusal = exitEditRefusal(state, coord)
+  if (refusal !== undefined) return refusal
+  const tile = tileAt(state, coord)!
   return exitsRefusal(state, coord, tile.typeId, tile.owner, exits)
 }
 

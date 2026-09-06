@@ -10,6 +10,7 @@ import { tileType } from '../core/rules/recipes'
 import {
   createGame,
   exitChangeRefusal,
+  exitEditRefusal,
   placeTile,
   placementRefusal,
   runRound,
@@ -32,8 +33,7 @@ export type Speed = keyof typeof SPEEDS
 export type ClickAction =
   | { kind: 'wire'; coord: HexCoord; direction: number }
   | { kind: 'place'; coord: HexCoord }
-  /** `arm` : la Tuile cliquée passe en mode câblage. */
-  | { kind: 'select'; coord: HexCoord; arm: boolean }
+  | { kind: 'select'; coord: HexCoord }
   | { kind: 'refused'; coord: HexCoord; reason: string }
 
 /**
@@ -42,9 +42,18 @@ export type ClickAction =
  */
 export const PLACEMENT_EXITS: readonly number[] = []
 
-/** Une Tuile est câblable si elle est au joueur, pendant la phase de pose (`T5`). */
-const isWirable = (state: GameState, coord: HexCoord): boolean =>
-  state.phase === 'placement' && tileAt(state, coord)?.owner === 'player'
+/**
+ * Le droit d'éditer les Sorties est **une règle**, énoncée par le Core
+ * (`exitEditRefusal` : phase, propriétaire, Sorties figées `T8`). L'interface
+ * ne fait que le refléter — elle ne le recalcule pas (ADR-0003). Le mode ne
+ * s'ouvre jamais tout seul à la sélection : il faut le demander (`U12`).
+ */
+export const canEditExits = (state: GameState, coord: HexCoord | undefined): boolean =>
+  coord !== undefined && exitEditRefusal(state, coord) === undefined
+
+/** La raison du refus, pour l'afficher plutôt que de griser sans explication. */
+export const editRefusalAt = (state: GameState, coord: HexCoord | undefined): string | undefined =>
+  coord === undefined ? undefined : exitEditRefusal(state, coord)
 
 /**
  * `U9` — interprétation d'un clic, en fonction pure pour être testable sans
@@ -52,9 +61,10 @@ const isWirable = (state: GameState, coord: HexCoord): boolean =>
  * Tuile en mode câblage prime sur poser, poser prime sur sélectionner.
  *
  * `wiring` est la Tuile dont on est en train de régler les Sorties, ou
- * `undefined` hors de ce mode. Le mode se quitte dès qu'une direction est
- * choisie : sans ça, il resterait armé au retour en phase de pose et le clic
- * suivant orienterait une Sortie au lieu de poser une Tuile.
+ * `undefined` hors de ce mode. Sélectionner une Tuile ne l'ouvre pas : seuls le
+ * bouton « Éditer » et la pose d'une Tuile y font entrer (`U12`). Il se quitte
+ * dès qu'une direction est choisie : sans ça, il resterait armé au retour en
+ * phase de pose et le clic suivant orienterait une Sortie au lieu de poser.
  *
  * Une Tuile posée n'a **aucune Sortie** : l'orientation est le second clic, il
  * n'y a pas de direction par défaut à corriger après coup.
@@ -75,23 +85,24 @@ export const resolveClick = (
     return refusal === undefined ? { kind: 'place', coord } : { kind: 'refused', coord, reason: refusal }
   }
 
-  // Re-cliquer la Tuile en cours de câblage quitte le mode sans la désélectionner.
-  const alreadyWiring = wiring !== undefined && key(wiring) === key(coord)
-  return { kind: 'select', coord, arm: !alreadyWiring && isWirable(state, coord) }
+  return { kind: 'select', coord }
 }
 
 /**
  * `U9` — jeu de Sorties obtenu en cliquant la direction `direction`.
- * Cliquer une Sortie déjà désignée la retire ; en désigner une de plus que ce
- * que la Tuile autorise **remplace la plus ancienne**, ce qui donne la bascule
- * attendue sur une Tuile à Sortie unique. Fonction pure, exportée pour les tests.
+ *
+ * Cliquer une Sortie **déjà désignée la conserve** : le geste vaut alors
+ * confirmation, et l'appelant referme le mode d'édition (`U13`). En désigner une
+ * de plus que ce que la Tuile autorise **remplace la plus ancienne**, ce qui
+ * donne la bascule attendue sur une Tuile à Sortie unique.
+ * Fonction pure, exportée pour les tests.
  */
 export const nextExitsOnClick = (
   current: readonly number[],
   direction: number,
   maxExits: number,
 ): number[] => {
-  if (current.includes(direction)) return current.filter((e) => e !== direction)
+  if (current.includes(direction)) return [...current]
   if (maxExits <= 0) return [...current]
   const next = [...current, direction]
   return next.slice(Math.max(0, next.length - maxExits))
@@ -143,11 +154,21 @@ export const useGame = (config: GameConfig, initialText: string) => {
     [wiring],
   )
 
-  /** Bascule la Sortie d'une Tuile posée vers `direction` (`U9`). */
+  /** Désigne la Sortie d'une Tuile posée vers `direction` (`U9`, `U13`). */
   const setExitTo = useCallback(
     (coord: HexCoord, direction: number) => {
       const tile = tileAt(state, coord)
       if (!tile) return
+
+      // Cliquer une Sortie déjà désignée la confirme : rien à changer, on
+      // referme simplement le mode. Repasser par `setExits` remettrait le
+      // tourniquet à zéro pour rien (`D8`).
+      if (tile.exits.includes(direction)) {
+        setNotice(undefined)
+        setWiringAt(undefined)
+        return
+      }
+
       const exits = nextExitsOnClick(tile.exits, direction, tileType(state.config, tile.typeId).maxExits)
       const refusal = exitChangeRefusal(state, coord, exits)
       if (refusal !== undefined) {
@@ -155,7 +176,7 @@ export const useGame = (config: GameConfig, initialText: string) => {
         return
       }
       setNotice(undefined)
-      setWiringAt(undefined) // une direction choisie = on quitte le mode (U9)
+      setWiringAt(undefined) // une direction choisie = on quitte le mode (U10)
       push(setExits(state, coord, exits))
     },
     [state, push],
@@ -180,21 +201,25 @@ export const useGame = (config: GameConfig, initialText: string) => {
           push(placeTile(state, action.coord, pendingType, PLACEMENT_EXITS))
           return
         case 'refused':
-          setNotice(action.reason)
-          setWiringAt(undefined)
-          setSelected((current) => (current && key(current) === key(coord) ? undefined : coord))
-          return
         case 'select':
-          setNotice(undefined)
-          setWiringAt(action.arm ? action.coord : undefined)
-          setSelected((current) =>
-            current && key(current) === key(coord) && !action.arm ? undefined : coord,
-          )
+          setNotice(action.kind === 'refused' ? action.reason : undefined)
+          setWiringAt(undefined) // sélectionner n'édite pas (U12)
+          setSelected((current) => (current && key(current) === key(coord) ? undefined : coord))
           return
       }
     },
     [state, wiring, pendingType, setExitTo, push],
   )
+
+  /** `U12` — ouvre ou ferme le mode d'édition sur la Tuile sélectionnée. */
+  const editable = canEditExits(state, selected)
+
+  const toggleWiring = useCallback(() => {
+    if (!selected) return
+    setWiringAt((current) =>
+      current && key(current) === key(selected) ? undefined : editable ? selected : undefined,
+    )
+  }, [selected, editable])
 
   /**
    * Bascule une Sortie depuis les boutons de direction. Ils ne servent qu'au cas
@@ -304,6 +329,11 @@ export const useGame = (config: GameConfig, initialText: string) => {
     wiring,
     /** Vrai quand la Tuile inspectée est celle qu'on est en train de câbler. */
     wiringSelected: wiring !== undefined && selected !== undefined && key(wiring) === key(selected),
+    /** Vrai quand la Tuile inspectée peut passer en édition (`U12`). */
+    canEditExits: editable,
+    /** Pourquoi elle ne le peut pas, le cas échéant (`T5`, `T8`). */
+    editRefusal: selected !== undefined && !editable ? editRefusalAt(state, selected) : undefined,
+    toggleWiring,
     playing: queued > 0,
     canUndo: history.length > 1,
     setSpeed,
