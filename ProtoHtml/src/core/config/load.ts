@@ -142,6 +142,7 @@ function parseTileType(raw: unknown, index: number, resourceIds: Set<string>): T
     glyph: string
     side: Owner
     maxExits: number
+    exitsToDesignate?: number
     fixedExits?: boolean
     spawns?: Side
     recipes?: RecipeDef[]
@@ -153,6 +154,16 @@ function parseTileType(raw: unknown, index: number, resourceIds: Set<string>): T
     maxExits,
   }
 
+  if (t.exitsToDesignate !== undefined) {
+    const target = asInt(t.exitsToDesignate, `tileTypes.${id}.exitsToDesignate`, 1)
+    if (target > maxExits) {
+      fail(
+        `tileTypes.${id}.exitsToDesignate (${target}) dépasse maxExits (${maxExits}) : ` +
+          `le mode d'édition ne pourrait jamais se refermer (U10)`,
+      )
+    }
+    def.exitsToDesignate = target
+  }
   if (t.fixedExits !== undefined) def.fixedExits = asBoolean(t.fixedExits, `tileTypes.${id}.fixedExits`)
   if (t.spawns !== undefined) def.spawns = asSide(t.spawns, `tileTypes.${id}.spawns`)
   if (t.recipes !== undefined) {
@@ -250,25 +261,34 @@ export const parseConfig = (raw: unknown): GameConfig => {
     seen.add(k)
   }
 
-  const catalog = asArray(c.catalog, 'catalog').map((id, i) => {
-    const typeId = asString(id, `catalog[${i}]`)
+  const deck = asArray(c.deck, 'deck').map((id, i) => {
+    const typeId = asString(id, `deck[${i}]`)
     const type = types.get(typeId)
-    if (!type) fail(`catalog référence le type de Tuile inconnu « ${typeId} »`)
+    if (!type) fail(`deck référence le type de Tuile inconnu « ${typeId} »`)
     if (type.fixedExits === true && type.maxExits > 0) {
       fail(
-        `catalog contient « ${typeId} », dont les Sorties sont figées (fixedExits) alors qu'il en ` +
+        `deck contient « ${typeId} », dont les Sorties sont figées (fixedExits) alors qu'il en ` +
           `admet ${type.maxExits} : une Tuile posable qu'on ne peut pas orienter est inutilisable (T8)`,
       )
     }
     return typeId
   })
+  const seed =
+    c.seed === undefined || c.seed === null ? null : asSignedInt(c.seed, 'seed')
+  const handMax = asInt(c.handMax, 'handMax', 1)
+  const handStart = asInt(c.handStart, 'handStart', 0)
+  if (handStart > handMax) {
+    fail(`handStart (${handStart}) dépasse handMax (${handMax}) : la main serait pleine d'emblée (A3)`)
+  }
+  if (handStart > deck.length) {
+    fail(`handStart (${handStart}) dépasse la taille de la pioche (${deck.length}) (A2)`)
+  }
 
   const carry = asRecord(c.carryCapacity, 'carryCapacity')
   const config: GameConfig = {
     ticksPerRound: parseTicksPerRound(c.ticksPerRound),
-    soulBudget: asInt(c.soulBudget, 'soulBudget', 1),
-    minionBudget: asInt(c.minionBudget, 'minionBudget', 0),
     stairwayTarget: asInt(c.stairwayTarget, 'stairwayTarget', 1),
+    maxTicks: asInt(c.maxTicks, 'maxTicks', 1),
     carryCapacity: {
       player: asInt(carry.player, 'carryCapacity.player', 1),
       demon: asInt(carry.demon, 'carryCapacity.demon', 1),
@@ -277,7 +297,10 @@ export const parseConfig = (raw: unknown): GameConfig => {
     tileTypes,
     board: { radius, blocked },
     initialTiles,
-    catalog,
+    deck,
+    seed,
+    handMax,
+    handStart,
   }
 
   validateNoCrossing(config)

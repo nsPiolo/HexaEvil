@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest'
 import { hex } from '../../core/hex/hexCoord'
 import { runTick } from '../../core/rules/encounter'
 import type { TickEvent } from '../../core/rules/types'
-import { buildGame } from '../../core/__tests__/helpers'
+import { buildGame, withRecipes } from '../../core/__tests__/helpers'
 import { aggregateFloaters } from '../useAnimation'
 
 const stock = (q: number, r: number, delta: number, reason: 'produced' | 'picked'): TickEvent => ({
@@ -56,8 +56,8 @@ describe('Étiquettes « +x » / « −n » (U7)', () => {
 
   it('produit des étiquettes à partir d’un vrai Tick de simulation', () => {
     let state = buildGame({
+      ...withRecipes('quarry', [{ out: { rawBasalt: 2 }, ticks: 1 }]),
       board: { radius: 2 },
-      soulBudget: 1,
       initialTiles: [
         { q: 0, r: 0, type: 'soulWell', owner: 'player', exits: ['E'] },
         { q: 1, r: 0, type: 'quarry', owner: 'player', exits: ['E'] },

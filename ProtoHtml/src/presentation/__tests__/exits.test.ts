@@ -5,10 +5,11 @@
 import { describe, expect, it } from 'vitest'
 import { directionBetween, directionIndex, hex } from '../../core/hex/hexCoord'
 import { exitChangeRefusal, placeTile, runTick, setExits } from '../../core/rules/encounter'
-import { buildConfig, buildGame } from '../../core/__tests__/helpers'
+import { buildConfig, buildGame, rawGameplay, withHand } from '../../core/__tests__/helpers'
 import {
   PLACEMENT_EXITS,
   canEditExits,
+  closesEditAfterClick,
   editRefusalAt,
   nextExitsOnClick,
   resolveClick,
@@ -88,6 +89,7 @@ describe('Pose d’une Tuile (U9)', () => {
   it('une Tuile posée nue n’a effectivement aucune Sortie', () => {
     const state = placeTile(
       buildGame({
+        ...withHand(['quarry']),
         board: { radius: 2 },
         initialTiles: [{ q: 0, r: 0, type: 'soulWell', owner: 'player', exits: ['E'] }],
       }),
@@ -104,12 +106,13 @@ describe('Interprétation d’un clic sur le Plateau (U9)', () => {
   /** Puits(0,0) déjà posé, le reste du Plateau libre. */
   const game = () =>
     buildGame({
+      ...withHand(['quarry', 'quarry', 'empty']),
       board: { radius: 2 },
       initialTiles: [{ q: 0, r: 0, type: 'soulWell', owner: 'player', exits: ['E'] }],
     })
 
   it('pose sur un Espace libre hors mode câblage', () => {
-    expect(resolveClick(game(), undefined, hex(1, 0), 'quarry')).toEqual({
+    expect(resolveClick(game(), undefined, undefined, hex(1, 0), 'quarry')).toEqual({
       kind: 'place',
       coord: hex(1, 0),
     })
@@ -117,7 +120,7 @@ describe('Interprétation d’un clic sur le Plateau (U9)', () => {
 
   it('sélectionne une Tuile sans ouvrir l’édition (U12)', () => {
     // La sélection sert à inspecter ; l'édition est un geste explicite.
-    expect(resolveClick(game(), undefined, hex(0, 0), 'quarry')).toEqual({
+    expect(resolveClick(game(), undefined, undefined, hex(0, 0), 'quarry')).toEqual({
       kind: 'select',
       coord: hex(0, 0),
     })
@@ -125,12 +128,12 @@ describe('Interprétation d’un clic sur le Plateau (U9)', () => {
 
   it('câble quand on clique un voisin de la Tuile en mode câblage', () => {
     const state = game()
-    expect(resolveClick(state, hex(0, 0), hex(1, 0), 'quarry')).toEqual({
+    expect(resolveClick(state, hex(0, 0), undefined, hex(1, 0), 'quarry')).toEqual({
       kind: 'wire',
       coord: hex(0, 0),
       direction: directionIndex('E'),
     })
-    expect(resolveClick(state, hex(0, 0), hex(0, -1), 'quarry')).toEqual({
+    expect(resolveClick(state, hex(0, 0), undefined, hex(0, -1), 'quarry')).toEqual({
       kind: 'wire',
       coord: hex(0, 0),
       direction: directionIndex('NW'),
@@ -142,20 +145,21 @@ describe('Interprétation d’un clic sur le Plateau (U9)', () => {
     // le Puits mais pas la Carrière : c'est une pose, pas un câblage (B12 le
     // rend constructible).
     const state = buildGame({
+      ...withHand(['quarry']),
       board: { radius: 2 },
       initialTiles: [
         { q: 0, r: 0, type: 'soulWell', owner: 'player', exits: ['E'] },
         { q: 1, r: 0, type: 'quarry', owner: 'player', exits: [] },
       ],
     })
-    expect(resolveClick(state, hex(1, 0), hex(0, -1), 'quarry')).toEqual({
+    expect(resolveClick(state, hex(1, 0), undefined, hex(0, -1), 'quarry')).toEqual({
       kind: 'place',
       coord: hex(0, -1),
     })
   })
 
   it('traite un clic sur la Tuile éditée comme une simple sélection', () => {
-    expect(resolveClick(game(), hex(0, 0), hex(0, 0), 'quarry')).toEqual({
+    expect(resolveClick(game(), hex(0, 0), undefined, hex(0, 0), 'quarry')).toEqual({
       kind: 'select',
       coord: hex(0, 0),
     })
@@ -165,14 +169,14 @@ describe('Interprétation d’un clic sur le Plateau (U9)', () => {
     // C'est le comportement attendu au retour en phase de pose : sans ça, le
     // premier clic de la Manche suivante réorienterait une Sortie.
     const state = game()
-    expect(resolveClick(state, undefined, hex(1, 0), 'quarry').kind).toBe('place')
+    expect(resolveClick(state, undefined, undefined, hex(1, 0), 'quarry').kind).toBe('place')
   })
 
-  it('refuse une seconde pose dans la même Manche, avec la raison (C1)', () => {
+  it('refuse une seconde action dans la même Manche, avec la raison (A1)', () => {
     const state = placeTile(game(), hex(1, 0), 'quarry', [])
-    const action = resolveClick(state, undefined, hex(2, 0), 'quarry')
+    const action = resolveClick(state, undefined, undefined, hex(0, -1), 'quarry')
     expect(action.kind).toBe('refused')
-    expect(action.kind === 'refused' && action.reason).toMatch(/une seule Tuile par Manche/)
+    expect(action.kind === 'refused' && action.reason).toMatch(/déjà dépensée cette Manche/)
   })
 
   it('ne câble plus pendant le déroulé des Ticks (T5)', () => {
@@ -186,7 +190,7 @@ describe('Interprétation d’un clic sur le Plateau (U9)', () => {
       }),
     )
     expect(running.phase).toBe('running')
-    const action = resolveClick(running, hex(0, 0), hex(1, 0), 'quarry')
+    const action = resolveClick(running, hex(0, 0), undefined, hex(1, 0), 'quarry')
     expect(action.kind).not.toBe('wire')
     expect(action.kind).toBe('refused')
   })
@@ -194,7 +198,7 @@ describe('Interprétation d’un clic sur le Plateau (U9)', () => {
   it('sélectionne aussi pendant le déroulé des Ticks, pour observer', () => {
     const running = runTick(game())
     void running
-    expect(resolveClick(running, undefined, hex(0, 0), 'quarry')).toEqual({
+    expect(resolveClick(running, undefined, undefined, hex(0, 0), 'quarry')).toEqual({
       kind: 'select',
       coord: hex(0, 0),
     })
@@ -203,19 +207,19 @@ describe('Interprétation d’un clic sur le Plateau (U9)', () => {
   it('enchaîne pose puis orientation en deux clics', () => {
     let state = game()
     // 1er clic : pose de la Carrière en (1,0), sans Sortie. Le câblage s'arme.
-    expect(resolveClick(state, undefined, hex(1, 0), 'quarry').kind).toBe('place')
+    expect(resolveClick(state, undefined, undefined, hex(1, 0), 'quarry').kind).toBe('place')
     state = placeTile(state, hex(1, 0), 'quarry', [])
     expect(state.tiles['1,0']!.exits).toEqual([]) // aucune Sortie par défaut
 
     // 2e clic : sur le voisin (2,0), qui devient la Sortie — puis le mode se referme.
-    const second = resolveClick(state, hex(1, 0), hex(2, 0), 'quarry')
+    const second = resolveClick(state, hex(1, 0), undefined, hex(2, 0), 'quarry')
     expect(second).toEqual({ kind: 'wire', coord: hex(1, 0), direction: directionIndex('E') })
     state = setExits(state, hex(1, 0), [directionIndex('E')])
     expect(state.tiles['1,0']!.exits).toEqual([directionIndex('E')])
 
     // Ré-ouvrir l'édition passe par le bouton, pas par un clic sur la Tuile.
     expect(canEditExits(state, hex(1, 0))).toBe(true)
-    const third = resolveClick(state, hex(1, 0), hex(1, -1), 'quarry')
+    const third = resolveClick(state, hex(1, 0), undefined, hex(1, -1), 'quarry')
     expect(third).toEqual({ kind: 'wire', coord: hex(1, 0), direction: directionIndex('NW') })
     expect(nextExitsOnClick(state.tiles['1,0']!.exits, directionIndex('NW'), 1)).toEqual([
       directionIndex('NW'),
@@ -276,13 +280,62 @@ describe('Sorties figées par la configuration (T8)', () => {
     expect(state.tiles['0,0']!.exits).toEqual([directionIndex('E')])
   })
 
-  it('refuse au chargement un type figé mis au catalogue', () => {
-    // Une Tuile posable qu'on ne pourrait jamais orienter serait inutilisable.
+  it('refuse au chargement un type figé mis dans la pioche (T8, A2)', () => {
+    // Une Tuile piochable qu'on ne pourrait jamais orienter serait inutilisable.
     expect(() =>
-      buildConfig({
-        catalog: ['soulWell'],
-        initialTiles: [],
-      }),
+      buildConfig({ deck: ['soulWell'], handStart: 0, initialTiles: [] }),
     ).toThrow(/Sorties sont figées/)
+  })
+})
+
+describe('Fermeture du mode d’édition (U10)', () => {
+  const E = directionIndex('E')
+  const NE = directionIndex('NE')
+  const NW = directionIndex('NW')
+
+  it('se referme au premier choix sur une Tuile à une Sortie', () => {
+    expect(closesEditAfterClick([], E, 1, 1)).toBe(true)
+  })
+
+  it('reste ouvert jusqu’au compte demandé sur un Aiguillage', () => {
+    // Aiguillage : 3 Sorties possibles, 2 à désigner.
+    expect(closesEditAfterClick([], E, 3, 2)).toBe(false) // 1re branche
+    expect(closesEditAfterClick([E], NE, 3, 2)).toBe(true) // 2e branche : on ferme
+  })
+
+  it('laisse désigner une troisième Sortie après réouverture', () => {
+    // Le compte est déjà atteint : le clic suivant referme aussitôt.
+    expect(closesEditAfterClick([E, NE], NW, 3, 2)).toBe(true)
+  })
+
+  it('se referme dès qu’on confirme une Sortie déjà désignée (U13)', () => {
+    // Utile pour clore un Aiguillage à une seule branche.
+    expect(closesEditAfterClick([E], E, 3, 2)).toBe(true)
+  })
+
+  it('se referme quand le remplacement FIFO maintient le compte', () => {
+    // Tuile pleine : le remplacement garde 3 Sorties, donc ≥ 2.
+    expect(closesEditAfterClick([E, NE, NW], directionIndex('SE'), 3, 2)).toBe(true)
+  })
+
+  it('traite un compte absent ou nul comme 1', () => {
+    expect(closesEditAfterClick([], E, 3, 0)).toBe(true)
+  })
+})
+
+describe('Compte de Sorties en configuration (U10)', () => {
+  it('lit exitsToDesignate sur le type de Tuile', () => {
+    const config = buildConfig()
+    const splitter = config.tileTypes.find((t) => t.id === 'splitter')!
+    expect(splitter.exitsToDesignate).toBe(2)
+    expect(splitter.maxExits).toBeGreaterThanOrEqual(2)
+  })
+
+  it('refuse un compte supérieur au nombre de Sorties possibles', () => {
+    const raw = rawGameplay()
+    const types = (raw.tileTypes as { id: string; maxExits: number; exitsToDesignate?: number }[]).map(
+      (t) => (t.id === 'empty' ? { ...t, exitsToDesignate: 2 } : t),
+    )
+    expect(() => buildConfig({ tileTypes: types })).toThrow(/ne pourrait jamais se refermer/)
   })
 })

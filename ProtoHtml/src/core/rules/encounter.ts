@@ -8,8 +8,17 @@
 import { directionIndex, hex, key, neighbors, type HexCoord } from '../hex/hexCoord'
 import { exitsRefusal, isFree, isOnBoard, tileAt } from './board'
 import { tileType } from './recipes'
+import { nextIndex, randomSeed } from './random'
 import { runTickInPlace } from './tick'
-import type { GameConfig, GameState, Owner, Side, TileState, TileTypeId } from './types'
+import type {
+  GameConfig,
+  GameState,
+  Owner,
+  RoundAction,
+  Side,
+  TileState,
+  TileTypeId,
+} from './types'
 import { range } from '../hex/hexCoord'
 
 const clone = <T>(value: T): T => structuredClone(value)
@@ -90,8 +99,51 @@ const createTile = (
   productionsDone: 0,
 })
 
+/**
+ * `A2`, `A8` — retire une Tuile **au hasard** de la pioche et la rend. La pioche
+ * est un sac : l'ordre de la liste de configuration n'a aucune importance.
+ */
+const takeFromDeck = (state: GameState): TileTypeId | undefined => {
+  if (state.deck.length === 0) return undefined
+  const [drawn] = state.deck.splice(nextIndex(state, state.deck.length), 1)
+  return drawn
+}
+
+/**
+ * `A7` — pioche automatique à l'ouverture du tour du joueur. Elle ne dépense
+ * **pas** l'action de la Manche (`A1`) : sans ça, un tour sur deux servirait à
+ * se réapprovisionner. Elle est simplement sautée si la pioche est vide ou la
+ * main pleine (`A3`).
+ */
+const autoDraw = (state: GameState): void => {
+  if (state.deck.length === 0) return
+  if (state.hand.length >= state.config.handMax) return
+  const drawn = takeFromDeck(state)!
+  state.hand.push(drawn)
+  state.log.push({
+    tick: state.tick,
+    side: 'player',
+    text:
+      `Pioche automatique : « ${tileType(state.config, drawn).name} » ` +
+      `(${state.deck.length} restantes).`,
+  })
+}
+
 /** Monte une Rencontre neuve depuis une configuration validée (`B3`, `B5`, `B6`). */
 export const createGame = (config: GameConfig): GameState => {
+  const state = createGameState(config)
+  // La main de départ est tirée au hasard elle aussi (`A3`, `A8`).
+  for (let i = 0; i < config.handStart; i++) {
+    const drawn = takeFromDeck(state)
+    if (drawn === undefined) break
+    state.hand.push(drawn)
+  }
+  autoDraw(state) // A7 — le premier tour s'ouvre comme les autres
+  return state
+}
+
+const createGameState = (config: GameConfig): GameState => {
+  const seed = config.seed ?? randomSeed()
   const spaces = range(hex(0, 0), config.board.radius)
   const tiles: Record<string, TileState> = {}
   for (const init of config.initialTiles) {
@@ -117,23 +169,37 @@ export const createGame = (config: GameConfig): GameState => {
     spent: { player: emptySpend(), demon: emptySpend() },
     progress: 0,
     drain: { applied: 0, absorbed: 0 },
-    placedThisRound: false,
+    deck: [...config.deck],
+    hand: [],
+    seed,
+    rngState: seed,
     events: [],
     log: [{ tick: 0, side: 'system', text: 'La Rencontre commence : pose ta première Tuile.' }],
     outcome: 'ongoing',
   }
 }
 
-/** Refus éventuel d'une pose (`B4`, `C1`, `T6`). `undefined` = pose permise. */
+/**
+ * `A1` — refus éventuel de dépenser l'action de la Manche. Commun aux quatre
+ * actions : c'est ce qui garantit qu'on n'en fait qu'une.
+ */
+export const actionRefusal = (state: GameState): string | undefined => {
+  if (state.outcome !== 'ongoing') return 'la Rencontre est terminée'
+  if (state.phase !== 'placement') return 'les actions se jouent pendant la phase de pose (C1)'
+  if (state.action !== undefined) return `action déjà dépensée cette Manche (${state.action}) (A1)`
+  return undefined
+}
+
+/** Refus éventuel d'une pose (`A1`, `A2`, `B4`). `undefined` = pose permise. */
 export const placementRefusal = (
   state: GameState,
   coord: HexCoord,
   typeId: TileTypeId,
   exits: readonly number[],
 ): string | undefined => {
-  if (state.phase !== 'placement') return 'la pose n’est possible que pendant la phase de pose (C1)'
-  if (state.placedThisRound) return 'une seule Tuile par Manche (C1)'
-  if (!state.config.catalog.includes(typeId)) return `« ${typeId} » n’est pas au catalogue posable (T7)`
+  const busy = actionRefusal(state)
+  if (busy !== undefined) return busy
+  if (!state.hand.includes(typeId)) return `« ${typeId} » n’est pas dans ta main (A2)`
   if (!isOnBoard(state, coord)) return `l’Espace (${coord.q},${coord.r}) est hors du Plateau`
   if (!isFree(state, coord)) return `l’Espace (${coord.q},${coord.r}) est déjà occupé (B4)`
   if (isBlocked(state, coord)) return `l’Espace (${coord.q},${coord.r}) n’est pas constructible (B11)`
@@ -153,7 +219,8 @@ export const placeTile = (
   if (placementRefusal(state, coord, typeId, exits) !== undefined) return state
   const next = clone(state)
   next.tiles[key(coord)] = createTile(coord, typeId, 'player', exits)
-  next.placedThisRound = true
+  next.hand.splice(next.hand.indexOf(typeId), 1) // la Tuile quitte la main (A2)
+  next.action = 'place'
   next.log.push({
     tick: next.tick,
     side: 'player',
@@ -161,6 +228,111 @@ export const placeTile = (
   })
   return next
 }
+
+/** `A2` — refus éventuel d'une pioche. */
+export const drawRefusal = (state: GameState): string | undefined => {
+  const busy = actionRefusal(state)
+  if (busy !== undefined) return busy
+  if (state.deck.length === 0) return 'la pioche est vide (A2)'
+  if (state.hand.length >= state.config.handMax) {
+    return `main pleine : ${state.config.handMax} Tuiles au maximum (A3)`
+  }
+  return undefined
+}
+
+/** `A2` — pioche la Tuile du dessus. Dépense l'action de la Manche. */
+export const drawTile = (state: GameState): GameState => {
+  if (drawRefusal(state) !== undefined) return state
+  const next = clone(state)
+  const drawn = takeFromDeck(next)!
+  next.hand.push(drawn)
+  next.action = 'draw'
+  next.log.push({
+    tick: next.tick,
+    side: 'player',
+    text: `Pioche de « ${tileType(next.config, drawn).name} » (${next.deck.length} restantes).`,
+  })
+  return next
+}
+
+/** `A4` — refus éventuel d'un déplacement de Tuile posée. */
+export const moveRefusal = (state: GameState, from: HexCoord, to: HexCoord): string | undefined => {
+  const busy = actionRefusal(state)
+  if (busy !== undefined) return busy
+  const tile = tileAt(state, from)
+  if (!tile) return `aucune Tuile en (${from.q},${from.r})`
+  if (tile.owner !== 'player') return 'seules les Tuiles du joueur se déplacent (A4)'
+  if (tileType(state.config, tile.typeId).fixedExits === true) {
+    return `« ${tileType(state.config, tile.typeId).name} » fait partie du terrain (T8)`
+  }
+  if (key(from) === key(to)) return 'la Tuile est déjà là'
+
+  // Un déplacement, c'est reprendre la Tuile puis la reposer : la destination
+  // s'évalue donc sur un Plateau **privé** de cette Tuile.
+  const lifted = clone(state)
+  delete lifted.tiles[key(from)]
+  if (!isOnBoard(lifted, to)) return `l'Espace (${to.q},${to.r}) est hors du Plateau`
+  if (!isFree(lifted, to)) return `l'Espace (${to.q},${to.r}) est déjà occupé (B4)`
+  if (isBlocked(lifted, to)) return `l'Espace (${to.q},${to.r}) n'est pas constructible (B11)`
+  if (!neighbors(to).some((n) => connectedToSource(lifted).has(key(n)))) {
+    return `l'Espace (${to.q},${to.r}) n'est relié au Puits des âmes par aucune chaîne de Tuiles (B12)`
+  }
+  return exitsRefusal(lifted, to, tile.typeId, 'player', tile.exits)
+}
+
+/**
+ * `A4` — déplace une Tuile posée, avec ses réserves. Les entités qui s'y
+ * trouvaient **perdent pied et sont détruites** : déplacer un Bâtiment, c'est le
+ * démonter, pas le faire glisser avec ses ouvriers.
+ */
+export const moveTile = (state: GameState, from: HexCoord, to: HexCoord): GameState => {
+  if (moveRefusal(state, from, to) !== undefined) return state
+  const next = clone(state)
+  const tile = next.tiles[key(from)]!
+  delete next.tiles[key(from)]
+  tile.coord = to
+  tile.roundRobin = 0
+  next.tiles[key(to)] = tile
+
+  const stranded = next.entities.filter((e) => key(e.space) === key(from))
+  for (const entity of stranded) {
+    next.entities = next.entities.filter((e) => e.id !== entity.id)
+    next.spent[entity.side].blocked += 1
+  }
+  next.action = 'move'
+  next.log.push({
+    tick: next.tick,
+    side: 'player',
+    text:
+      `Déplacement de « ${tileType(next.config, tile.typeId).name} » ` +
+      `(${from.q},${from.r}) → (${to.q},${to.r})` +
+      (stranded.length > 0 ? `, ${stranded.length} entité(s) perdue(s)` : '') +
+      '.',
+  })
+  return next
+}
+
+/** `A5` — passer son tour : l'action est dépensée sans rien faire. */
+export const passRefusal = (state: GameState): string | undefined => actionRefusal(state)
+
+export const passTurn = (state: GameState): GameState => {
+  if (passRefusal(state) !== undefined) return state
+  const next = clone(state)
+  next.action = 'pass'
+  next.log.push({ tick: next.tick, side: 'player', text: 'Le joueur passe son tour.' })
+  return next
+}
+
+/** Les actions encore jouables, pour l'interface (`A1`). */
+export const availableActions = (state: GameState): RoundAction[] => {
+  if (actionRefusal(state) !== undefined) return []
+  const actions: RoundAction[] = []
+  if (state.hand.length > 0) actions.push('place')
+  if (drawRefusal(state) === undefined) actions.push('draw')
+  actions.push('move', 'pass')
+  return actions
+}
+
 
 /**
  * Refus éventuel du **droit** de reconfigurer les Sorties d'une Tuile (`T5`,
@@ -228,7 +400,8 @@ export const runTick = (state: GameState): GameState => {
     next.phase = 'placement'
     next.round += 1
     next.ticksLeftInRound = ticksForRound(next.config, next.round)
-    next.placedThisRound = false
+    next.action = undefined
+    autoDraw(next) // A7 — le tour du joueur s'ouvre par une pioche
   }
   return next
 }
@@ -258,5 +431,5 @@ export const totalSpent = (state: GameState, side: Side): number => {
 export const livingEntities = (state: GameState, side: Side): number =>
   state.entities.filter((e) => e.side === side).length
 
-export const reserveLeft = (state: GameState, side: Side): number =>
-  (side === 'player' ? state.config.soulBudget : state.config.minionBudget) - state.spawned[side]
+/** Entités apparues depuis le début de la Rencontre (`K1`). */
+export const spawnedCount = (state: GameState, side: Side): number => state.spawned[side]

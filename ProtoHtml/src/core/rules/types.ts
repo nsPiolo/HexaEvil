@@ -35,6 +35,14 @@ export type TileTypeDef = Readonly<{
   side: Owner
   maxExits: number
   /**
+   * `U10` — nombre de Sorties à désigner avant que le mode d'édition se
+   * referme. **Ce n'est pas une contrainte de validité** : une Tuile avec moins
+   * de Sorties reste légale, et on peut clore l'édition plus tôt (`U13`). Un
+   * `Aiguillage` vaut 2 : sans ça, il faudrait réouvrir le mode pour chaque
+   * branche. Par défaut 1.
+   */
+  exitsToDesignate?: number
+  /**
    * `T8` — Sorties figées par la configuration : le joueur ne peut pas les
    * modifier, même si la Tuile lui appartient. Sert aux Tuiles de terrain dont
    * l'orientation fait partie de l'énoncé de la Rencontre (le `Puits`).
@@ -68,12 +76,18 @@ export type TicksPerRound = Readonly<{
   delay: number
 }>
 
+/**
+ * `A1` — l'unique action que le joueur dépense dans une Manche. Réorganiser les
+ * Sorties n'en fait pas partie : c'est gratuit et illimité (`A6`).
+ */
+export type RoundAction = 'place' | 'draw' | 'move' | 'pass'
+
 /** Contenu du fichier de configuration unique (`G1`, `G2`). */
 export type GameConfig = Readonly<{
   ticksPerRound: TicksPerRound
-  soulBudget: number
-  minionBudget: number
   stairwayTarget: number
+  /** `E2` — la Rencontre s'arrête à ce nombre de Ticks : c'est l'horloge. */
+  maxTicks: number
   carryCapacity: Readonly<Record<Side, number>>
   resources: readonly ResourceDef[]
   tileTypes: readonly TileTypeDef[]
@@ -83,7 +97,21 @@ export type GameConfig = Readonly<{
     blocked: readonly HexCoord[]
   }>
   initialTiles: readonly InitialTileDef[]
-  catalog: readonly TileTypeId[]
+  /**
+   * `A2` — contenu de la pioche, **sans ordre** : c'est un sac, et les
+   * répétitions y font les quantités. Le tirage est aléatoire (`A8`).
+   */
+  deck: readonly TileTypeId[]
+  /**
+   * `A8` — germe du tirage. Un nombre la fixe (parties reproductibles, donc
+   * réglages comparables) ; `null` ou absente en tire une nouvelle à chaque
+   * partie.
+   */
+  seed: number | null
+  /** `A3` — plafond de la main : piocher au-delà est refusé. */
+  handMax: number
+  /** `A3` — Tuiles piochées au montage de la Rencontre. */
+  handStart: number
 }>
 
 /** Tuile posée sur un Espace (`HexTile`). */
@@ -172,8 +200,16 @@ export type GameState = {
   progress: number
   /** Ponction du démon : appliquée vs. absorbée par le plancher à 0 (`R8`, `E8`). */
   drain: { applied: number; absorbed: number }
-  /** Une seule pose par Manche (`C1`). */
-  placedThisRound: boolean
+  /** Pioche restante, tirée au hasard (`A2`, `A8`). */
+  deck: TileTypeId[]
+  /** Germe effectivement utilisée : à recopier en configuration pour rejouer. */
+  seed: number
+  /** État courant du générateur (`A8`). */
+  rngState: number
+  /** Main du joueur : les Tuiles qu'il peut poser (`A2`). */
+  hand: TileTypeId[]
+  /** L'action déjà dépensée dans la Manche, s'il y en a une (`A1`). */
+  action?: RoundAction | undefined
   /** Événements du dernier Tick déroulé, pour l'animation (`U6`, `U7`). */
   events: TickEvent[]
   log: LogEntry[]

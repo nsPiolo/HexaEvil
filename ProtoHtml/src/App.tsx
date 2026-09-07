@@ -19,15 +19,27 @@ const boot = (text: string): Boot => {
   }
 }
 
-const shippedText = JSON.stringify(rawGameplay, null, 2)
+/**
+ * Le texte du fichier, relu **à chaque rendu**. Il ne doit pas être figé dans un
+ * `useState` : le Fast Refresh de Vite conserve l'état des hooks quand le module
+ * est rechargé, donc une modification de `config/gameplay.json` resterait
+ * invisible pour la partie en cours — un piège vicieux quand tout le réglage vit
+ * dans ce fichier (`G1`, `G4`).
+ */
+const fileText = (): string => JSON.stringify(rawGameplay, null, 2)
 
 export default function App() {
-  const [text, setText] = useState(shippedText)
+  const shipped = fileText()
+  /** Texte corrigé à la main sur l'écran d'erreur ; sinon, celui du fichier. */
+  const [draft, setDraft] = useState<string | undefined>(undefined)
   const [attempt, setAttempt] = useState(0)
-  // Ne revalide qu'à la demande : on ne veut pas d'erreur à chaque frappe.
-  const state = useMemo(() => boot(text), [attempt]) // eslint-disable-line react-hooks/exhaustive-deps
+  const text = draft ?? shipped
+  const state = useMemo(() => boot(text), [text, attempt])
+  const setText = setDraft
 
-  if (state.ok) return <Game config={state.config} configText={text} />
+  // `key` : une modification du fichier remonte le jeu, donc relance la partie
+  // avec les nouvelles valeurs (germe comprise, `A8`).
+  if (state.ok) return <Game key={text} config={state.config} configText={text} />
 
   return (
     <div className="app app--boot">
@@ -53,7 +65,7 @@ export default function App() {
         <button
           type="button"
           onClick={() => {
-            setText(shippedText)
+            setDraft(undefined)
             setAttempt((a) => a + 1)
           }}
         >

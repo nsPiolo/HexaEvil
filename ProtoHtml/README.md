@@ -18,7 +18,7 @@ commentaire. Si le code et le GDD divergent, c'est le GDD qui a raison.
 cd ProtoHtml
 npm install
 npm run dev      # http://localhost:5180
-npm test         # 120 tests : mécaniques, trace de référence, parties complètes, affichage
+npm test         # 162 tests : mécaniques, trace de référence, parties complètes, affichage
 npm run build    # typecheck + build de prod
 ```
 
@@ -45,7 +45,13 @@ changer une recette, si — et c'est le signal attendu.
 
 ## Comment on joue
 
-1. **Phase de pose, en deux clics** (`U9`) : choisir un type au catalogue, puis
+1. **Une action par Manche** (`A1`) : poser une Tuile de sa main, piocher,
+   déplacer une Tuile posée, ou passer. Une Tuile est piochée **automatiquement**
+   à chaque tour tant que la main n'est pas pleine (`A7`) — sans coûter l'action.
+   Le tirage est aléatoire mais **germé** (`A8`) : la germe est affichée, et la
+   recopier dans `seed` rejoue exactement la même partie.
+   Réorganiser les Sorties reste gratuit et illimité (`A6`).
+2. **Poser, en deux clics** (`U9`) : choisir une Tuile de la main, puis
    cliquer un Espace **posable** — libre, hors relief, et voisin d'une chaîne
    reliée au Puits des âmes (`B11`, `B12`) — pour y poser la Tuile — elle arrive **sans aucune
    Sortie**, sélectionnée, et ses six voisins deviennent cliquables. Cliquer l'un
@@ -55,13 +61,15 @@ changer une recette, si — et c'est le signal attendu.
    dans son détail (`U12`), puis cliquer le voisin visé (`T5`). Sur une Tuile à
    Sortie unique, une autre direction fait **basculer** la Sortie ; sur un
    Aiguillage, les clics s'accumulent jusqu'à son maximum puis remplacent la plus
-   ancienne. Cliquer une Sortie déjà désignée la **conserve** (`U13`). Le mode se
-   referme après chaque direction choisie (`U10`).
+   ancienne. Cliquer une Sortie déjà désignée la **conserve** et referme le mode
+   (`U13`). Le mode reste ouvert jusqu'au compte de Sorties du type
+   (`exitsToDesignate` : 1 par défaut, **2 pour l'Aiguillage**, `U10`), pour
+   désigner les deux branches d'affilée.
    Sélectionner une Tuile ne l'ouvre jamais : la sélection sert à observer.
    Certaines Tuiles ont leurs Sorties **figées par la configuration**
    (`fixedExits`, `T8`) : le Puits des âmes est orienté par le terrain, pas par
    le joueur. Le panneau affiche alors la raison au lieu du bouton.
-2. **Dérouler** : `1 Tick` pour le pas-à-pas (`U5`), ou `Manche` pour les Ticks
+3. **Dérouler** : `1 Tick` pour le pas-à-pas (`U5`), ou `Manche` pour les Ticks
    de la Manche courante — 1 au départ, puis +1 toutes les 2 Manches jusqu'à 5
    (`C1b`) —
    — joués **en séquence et animés** (`U6`), les âmes glissant d'un hexagone au
@@ -71,14 +79,17 @@ changer une recette, si — et c'est le signal attendu.
    `+x` quand une ressource entre (production, dépôt), `−n` quand elle sort
    (consommation d'une recette, ramassage), et `+7` / `−1` pour la progression de
    l'Escalier (`U7`).
-3. **Observer** : l'Escalier porte sa progression (`42/200`) directement sur sa
+4. **Observer** : l'Escalier porte sa progression (`42/200`) directement sur sa
    tuile (`U11`). Cliquer une Tuile ouvre son détail — Recettes, entités
    présentes avec l'avancement de leur production ou la raison de leur
    inactivité, réserves d'entrée et de sortie, Sorties et position du tourniquet.
 
-L'indicateur central est **Progression / Âme** : les Âmes sont la ressource
-épuisable de la Rencontre (100 pour toute la partie), et chaque livraison en
-coûte une.
+La Rencontre est une **horloge** : le joueur a 100 Ticks (`maxTicks`, `E2`) pour
+achever l'Escalier, et c'est sa **seule** contrainte — les Âmes comme les Sbires
+apparaissent sans limite (`C5`, `X1`). Les Âmes encore en transit à l'échéance ne
+livrent jamais. L'indicateur central reste **Progression / Âme** : chaque
+livraison coûte une Âme (`D6`), et comme il en naît exactement une par Tick, cet
+indicateur vaut aussi « progression par Tick ».
 
 ## Structure — miroir de l'ADR-0003 (Core / Presentation / Data)
 
@@ -126,6 +137,7 @@ Règles de dépendance (les mêmes que côté Unity) :
 
 ```
 config.test.ts        Validation de la configuration, refus de terrain croisé (B8)
+actions.test.ts       Main, pioche, une action par Manche, déplacement (A1-A6)
 spawn.test.ts         Apparition, réserve, budget de partie (C4, C5, C5b, X1)
 placement.test.ts     Relief, croissance depuis le Puits, cadence des Manches (B11, B12, C1b)
 production.test.ts    P1-P8, dont le remboursement sur destruction (P8)
@@ -146,15 +158,18 @@ render.test.tsx       Rendu de fumée de l'interface, plateau animé à mi-cours
 Parties complètes, configuration livrée, chaîne posée en ligne droite du Puits à
 l'Escalier :
 
+Mesuré sur 100 Ticks, avec le réglage courant du fichier de configuration :
+
 | Voie jouée | Livraisons | Brut | Ponction du démon | Final |
 | --- | --- | --- | --- | --- |
-| `Basalte brut` | 100 | 100 | −100 | **0 / 200** |
-| `Basalte dégrossi` | 99 | 297 | −99 | **201 / 200** ✅ |
+| `Basalte brut` | 97 | 97 | −97 | **0 / 200** |
+| `Basalte dégrossi` | 95 | 285 | −95 | **190 / 200** |
 
 La voie brute est *exactement* annulée par le démon (+1 par Âme à 1 Âme/Tick
-contre −1/Tick) : elle ne décolle jamais de 0. La voie dégrossie franchit la
-cible de 1 point. Le réglage se fera sur ces nombres (`E9` du GDD) — d'où
-l'éditeur de configuration.
+contre −1/Tick) : elle ne décolle jamais de 0. La voie dégrossie s'arrête à 10
+points de la cible. Ces nombres bougent à chaque réglage : les tests
+d'intégration vérifient des **invariants** du moteur, pas ces valeurs, et ce
+tableau est rafraîchi à la demande.
 
 ## Ce que le proto ne cherche pas à valider
 

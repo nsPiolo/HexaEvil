@@ -8,8 +8,8 @@ import { renderToString } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import App from '../../App'
 import { hex } from '../../core/hex/hexCoord'
-import { runTick } from '../../core/rules/encounter'
-import { buildGame, referenceConfig } from '../../core/__tests__/helpers'
+import { createGame, runTick } from '../../core/rules/encounter'
+import { buildGame, referenceConfig, withRecipes } from '../../core/__tests__/helpers'
 import { BoardView } from '../BoardView'
 import { Game } from '../Game'
 import { aggregateFloaters, type MoveAnim } from '../useAnimation'
@@ -23,6 +23,13 @@ const html = () =>
   renderToString(<Game config={config} configText="{}" />).replaceAll('<!-- -->', '')
 
 const spaceCount = 1 + 3 * config.board.radius * (config.board.radius + 1)
+
+/**
+ * La main est tirée au hasard (`A8`) mais la germe est fixée en configuration :
+ * on la recalcule donc plutôt que de nommer des Tuiles en dur.
+ */
+const startingHand = createGame(config).hand
+const tileName = (id: string) => config.tileTypes.find((t) => t.id === id)!.name
 
 describe('Interface (rendu de fumée)', () => {
   it('se rend sans erreur', () => {
@@ -47,19 +54,25 @@ describe('Interface (rendu de fumée)', () => {
     expect(out).toContain('Escalier')
     expect(out).toContain(`0 / ${config.stairwayTarget}`) // progression / cible
     expect(out).toContain('Progression / Âme')
-    expect(out).toContain('Âmes en réserve')
-    expect(out).toContain(`${config.soulBudget} / ${config.soulBudget}`)
+    expect(out).toContain(`0 / ${config.maxTicks} Ticks`) // l'horloge (E2)
+    expect(out).toContain('Ticks restants')
+    expect(out).toContain('Âmes apparues')
+    expect(out).toContain('Sbires (apparus · vivants)')
     expect(out).toContain('retour en arrière (D16)')
   })
 
-  it('affiche le catalogue posable et le pas-à-pas (T7, U5)', () => {
+  it('affiche la main, la pioche et les actions de la Manche (A1-A3, U5)', () => {
     const out = html()
     expect(out).toContain('1 Tick')
     // La première Manche est courte : la cadence s'allonge ensuite (C1b).
     expect(out).toContain(`Manche (${config.ticksPerRound.start} Tick`)
-    for (const name of ['Carrière', 'Tailleur de pierre', 'Atelier', 'Sculpteur', 'Aiguillage']) {
-      expect(out).toContain(name)
-    }
+    // Main de départ + la pioche automatique du premier tour (`A7`).
+    expect(out).toContain(`Main (${startingHand.length}/${config.handMax})`)
+    expect(out).toContain(`Piocher (${config.deck.length - startingHand.length})`)
+    expect(out).toContain('Action de la Manche')
+    expect(out).toContain('Passer')
+    // Seules les Tuiles en main sont proposées, pas tout un catalogue.
+    for (const id of new Set(startingHand)) expect(out).toContain(tileName(id))
   })
 
   it('dessine un Espace par case du Plateau', () => {
@@ -75,10 +88,16 @@ describe('Interface (rendu de fumée)', () => {
   it('montre les Recettes du Bâtiment choisi au catalogue (U15)', () => {
     // Type par défaut : la Carrière. Sa Recette doit être lisible sans avoir
     // posé quoi que ce soit.
+    // La Tuile détaillée est la première de la main ; on vérifie que son bloc
+    // est rendu, sans épingler des valeurs qui sont là pour être réglées.
+    const picked = config.tileTypes.find((t) => t.id === startingHand[0])!
     const out = html()
-    expect(out).toContain('2 × Basalte brut')
-    expect(out).toContain('1 Tick')
+    expect(out).toContain('catalog__detail')
+    expect(out).toContain(tileName(picked.id))
     expect(out).toContain('Sortie max')
+    if (picked.recipes && picked.recipes.length > 0) {
+      expect(out).toContain(`${picked.recipes[0]!.ticks} Tick`)
+    }
   })
 
   it('annonce que la pose se fait sans Sortie (U9)', () => {
@@ -103,8 +122,9 @@ describe('Plateau animé (U1, U6, U7)', () => {
   /** Deux Ticks de la chaîne Puits → Carrière → `end`, animation à mi-course. */
   const midMove = (end = 'stairway') => {
     let state = buildGame({
+      // Recette fixée par le test : « +2 » à la production, « −1 » au ramassage.
+      ...withRecipes('quarry', [{ out: { rawBasalt: 2 }, ticks: 1 }]),
       board: { radius: 2 },
-      soulBudget: 2,
       initialTiles: [
         { q: 0, r: 0, type: 'soulWell', owner: 'player', exits: ['E'] },
         { q: 1, r: 0, type: 'quarry', owner: 'player', exits: ['E'] },

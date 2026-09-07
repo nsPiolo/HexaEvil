@@ -7,7 +7,7 @@ import rawConfig from '../../../config/gameplay.json'
 import { parseConfig } from '../config/load'
 import { hex, key, type HexCoord } from '../hex/hexCoord'
 import { createGame } from '../rules/encounter'
-import type { GameConfig, GameState, ResourceId, Side, TileState } from '../rules/types'
+import type { EntityState, GameConfig, GameState, ResourceId, Side, TileState } from '../rules/types'
 
 export const rawGameplay = (): Record<string, unknown> =>
   structuredClone(rawConfig) as unknown as Record<string, unknown>
@@ -34,6 +34,29 @@ export const referenceConfig = (): GameConfig =>
     ],
   })
 
+/**
+ * Main garantie : le sac contient exactement `tiles` et tout est distribué, donc
+ * le tirage aléatoire (`A8`) n'a aucune prise. À utiliser dès qu'un test doit
+ * poser une Tuile précise.
+ */
+export const withHand = (tiles: readonly string[]): Record<string, unknown> => ({
+  deck: [...tiles],
+  handMax: Math.max(1, tiles.length),
+  handStart: tiles.length,
+  seed: 1,
+})
+
+/**
+ * Surcharge les Recettes d'un type de Tuile. Les tests de comportement moteur
+ * (trace de référence, événements) épinglent ainsi leurs propres valeurs : le
+ * réglage des recettes livrées peut bouger sans les invalider.
+ */
+export const withRecipes = (typeId: string, recipes: unknown[]): Record<string, unknown> => ({
+  tileTypes: (rawGameplay().tileTypes as { id: string }[]).map((t) =>
+    t.id === typeId ? { ...t, recipes } : t,
+  ),
+})
+
 /** Une Rencontre dont on maîtrise entièrement la disposition. */
 export const buildGame = (overrides: Record<string, unknown> = {}): GameState =>
   createGame(buildConfig({ minionBudget: 0, ...overrides }))
@@ -55,6 +78,29 @@ export const entity = (state: GameState, id: number) => {
 
 export const isAlive = (state: GameState, id: number): boolean =>
   state.entities.some((e) => e.id === id)
+
+/**
+ * Place une entité à la main sur un Espace, sans passer par une Tuile
+ * d'apparition. Les apparitions étant illimitées (`C5`), c'est la seule façon
+ * d'isoler **une** entité pour tester une règle de production ou de
+ * déplacement : un `Puits` en ferait naître une par Tick.
+ */
+export const injectEntity = (
+  state: GameState,
+  coord: HexCoord,
+  side: Side = 'player',
+): EntityState => {
+  const entity: EntityState = {
+    id: state.nextEntityId++,
+    side,
+    space: coord,
+    visited: [key(coord)],
+    producedHere: false,
+  }
+  state.entities.push(entity)
+  state.spawned[side] += 1
+  return entity
+}
 
 /** Sème une Ressource dans une réserve, pour tester une règle en isolation. */
 export const seedInput = (state: GameState, coord: HexCoord, stock: Record<ResourceId, number>): void => {

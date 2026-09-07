@@ -1,6 +1,11 @@
+/**
+ * Apparition des entités (`C4`, `C5`, `X1`). Elle est **illimitée** : une entité
+ * par Tick et par Tuile d'apparition, tant que la Rencontre dure. C'est
+ * l'horloge (`E2`) qui borne la partie, plus une réserve.
+ */
 import { describe, expect, it } from 'vitest'
 import { key } from '../hex/hexCoord'
-import { reserveLeft, runTick } from '../rules/encounter'
+import { runTick, spawnedCount } from '../rules/encounter'
 import { buildGame, entityIds } from './helpers'
 
 const soloWell = {
@@ -14,12 +19,12 @@ describe('Apparition (C4, C5, X1)', () => {
     state = runTick(state)
     // Le Puits n'a ici aucune Sortie : l'Âme apparaît, puis est détruite dans la
     // phase de déplacement du même Tick (D6). Une par Tick, chacune éphémère.
-    expect(state.spawned.player).toBe(1)
+    expect(spawnedCount(state, 'player')).toBe(1)
     expect(state.spent.player.blocked).toBe(1)
     expect(entityIds(state)).toEqual([])
 
     state = runTick(state)
-    expect(state.spawned.player).toBe(2)
+    expect(spawnedCount(state, 'player')).toBe(2)
     expect(state.spent.player.blocked).toBe(2)
   })
 
@@ -39,38 +44,35 @@ describe('Apparition (C4, C5, X1)', () => {
     expect(state.entities[0]!.visited).toEqual(['-1,0', '0,0'])
   })
 
-  it('s’arrête définitivement quand la réserve est épuisée (C5)', () => {
-    let state = buildGame({ ...soloWell, soulBudget: 3 })
-    for (let i = 0; i < 6; i++) state = runTick(state)
-    expect(state.spawned.player).toBe(3)
-    expect(reserveLeft(state, 'player')).toBe(0)
+  it('n’a aucune réserve : elle continue jusqu’à l’horloge (C5, E2)', () => {
+    let state = buildGame({ ...soloWell, maxTicks: 7 })
+    while (state.outcome === 'ongoing') state = runTick(state)
+    expect(state.tick).toBe(7)
+    expect(spawnedCount(state, 'player')).toBe(7) // une par Tick, sans plafond
   })
 
-  it('compte un budget de partie, pas un plafond de population (C5b)', () => {
-    // Puits avec Sortie vers un Vide sans Sortie : les Âmes s'accumulent puis meurent.
+  it('n’est pas freinée par les entités déjà présentes (C4)', () => {
+    // Puits avec Sortie vers un Vide sans Sortie : les Âmes s'accumulent puis
+    // meurent, sans jamais bloquer l'apparition suivante.
     let state = buildGame({
       board: { radius: 2 },
-      soulBudget: 4,
       initialTiles: [
         { q: 0, r: 0, type: 'soulWell', owner: 'player', exits: ['E'] },
         { q: 1, r: 0, type: 'empty', owner: 'player', exits: [] },
       ],
     })
     for (let i = 0; i < 3; i++) state = runTick(state)
-    expect(state.spawned.player).toBe(3)
-    // Les Âmes détruites ne libèrent pas de place : la réserve continue de baisser.
-    expect(state.spawned.player + reserveLeft(state, 'player')).toBe(4)
+    expect(spawnedCount(state, 'player')).toBe(3)
   })
 
-  it('fait apparaître les Sbires au Gouffre selon minionBudget (X1)', () => {
+  it('fait apparaître un Sbire par Tick au Gouffre (X1)', () => {
     let state = buildGame({
       board: { radius: 2 },
-      soulBudget: 1,
-      minionBudget: 2,
+      maxTicks: 4,
       initialTiles: [{ q: 0, r: 0, type: 'chasm', owner: 'demon', exits: [] }],
     })
-    for (let i = 0; i < 4; i++) state = runTick(state)
-    expect(state.spawned.demon).toBe(2)
-    expect(state.spawned.player).toBe(0) // pas de Puits : aucune Âme
+    while (state.outcome === 'ongoing') state = runTick(state)
+    expect(spawnedCount(state, 'demon')).toBe(4)
+    expect(spawnedCount(state, 'player')).toBe(0) // pas de Puits : aucune Âme
   })
 })

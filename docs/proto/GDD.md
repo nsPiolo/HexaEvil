@@ -19,8 +19,8 @@ Cercles, ni la 3D : ça reste [`../GDD.md`](../GDD.md).
 
 Les règles sont numérotées pour que la revue et le code puissent les citer
 (`// règle D4`) : `B` plateau, `T` tuiles, `R` ressources et recettes,
-`C` cycle, `D` déplacement, `P` production, `X` démon, `E` fin de partie,
-`K` métriques, `U` interface, `G` paramétrage.
+`C` cycle, `A` actions du joueur, `D` déplacement, `P` production, `X` démon,
+`E` fin de partie, `K` métriques, `U` interface, `G` paramétrage.
 
 ## 1. Pitch de la Rencontre ✅
 
@@ -62,7 +62,7 @@ document** (les noms peuvent encore changer en revue).
 | Accès (un des 6 côtés) | `Access` | |
 | Sortie / Entrée | `Exit` / `Entrance` | 🧪 Un Accès est l'un ou l'autre, jamais les deux (D3). |
 | Progression de l'Escalier | `StairwayProgress` | Compteur de victoire. |
-| Réserve d'âmes (budget de la Rencontre) | `soulBudget` | Nombre total d'Âmes que le `Puits` fera apparaître sur toute la partie (§11). |
+| Âmes apparues | `soulsSpawned` | Compteur informatif : l'apparition est illimitée (`C5`). |
 | Âme dépensée | `soulsSpent` | Âme apparue puis détruite. Ne revient jamais. |
 | Chemin parcouru par une entité | `visitedSpaces` | Espaces déjà traversés ; y revenir détruit l'entité (`D16`). |
 
@@ -184,7 +184,7 @@ matériau que le démon livre à l'`Escalier` est **le Sbire lui-même** (`X3`).
 | Type de tuile | Bâtiment | Sorties autorisées | Rôle |
 | --- | --- | --- | --- |
 | `Empty` | — | 1 | Convoyeur : fait avancer le flux. |
-| `Splitter` | — | jusqu'à 3 | Répartit le flux entrant (`D8`). Ne se distingue du `Vide` **que** par ce nombre de Sorties (`Q9`) ; la différence deviendra structurante quand le catalogue sera restreint (`T7`). Aucun minimum n'est imposé : avec une seule Sortie il se comporte comme un `Vide`, ce qui permet de le câbler Sortie par Sortie (`U9`). |
+| `Splitter` | — | jusqu'à 3, **2 à désigner** (`U10`) | Répartit le flux entrant (`D8`). Ne se distingue du `Vide` **que** par ce nombre de Sorties (`Q9`) ; la différence deviendra structurante quand le catalogue sera restreint (`T7`). Aucun minimum n'est imposé : avec une seule Sortie il se comporte comme un `Vide`, ce qui permet de le câbler Sortie par Sortie (`U9`). |
 | `Quarry` | oui | 1 | Produit du `RawBasalt`. |
 | `Stonecutter` | oui | 1 | `RawBasalt` → `CutBasalt`. |
 | `Workshop` | oui | 1 | `CutBasalt` → `BasaltTool`. |
@@ -199,9 +199,9 @@ matériau que le démon livre à l'`Escalier` est **le Sbire lui-même** (`X3`).
   après coup. Il peut les **reconfigurer librement pendant n'importe quelle
   phase de pose ultérieure**, sans coût : le proto cherche à explorer des
   tracés, pas à punir l'erreur de pose.
-- `T6` ✅ Le joueur pose une Tuile **au choix dans un catalogue illimité**, sur
-  n'importe quel Espace vide, **sans coût en Ressource**. L'économie de pose
-  n'est pas l'objet du proto ; si elle doit exister, elle viendra après.
+- `T6` ✅ **Remplacé par l'économie d'actions (§7 bis).** Le joueur ne pose plus
+  ce qu'il veut : il pose une Tuile **de sa main**, et poser dépense son action
+  de la Manche (`A1`, `A2`).
 - `T8` ✅ **Un type de Tuile peut avoir ses Sorties figées par la configuration**
   (`fixedExits`). Elles font alors partie de l'énoncé du terrain et le joueur ne
   les modifie pas, même si la Tuile lui appartient — c'est le cas du `Puits des
@@ -210,12 +210,11 @@ matériau que le démon livre à l'`Escalier` est **le Sbire lui-même** (`X3`).
     - le droit d'éditer est **une règle du Core** (`exitEditRefusal`), pas une
       grisaille d'interface : la commande de reconfiguration est refusée avec sa
       raison, et l'interface ne fait que la refléter (`U12`) ;
-    - un type figé qui admet des Sorties **ne peut pas figurer au catalogue
-      posable** : on poserait une Tuile qu'on ne pourrait jamais orienter. Le
-      chargement de la configuration le refuse.
-- `T7` 🧪 Le catalogue posable sera **restreint** dans une itération ultérieure
-  (liste réduite, voire main de Tuiles). Il vit donc en configuration (`G2`) et
-  non en dur, pour que la restriction ne soit qu'un changement de données.
+    - un type figé qui admet des Sorties **ne peut pas figurer dans la pioche** :
+      on piocherait une Tuile qu'on ne pourrait jamais orienter. Le chargement de
+      la configuration le refuse.
+- `T7` ✅ Le contenu posable vit en configuration : c'est la **pioche** (`deck`),
+  dont l'ordre et les répétitions font la disponibilité (`A2`).
 
 ## 6. Ressources, recettes et stockage
 
@@ -294,18 +293,65 @@ matériau que le démon livre à l'`Escalier` est **le Sbire lui-même** (`X3`).
 - `C4` ✅ La nouvelle Âme apparaît **sur l'Espace du `Puits des âmes`**, quel
   que soit le nombre d'Âmes déjà présentes : plusieurs entités d'un même camp
   cohabitent librement sur un Espace.
-- `C5` ✅ L'Apparition est plafonnée par la **réserve d'âmes** : le `Puits`
-  fait apparaître 1 Âme par Tick **tant que `soulsSpawned < soulBudget`**, puis
-  s'arrête définitivement. `soulBudget = 100` au départ (configurable, §13).
-- `C5b` ✅ Il s'agit d'un **budget total sur la partie**, pas d'un plafond de
-  population simultanée : une Âme détruite ne libère pas de place, elle est
-  dépensée. Aucune limite ne porte sur le nombre d'Âmes vivantes en même temps
-  (au maximum ~100, la cadence d'apparition étant de 1 par Tick).
-- `C5c` ✅ Le budget vaut pour **toutes** les disparitions, sans distinction de
-  cause : une Âme perdue dans un tracé sans issue coûte autant qu'une livraison
-  réussie.
+- `C5` ✅ L'Apparition est **illimitée** : le `Puits` fait apparaître 1 Âme par
+  Tick tant que la Rencontre dure, sans réserve ni plafond de population. C'est
+  l'**horloge** (`E2`) qui borne la partie, et elle seule.
+    - Il n'y a donc plus de « ressource épuisable » à ménager : une Âme perdue
+      dans un tracé sans issue ne se déduit d'aucun capital, elle coûte
+      seulement le Tick qui l'a vue naître.
+    - La ventilation des disparitions par cause (`K1`) reste utile pour
+      diagnostiquer un réseau qui fuit, même sans budget à surveiller.
 - `C6` ✅ Ordre de résolution d'une phase de pose : la pose et la
   reconfiguration prennent effet **avant** le Tick 1 de la Manche.
+
+## 7 bis. Actions du joueur
+
+- `A1` ✅ **Une seule action par Manche**, à choisir parmi quatre : **poser** une
+  Tuile de sa main, **piocher**, **déplacer** une Tuile déjà posée, ou
+  **passer**. C'est ce choix qui fait la décision de la Manche ; sans lui, poser
+  était toujours le bon geste.
+- `A2` ✅ **Pioche et main.** La pioche (`deck`) est un **sac** de types de
+  Tuiles défini en configuration : les répétitions y font les quantités, et
+  **l'ordre de la liste n'a aucune importance** puisque le tirage est aléatoire
+  (`A8`). Poser retire la Tuile de la main, piocher en ajoute une.
+- `A3` ✅ **Main plafonnée** (`handMax`) : piocher au-delà est refusé. La main de
+  départ (`handStart`) est distribuée au montage de la Rencontre. Le chargement
+  refuse une main de départ plus grande que le plafond ou que la pioche.
+- `A4` ✅ **Déplacer une Tuile posée** coûte l'action de la Manche. La Tuile part
+  avec ses réserves et ses Sorties ; le `Puits`, l'`Escalier` et les Tuiles du
+  démon ne se déplacent pas (`T8`).
+    - 🧪 Les entités qui se trouvaient sur la Tuile sont **détruites** :
+      déplacer un Bâtiment, c'est le démonter, pas le faire glisser avec ses
+      ouvriers. Ça donne un coût réel au déplacement, en plus de l'action.
+    - La destination s'évalue sur un Plateau **privé de la Tuile déplacée** :
+      reprendre le maillon qui relie la chaîne interdit donc de le reposer
+      au-delà de la coupure (`B12`).
+- `A5` ✅ **Passer** dépense l'action sans rien faire. Utile quand aucune pose
+  n'est bonne et que la main est pleine.
+- `A8` ✅ **Le tirage est aléatoire, mais rejouable.** Une Tuile est prise au
+  hasard dans le sac, main de départ incluse. Le hasard est **germé** : la germe
+  vient de la configuration (`seed`), ou est tirée de l'horloge si elle vaut
+  `null`, et elle est dans tous les cas conservée dans l'état de la partie et
+  affichée.
+    - Sans germe, comparer deux réglages de recettes n'aurait plus de sens :
+      l'écart observé pourrait venir de la pioche. C'est la même exigence de
+      comparabilité qui interdit une IA au démon (`X5`).
+    - Pour rejouer une partie intéressante, il suffit de recopier la germe
+      affichée dans la configuration.
+- `A7` ✅ **Une Tuile est piochée automatiquement à l'ouverture du tour du
+  joueur**, tant que la main n'a pas atteint son plafond (`A3`) et que la pioche
+  n'est pas vide. Elle **ne dépense pas** l'action de la Manche : sinon un tour
+  sur deux servirait à se réapprovisionner, et l'action perdrait son intérêt de
+  choix.
+    - La pioche **explicite** (`A2`) garde donc un sens : elle permet de tirer une
+      **seconde** Tuile dans la même Manche, pour se constituer une réserve de
+      choix plutôt que de poser au fil de l'eau.
+    - Le premier tour s'ouvre comme les autres : la main initiale vaut donc
+      `handStart + 1`. Si tu veux exactement `n` Tuiles au premier choix, règle
+      `handStart` à `n - 1`.
+- `A6` ✅ **Réorganiser les Sorties est gratuit et illimité** (`T5`, `U9`) : ce
+  n'est pas une action. On peut donc recâbler tout son réseau **et** poser dans
+  la même Manche.
 
 ## 8. Règles de déplacement
 
@@ -428,7 +474,7 @@ Sbires marchent jusqu'à l'`Escalier` et s'y consument, chacun retirant 1 à la
 progression. Aucun Bâtiment de production côté démon dans cette itération.
 
 - `X1` ✅ Le démon dispose d'un `Gouffre` qui fait apparaître 1 Sbire par Tick,
-  dans la limite de sa réserve : **`minionBudget = 200`** (configurable, `G2`).
+  **sans réserve** — symétrique du `Puits` (`C5`).
 - `X2` ✅ Les Sbires suivent **exactement** les mêmes règles de déplacement
   (§8) et de production (§9) que les Âmes.
 - `X3` ✅ **L'`Escalier` porte une Recette propre au démon**, dont le matériau
@@ -453,24 +499,29 @@ progression. Aucun Bâtiment de production côté démon dans cette itération.
 
 ## 11. Conditions de fin
 
-La Rencontre est un **problème d'optimisation d'une ressource épuisable** :
-combien de progression le joueur arrive-t-il à extraire de 100 Âmes ?
+La Rencontre est un **problème d'optimisation sous contrainte de temps** :
+combien de progression le joueur arrive-t-il à produire en 100 Ticks ? Le temps
+est la **seule** ressource rare — les Âmes et les Sbires, eux, sont illimités
+(`C5`, `X1`).
 
 - `E1` ✅ **Victoire** : `StairwayProgress` atteint la cible (`stairwayTarget`).
   La partie s'arrête immédiatement.
-- `E2` ✅ **Défaite** : la réserve est épuisée (`soulsSpawned == soulBudget`)
-  **et** il ne reste aucune Âme vivante sur le Plateau **et**
-  `StairwayProgress < stairwayTarget`.
-- `E3` ✅ La défaite se teste **à la fin de chaque Tick**, après la phase 6. Il
-  peut donc s'écouler de nombreux Ticks entre la dernière apparition et la
-  défaite : les Âmes en transit ou en production continuent de jouer, et une
-  livraison de dernière minute peut encore faire gagner.
-- `E4` ✅ **Conséquence du budget sur la durée de partie** : à 1 Âme par Tick,
-  la réserve de 100 s'épuise en ~100 Ticks, soit **~25 Manches** avec la cadence
-  croissante actuelle (`C1b`) — le joueur pose donc ~25 Tuiles, dont les
-  premières très rapprochées. Le budget fixe donc *aussi* la longueur de la
-  partie et la taille du réseau constructible : c'est la cadence d'apparition,
-  pas le budget, qu'il faut bouger pour découpler les deux.
+- `E2` ✅ **Défaite** : les `maxTicks` Ticks sont écoulés et l'`Escalier` n'est
+  pas achevé. **La Rencontre est une horloge** : le joueur a un temps donné (100
+  Ticks) pour réussir, et non « autant de temps qu'il reste des Âmes ».
+    - Conséquence : la partie ne s'arrête plus quand les Âmes disparaissent. Si
+      la réserve s'épuise avant l'horloge, les Ticks restants se déroulent à
+      vide — et le démon, lui, continue de ponctionner.
+    - Conséquence : une Âme encore en transit à l'échéance ne livre jamais. Le
+      pipeline en cours est **perdu**, ce qui pénalise les chaînes longues plus
+      que le seul coût en Âmes ne le disait.
+- `E3` ✅ La défaite se teste **à la fin de chaque Tick**, après la phase 6, et la
+  victoire dès que la cible est atteinte (`E1`) : une livraison au tout dernier
+  Tick fait donc encore gagner.
+- `E4` ✅ **La durée de partie est fixée par l'horloge** : 100 Ticks, soit **24
+  Manches** avec la cadence actuelle (`C1b`) — donc 24 actions, dont les
+  premières très rapprochées. À 1 Âme par Tick, la partie voit passer ~100 Âmes,
+  mais c'est une conséquence de l'horloge, non une réserve à gérer (`C5`).
 - `E5` ✅ **Cible : `stairwayTarget = 200`** (configurable, `G2`). Le
   raisonnement qui a mené à ce nombre est conservé ci-dessous : c'est lui qu'il
   faudra rejouer si les recettes changent — et il doit déjà l'être une fois
@@ -491,19 +542,20 @@ insuffisant : le joueur *doit* raffiner. 200 laisse la voie `CutBasalt` viable
 mais tendue, et récompense franchement la voie `Pavé`. C'est le premier nombre à
 régler dès que la simulation tourne.
 
-- `E7` ✅ **La partie se termine toujours.** `D16` borne la durée de vie d'une
-  entité par le nombre d'Espaces du Plateau, et la réserve d'Âmes est finie : ni
-  boucle infinie, ni besoin d'une limite de Ticks de sécurité.
+- `E7` ✅ **La partie se termine toujours**, et c'est désormais l'horloge (`E2`)
+  qui le garantit, quel que soit le réseau. `D16` reste une règle de
+  déplacement — une Âme ne tourne pas en rond — mais la terminaison ne dépend
+  plus d'elle.
 - `E8` 🧪 **La ponction du démon est en grande partie absorbée par le plancher à
-  0.** Le premier Sbire frappe au Tick 4 (`B7b`), puis 1 par Tick — soit ~111
-  ponctions sur une partie de ~115 Ticks. Mais `R8` borne la progression à 0 :
+  0.** Le premier Sbire frappe au Tick 4 (`B7b`), puis 1 par Tick — soit ~97
+  ponctions sur une partie de 100 Ticks (`E2`). Mais `R8` borne la progression à 0 :
   **toute ponction subie pendant que la progression vaut 0 est perdue pour le
   démon**. Or le joueur passe le début de partie à construire (1 Tuile par
   Manche, 5 Ticks), progression à 0. La perte réelle vaut donc à peu près *le
   nombre de Ticks pendant lesquels la progression est > 0* — bien moins que 111.
-  Effet de bord à noter : la réserve de 200 Sbires **ne mord jamais** au rythme
-  actuel (le démon n'en dépense que ~115 avant la fin de partie) ; c'est la
-  cadence du `Gouffre`, pas sa réserve, qui règle la pression.
+  La pression du démon ne se règle donc que par la **cadence** du `Gouffre` et
+  la distance qui le sépare de l'`Escalier` (`X6`) : il n'a plus de réserve à
+  épuiser (`X1`).
 - `E9` ✅ **Aucune valeur de recette n'est modifiée maintenant : le réglage se
   fera sur le proto en marche.** L'analyse ci-dessous est donc une *hypothèse à
   vérifier par le jeu*, pas une correction à appliquer. Elle est consignée pour
@@ -619,7 +671,14 @@ produit, en cours de partie et pas seulement à la fin.
   pas avoir à quitter le plateau des yeux pour la suivre. L'affichage est déduit
   des Recettes — toute Tuile dont une Recette fait varier la progression
   l'affiche — et non d'un identifiant en dur.
-- `U15` ✅ **Choisir un Bâtiment au catalogue montre ses Recettes** — ce qu'il
+- `U17` ✅ Le panneau d'action dit que la pioche du tour est **automatique**
+  (`A7`) : sans ça, voir la main grossir toute seule passerait pour un bug.
+- `U16` ✅ **La main remplace le catalogue** : elle affiche les Tuiles disponibles
+  avec leur nombre d'exemplaires, la pioche restante, l'action déjà dépensée, et
+  les boutons « Piocher » / « Passer ». Le bouton « Déplacer » vit dans le détail
+  d'une Tuile, à côté d'« Éditer » : les deux agissent sur la Tuile sélectionnée,
+  mais l'un coûte l'action de la Manche et l'autre pas (`A6`).
+- `U15` ✅ **Choisir un Bâtiment dans la main montre ses Recettes** — ce qu'il
   consomme, ce qu'il produit, en combien de Ticks — avant la pose. Régler une
   économie suppose de comparer des Recettes ; les découvrir en posant la Tuile
   coûterait une Manche à chaque essai. Le même affichage sert dans le détail
@@ -642,12 +701,20 @@ produit, en cours de partie et pas seulement à la fin.
   l'édition tout de suite**, puisque la pose n'a de sens qu'une fois orientée
   (`U9`). Le bouton n'apparaît que sur une Tuile du joueur qui admet des Sorties,
   en phase de pose (`T5`, `T4`).
-- `U10` ✅ **Le mode d'orientation se referme dès qu'une direction est choisie**,
-  et il est suspendu pendant le déroulé des Ticks. Sans ça, il resterait armé au
-  retour en phase de pose et le premier clic de la Manche suivante réorienterait
-  une Sortie au lieu de poser une Tuile. Pour régler une deuxième Sortie (un
-  `Aiguillage`), on re-clique la Tuile : ça ré-arme le mode sans perdre
-  l'inspection en cours (`U4`).
+- `U10` ✅ **Le mode d'orientation se referme quand la Tuile a reçu son compte de
+  Sorties**, et il est suspendu pendant le déroulé des Ticks. Sans cette
+  fermeture, il resterait armé au retour en phase de pose et le premier clic de la
+  Manche suivante réorienterait une Sortie au lieu de poser une Tuile.
+    - Le compte vient de la configuration : `exitsToDesignate` par type de Tuile,
+      1 par défaut, **2 pour l'`Aiguillage`**. On désigne donc ses deux branches
+      d'affilée, sans réouvrir le mode entre les deux.
+    - Ce n'est **pas** une contrainte de validité : un `Aiguillage` à une seule
+      Sortie reste légal (`T4`), et cliquer une Sortie déjà désignée referme le
+      mode plus tôt (`U13`) — c'est le geste « j'ai fini ».
+    - Le chargement refuse un `exitsToDesignate` supérieur à `maxExits` : le mode
+      ne pourrait jamais se refermer.
+    - Pour ajouter une Sortie au-delà du compte, on re-clique la Tuile : ça
+      ré-ouvre le mode sans perdre l'inspection en cours (`U4`, `U12`).
 - `U8` 🧪 Pour que `U6` et `U7` soient possibles sans que l'interface raisonne sur
   les règles, **le moteur énonce ce qui s'est passé** pendant le Tick — un flux
   d'événements (apparition, déplacement `from`/`to`, mouvement de stock signé,
@@ -662,8 +729,8 @@ main**, hors du code :
 
 - `G1` ✅ `ProtoHtml/config/gameplay.json` — un seul fichier JSON, validé au
   chargement, avec un message d'erreur explicite si une valeur est incohérente.
-- `G2` ✅ Contenu : `ticksPerRound` (5), `soulBudget` (100), `minionBudget`
-  (200), `stairwayTarget` (200), `soulCarryCapacity` (1), cadences
+- `G2` ✅ Contenu : `ticksPerRound` (5),
+  `stairwayTarget` (200), `maxTicks` (100), `deck`, `handMax` (5), `handStart` (3), `seed`, `soulCarryCapacity` (1), cadences
   d'apparition, liste des Ressources, liste des Bâtiments (avec Sorties
   autorisées), liste des Recettes, **liste des Espaces du Plateau et Tuiles
   pré-posées avec leurs Sorties** (`B6`, `B7b`), catalogue des Tuiles posables
@@ -712,12 +779,12 @@ trace des décisions et de leur raison.
 | ~~`Q3`~~ | L'`Escalier` a-t-il une Sortie ? | ✅ **Aucune** : livrer coûte une Âme, c'est la mécanique de coût de la Rencontre (`T4`, `D6`). |
 | ~~`Q4`~~ | Croisement des camps ? | ✅ **Impossible par construction du terrain** (`B8`, `D14`). Seul l'`Escalier` est partagé, sans affrontement (`D15`). |
 | ~~`Q5`~~ | Forme du Plateau et positions de départ. | ✅ **Entièrement en configuration** (`B6`, `G2`) ; disposition par défaut proposée en `B7b`. |
-| ~~`Q6`~~ | Plafond de population ? | ✅ Pas de plafond simultané, mais une **réserve de 100 Âmes** sur la partie (`C5`, `C5b`). |
+| ~~`Q6`~~ | Plafond de population ? | ✅ **Aucun plafond, ni simultané ni total** : l'apparition est illimitée et c'est l'horloge qui borne la partie (`C5`, `E2`). |
 | ~~`Q7`~~ | Cible de progression. | ✅ `stairwayTarget = 200` (`E5`) — au-dessus du plafond ~100 de la voie brute, le raffinage est obligatoire. À revérifier par simulation (`E8`, `E9`). |
 | ~~`Q8`~~ | Vocabulaire « tour » / « Démon ». | ✅ **`Démon` = l'adversaire**, **`Escalier` = la tour du pitch**. Aucune Ressource ne s'appelle « Démon » : le matériau du démon est le Sbire lui-même (`X3`). |
 | ~~`Q9`~~ | L'`Aiguillage` a-t-il une règle propre ? | ✅ **Non** : seulement un nombre de Sorties autorisé (`T4`). La distinction deviendra structurante quand le catalogue de Tuiles sera restreint (`T7`). |
-| ~~`Q10`~~ | Partie sans fin par boucle de Tuiles. | ✅ **Mémoire de chemin** : une entité qui reviendrait sur un Espace déjà visité est détruite (`D16`). La terminaison est garantie, aucune limite de Ticks nécessaire (`E7`). |
-| ~~`Q11`~~ | Réserve de Sbires ? | ✅ Oui, **`minionBudget = 200`** (`X1`). Elle ne mord pas au rythme actuel : le démon n'en dépense que ~115 avant la fin de partie (`E8`). |
+| ~~`Q10`~~ | Partie sans fin par boucle de Tuiles. | ✅ D'abord par la **mémoire de chemin** (`D16`), puis définitivement par l'**horloge** de la Rencontre (`E2`, `maxTicks`) : la partie s'arrête au bout du temps imparti quel que soit le réseau. |
+| ~~`Q11`~~ | Réserve de Sbires ? | ✅ **Non** : l'apparition des Sbires est illimitée, comme celle des Âmes (`X1`, `C5`). La réserve de 200 introduite un temps ne mordait jamais, l'horloge (`E2`) tranchant avant elle. |
 | ~~`Q12`~~ | Que consomme la Recette du démon ? | ✅ **Le Sbire lui-même** : il ne transporte rien, il *est* la charge (`X3`). |
 
 ### Propositions encore marquées 🧪
@@ -750,6 +817,12 @@ et sont volontairement absents ici.
 
 | Date | Évolution |
 | --- | --- |
+| 2026-09-07 | Nouvelle condition de fin : la Rencontre est **limitée à `maxTicks` Ticks** (100). La défaite « plus une seule Âme » disparaît (`E2`, `E3`, `E7`) ; les Âmes encore en transit à l'échéance sont perdues. Tests d'intégration recentrés sur des invariants du moteur. |
+| 2026-09-07 | `U10` : le mode d'orientation reste ouvert jusqu'au compte de Sorties du type (`exitsToDesignate`, 2 pour l'`Aiguillage`) au lieu de se refermer au premier choix. |
+| 2026-09-07 | Les réserves d'Âmes et de Sbires disparaissent : l'apparition est **illimitée** (`C5`, `X1`), l'horloge (`E2`) devient la seule contrainte. `soulBudget` et `minionBudget` quittent la configuration. |
+| 2026-09-07 | Ajout `A8` : le tirage de la pioche devient **aléatoire**, mais germé (`seed`) pour que deux parties restent comparables. La pioche devient un sac, son ordre n'a plus d'importance. |
+| 2026-09-07 | Ajout `A7` : une Tuile est piochée **automatiquement** à l'ouverture du tour du joueur, sans dépenser l'action, tant que la main n'est pas pleine. La pioche explicite devient un second tirage. |
+| 2026-09-07 | Ajout des **actions du joueur** (§7 bis, `A1`-`A6`) : une action par Manche parmi poser / piocher / déplacer / passer, avec pioche ordonnée (`deck`), main plafonnée (`handMax`) et main de départ (`handStart`). Le catalogue illimité de `T6` disparaît. |
 | 2026-09-06 | Mise au propre de `gameplay.md` : numérotation des règles, séparation Manche/Tick, table des Sorties, trace de référence, 9 points à trancher. |
 | 2026-09-06 | Réserve de 100 Âmes (`C5`) et défaite à réserve épuisée (`E2`) : les Âmes deviennent la ressource épuisable de la Rencontre. `Q3` et `Q6` tranchées, `Q7` réduite à la valeur de la cible, `Q10`/`Q11` ouvertes. Ajout des métriques (§12). |
 | 2026-09-06 | Ajout `E8` : la Recette du démon (`X3`) ponctionne ~100 progression par partie, ce qui remet la cible de 200 en question. |

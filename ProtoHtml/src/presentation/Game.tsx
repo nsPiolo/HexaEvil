@@ -43,13 +43,20 @@ export const Game = ({ config, configText }: Props) => {
           />
           {game.notice && <p className="app__notice">{game.notice}</p>}
           <p className="app__legend">
-            {game.wiring
-              ? `Orientation de (${game.wiring.q},${game.wiring.r}) : clique un hexagone voisin pour y envoyer le flux. Le mode se referme aussitôt.`
-              : state.phase === 'placement' && !state.placedThisRound
-                ? 'Clique un Espace libre pour y poser la Tuile choisie, puis un voisin pour orienter sa Sortie.'
-                : game.canEditExits
-                  ? 'Tuile sélectionnée : « Éditer » dans le panneau pour régler ses Sorties.'
-                  : 'Clique une Tuile pour l’inspecter.'}
+            {game.moveFrom
+              ? `Déplacement de (${game.moveFrom.q},${game.moveFrom.r}) : clique l’Espace de destination. « Déplacer » à nouveau pour annuler.`
+              : game.wiring
+                ? `Orientation de (${game.wiring.q},${game.wiring.r}) : clique un hexagone voisin pour y envoyer le flux.` +
+                  (game.exitsLeftToDesignate > 1
+                    ? ` Encore ${game.exitsLeftToDesignate} Sorties à désigner.`
+                    : '')
+                : state.action === undefined && state.phase === 'placement'
+                  ? game.pendingType !== undefined
+                    ? 'Clique un Espace posable pour y poser la Tuile choisie, puis un voisin pour orienter sa Sortie.'
+                    : 'Main vide : pioche, déplace une Tuile, ou passe ton tour.'
+                  : game.canEditExits
+                    ? 'Tuile sélectionnée : « Éditer » dans le panneau pour régler ses Sorties.'
+                    : 'Clique une Tuile pour l’inspecter.'}
           </p>
         </section>
 
@@ -59,12 +66,15 @@ export const Game = ({ config, configText }: Props) => {
             state={state}
             ticksThisRound={game.ticksThisRound}
             pendingType={game.pendingType}
+            actions={game.actions}
             canUndo={game.canUndo}
             playing={game.playing}
             speed={game.speed}
             configText={game.configText}
             configError={game.configError}
             onPendingType={game.setPendingType}
+            onDraw={game.draw}
+            onPass={game.pass}
             onStep={game.step}
             onRound={game.round}
             onFinish={game.finish}
@@ -83,9 +93,13 @@ export const Game = ({ config, configText }: Props) => {
             tile={game.selectedTile}
             onToggleExit={game.toggleExit}
             wiring={game.wiringSelected}
+            exitsLeft={game.exitsLeftToDesignate}
             canEdit={game.canEditExits}
             editRefusal={game.editRefusal}
             onToggleWiring={game.toggleWiring}
+            canMove={game.canMoveSelected}
+            moving={game.moveFrom !== undefined}
+            onToggleMove={game.toggleMove}
           />
           <LogView log={state.log} />
         </aside>

@@ -8,8 +8,14 @@ import { directionBetween, key, neighbors, type HexCoord } from '../core/hex/hex
 import { tileAt } from '../core/rules/board'
 import { tileType } from '../core/rules/recipes'
 import {
+  availableActions,
   buildableSpaces,
   createGame,
+  drawRefusal,
+  drawTile,
+  moveRefusal,
+  moveTile,
+  passTurn,
   exitChangeRefusal,
   exitEditRefusal,
   placeTile,
@@ -31,8 +37,26 @@ export const SPEEDS = {
 
 export type Speed = keyof typeof SPEEDS
 
-/** Ce qu'un clic sur un Espace du Plateau veut dire (`U9`). */
+/**
+ * `U10` — le mode d'édition se referme-t-il après ce clic ?
+ *
+ * Oui quand on confirme une Sortie déjà désignée (`U13`), ou quand la Tuile a
+ * atteint son nombre de Sorties à désigner. Un `Aiguillage` réglé à 2 laisse
+ * donc choisir ses deux branches d'affilée, au lieu d'exiger de réouvrir le mode
+ * entre les deux. Fonction pure, exportée pour les tests.
+ */
+export const closesEditAfterClick = (
+  current: readonly number[],
+  direction: number,
+  maxExits: number,
+  exitsToDesignate: number,
+): boolean =>
+  current.includes(direction) ||
+  nextExitsOnClick(current, direction, maxExits).length >= Math.max(1, exitsToDesignate)
+
+/** Ce qu'un clic sur un Espace du Plateau veut dire (`U9`, `U16`). */
 export type ClickAction =
+  | { kind: 'move'; from: HexCoord; to: HexCoord }
   | { kind: 'wire'; coord: HexCoord; direction: number }
   | { kind: 'place'; coord: HexCoord }
   | { kind: 'select'; coord: HexCoord }
@@ -74,15 +98,27 @@ export const editRefusalAt = (state: GameState, coord: HexCoord | undefined): st
 export const resolveClick = (
   state: GameState,
   wiring: HexCoord | undefined,
+  moveFrom: HexCoord | undefined,
   coord: HexCoord,
-  pendingType: TileTypeId,
+  pendingType: TileTypeId | undefined,
 ): ClickAction => {
+  // `U16` — déplacement armé : le clic suivant désigne la destination.
+  if (moveFrom !== undefined) {
+    const refusal = moveRefusal(state, moveFrom, coord)
+    return refusal === undefined
+      ? { kind: 'move', from: moveFrom, to: coord }
+      : { kind: 'refused', coord, reason: refusal }
+  }
+
   if (wiring && state.phase === 'placement') {
     const direction = directionBetween(wiring, coord)
     if (direction !== undefined) return { kind: 'wire', coord: wiring, direction }
   }
 
   if (tileAt(state, coord) === undefined) {
+    if (pendingType === undefined) {
+      return { kind: 'refused', coord, reason: 'aucune Tuile en main : pioche d’abord (A2)' }
+    }
     const refusal = placementRefusal(state, coord, pendingType, PLACEMENT_EXITS)
     return refusal === undefined ? { kind: 'place', coord } : { kind: 'refused', coord, reason: refusal }
   }
@@ -121,7 +157,8 @@ export const useGame = (config: GameConfig, initialText: string) => {
   const [configError, setConfigError] = useState<string | undefined>(undefined)
   const [history, setHistory] = useState<GameState[]>(() => [createGame(config)])
   const [selected, setSelected] = useState<HexCoord | undefined>(undefined)
-  const [pendingType, setPendingType] = useState<TileTypeId>('quarry')
+  const [handPick, setHandPick] = useState<TileTypeId | undefined>(undefined)
+  const [moveFrom, setMoveFrom] = useState<HexCoord | undefined>(undefined)
   const [speed, setSpeed] = useState<Speed>('normal')
   const [queued, setQueued] = useState(0)
   const [notice, setNotice] = useState<string | undefined>(undefined)
@@ -129,6 +166,10 @@ export const useGame = (config: GameConfig, initialText: string) => {
   const [wiringAt, setWiringAt] = useState<HexCoord | undefined>(undefined)
 
   const state = history[history.length - 1]!
+
+  /** Tuile de la main choisie pour la pose : le choix explicite, sinon la première. */
+  const pendingType: TileTypeId | undefined =
+    handPick !== undefined && state.hand.includes(handPick) ? handPick : state.hand[0]
 
   const push = useCallback((next: GameState) => {
     setHistory((h) => (next === h[h.length - 1] ? h : [...h, next]))
@@ -139,9 +180,12 @@ export const useGame = (config: GameConfig, initialText: string) => {
     [state, selected],
   )
 
-  /** Refus de la pose envisagée sur l'Espace visé, pour l'affichage (`T6`). */
+  /** Refus de la pose envisagée sur l'Espace visé, pour l'affichage (`A2`). */
   const placementRefusalAt = useCallback(
-    (coord: HexCoord) => placementRefusal(state, coord, pendingType, PLACEMENT_EXITS),
+    (coord: HexCoord) =>
+      pendingType === undefined
+        ? 'aucune Tuile en main (A2)'
+        : placementRefusal(state, coord, pendingType, PLACEMENT_EXITS),
     [state, pendingType],
   )
 
@@ -171,14 +215,18 @@ export const useGame = (config: GameConfig, initialText: string) => {
         return
       }
 
-      const exits = nextExitsOnClick(tile.exits, direction, tileType(state.config, tile.typeId).maxExits)
+      const type = tileType(state.config, tile.typeId)
+      const exits = nextExitsOnClick(tile.exits, direction, type.maxExits)
       const refusal = exitChangeRefusal(state, coord, exits)
       if (refusal !== undefined) {
         setNotice(refusal)
         return
       }
       setNotice(undefined)
-      setWiringAt(undefined) // une direction choisie = on quitte le mode (U10)
+      // `U10` — on ne referme le mode qu'une fois le compte de Sorties atteint.
+      if (closesEditAfterClick(tile.exits, direction, type.maxExits, type.exitsToDesignate ?? 1)) {
+        setWiringAt(undefined)
+      }
       push(setExits(state, coord, exits))
     },
     [state, push],
@@ -191,12 +239,19 @@ export const useGame = (config: GameConfig, initialText: string) => {
    */
   const clickSpace = useCallback(
     (coord: HexCoord) => {
-      const action = resolveClick(state, wiring, coord, pendingType)
+      const action = resolveClick(state, wiring, moveFrom, coord, pendingType)
       switch (action.kind) {
+        case 'move':
+          setNotice(undefined)
+          setMoveFrom(undefined)
+          setSelected(action.to)
+          push(moveTile(state, action.from, action.to))
+          return
         case 'wire':
           setExitTo(action.coord, action.direction)
           return
         case 'place':
+          if (pendingType === undefined) return
           setNotice(undefined)
           setSelected(action.coord)
           setWiringAt(action.coord) // la Tuile posée attend sa direction
@@ -210,8 +265,43 @@ export const useGame = (config: GameConfig, initialText: string) => {
           return
       }
     },
-    [state, wiring, pendingType, setExitTo, push],
+    [state, wiring, moveFrom, pendingType, setExitTo, push],
   )
+
+  /** `A2`, `A5` — les actions qui ne passent pas par le Plateau. */
+  const draw = useCallback(() => {
+    const refusal = drawRefusal(state)
+    if (refusal !== undefined) {
+      setNotice(refusal)
+      return
+    }
+    setNotice(undefined)
+    push(drawTile(state))
+  }, [state, push])
+
+  const pass = useCallback(() => {
+    setNotice(undefined)
+    setMoveFrom(undefined)
+    push(passTurn(state))
+  }, [state, push])
+
+  /** `U16` — arme le déplacement de la Tuile sélectionnée, ou l'annule. */
+  const toggleMove = useCallback(() => {
+    if (moveFrom !== undefined) {
+      setMoveFrom(undefined)
+      return
+    }
+    if (selected === undefined) return
+    const refusal = moveRefusal(state, selected, selected)
+    // « déjà là » signifie que la Tuile est déplaçable : seule la destination manque.
+    if (refusal !== undefined && !refusal.includes('déjà là')) {
+      setNotice(refusal)
+      return
+    }
+    setNotice(undefined)
+    setWiringAt(undefined)
+    setMoveFrom(selected)
+  }, [moveFrom, selected, state])
 
   /** `U12` — ouvre ou ferme le mode d'édition sur la Tuile sélectionnée. */
   const editable = canEditExits(state, selected)
@@ -282,12 +372,14 @@ export const useGame = (config: GameConfig, initialText: string) => {
   const undo = useCallback(() => {
     setQueued(0)
     setWiringAt(undefined)
+    setMoveFrom(undefined)
     setHistory((h) => (h.length > 1 ? h.slice(0, -1) : h))
   }, [])
 
   const reset = useCallback(() => {
     setQueued(0)
     setWiringAt(undefined)
+    setMoveFrom(undefined)
     try {
       setHistory([freshGame(configText)])
       setConfigError(undefined)
@@ -328,6 +420,13 @@ export const useGame = (config: GameConfig, initialText: string) => {
     tickMs,
     notice,
     buildable,
+    actions: availableActions(state),
+    canMoveSelected:
+      selected !== undefined && moveRefusal(state, selected, selected)?.includes('déjà là') === true,
+    moveFrom,
+    draw,
+    pass,
+    toggleMove,
     ticksThisRound:
       state.phase === 'placement' ? ticksForRound(state.config, state.round) : state.ticksLeftInRound,
     wireTargets,
@@ -336,13 +435,22 @@ export const useGame = (config: GameConfig, initialText: string) => {
     wiringSelected: wiring !== undefined && selected !== undefined && key(wiring) === key(selected),
     /** Vrai quand la Tuile inspectée peut passer en édition (`U12`). */
     canEditExits: editable,
+    /** Sorties restant à désigner sur la Tuile en édition (`U10`). */
+    exitsLeftToDesignate:
+      wiring === undefined || selectedTile === undefined
+        ? 0
+        : Math.max(
+            0,
+            (tileType(state.config, selectedTile.typeId).exitsToDesignate ?? 1) -
+              selectedTile.exits.length,
+          ),
     /** Pourquoi elle ne le peut pas, le cas échéant (`T5`, `T8`). */
     editRefusal: selected !== undefined && !editable ? editRefusalAt(state, selected) : undefined,
     toggleWiring,
     playing: queued > 0,
     canUndo: history.length > 1,
     setSpeed,
-    setPendingType,
+    setPendingType: setHandPick,
     setConfigText,
     clickSpace,
     placementRefusalAt,

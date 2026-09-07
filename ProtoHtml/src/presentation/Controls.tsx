@@ -5,19 +5,22 @@
 import { useState } from 'react'
 import { tileType } from '../core/rules/recipes'
 import { RecipeList } from './RecipeList'
-import type { GameState, TileTypeId } from '../core/rules/types'
+import type { GameState, RoundAction, TileTypeId } from '../core/rules/types'
 import { SPEEDS, type Speed } from './useGame'
 
 type Props = {
   state: GameState
   ticksThisRound: number
-  pendingType: TileTypeId
+  pendingType: TileTypeId | undefined
+  actions: readonly RoundAction[]
   canUndo: boolean
   playing: boolean
   speed: Speed
   configText: string
   configError: string | undefined
   onPendingType: (id: TileTypeId) => void
+  onDraw: () => void
+  onPass: () => void
   onStep: () => void
   onRound: () => void
   onFinish: () => void
@@ -28,16 +31,26 @@ type Props = {
   onConfigText: (text: string) => void
 }
 
+const ACTION_LABELS: Record<RoundAction, string> = {
+  place: 'pose',
+  draw: 'pioche',
+  move: 'déplacement',
+  pass: 'tour passé',
+}
+
 export const Controls = ({
   state,
   ticksThisRound,
   pendingType,
+  actions,
   canUndo,
   playing,
   speed,
   configText,
   configError,
   onPendingType,
+  onDraw,
+  onPass,
   onStep,
   onRound,
   onFinish,
@@ -49,7 +62,8 @@ export const Controls = ({
 }: Props) => {
   const [showConfig, setShowConfig] = useState(false)
   const over = state.outcome !== 'ongoing'
-  const placing = state.phase === 'placement' && !state.placedThisRound && !over
+  const canAct = actions.length > 0
+  const picked = pendingType === undefined ? undefined : tileType(state.config, pendingType)
 
   return (
     <section className="controls">
@@ -87,35 +101,77 @@ export const Controls = ({
       {playing && <p className="controls__hint">Lecture en cours…</p>}
 
       <div className="controls__block">
-        <h3>Catalogue {placing ? '' : '— pose indisponible'}</h3>
-        <div className="catalog">
-          {state.config.catalog.map((id) => {
-            const type = tileType(state.config, id)
-            return (
-              <button
-                key={id}
-                type="button"
-                className={`catalog__item ${pendingType === id ? 'catalog__item--on' : ''}`}
-                disabled={!placing}
-                onClick={() => onPendingType(id)}
-                title={`${type.name} — ${type.maxExits} Sortie(s) max`}
-              >
-                <span className="catalog__glyph">{type.glyph}</span>
-                <span className="catalog__name">{type.name}</span>
-              </button>
-            )
-          })}
+        <h3>
+          Action de la Manche
+          <span className="controls__action-state">
+            {over
+              ? '—'
+              : state.action !== undefined
+                ? `dépensée : ${ACTION_LABELS[state.action]}`
+                : state.phase === 'placement'
+                  ? 'à jouer'
+                  : 'Manche en cours'}
+          </span>
+        </h3>
+        <div className="controls__row">
+          <button type="button" onClick={onDraw} disabled={!actions.includes('draw')}>
+            Piocher ({state.deck.length})
+          </button>
+          <button type="button" onClick={onPass} disabled={!actions.includes('pass')}>
+            Passer
+          </button>
         </div>
-        <div className="catalog__detail">
-          <h4>
-            {tileType(state.config, pendingType).glyph} {tileType(state.config, pendingType).name}
-            <span className="catalog__exits">
-              {tileType(state.config, pendingType).maxExits} Sortie
-              {tileType(state.config, pendingType).maxExits > 1 ? 's' : ''} max
-            </span>
-          </h4>
-          <RecipeList config={state.config} type={tileType(state.config, pendingType)} />
-        </div>
+        <p className="controls__hint">
+          Une seule action par Manche : poser, piocher, déplacer une Tuile, ou passer (A1).
+          Réorganiser les Sorties reste gratuit. Une Tuile est piochée
+          <strong> automatiquement</strong> à chaque tour, tant que la main n’est pas pleine (A7).
+        </p>
+      </div>
+
+      <div className="controls__block">
+        <h3>
+          Main ({state.hand.length}/{state.config.handMax})
+          <span className="controls__action-state" title="Germe du tirage — recopie-la en configuration pour rejouer cette partie">
+            germe {state.seed}
+          </span>
+        </h3>
+        {state.hand.length === 0 ? (
+          <p className="controls__hint">
+            Main vide : pioche pour reprendre des Tuiles ({state.deck.length} en pioche).
+          </p>
+        ) : (
+          <div className="catalog">
+            {[...new Set(state.hand)].map((id) => {
+              const type = tileType(state.config, id)
+              const count = state.hand.filter((h) => h === id).length
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  className={`catalog__item ${pendingType === id ? 'catalog__item--on' : ''}`}
+                  disabled={!canAct}
+                  onClick={() => onPendingType(id)}
+                  title={`${type.name} — ${type.maxExits} Sortie(s) max`}
+                >
+                  <span className="catalog__glyph">{type.glyph}</span>
+                  <span className="catalog__name">{type.name}</span>
+                  {count > 1 && <span className="catalog__count">×{count}</span>}
+                </button>
+              )
+            })}
+          </div>
+        )}
+        {picked && (
+          <div className="catalog__detail">
+            <h4>
+              {picked.glyph} {picked.name}
+              <span className="catalog__exits">
+                {picked.maxExits} Sortie{picked.maxExits > 1 ? 's' : ''} max
+              </span>
+            </h4>
+            <RecipeList config={state.config} type={picked} />
+          </div>
+        )}
         <p className="controls__hint">
           La Tuile est posée <strong>sans Sortie</strong> : clique ensuite un hexagone voisin pour
           l’orienter.

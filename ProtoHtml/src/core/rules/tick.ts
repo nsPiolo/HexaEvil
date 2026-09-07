@@ -25,9 +25,6 @@ import type {
 
 const SIDE_ORDER: readonly Side[] = ['player', 'demon']
 
-const budgetOf = (state: GameState, side: Side): number =>
-  side === 'player' ? state.config.soulBudget : state.config.minionBudget
-
 const nameOf = (side: Side): string => (side === 'player' ? 'Âme' : 'Sbire')
 
 const log = (state: GameState, side: Side | 'system', text: string): void => {
@@ -88,11 +85,13 @@ export const destroyEntity = (state: GameState, entity: EntityState, cause: Spen
   state.spent[entity.side][cause] += 1
 }
 
-/** Phase 1 / 4 — Apparition (`C4`, `C5`, `X1`). */
+/**
+ * Phase 1 / 4 — Apparition (`C4`, `C5`, `X1`). Inconditionnelle : les entités
+ * apparaissent tant que la Rencontre dure, c'est l'horloge qui borne la partie
+ * (`E2`) et non une réserve.
+ */
 export const spawnPhase = (state: GameState, side: Side): void => {
-  const budget = budgetOf(state, side)
   for (const spawner of spawnersOf(state.config, state, side)) {
-    if (state.spawned[side] >= budget) return // C5 — la réserve est épuisée
     const entity: EntityState = {
       id: state.nextEntityId++,
       side,
@@ -214,7 +213,13 @@ export const movementPhase = (state: GameState, side: Side): void => {
     if (entity.production) continue // D7 — en production, l'entité ne se déplace pas
 
     const tile = tileAt(state, entity.space)
-    if (!tile) continue
+    if (!tile) {
+      // Plus de Tuile sous ses pieds : la seule façon d'y arriver est qu'on ait
+      // déplacé la Tuile (`A4`). Sans ça l'entité serait immortelle et invisible.
+      log(state, side, `${nameOf(side)} #${entity.id} détruite : plus de Tuile sous ses pieds (A4).`)
+      destroyEntity(state, entity, 'blocked')
+      continue
+    }
 
     const exit = currentExit(state, tile)
     const target = exit === undefined ? undefined : destinationThrough(state, tile, exit)
@@ -279,21 +284,20 @@ export const checkVictory = (state: GameState): void => {
 }
 
 /**
- * `E2`, `E3` — la défaite ne se teste qu'en **fin de Tick** : les Âmes en
- * transit ou en production finissent leur course, et une livraison de dernière
- * minute peut encore faire gagner.
+ * `E2`, `E3` — la Rencontre est **limitée dans le temps** : passé `maxTicks`,
+ * l'Escalier inachevé vaut défaite. Le test a lieu en fin de Tick, donc une
+ * livraison au tout dernier Tick peut encore faire gagner.
  */
 export const checkDefeat = (state: GameState): void => {
   if (state.outcome !== 'ongoing') return
-  const reserveSpent = state.spawned.player >= state.config.soulBudget
-  const noneAlive = !state.entities.some((e) => e.side === 'player')
-  if (!reserveSpent || !noneAlive) return
+  if (state.tick < state.config.maxTicks) return
   state.outcome = 'defeat'
   state.phase = 'over'
   log(
     state,
     'system',
-    `Plus une seule Âme et l’Escalier inachevé (${state.progress}/${state.config.stairwayTarget}).`,
+    `Les ${state.config.maxTicks} Ticks sont écoulés, l’Escalier reste inachevé ` +
+      `(${state.progress}/${state.config.stairwayTarget}).`,
   )
 }
 

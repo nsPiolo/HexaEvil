@@ -80,6 +80,12 @@ type Props = {
   /** Sinon, pourquoi (`T5`, `T8`). */
   editRefusal: string | undefined
   onToggleWiring: () => void
+  /** `U10` — Sorties restant à désigner avant fermeture du mode. */
+  exitsLeft: number
+  /** `U16` — la Tuile peut être déplacée (`A4`). */
+  canMove: boolean
+  moving: boolean
+  onToggleMove: () => void
 }
 
 export const TileInspector = ({
@@ -88,9 +94,13 @@ export const TileInspector = ({
   tile,
   onToggleExit,
   wiring,
+  exitsLeft,
   canEdit,
   editRefusal,
   onToggleWiring,
+  canMove,
+  moving,
+  onToggleMove,
 }: Props) => {
   if (!coord) {
     return (
@@ -144,15 +154,27 @@ export const TileInspector = ({
       <div className="inspector__block">
         <div className="inspector__block-head">
           <h3>Sorties</h3>
-          {(canEdit || editable) && (
-            <button
-              type="button"
-              className={`edit-toggle ${editable ? 'edit-toggle--on' : ''}`}
-              onClick={onToggleWiring}
-            >
-              {editable ? 'Terminer' : 'Éditer'}
-            </button>
-          )}
+          <span className="inspector__actions">
+            {(canMove || moving) && (
+              <button
+                type="button"
+                className={`edit-toggle ${moving ? 'edit-toggle--on' : ''}`}
+                onClick={onToggleMove}
+                title="Déplacer cette Tuile — coûte l’action de la Manche (A4)"
+              >
+                {moving ? 'Annuler' : 'Déplacer'}
+              </button>
+            )}
+            {(canEdit || editable) && (
+              <button
+                type="button"
+                className={`edit-toggle ${editable ? 'edit-toggle--on' : ''}`}
+                onClick={onToggleWiring}
+              >
+                {editable ? 'Terminer' : 'Éditer'}
+              </button>
+            )}
+          </span>
         </div>
         <div className="exits">
           {DIRECTION_NAMES.map((name, direction) => {
@@ -179,9 +201,14 @@ export const TileInspector = ({
         </div>
         {editable ? (
           <p className="inspector__hint">
-            Clique l’hexagone voisin visé. Au-delà de {type.maxExits} Sortie
-            {type.maxExits > 1 ? 's' : ''}, la plus ancienne est remplacée. Cliquer une Sortie déjà
-            désignée la conserve. Le mode se referme dans les deux cas.
+            Clique l’hexagone voisin visé.{' '}
+            {exitsLeft > 1
+              ? `Encore ${exitsLeft} Sorties à désigner avant que le mode se referme.`
+              : exitsLeft === 1
+                ? 'Encore 1 Sortie à désigner avant que le mode se referme.'
+                : 'Le mode se referme au prochain choix.'}{' '}
+            Au-delà de {type.maxExits} Sortie{type.maxExits > 1 ? 's' : ''}, la plus ancienne est
+            remplacée ; cliquer une Sortie déjà désignée la conserve et referme le mode (U13).
           </p>
         ) : canEdit ? (
           <p className="inspector__hint">

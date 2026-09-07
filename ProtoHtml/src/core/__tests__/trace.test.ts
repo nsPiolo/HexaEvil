@@ -3,14 +3,19 @@
  *
  * Si ce test échoue, ce n'est pas le test qui a tort : c'est qu'une règle est
  * mal implémentée, ou que le GDD a changé sans que la trace soit refaite.
+ *
+ * La trace fixe elle-même la Recette de la `Carrière` (2 Basalte brut par
+ * production) : elle décrit le **moteur**, pas le réglage courant, et régler la
+ * Carrière dans `config/gameplay.json` ne doit pas la faire rougir.
  */
 import { describe, expect, it } from 'vitest'
 import { key } from '../hex/hexCoord'
 import { progressPerSoulSpent, runTick, totalSpent } from '../rules/encounter'
-import { at, buildGame, tile } from './helpers'
+import { at, buildGame, tile, withRecipes } from './helpers'
 
 const traceGame = () =>
   buildGame({
+    ...withRecipes('quarry', [{ out: { rawBasalt: 2 }, ticks: 1 }]),
     board: { radius: 2 },
     // Démon absent : la trace n'observe que la chaîne du joueur.
     minionBudget: 0,

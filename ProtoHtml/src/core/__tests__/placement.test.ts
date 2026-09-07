@@ -16,11 +16,12 @@ import {
   runTick,
   ticksForRound,
 } from '../rules/encounter'
-import { buildConfig, buildGame, rawGameplay } from './helpers'
+import { buildConfig, buildGame, rawGameplay, withHand } from './helpers'
 
 /** Puits(0,0) seul, un relief en (1,0). */
 const terrain = (overrides: Record<string, unknown> = {}) =>
   buildGame({
+    ...withHand(['quarry', 'quarry']),
     board: { radius: 3, blocked: [{ q: 1, r: 0 }] },
     initialTiles: [{ q: 0, r: 0, type: 'soulWell', owner: 'player', exits: ['E'] }],
     ...overrides,
@@ -70,6 +71,7 @@ describe('Espaces non constructibles (B11)', () => {
 describe('Croissance depuis le Puits (B12)', () => {
   const open = () =>
     buildGame({
+      ...withHand(['quarry', 'quarry']),
       board: { radius: 3 },
       initialTiles: [
         { q: 0, r: 0, type: 'soulWell', owner: 'player', exits: ['E'] },

@@ -3,8 +3,8 @@
 
   "_ticksPerRound": "Cadence d'une Manche : start Ticks au départ, +step toutes les delay Manches, plafonnée à max (C1b).",
   "ticksPerRound": { "start": 1, "max": 5, "step": 1, "delay": 2 },
-  "soulBudget": 100,
-  "minionBudget": 200,
+  "_maxTicks": "Horloge de la Rencontre : le joueur a ce nombre de Ticks pour achever l'Escalier (E2).",
+  "maxTicks": 100,
   "stairwayTarget": 200,
   "carryCapacity": { "player": 1, "demon": 1 },
 
@@ -24,6 +24,7 @@
     {
       "id": "splitter", "name": "Aiguillage", "glyph": "⑄", "side": "neutral",
       "maxExits": 3,
+      "exitsToDesignate": 2,
       "_role": "Répartit le flux entrant en tourniquet (D8). Jusqu'à 3 Sorties ; avec une seule, il se comporte comme un Vide (Q9)."
     },
     {
@@ -94,8 +95,31 @@
     { "q": 2,  "r": -1, "type": "empty",    "owner": "demon",   "exits": ["SW"] },
     { "q": 3,  "r": -1, "type": "stonecutter",    "owner": "demon",   "exits": ["W"] },
     { "q": 1,  "r": 0, "type": "empty",    "owner": "demon",   "exits": ["W"] },
-    { "q": -3, "r": 0, "type": "soulWell", "owner": "player",  "exits": ["NE","SW"] }
+    { "q": 0, "r": -3, "type": "soulWell", "owner": "player",  "exits": ["SE","W"] },
+    { "q": -4, "r": 3, "type": "soulWell", "owner": "player",  "exits": ["NE"] },
+    { "q": -3, "r": 1, "type": "quarry", "owner": "player",  "exits": ["W"] }
   ],
 
-  "catalog": ["empty", "splitter", "quarry", "stonecutter", "workshop", "sculptor"]
+  "_pioche": "deck : sac de Tuiles, les répétitions font les quantités — l'ordre n'a pas d'importance, le tirage est aléatoire (A2, A8). handMax plafonne la main, handStart est la main de départ (A3).",
+  "_seed": "Germe du tirage : un nombre rend les parties reproductibles (réglages comparables), null en tire une nouvelle à chaque partie (A8).",
+  "seed": 678997,
+  "handMax": 6,
+  "handStart": 2,
+  "deck": [
+    "quarry",
+    "quarry",
+    "sculptor",
+    "stonecutter",
+    "stonecutter",
+    "stonecutter",
+    "workshop",
+    "workshop",
+    "empty",
+    "empty",
+    "empty",
+    "empty",
+    "splitter",
+    "splitter",
+    "splitter"
+  ]
 }

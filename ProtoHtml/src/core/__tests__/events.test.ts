@@ -6,7 +6,7 @@
 import { describe, expect, it } from 'vitest'
 import { runTick } from '../rules/encounter'
 import type { TickEvent } from '../rules/types'
-import { at, buildGame, seedInput } from './helpers'
+import { at, buildGame, seedInput, withRecipes } from './helpers'
 
 const kinds = (events: readonly TickEvent[]) => events.map((e) => e.kind)
 
@@ -16,6 +16,8 @@ const stocks = (events: readonly TickEvent[]) =>
     .map((e) => ({ coord: `${e.coord.q},${e.coord.r}`, resource: e.resource, delta: e.delta, reason: e.reason }))
 
 const chain = {
+  // Recette fixée par le test : un « +2 » puis un « −1 » restent distincts.
+  ...withRecipes('quarry', [{ out: { rawBasalt: 2 }, ticks: 1 }]),
   board: { radius: 2 },
   soulBudget: 2,
   initialTiles: [
