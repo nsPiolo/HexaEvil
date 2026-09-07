@@ -1,0 +1,304 @@
+:root {
+  color-scheme: dark;
+  --bg: #12151a;
+  --panel: #1b2027;
+  --panel-2: #222932;
+  --ink: #e6e9ee;
+  --muted: #8b95a3;
+  --line: #2e3742;
+  --good: #3fb950;
+  --bad: #f85149;
+  --warn: #e3b341;
+  --player: #2e86de;
+  --demon: #c0392b;
+  --neutral: #7f8c8d;
+  /* U1 : les Couleurs du Plateau sont délavées vers le pastel — elles restent en
+     fond, les Tuiles texturées passent devant. */
+  --space-base: #b7c2ce;
+  --space-alpha: 0.6;
+  font-family: ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 14px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.game { padding: 12px 16px 32px; }
+header h1 { font-size: 18px; margin: 0 0 2px; }
+.muted { color: var(--muted); }
+.small { font-size: 12px; }
+.good { color: var(--good); }
+.bad { color: var(--bad); }
+.warn { color: var(--warn); }
+code { background: var(--panel-2); padding: 1px 4px; border-radius: 3px; }
+
+.banner {
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin: 8px 0;
+  font-size: 12px;
+  border-left: 3px solid var(--warn);
+  background: #2a2415;
+}
+.banner.warn p { margin: 2px 0; }
+.banner.error { border-left-color: var(--bad); background: #2b1a1a; color: #ffb3ae; }
+
+.layout {
+  display: grid;
+  grid-template-columns: 340px minmax(420px, 1fr) 340px;
+  gap: 12px;
+  align-items: start;
+  margin-top: 8px;
+}
+@media (max-width: 1200px) {
+  .layout { grid-template-columns: 1fr; }
+}
+.left, .right { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+.panel h2 { font-size: 13px; margin: 0 0 8px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.panel h3 { font-size: 12px; margin: 12px 0 4px; color: var(--muted); }
+.panel p { margin: 4px 0; }
+.row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+
+button {
+  background: var(--panel-2);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 5px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+button:hover:not(:disabled) { border-color: #4a5766; background: #2a323d; }
+button:disabled { opacity: .4; cursor: not-allowed; }
+button.link { background: none; border: none; padding: 4px 0; color: var(--muted); }
+input, textarea {
+  background: #0e1116;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 3px 6px;
+  font-size: 12px;
+}
+textarea { width: 100%; font-family: ui-monospace, Menlo, monospace; font-size: 11px; }
+.config-editor { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+
+.chip {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid currentColor;
+}
+.chip.side-player, th.side-player { color: var(--player); }
+.chip.side-demon, th.side-demon { color: var(--demon); }
+.chip.side-neutral { color: var(--neutral); }
+.chip.end { color: var(--warn); }
+.imposed strong { font-weight: 700; }
+
+/* --- Main --- */
+.hand { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.card {
+  display: grid;
+  grid-template-columns: auto auto auto;
+  grid-template-areas: "id force shields" "eff eff eff";
+  gap: 2px 6px;
+  text-align: left;
+  border-width: 2px;
+  min-width: 96px;
+}
+.card.chosen { background: #2b3a4d; box-shadow: 0 0 0 1px #4a8fd1 inset; }
+.card-id { grid-area: id; font-weight: 700; }
+.card-force { grid-area: force; color: var(--warn); font-weight: 700; }
+.card-shields { grid-area: shields; color: #7fd3f7; font-size: 11px; }
+.card-effect { grid-area: eff; color: var(--muted); font-size: 10px; line-height: 1.2; }
+
+/* --- Plateau --- */
+.board { width: 100%; height: auto; display: block; }
+.board.playing { cursor: progress; }
+.space { cursor: default; }
+.space.playable { cursor: pointer; }
+
+/* U1 : fond d'Espace semi-transparent — la Couleur reste lisible sans concurrencer
+   la Tuile, qui est opaque et texturée. */
+.space-base { fill: var(--space-base); }
+.space-fill { fill-opacity: var(--space-alpha); }
+.space.blocked .space-fill { fill-opacity: 1; }
+
+.space .outline { fill: none; stroke: #0c0e12; stroke-width: 1.5; }
+.space.playable:hover .outline, .space.hovered .outline { stroke: #ffffff; stroke-width: 2.5; }
+.space.selected .outline { stroke: #ffd479; stroke-width: 2.5; }
+.space.blocked .outline { stroke: #05070a; stroke-width: 2; }
+
+/* La Tuile : texture pleine + ombre portée, elle se lit comme posée par-dessus. */
+.tile-group { filter: url(#tile-lift); }
+.tile { stroke-width: 2.5; }
+.tile.side-player { stroke: var(--player); }
+.tile.side-demon { stroke: var(--demon); }
+.tile.side-neutral { stroke: var(--neutral); stroke-dasharray: 1 2; }
+.tile.cut { stroke-dasharray: 4 3; }
+.critical-link { fill: none; stroke: var(--warn); stroke-width: 1.5; opacity: .9; }
+
+.tile-id { font-size: 11px; font-weight: 700; fill: #fff; text-anchor: middle; }
+.tile-force { font-size: 16px; font-weight: 800; fill: #fff; text-anchor: middle; }
+.tile-force .aura { font-size: 10px; fill: var(--good); }
+.tile-shields { font-size: 9px; fill: #7fd3f7; text-anchor: middle; letter-spacing: -1px; }
+.coord { font-size: 8px; fill: rgba(20,26,34,.45); text-anchor: middle; }
+
+/* --- U17 : fantôme de pose --- */
+.ghost { pointer-events: none; animation: ghost-in .16s ease-out both; }
+@keyframes ghost-in { from { opacity: 0; } to { opacity: 1; } }
+.ghost-tile { opacity: .58; stroke: #ffffff; stroke-width: 2; stroke-dasharray: 5 3; }
+.ghost .ghost-id { font-size: 11px; font-weight: 700; fill: #fff; text-anchor: middle; opacity: .95; }
+.ghost .ghost-force {
+  font-size: 16px; font-weight: 800; fill: #fff; text-anchor: middle;
+  paint-order: stroke; stroke: #05070a; stroke-width: 3px; stroke-linejoin: round;
+}
+.ghost .ghost-bonus { font-size: 10px; fill: #4ade80; }
+.ghost .ghost-shields { font-size: 9px; fill: #7fd3f7; text-anchor: middle; letter-spacing: -1px; }
+/* La Tuile ne survivra pas à la riposte : on le dit sur le fantôme lui-même. */
+.ghost.doomed .ghost-tile { stroke: var(--bad); opacity: .4; }
+.ghost.doomed .ghost-force { fill: #ff9d93; }
+.ghost .ghost-doom {
+  font-size: 15px; font-weight: 800; fill: var(--bad); text-anchor: middle;
+  paint-order: stroke; stroke: #05070a; stroke-width: 3px;
+}
+/* Elle survit mais hors ravitaillement : elle ne se soignera jamais (F14). */
+.ghost .ghost-cut {
+  font-size: 13px; font-weight: 700; fill: var(--warn); text-anchor: middle;
+  paint-order: stroke; stroke: #05070a; stroke-width: 3px;
+}
+
+.space.preview-hit .outline { stroke: var(--warn); stroke-width: 3; }
+.space.preview-kill .outline { stroke: var(--bad); stroke-width: 3; }
+.space.preview-kill .tile-force { fill: var(--bad); }
+
+/* --- U16 : animation de la résolution --- */
+
+/* La Tuile au centre de l'étape pulse pour qu'on sache d'où vient l'action. */
+.space.focus .tile { animation: focus-pulse .55s ease-out; }
+@keyframes focus-pulse {
+  0%   { stroke-width: 2.5; }
+  40%  { stroke-width: 6; }
+  100% { stroke-width: 2.5; }
+}
+
+/* Une Tuile qui perd de la force : le chiffre rougit et l'hexagone tremble. */
+.space.hit .tile-force { fill: #ffb0a8; }
+.space.hit .tile { animation: shake .32s ease-out; }
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25%      { transform: translateX(-1.6px); }
+  75%      { transform: translateX(1.6px); }
+}
+.space.healed .tile-force { fill: #8ce99a; }
+
+/* Étiquette flottante « −5 » / « +2 ». */
+.float-delta {
+  font-size: 15px;
+  font-weight: 800;
+  text-anchor: middle;
+  animation: float-up .8s ease-out both;
+  paint-order: stroke;
+  stroke: #05070a;
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+.float-delta.down { fill: #ff6b5e; }
+.float-delta.up { fill: #4ade80; }
+@keyframes float-up {
+  0%   { opacity: 0; transform: translateY(6px); }
+  25%  { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-14px); }
+}
+
+/* Disparition : la Tuile se contracte et s'efface. */
+.space.dying .tile-group { animation: die .7s ease-in both; transform-origin: center; transform-box: fill-box; }
+@keyframes die {
+  0%   { opacity: 1; transform: scale(1) rotate(0); }
+  35%  { opacity: 1; transform: scale(1.12) rotate(-3deg); }
+  100% { opacity: 0; transform: scale(.35) rotate(12deg); }
+}
+.space.dying .outline { stroke: var(--bad); stroke-width: 3; }
+.skull { font-size: 20px; font-weight: 800; fill: var(--bad); text-anchor: middle; animation: float-up .7s ease-out both; }
+
+/* Bannière de l'étape en cours. */
+.step-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--warn);
+  border-radius: 6px;
+  padding: 7px 12px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  min-height: 34px;
+}
+.step-banner .step-kind {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  font-size: 10px;
+  color: var(--warn);
+  white-space: nowrap;
+}
+.step-banner .step-count { margin-left: auto; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.step-banner.idle { border-left-color: var(--line); }
+.step-banner.idle .step-kind { color: var(--muted); }
+
+.speed { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+.speed input[type='range'] { width: 96px; accent-color: var(--warn); }
+
+@media (prefers-reduced-motion: reduce) {
+  .space.focus .tile, .space.hit .tile, .float-delta, .space.dying .tile-group, .skull { animation: none; }
+}
+
+.legend { margin-top: 6px; max-width: 70ch; }
+
+/* --- Tables --- */
+table { border-collapse: collapse; width: 100%; font-size: 12px; }
+.detail th { text-align: left; color: var(--muted); font-weight: 500; padding: 2px 6px 2px 0; white-space: nowrap; }
+.detail td { padding: 2px 0; }
+.detail tr.derived th, .detail tr.derived td { border-top: 1px solid var(--line); padding-top: 4px; }
+.decks th, .decks td { text-align: center; padding: 3px 4px; border-bottom: 1px solid var(--line); }
+.decks tbody th { text-align: left; }
+.decks td.empty { color: var(--bad); font-weight: 700; }
+
+.histogram { list-style: none; padding: 0; margin: 0; font-size: 11px; }
+.histogram li { display: flex; align-items: center; gap: 6px; margin: 3px 0; }
+.hist-label { width: 26px; font-weight: 700; color: var(--ink); }
+.hist-track { flex: 1; height: 9px; background: #10141a; border-radius: 2px; overflow: hidden; }
+.hist-bar { display: block; height: 100%; border-radius: 2px; min-width: 2px; }
+.hist-count { width: 22px; text-align: right; font-variant-numeric: tabular-nums; }
+
+.lines { list-style: none; padding: 0; margin: 4px 0; font-size: 12px; }
+.lines li { padding: 1px 0; }
+.offered { border-top: 1px solid var(--line); padding-top: 6px; margin-top: 6px; }
+
+/* --- Journal --- */
+.log ol { list-style: none; padding: 0; margin: 0; max-height: 320px; overflow-y: auto; font-size: 11px; line-height: 1.45; }
+.log li { padding: 2px 0; border-bottom: 1px solid #232a33; }
+.log-turn { color: var(--muted); margin-right: 5px; }
+.log-place { color: #cfe3ff; }
+.log-upkeep { color: #7fd3f7; }
+.log-attack { color: #ffcf99; }
+.log-riposte { color: #ffb0a8; }
+.log-destroyed { color: var(--bad); font-weight: 600; }
+.log-effect { color: #d5b8ff; }
+.log-imposed { color: var(--muted); }
+.log-pass { color: var(--warn); }
+.log-end { color: var(--good); font-weight: 700; }

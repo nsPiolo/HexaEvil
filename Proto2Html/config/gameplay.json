@@ -1,0 +1,118 @@
+{
+  "_lecture": "Fichier unique de réglage du proto 2 (GDD proto2 §12, règle G1). Toute valeur de gameplay vit ici, aucune n'est écrite en dur dans le code. Les règles tranchées, elles, sont en code (G3b).",
+
+  "seed": 1,
+  "firstPlayer": "player",
+  "handSize": 3,
+  "_startingColor": "C9 : null = la première pose de la partie est libre.",
+  "startingColor": null,
+
+  "_upkeepHeal": "F13 : dégâts retirés à chaque Tuile ravitaillée (F14), à l'ouverture du tour de son camp. Levier d'équilibrage du §14 — 0 désactive la règle.",
+  "upkeepHeal": 1,
+  "_upkeepHealsKing": "F13 : le Roi est EXCLU du soin (règle tranchée). Le drapeau reste exposé parce que le §14 en a fait le levier d'équilibrage à re-mesurer.",
+  "upkeepHealsKing": false,
+
+  "_colors": "Catalogue des 5 Couleurs possibles et de leur préfixe d'ID. ATTENTION : le préfixe est l'initiale du mot FRANÇAIS (V=vert=green, N=noir=black, J=jaune=yellow).",
+  "colors": [
+    { "id": "red",    "prefix": "R", "label": "Rouge — Attaque",    "hex": "#c0392b" },
+    { "id": "blue",   "prefix": "B", "label": "Bleue — Magie",      "hex": "#2980b9" },
+    { "id": "green",  "prefix": "V", "label": "Vert — Défense",     "hex": "#27ae60" },
+    { "id": "black",  "prefix": "N", "label": "Noir — Nécromancie", "hex": "#34495e" },
+    { "id": "yellow", "prefix": "J", "label": "Jaune — Lumière",    "hex": "#d4ac0d" }
+  ],
+
+  "board": {
+    "_radius": "B1 : rayon 2 -> 19 Espaces, dont 17 libres et 9 posables après le montage.",
+    "radius": 2,
+    "_blocked": "B11 : 2 Espaces, mur central percé en (0,0) et aux deux pointes. 17 Espaces libres, connexes, territoires 7/7, 2 créneaux d'attaque par Roi.",
+    "blocked": [
+      { "q": 0, "r": 1 },
+      { "q": 0, "r": -1 }
+    ],
+    "_colorDistribution": "C1 : les Couleurs ACTIVES sont les clés à pourcentage > 0. Mettre une Couleur à 0 la retire du jeu et filtre les Decks. La somme des actives doit faire 100.",
+    "colorDistribution": { "red": 27, "blue": 22, "green": 22, "black": 13, "yellow": 16 },
+    "_symmetricColors": "C5 : la carte des Couleurs est miroir par rotation de 180°, pour que les deux camps jouent une position équivalente.",
+    "symmetricColors": true
+  },
+
+  "_setup": "B4/B5/T6 : Rois, 2 Tours par camp, 4 Tuiles neutres. Tout est symétrique par rotation de 180°. Les Tours regardent le centre : chaque Roi garde 2 créneaux d'attaque sur le pourtour, et chaque créneau touche le Roi ET une Tour (F8).",
+  "setup": [
+    { "side": "player",  "type": "N00", "q": -2, "r":  1 },
+    { "side": "player",  "type": "V00", "q": -1, "r":  1 },
+    { "side": "player",  "type": "V00", "q": -1, "r":  0 },
+    { "side": "demon",   "type": "N00", "q":  2, "r": -1 },
+    { "side": "demon",   "type": "V00", "q":  1, "r": -1 },
+    { "side": "demon",   "type": "V00", "q":  1, "r":  0 },
+    { "side": "neutral", "type": "B01", "q": -1, "r":  2 },
+    { "side": "neutral", "type": "B01", "q":  1, "r": -2 }
+  ],
+
+  "_tileTypes": "T3/T4 : le catalogue est une donnée. Le code ne connaît que le répertoire des `kind` d'effets : gainShields, damage, recolorSpaces, silence, shields, force. Cibles : allyAdjacent, enemyAdjacent, anyAdjacent, adjacent.",
+  "tileTypes": [
+    { "id": "R01", "force": 7 },
+    { "id": "R02", "force": 6 },
+    { "id": "R03", "force": 4 },
+    { "id": "R04", "force": 3, "onPlace": [{ "kind": "gainShields", "amount": 1 }] },
+    { "id": "R05", "force": 2, "onPlace": [{ "kind": "damage", "target": "enemyAdjacent", "amount": 2 }] },
+
+    { "id": "B01", "force": 2, "aura": [{ "kind": "shields", "target": "allyAdjacent", "amount": 1 }] },
+    { "id": "B02", "force": 4, "onPlace": [{ "kind": "recolorSpaces", "target": "adjacent", "color": "red" }] },
+    { "id": "B03", "force": 1 },
+
+    { "id": "V00", "force": 10, "role": "tower" },
+    { "id": "V01", "force": 3, "onPlace": [{ "kind": "gainShields", "amount": 2 }] },
+    { "id": "V02", "force": 2, "onPlace": [{ "kind": "gainShields", "amount": 3 }] },
+    { "id": "V03", "force": 1, "onPlace": [{ "kind": "gainShields", "amount": 3 }] },
+    { "id": "V04", "force": 4 },
+
+    { "id": "N00", "force": 20, "shields": 2, "role": "king" },
+    { "id": "N01", "force": 1, "immuneToSilence": true, "aura": [{ "kind": "silence", "target": "anyAdjacent" }] },
+    { "id": "N02", "force": 2 },
+    { "id": "N03", "force": 3, "onPlace": [{ "kind": "damage", "target": "anyAdjacent", "amount": 2 }] },
+
+    { "id": "J01", "force": 1, "aura": [{ "kind": "shields", "target": "enemyAdjacent", "amount": -2 }] },
+    { "id": "J02", "force": 1, "aura": [{ "kind": "force", "target": "allyAdjacent", "amount": 2 }] },
+    { "id": "J03", "force": 3 }
+  ],
+
+  "_decks": "D6 : 37 Tuiles par camp, partitionnées par Couleur (D1). \"sameAsPlayer\" recopie le Deck du joueur.",
+  "decks": {
+    "player": ["R01","R02","R03","R04","R05","R02","R03","R04","R05","R03",
+               "B01","B02","B03","B01","B02","B03","B03","B03",
+               "V01","V02","V03","V04","V01","V02","V03","V04",
+               "N01","N02","N03","N02","N02",
+               "J01","J01","J02","J03","J03","J03"],
+    "demon": "sameAsPlayer"
+  },
+
+  "ai": {
+    "_sides": "I9 : null = joué à la main. Mettre un profil aux deux camps donne le mode IA contre IA (M4).",
+    "demon": { "profile": "neutre", "level": "expert" },
+    "player": null,
+    "profiles": {
+      "bourrin":  { "attack": 1.5, "defense": 0.5 },
+      "defensif": { "attack": 0.5, "defense": 1.5 },
+      "neutre":   { "attack": 1.0, "defense": 1.0 }
+    },
+    "_levels": "I3 : fenêtre de choix dans le classement décroissant. skipBest exclut les N meilleures options.",
+    "levels": {
+      "expert":   { "topN": 2 },
+      "moyen":    { "topN": 5 },
+      "passable": { "topN": 8 },
+      "mauvais":  { "topN": 8, "skipBest": 2 }
+    },
+    "_weights": "I5 : barème. offeredColor à 0 reproduit l'IA du brouillon, qui ignore la Couleur qu'elle offre (I7).",
+    "weights": {
+      "enemyKingDamage": 10,
+      "enemyTilesKilled": 2,
+      "enemyForceDelta": 1,
+      "enemySupplyCut": 2,
+      "ownKingDamage": 12,
+      "ownTilesLost": 3,
+      "shieldsGained": 1,
+      "ownForceDelta": 1,
+      "ownTileSupplied": 2,
+      "offeredColor": 0
+    }
+  }
+}
