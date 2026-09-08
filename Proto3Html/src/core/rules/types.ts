@@ -39,15 +39,38 @@ export interface HandRank {
 
 /* ------------------------------------------------------------------- Dés */
 
-/** Un dé est la liste ordonnée de ses faces gravées, pas un nombre de côtés (`F1`). */
-export interface Die {
-  readonly faces: readonly number[]
+/**
+ * Effets qu'une face gravée peut porter (`F10`). Une face nue n'en a aucun.
+ */
+export type FaceEffectId =
+  /** Relancer ce dé, gratuitement et sans consommer de jet. */
+  | 'freeReroll'
+  /** Visible en fin de tour : un jeton de moins à encaisser. */
+  | 'takeLess'
+  /** Vaut sa valeur **ou** celle de la face opposée — au mieux. */
+  | 'wild'
+  /** À chaque apparition : un jeton du pot pour chaque participant. */
+  | 'payAll'
+  /** Visible en fin de tour : +1 d'argent, +10 si tous les dés l'affichent. */
+  | 'money'
+  /** Trois exemplaires visibles en fin de tour : +1 point de forge. */
+  | 'forge'
+
+export interface Face {
+  readonly value: number
+  readonly effect: FaceEffectId | null
 }
 
-/** Un jet retient l'**indice** de face, dont `flipDie` a besoin (`B10`). */
+/** Un dé est la liste ordonnée de ses faces gravées, pas un nombre de côtés (`F1`). */
+export interface Die {
+  readonly faces: readonly Face[]
+}
+
+/** Un jet retient l'**indice** de face, dont `flipDie` et les effets ont besoin. */
 export interface DieThrow {
   readonly faceIndex: number
   readonly value: number
+  readonly effect: FaceEffectId | null
 }
 
 export type CombinationId =

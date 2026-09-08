@@ -9,58 +9,15 @@
 
 import { describe, it } from 'vitest'
 import { settingsFor, type AiSettings } from '../ai/ai'
-import { canEngrave } from '../dice/dice'
 import { autoPlay } from '../rules/autoplay'
-import { createRng, type Rng } from '../rules/random'
-import {
-  applyEngrave,
-  applyShopCards,
-  createRun,
-  currentCircle,
-  finishMatch,
-  openShopOption,
-  shopBlockedReason,
-  startMatch,
-  type RunState,
-} from '../rules/run'
+import { autoShop } from '../rules/autoshop'
+import { createRng } from '../rules/random'
+import { createRun, currentCircle, finishMatch, startMatch } from '../rules/run'
 import type { TraceStep } from '../rules/trace'
 import { config } from './helpers'
 
 const cfg = config()
 const RUNS = 200
-
-/** Politique d'achat gloutonne : la stratégie dégénérée du §17, pour la mesurer. */
-function greedyShop(run: RunState, rng: Rng): void {
-  const targets = [4, 2, 1]
-  let guard = 0
-  for (;;) {
-    if (guard++ > 40) return
-    if (run.forgePoints >= (cfg.shop.engraveAll?.cost ?? 2)) {
-      const orders = run.dice.map((die, i) => {
-        const target = targets[i] as number
-        for (let f = 0; f < die.faces.length; f++) {
-          if (canEngrave(die, f, target, cfg.dice.maxSameFace).ok) {
-            return { dieIndex: i, faceIndex: f, value: target }
-          }
-        }
-        return null
-      })
-      if (orders.every((o) => o !== null)) {
-        applyEngrave(run, 'engraveAll', orders as { dieIndex: number; faceIndex: number; value: number }[])
-        continue
-      }
-    }
-    if (shopBlockedReason(run, 'clone') === null) {
-      const session = openShopOption(run, 'clone', rng)
-      const best = [...session.cards].sort((a, b) => b.value - a.value)[0]
-      if (best) {
-        applyShopCards(run, session, { uids: [best.uid] })
-        continue
-      }
-    }
-    return
-  }
-}
 
 interface Report {
   runs: number
@@ -75,9 +32,17 @@ interface Report {
   rounds: number[]
   throws: number[]
   combos: Map<string, number>
+  faceEffects: Map<string, number>
+  engraved: number[]
 }
 
-function measure(label: string, expert: boolean, shopping: boolean): Report {
+function measure(
+  label: string,
+  expert: boolean,
+  shopping: boolean,
+  maxPerDie = 2,
+  prefer: 'value' | 'effect' = 'value',
+): Report {
   const r: Report = {
     runs: RUNS,
     completed: 0,
@@ -91,6 +56,8 @@ function measure(label: string, expert: boolean, shopping: boolean): Report {
     rounds: [],
     throws: [],
     combos: new Map(),
+    faceEffects: new Map(),
+    engraved: [],
   }
 
   for (let seed = 1; seed <= RUNS; seed++) {
@@ -115,6 +82,7 @@ function measure(label: string, expert: boolean, shopping: boolean): Report {
       matches++
       for (const s of steps as TraceStep[]) {
         if (s.kind === 'turnEnd') r.combos.set(s.hand.id, (r.combos.get(s.hand.id) ?? 0) + 1)
+        if (s.kind === 'faceBonus') r.faceEffects.set(s.effect, (r.faceEffects.get(s.effect) ?? 0) + 1)
       }
       r.rounds.push(result.rounds)
       r.throws.push(result.throws)
@@ -128,8 +96,9 @@ function measure(label: string, expert: boolean, shopping: boolean): Report {
         if (result.humanWon) r.finalWins++
       }
       finishMatch(run, result)
-      if (shopping && run.status === 'playing') greedyShop(run, rng)
+      if (shopping && run.status === 'playing') autoShop(run, rng, maxPerDie, prefer)
     }
+    r.engraved.push(run.dice.reduce((n, d) => n + d.faces.filter((f) => f.effect !== null).length, 0))
     r.circleReached.push(run.circleIndex + 1)
     r.matches.push(matches)
     if (run.status === 'won') r.completed++
@@ -177,6 +146,17 @@ function print(label: string, r: Report): void {
       `dernières parties de Cercle (à 3) : ${((100 * r.finalWins) / r.finalPlayed).toFixed(1)} % sur ${r.finalPlayed}`,
     )
   }
+  const gravees = mean(r.engraved)
+  if (gravees > 0) {
+    console.log(`faces à effet gravées en fin de run : ${gravees.toFixed(1)} en moyenne`)
+    const totalFx = [...r.faceEffects.values()].reduce((a, b) => a + b, 0)
+    if (totalFx > 0) {
+      console.log(`effets déclenchés (hors passifs) : ${totalFx} au total`)
+      for (const [id, n] of [...r.faceEffects.entries()].sort((a, b) => b[1] - a[1])) {
+        console.log(`   ${id.padEnd(11)} ${n}`)
+      }
+    }
+  }
   const totalCombos = [...r.combos.values()].reduce((a, b) => a + b, 0)
   console.log('mains de dés retenues :')
   for (const [id, n] of [...r.combos.entries()].sort((a, b) => b[1] - a[1])) {
@@ -188,6 +168,9 @@ describe('M1 — mode lot', () => {
   it('mesure les runs', () => {
     measure('joueur au niveau des démons, sans achats — la ligne de base du §17', false, false)
     measure('joueur expert, sans achats — mesure l’effet de S5 (Q4)', true, false)
-    measure('joueur expert, achats gloutons — mesure la courbe d’amélioration (Q2)', true, true)
+    measure('joueur expert, achats — clonage seul', true, true, 0)
+    measure('joueur expert, achats — gravure d’EFFETS, 2 faces par dé', true, true, 2, 'effect')
+    measure('joueur expert, achats — gravure d’EFFETS, 4 faces par dé', true, true, 4, 'effect')
+    measure('joueur expert, achats — gravure de VALEURS, 2 faces par dé', true, true, 2, 'value')
   }, 900_000)
 })

@@ -3,7 +3,7 @@
  * `config/gameplay.json`, seule autorité sur les valeurs de gameplay (`G3`).
  */
 
-import type { CombinationId, HandCategory, RewardId, Suit } from '../rules/types'
+import type { CombinationId, FaceEffectId, HandCategory, RewardId, Suit } from '../rules/types'
 
 export interface CircleConfig {
   readonly n: number
@@ -25,12 +25,22 @@ export interface CardsConfig {
   readonly handRankings: Readonly<Record<number, readonly HandCategory[]>>
 }
 
+export interface FaceEffectsConfig {
+  /** Effets proposés à chaque gravure — la valeur de la face ne bouge pas (`F11`). */
+  readonly effectOptions: number
+  /** Valeurs proposées en plus — l'effet de la face ne bouge pas (`F11`). */
+  readonly valueOptions: number
+  /** Symboles `⚒` visibles en fin de lancers pour gagner un point de forge (`F10`). */
+  readonly forgeThreshold: number
+  readonly catalogue: readonly FaceEffectId[]
+}
+
 export interface DiceConfig {
   readonly startingFaces: readonly number[]
+  readonly faceEffects: FaceEffectsConfig
   /** `D3b` : combien de dés chacun lance. Le jeu en retient toujours 3. */
   readonly playerDice: number
   readonly demonDice: number
-  readonly maxSameFace: number
   readonly defaultMaxRerolls: number
 }
 

@@ -1,7 +1,7 @@
 /** Briques d'affichage : carte, dé, pile de jetons, récompense. */
 
-import type { Card, Die, DiceHand, RewardId } from '../core/rules/types'
-import { cardValueLabel, REWARD_HELP, REWARD_LABEL, SUIT_SYMBOL } from './labels'
+import type { Card, Die, DiceHand, FaceEffectId, RewardId } from '../core/rules/types'
+import { cardValueLabel, EFFECT_LABEL, EFFECT_SYMBOL, REWARD_HELP, REWARD_LABEL, SUIT_SYMBOL } from './labels'
 
 export function CardView({
   card,
@@ -27,6 +27,7 @@ export function CardView({
 
 export function DieView({
   value,
+  effect,
   rolling,
   kept,
   dimmed,
@@ -34,6 +35,7 @@ export function DieView({
   title,
 }: {
   value: number
+  effect?: FaceEffectId | null | undefined
   rolling?: boolean | undefined
   kept?: boolean | undefined
   dimmed?: boolean | undefined
@@ -49,8 +51,15 @@ export function DieView({
     value >= 100 ? 'die--tiny' : value >= 10 ? 'die--small' : '',
   ]
   return (
-    <button type="button" className={cls.join(' ')} onClick={onClick} disabled={!onClick} title={title}>
+    <button
+      type="button"
+      className={cls.join(' ')}
+      onClick={onClick}
+      disabled={!onClick}
+      title={effect ? `${title ?? ''} · ${EFFECT_LABEL[effect]}`.trim() : title}
+    >
       {value}
+      {effect && <span className="die__effect">{EFFECT_SYMBOL[effect]}</span>}
     </button>
   )
 }
@@ -94,7 +103,7 @@ export function RewardCard({
   return (
     <button
       type="button"
-      className={`reward ${taken ? 'reward--taken' : ''} ${onClick ? 'reward--clickable' : ''}`}
+      className={`reward ${taken ? 'reward--taken' : ''} ${onClick ? 'reward--clickable reward--pickable' : ''}`}
       onClick={onClick}
       disabled={!onClick}
     >
@@ -105,13 +114,18 @@ export function RewardCard({
   )
 }
 
-/** `U9` : l'inspecteur de dés — les faces gravées mises en évidence. */
+/** `U9` : l'inspecteur de dés — faces gravées et effets mis en évidence. */
 export function DieInspector({ die, engraved }: { die: Die; engraved: readonly number[] }) {
   return (
     <div className="inspector">
-      {die.faces.map((face, i) => (
-        <span key={i} className={`inspector__face ${engraved.includes(i) ? 'inspector__face--engraved' : ''}`}>
-          {face}
+      {die.faces.map((f, i) => (
+        <span
+          key={i}
+          className={`inspector__face ${engraved.includes(i) ? 'inspector__face--engraved' : ''}`}
+          title={f.effect ? EFFECT_LABEL[f.effect] : undefined}
+        >
+          {f.value}
+          {f.effect && <em className="inspector__effect">{EFFECT_SYMBOL[f.effect]}</em>}
         </span>
       ))}
     </div>

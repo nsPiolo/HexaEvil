@@ -42,8 +42,14 @@
     "_counts": "D3b : le joueur lance 4 dés, les démons 3. Le jeu retient la meilleure combinaison de 3.",
     "playerDice": 4,
     "demonDice": 3,
-    "_maxSameFace": "A7 : garde-fou anti-dégénérescence. 0 = illimité. À 4, plafond de 29,6 % de 4-2-1 au D6.",
-    "maxSameFace": 4,
+    "_faceEffects": "F11 : la gravure propose des EFFETS (la valeur reste) et quelques VALEURS tirées au sort (l'effet reste).",
+    "faceEffects": {
+      "effectOptions": 3,
+      "valueOptions": 2,
+      "_forgeThreshold": "F10 : symboles ⚒ visibles en fin de lancers pour gagner 1 point de forge.",
+      "forgeThreshold": 2,
+      "catalogue": ["freeReroll", "takeLess", "wild", "payAll", "money", "forge"]
+    },
     "defaultMaxRerolls": 2
   },
 

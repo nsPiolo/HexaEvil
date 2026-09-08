@@ -6,8 +6,11 @@
  * chaque étape n'apporterait rien. La présentation ne fait que lire (ADR-0003).
  */
 
+import { settingsFor } from '../core/ai/ai'
 import type { GameConfig, ShopOptionId } from '../core/config/schema'
 import type { Answer, Ask } from '../core/rules/asks'
+import { autoAnswer } from '../core/rules/autoplay'
+import { autoShop } from '../core/rules/autoshop'
 import type { MatchDriver } from '../core/rules/match'
 import { createRng, type Rng } from '../core/rules/random'
 import {
@@ -39,6 +42,8 @@ export class Session {
   after: Snapshot[] = []
   cursor = 0
   speed = 1
+  /** `U17` : le joueur est remplacé par la machine, pour regarder jouer. */
+  autoPilot = false
   screen: Screen = 'match'
   outcome: MatchOutcome | null = null
   shop: ShopSession | null = null
@@ -145,6 +150,39 @@ export class Session {
   setSpeed(speed: number): void {
     this.speed = speed
     this.emit()
+  }
+
+  setAutoPilot(on: boolean): void {
+    this.autoPilot = on
+    this.emit()
+  }
+
+  /**
+   * Un pas de pilote automatique. Il répond à la question en attente avec la
+   * même IA que les démons — mais au niveau `expert`, pour que la démonstration
+   * montre le jeu bien joué. Il ne joue **pas** la cupidité (`D12`), qui reste
+   * une décision proprement humaine.
+   */
+  autoStep(): void {
+    if (this.screen === 'shop') {
+      autoShop(this.run, this.rng)
+      this.beginMatch()
+      return
+    }
+    if (this.screen !== 'match') return
+    const ask = this.ask
+    if (!ask || !this.driver) return
+    const settings = { ...settingsFor(this.cfg.ai, 0, this.run.circleIndex), topN: 1 }
+    this.answer(
+      autoAnswer(ask, {
+        cfg: this.cfg,
+        circleIndex: this.run.circleIndex,
+        participants: this.driver.participants,
+        chips: this.driver.live.chips,
+        rng: this.rng,
+        settings,
+      }),
+    )
   }
 
   /** Fin d'animation : c'est seulement là qu'on encaisse le résultat de la partie. */

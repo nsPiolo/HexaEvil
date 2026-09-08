@@ -53,7 +53,7 @@ export function autoAnswer(ask: Ask, ctx: AutoContext): Answer {
         {
           dice,
           values: ask.context.values,
-          hand: ask.context.hand,
+          freeRerolls: ask.context.freeRerolls,
           throwNo: ask.context.throwNo,
           maxThrows: ask.context.maxThrows,
           faces: circle.dieFaces,

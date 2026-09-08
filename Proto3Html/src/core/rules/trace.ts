@@ -7,7 +7,7 @@
  * l'affichage n'ait jamais à recalculer quoi que ce soit.
  */
 
-import type { Card, DiceHand, HandRank, PhaseId, RewardId } from './types'
+import type { Card, DiceHand, FaceEffectId, HandRank, PhaseId, RewardId } from './types'
 
 export type CoinSide = 'pile' | 'face'
 
@@ -53,8 +53,10 @@ export type TraceStep =
       rolled: readonly boolean[]
       /** `D3b` : les 3 dés que le jeu a retenus parmi les N lancés. */
       kept: readonly number[]
+      /** `F10` : l'effet porté par la face visible de chaque dé. */
+      effects: readonly (FaceEffectId | null)[]
       hand: DiceHand
-      via: 'normal' | 'set42' | 'extraDie'
+      via: 'normal' | 'set42' | 'extraDie' | 'freeReroll'
     }
   | {
       kind: 'dropDie'
@@ -62,15 +64,66 @@ export type TraceStep =
       before: readonly number[]
       dropped: number
       values: readonly number[]
+      effects: readonly (FaceEffectId | null)[]
       hand: DiceHand
     }
-  | { kind: 'flipUsed'; who: number; dieIndex: number; from: number; to: number; hand: DiceHand }
+  | {
+      kind: 'flipUsed'
+      who: number
+      dieIndex: number
+      from: number
+      to: number
+      effects: readonly (FaceEffectId | null)[]
+      hand: DiceHand
+    }
+  | {
+      /** `F10` : un effet de face a produit quelque chose. */
+      kind: 'faceBonus'
+      who: number
+      effect: FaceEffectId
+      amount: number
+      detail: string
+      pot: number
+      chips: readonly number[]
+    }
+  | {
+      /** `B13` : un 4-2-1 adverse est annulé, tous les dés repartent. */
+      kind: 'forcedReroll'
+      who: number
+      owner: number
+      before: readonly number[]
+      values: readonly number[]
+      kept: readonly number[]
+      effects: readonly (FaceEffectId | null)[]
+      hand: DiceHand
+    }
+  | {
+      /** `B15` : la moitié part chez le troisième participant. */
+      kind: 'sideGift'
+      from: number
+      to: number
+      amount: number
+      pot: number
+      chips: readonly number[]
+    }
+  | {
+      /** `B16` : la nénette fait circuler un jeton par adversaire. */
+      kind: 'nenetteGift'
+      who: number
+      targets: readonly number[]
+      amount: number
+      source: 'pot' | 'owner'
+      pot: number
+      chips: readonly number[]
+    }
   | { kind: 'turnEnd'; who: number; hand: DiceHand; throws: number }
   | {
       kind: 'roundResult'
       phase: PhaseId
       best: number
       worst: number
+      /** Valeur réclamée avant plafonnement — `B14` peut l'avoir réduite de 1. */
+      base: number
       amount: number
       pot: number
       chips: readonly number[]

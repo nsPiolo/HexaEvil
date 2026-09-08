@@ -12,6 +12,9 @@ interface SceneProps {
   names: readonly string[]
   humanIndex: number
   ladderSizes: Readonly<Record<number, number>>
+  /** `U8c` : récompenses cliquables **dans la bande**, plutôt que redessinées. */
+  pickable?: readonly string[] | undefined
+  onPick?: ((id: string) => void) | undefined
 }
 
 function Seat({
@@ -86,7 +89,7 @@ export function Scene(props: SceneProps) {
           ))}
         </div>
         {view.coin && <Coin coin={view.coin} names={names} />}
-        <RewardStrip view={view} names={names} />
+        <RewardStrip view={view} names={names} pickable={props.pickable} onPick={props.onPick} />
       </div>
     )
   }
@@ -105,12 +108,24 @@ export function Scene(props: SceneProps) {
           const slot = view.dice[i]
           const values: readonly number[] = slot?.values ?? []
           return (
-            <Seat {...props} key={i} index={i} tag={view.leader === i ? 'meneur' : null}>
+            <Seat
+              {...props}
+              key={i}
+              index={i}
+              tag={
+                view.leader === i
+                  ? view.leaderThrows !== null
+                    ? `meneur · ${view.leaderThrows} jet${view.leaderThrows > 1 ? 's' : ''}`
+                    : 'meneur'
+                  : null
+              }
+            >
               <div className="dice">
                 {values.map((value, k) => (
                   <DieView
                     key={k}
                     value={value}
+                    effect={slot?.effects[k] ?? null}
                     rolling={slot?.rolled[k] ?? false}
                     // `D3b` : les dés retenus par le jeu ressortent, les autres s'effacent.
                     dimmed={slot !== null && !(slot?.kept.includes(k) ?? true)}
@@ -156,17 +171,28 @@ function RewardStrip({
   view,
   names,
   compact,
+  pickable,
+  onPick,
 }: {
   view: View
   names: readonly string[]
   compact?: boolean
+  pickable?: readonly string[] | undefined
+  onPick?: ((id: string) => void) | undefined
 }) {
   const owned = [...view.owned.entries()]
-  if (view.offered.length === 0 && owned.length === 0) return null
+  // `U8d` : une fois les batailles finies, les récompenses non prises sortent de
+  // l'écran — elles ne joueront plus aucun rôle dans la partie.
+  const offered = view.mode === 'duel' ? view.offered : []
+  if (offered.length === 0 && owned.length === 0) return null
   return (
     <div className={`strip ${compact ? 'strip--compact' : ''}`}>
-      {view.offered.map((id) => (
-        <RewardCard key={id} id={id} />
+      {offered.map((id) => (
+        <RewardCard
+          key={id}
+          id={id}
+          onClick={pickable?.includes(id) && onPick ? () => onPick(id) : undefined}
+        />
       ))}
       {owned.map(([id, who]) => (
         <RewardCard key={id} id={id} owner={who} ownerName={names[who]} />

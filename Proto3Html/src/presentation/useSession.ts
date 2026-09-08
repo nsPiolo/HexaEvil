@@ -56,5 +56,21 @@ export function useSession(cfg: GameConfig): Playback {
     }
   }, [session, cursor, length, speed])
 
+  const idle = cursor >= length
+  const auto = session.autoPilot
+  const screen = session.screen
+  const hasAsk = session.ask !== null
+
+  useEffect(() => {
+    if (!auto || !idle) return
+    if (screen !== 'match' && screen !== 'shop') return
+    if (screen === 'match' && !hasAsk) return
+    // Une courte pause avant chaque réponse : sans elle, la partie défile sans
+    // qu'on ait le temps de lire ce qui se passe.
+    const wait = Math.max(120, 500 / Math.max(0.25, speed))
+    const timer = setTimeout(() => session.autoStep(), wait)
+    return () => clearTimeout(timer)
+  }, [session, auto, idle, screen, hasAsk, speed, cursor, length])
+
   return { session, progress }
 }

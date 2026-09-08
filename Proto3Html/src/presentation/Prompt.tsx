@@ -2,8 +2,8 @@
 
 import { useState } from 'react'
 import type { Answer, Ask } from '../core/rules/asks'
-import { CardView, DieView, RewardCard } from './bits'
-import { CATEGORY_LABEL, diceHandLabel, REWARD_LABEL } from './labels'
+import { CardView, DieView } from './bits'
+import { CATEGORY_LABEL, diceHandLabel, EFFECT_LABEL, EFFECT_SYMBOL, REWARD_LABEL } from './labels'
 import type { View } from './viewModel'
 
 interface Props {
@@ -76,13 +76,14 @@ function PromptBody({ ask, view, names, ladderSize, onAnswer }: Props) {
       )
 
     case 'reward':
+      // `U8c` : les récompenses sont déjà à l'écran, dans la bande. On les y
+      // rend cliquables au lieu d'en dessiner une seconde rangée ici.
       return (
-        <Panel title="Vous remportez la bataille" help="Choisissez une récompense. Ce qui reste sur la table ne reviendra pas.">
-          <div className="strip strip--choice">
-            {ask.offered.map((id) => (
-              <RewardCard key={id} id={id} onClick={() => onAnswer({ kind: 'reward', id })} />
-            ))}
-          </div>
+        <Panel
+          title="Vous remportez la bataille"
+          help="Cliquez la récompense que vous prenez, dans la bande au-dessus. Ce qui reste ne reviendra pas."
+        >
+          <></>
         </Panel>
       )
 
@@ -169,11 +170,15 @@ function PromptBody({ ask, view, names, ladderSize, onAnswer }: Props) {
         <Panel
           title={first ? `À vous — ${n} dés, jet 1 sur ${c.maxThrows}` : `Jet ${c.throwNo + 1} sur ${c.maxThrows}`}
           help={
-            first
-              ? `Vous lancez ${n} dés ; le jeu retient toujours la meilleure combinaison de trois.`
+            (first
+              ? `Vous lancez ${n} dés ; le jeu retient toujours la meilleure combinaison de trois. `
               : `Cliquez les dés à garder, puis relancez — ou arrêtez-vous là. ${
-                  slot?.hand ? `Actuellement : ${diceHandLabel(slot.hand)} — ${slot.hand.chipValue} jetons.` : ''
-                }`
+                  slot?.hand ? `Actuellement : ${diceHandLabel(slot.hand)} — ${slot.hand.chipValue} jetons. ` : ''
+                }`) +
+            // `D4` : le plafond vient du meneur, et il faut le dire.
+            (c.isLeader
+              ? `Vous menez : le nombre de jets que vous utilisez plafonnera les autres.`
+              : `Le meneur s’est arrêté après ${c.maxThrows} jet${c.maxThrows > 1 ? 's' : ''} : c’est votre plafond.`)
           }
         >
           {!first && (
@@ -182,6 +187,7 @@ function PromptBody({ ask, view, names, ladderSize, onAnswer }: Props) {
                 <DieView
                   key={i}
                   value={v}
+                  effect={c.effects[i] ?? null}
                   kept={keepMask[i]}
                   dimmed={!c.kept.includes(i)}
                   onClick={() =>
@@ -203,6 +209,18 @@ function PromptBody({ ask, view, names, ladderSize, onAnswer }: Props) {
                 M’arrêter là
               </button>
             )}
+            {/* `F10` : une relance gratuite ne coûte pas de jet — bouton par dé concerné. */}
+            {c.freeRerolls.map((i) => (
+              <button
+                key={i}
+                type="button"
+                className="btn btn--bonus"
+                title={EFFECT_LABEL.freeReroll}
+                onClick={() => onAnswer({ kind: 'turn', action: { type: 'freeReroll', dieIndex: i } })}
+              >
+                {EFFECT_SYMBOL.freeReroll} relancer le {values[i]} gratuitement
+              </button>
+            ))}
             {c.canFlip && (
               <button type="button" className="btn btn--bonus" onClick={() => setFlipMode(true)}>
                 Retourner un dé

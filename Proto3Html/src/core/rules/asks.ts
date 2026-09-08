@@ -3,7 +3,7 @@
  * Les démons répondent aux mêmes questions, mais sans passer par ici (§12).
  */
 
-import type { Card, DiceHand, HandRank, PhaseId, RewardId } from './types'
+import type { Card, DiceHand, FaceEffectId, HandRank, PhaseId, RewardId } from './types'
 import type { CoinSide } from './trace'
 
 export interface TurnContext {
@@ -14,8 +14,13 @@ export interface TurnContext {
   readonly hand: DiceHand | null
   /** Les 3 dés retenus parmi les N lancés (`D3b`). */
   readonly kept: readonly number[]
+  /** Effet porté par la face visible de chaque dé (`F10`). */
+  readonly effects: readonly (FaceEffectId | null)[]
+  /** Dés relançables gratuitement, tout de suite (`F10`, `freeReroll`). */
+  readonly freeRerolls: readonly number[]
   readonly throwNo: number
   readonly maxThrows: number
+  /** `D4` : le meneur fixe le plafond ; pour les autres, `maxThrows` **est** ce plafond. */
   readonly isLeader: boolean
   readonly canFlip: boolean
   readonly canSet42: boolean
@@ -34,6 +39,7 @@ export type TurnAction =
   | { type: 'roll'; keep: readonly boolean[]; useSet42: boolean }
   | { type: 'stop' }
   | { type: 'flip'; dieIndex: number }
+  | { type: 'freeReroll'; dieIndex: number }
 
 export type Answer =
   | { kind: 'mulligan'; swap: readonly number[] }

@@ -249,6 +249,10 @@ document.
   Cercle 1 à 5 aux Cercles 8 et 9.
 - `C3` ✅ Chaque participant peut ensuite **changer de 0 à toutes ses cartes,
   deux fois**. Deux passes de changement, chacune facultative et de taille libre.
+- `C3b` ✅ **Passer clôt ses changements pour toute la bataille.** Qui n'échange
+  aucune carte à la première passe n'est plus consulté à la seconde. La décision
+  « je garde » devient donc engageante, au lieu d'être une question posée deux
+  fois. Vaut pour tout le monde, joueur comme démons.
 - `C4` ✅ Les cartes changées sont **défaussées** et remplacées par un tirage
   dans la partie non distribuée du deck : on ne peut pas retirer la même carte.
   Défausse et main reviennent au deck à la fin de la bataille.
@@ -371,13 +375,13 @@ document.
 - `B3c` ✅ **Sans objet** : depuis `B5`, toute récompense s'applique à la
   sélection, donc aucune ne peut être périmée. La règle disparaît, et avec elle
   le seul point resté ouvert de `Q13`.
-- `B3d` 🧪 **Conséquence à surveiller** : le catalogue est tombé à **7 entrées**
-  (`B7`). La première série en propose 4, la seconde 3 — soit exactement les 3
-  restantes. Le second tirage n'a donc plus aucun aléa : il est entièrement
-  déterminé par le premier. La décision demeure (quelle récompense prendre parmi
-  les 3), mais la variété d'une partie à l'autre baisse. Deux sorties si ça
-  gêne : rallonger le catalogue, ou ne plus exclure du second tirage que les
-  récompenses **déjà prises**.
+- `B3d` ✅ **Réglé par l'ajout de `B13` à `B16`** : le catalogue est remonté à
+  **11 entrées**, la première série en propose 4, la seconde en tire 3 parmi les
+  7 restantes. L'aléa du second tirage est revenu.
+- `B3e` ✅ **Une récompense sans effet dans la configuration courante n'est
+  jamais proposée.** Aujourd'hui cela ne vise que `splitGive` (`B15b`), inerte en
+  duel. C'est la même intention que l'ancien `B3c` : ne jamais offrir un choix
+  mort.
 - `B4` ✅ Les démons prennent aussi des récompenses quand ils gagnent une
   bataille, selon `I4`.
 - `B5` ✅ **Toute récompense s'applique au moment où elle est prise.** Il n'y a
@@ -421,6 +425,10 @@ document.
 | `extraDie` | **Un dé en plus** au premier lancer de la phase — 5 pour le joueur, 4 pour un démon | son détenteur | **chaque phase** |
 | `set42` | Avant un jet : fixe 2 dés sur 4 et 2, lance les autres. Jet unique et définitif | son détenteur | 🧪 **une fois par partie** |
 | `valuePlus1` | +1 à la valeur en jetons de ses combinaisons | son détenteur | toute la partie |
+| `reroll421` | Un adversaire qui termine sur un 4-2-1 relance tous ses dés | son détenteur | toute la partie |
+| `splitGive` | Donner à un adversaire en donne la moitié à l'autre. **À trois seulement** | son détenteur | toute la partie |
+| `takeLess` | Encaisse un jeton de moins, au minimum 1 | son détenteur | toute la partie |
+| `nenetteGift` | Une nénette fait circuler un jeton vers chaque adversaire | **tous les participants** | toute la partie |
 
 - `B9` ✅ `setRerolls` est le seul bonus qui touche **tout le monde**, y compris
   celui qui ne l'a pas choisi. Le mettre à 1 est une arme défensive (moins de
@@ -446,7 +454,32 @@ document.
   étape de la trace à part entière (`U2`). Entre deux candidats équivalents, on
   jette la plus grosse valeur : les petites (1, 2, 4) sont celles qui construisent
   un 4-2-1 ou un 1-1-x aux relances.
-- `B13` 🧪 `valuePlus1` s'applique **après** le barème (`V2`), donc aussi à la
+- `B13` ✅ **`reroll421` — annuler les 4-2-1.** Un adversaire du détenteur qui
+  **termine ses lancers** sur un 4-2-1 relance automatiquement tous ses dés, et
+  la main qui sort est définitive. 🧪 Une seule fois par tour : si le second jet
+  redonne un 4-2-1, il tient. Sans ce plafond, la règle boucle.
+- `B14` ✅ **`takeLess` — encaisser moins.** Quand le détenteur est la pire main
+  et encaisse, il prend **un jeton de moins, au minimum 1**. C'est le transfert
+  lui-même qui est réduit, pas seulement ce qu'il reçoit : les jetons restent
+  conservés (`J2`), le pot en garde un de plus en répartition, le donneur en
+  garde un de plus en don. Encore un arbitrage vitesse contre argent — moins de
+  jetons à évacuer, mais moins d'argent au bout.
+- `B15` ✅ **`splitGive` — donner aux deux.** Quand le détenteur donne des jetons
+  à un adversaire, **l'autre adversaire en reçoit la moitié, arrondie à
+  l'inférieur**, de la même source. Ça vaut pour le transfert de la phase de don
+  **et** pour la récompense `give` (`B6`). Se délester plus vite est un raccourci
+  vers la victoire, et ces jetons-là comptent bien comme argent quand ils sont
+  donnés pendant la phase de don (`J5`).
+- `B15b` ✅ `splitGive` **n'est jamais proposée en duel** (`B3e`) : sans troisième
+  participant, elle n'a aucun effet.
+- `B16` ✅ **`nenetteGift` — la nénette paie.** Portée **`all`** comme
+  `setRerolls` : une fois prise, la règle vaut pour tout le monde. Un participant
+  qui termine sur une nénette (2-2-1) fait circuler **un jeton vers chaque
+  adversaire** — pris **dans le pot** en phase de répartition, sorti de **sa
+  propre réserve** en phase de don — et ce **même s'il perd la manche**. La pire
+  main du jeu devient une consolation : en répartition les adversaires se
+  chargent à sa place, en don il se déleste.
+- `B17` 🧪 `valuePlus1` s'applique **après** le barème (`V2`), donc aussi à la
   combinaison `junk` : un jet raté vaut 2 au lieu de 1. Il ne change **pas** le
   classement des mains (`V4`), seulement le nombre de jetons transférés.
 
@@ -496,7 +529,8 @@ document.
 
 - `D9` ✅ On distribue le pot :
   - `D9a` ✅ À chaque manche, **le participant qui a la pire main prend, dans le
-    pot, un nombre de jetons égal à la valeur en jetons de la meilleure main**.
+    pot, un nombre de jetons égal à la valeur en jetons de la meilleure main**
+    — réduite de 1 si celui qui encaisse détient `takeLess` (`B14`).
     C'est la règle classique du 4-21 : on est puni par la réussite d'un autre.
   - `D9b` ✅ Si le pot contient moins que ce montant, on prend ce qui reste.
   - `D9c` ✅ La phase se termine dès que le pot est **vide**.
@@ -579,7 +613,7 @@ document.
   cohérence est un argument fort qu'il s'agit de l'intention d'origine. Voir `Q7`.
 - `V4` ✅ **Classement des mains** : par rang `V1` d'abord, puis, à rang égal,
   par valeur en jetons, puis par valeurs de dés décroissantes. Le classement est
-  donc **indépendant** de `valuePlus1` (`B13`), qui ne touche que le transfert.
+  donc **indépendant** de `valuePlus1` (`B17`), qui ne touche que le transfert.
 - `V5` ✅ **La nénette existe** : le 2-2-1 est la **pire main du jeu**, sous le
   « reste », mais elle vaut **2 jetons** au lieu de 1. C'est l'exception du 4-21
   classique, conservée pour la saveur. Elle ne transfère donc jamais rien tant
@@ -647,15 +681,16 @@ document.
   qui retirent aussi deux cartes pour le même prix avec deux tirages différents,
   donc plus de choix. Soit son coût descend à 6-8, soit son tirage est plus large
   (proposition : 10 → 6), soit elle disparaît. Voir `Q9`.
-- `A6` ✅ `engraveOne` / `engraveAll` : le joueur choisit le dé, la face et la
-  valeur cible. La valeur cible doit rester dans `1…faces` du dé courant.
-- `A7` ✅ **Garde-fou de gravure** : une même valeur ne peut pas apparaître plus
-  de **4** fois sur un dé (`maxSameFace: 4`). Sans garde-fou, la stratégie
-  optimale est de graver toutes les faces des 3 dés en 4, 2 et 1 et de sortir un
-  4-2-1 à chaque jet (§17). À 4, un joueur qui grave à fond ses trois D6 obtient
-  **29,6 % de 4-2-1 au premier jet** — c'est énorme, et c'est assumé : le garde-fou
-  borne le pic sans l'interdire, et la montée de dé le dilue aussitôt
-  (12,5 % au D8, 3,7 % au D12, 0,8 % au D20, 0,01 % au D100 — `F7`). `M8` mesure.
+- `A6` ✅ `engraveOne` / `engraveAll` : le joueur choisit le **dé** et la
+  **face**. Il ne choisit plus la valeur : le graveur lui en **propose trois**
+  (`F11`).
+- `A7` ❌ **Retiré.** Le plafond de faces identiques n'a jamais servi à ce pour
+  quoi il avait été posé : ce n'est pas lui qui empêche la dégénérescence, c'est
+  `D1b` — la meilleure combinaison de trois parmi quatre récompense la
+  polyvalence, donc saturer un dé est **perdant tout seul**. Mesuré : graver des
+  valeurs termine **0,5 %** des runs contre 6,5 % en n'y touchant pas (§17). On
+  peut donc laisser le joueur saturer ses dés s'il le veut : le jeu le punit
+  mieux qu'une règle ne l'interdisait.
 
 ## 11. Dés : faces, gravure et montée de dé
 
@@ -681,6 +716,57 @@ document.
   l'intention : le Cercle 9 est un boss. `M8` le dira. Voir `Q10`.
 - `F8` ✅ Les nouvelles faces s'insèrent **par paires opposées** aux extrémités,
   pour préserver `F2`.
+- `F10` ✅ **Une face gravée peut porter un effet.** Une face nue n'en a aucun,
+  et les dés de départ n'en portent jamais. Six effets :
+
+| Symbole | Effet | Quand |
+| --- | --- | --- |
+| ↻ | **Relance gratuite** — relancer ce dé sans consommer de jet | dès que la face sort |
+| ⊖ | **Encaisse un jeton de moins**, jamais sous 1 | face visible en fin de lancers |
+| ✳ | **Vaut sa valeur ou celle de la face opposée** — le jeu prend la meilleure combinaison | à l'évaluation de la main |
+| ⇈ | **Un jeton du pot pour chaque participant**, vous compris | à chaque apparition dans un jet |
+| ✦ | **+1 d'argent**, et **+10** si *tous* les dés l'affichent | face visible en fin de lancers |
+| ⚒ | **+1 point de forge** si **deux** exemplaires sont visibles | face visible en fin de lancers |
+
+- `F10a` ✅ `↻` est une **offre, pas une obligation** : le joueur décide. Un dé
+  ne se relance gratuitement qu'une fois par jet, sinon la règle boucle.
+- `F10b` ✅ `⇈` puise **dans le pot**, jamais de nulle part : si le pot est vide
+  — donc pendant toute la phase de don — l'effet ne produit rien. C'est ce qui
+  garde `J2` (les jetons sont conservés) vrai. Effet à double tranchant : il
+  charge les adversaires, mais **le détenteur reçoit aussi**, ce qui l'éloigne de
+  la victoire tout en lui donnant de quoi gagner de l'argent.
+- `F10e` ✅ Le seuil de `⚒` est en configuration (`forgeThreshold`). À **trois**
+  symboles il était quasi mort — 12 déclenchements sur 200 runs même en gravant à
+  fond, parce qu'il fallait avoir gravé le même effet sur trois dés *et* le sortir
+  en même temps. À **deux**, il se déclenche **218 fois** : dix-huit fois plus.
+- `F10c` ✅ `✦` et `⚒` rapportent **hors du barème des jetons** : ils s'ajoutent
+  directement à l'argent et à la forge du run, partie gagnée ou perdue. Ce sont
+  les deux seuls endroits du jeu où l'on gagne quelque chose sans rien donner.
+- `F10d` 🧪 `⊖` **se cumule** — avec la récompense `takeLess` (`B14`) et avec les
+  autres faces `⊖` visibles. Un dé entièrement gravé en `⊖` réduit donc de 4 ce
+  qu'on encaisse, plancher à 1.
+- `F11` ✅ **La gravure se propose, et elle agit sur un seul aspect de la face à
+  la fois.** Le graveur affiche, pour la face choisie :
+
+| Type d'offre | Combien | Ce qui change | Ce qui reste |
+| --- | --- | --- | --- |
+| **Effets** | 3 | la face gagne l'effet | **sa valeur ne bouge pas** |
+| **Valeurs** | 2 | la face prend la nouvelle valeur | **son effet ne bouge pas** |
+
+- `F11b` ✅ **C'est la séparation valeur/effet qui rend la forge rentable.** Tant
+  qu'on ne pouvait obtenir un effet qu'en payant un changement de valeur, la
+  gravure était un achat perdant : l'effet était la partie désirable, le
+  changement de valeur était l'impôt, et l'impôt coûtait plus cher que l'effet ne
+  rapportait. Une fois l'impôt supprimé, graver des effets **dépasse** le
+  clonage — 9 à 10,5 % de runs complets contre 6,5 % (§17).
+- `F11c` ✅ **Les valeurs restent proposées, et c'est volontaire.** Elles sont
+  mesurées comme un mauvais achat (0,5 % de runs complets), mais ce n'est pas une
+  raison de les retirer : certains joueurs voudront fabriquer leur dé, et un
+  piège lisible — on voit exactement ce qu'on remplace — est un choix de design
+  légitime. Ce qu'il ne faut pas, c'est qu'il soit le **seul** chemin.
+- `F11d` 🧪 Le choix de la **face** compte maintenant pour lui-même : poser `⊖`
+  sur le 1 ou sur le 6 change complètement quand l'effet se déclenche, et `✳`
+  n'a d'intérêt que selon ce que porte la face opposée.
 - `F9` ✅ Les dés sont affichés avec leurs valeurs réelles, gravures comprises
   (`U9`) : le joueur doit pouvoir lire son dé avant de décider de le relancer.
 
@@ -756,6 +842,29 @@ document.
   cours (1/2), le numéro de la bataille dans sa série (`3 / 3` puis `2 / 2`), et
   les récompenses de la série avec celles déjà prises barrées et le nom de qui
   les a prises.
+- `U8c` ✅ **Les récompenses ne sont jamais dessinées deux fois.** Quand le
+  joueur remporte une bataille, ce sont les cartes **déjà à l'écran** qui
+  deviennent cliquables et se mettent à pulser ; le panneau du bas ne fait que
+  dire quoi faire. Redessiner la liste dans le panneau donnait deux rangées
+  identiques et faisait perdre de vue laquelle était la vraie.
+- `U8d` ✅ **Une fois les batailles finies, les récompenses non prises
+  disparaissent de l'écran.** Elles ne joueront plus aucun rôle dans la partie ;
+  seules restent les récompenses prises, avec le nom de qui les détient.
+- `U8e` ✅ **Le nombre de jets du meneur est affiché** sur son siège dès qu'il
+  s'arrête, et rappelé dans le panneau de décision des suivants — « le meneur
+  s'est arrêté après 2 jets : c'est votre plafond ». Sans ça, `D4`, qui est la
+  seule décision structurante de la manche, est invisible.
+- `U18` ✅ **Les effets de face se lisent sur le dé** : une pastille dorée dans
+  le coin, avec le symbole de `F10`, sans masquer la valeur qui reste
+  l'information principale. L'inspecteur (`U9`) et la boutique montrent les mêmes
+  symboles, et l'offre de gravure (`F11`) affiche la règle en toutes lettres —
+  personne ne doit avoir à retenir six symboles.
+- `U17` ✅ **Pilote automatique** : un interrupteur du bandeau remplace le joueur
+  par la machine, qui répond à toutes les questions avec l'IA des démons au
+  niveau `expert` et achète entre les parties. Sert à regarder la mécanique
+  tourner sans décider, et c'est le même code que le mode lot (`M1`) — donc ce
+  qu'on voit à l'écran est exactement ce que la mesure compte. Il ne joue **pas**
+  la cupidité (`D12`), qui reste une décision proprement humaine.
 - `U8b` 🧪 La main est **nommée avec son rang pour cette taille de main**
   (« couleur — 2ᵉ sur 3 à deux cartes »). Sans ça, `C12` est illisible : personne
   ne retiendra que la paire bat la couleur à 2 cartes mais l'inverse à 3.
@@ -884,8 +993,13 @@ document.
     "_counts": "D1b : le joueur lance 4 dés, les démons 3. Le jeu retient les 3 meilleurs.",
     "playerDice": 4,
     "demonDice": 3,
-    "_maxSameFace": "A7 : garde-fou anti-dégénérescence. 0 = illimité. À 4, plafond de 29,6 % de 4-2-1 au D6.",
-    "maxSameFace": 4,
+    "_faceEffects": "F11 : la gravure propose des EFFETS (la valeur reste) et des VALEURS (l'effet reste).",
+    "faceEffects": {
+      "effectOptions": 3,
+      "valueOptions": 2,
+      "forgeThreshold": 2,
+      "catalogue": ["freeReroll", "takeLess", "wild", "payAll", "money", "forge"]
+    },
     "defaultMaxRerolls": 2
   },
 
@@ -919,7 +1033,11 @@ document.
     { "id": "flipDie",     "scope": "owner", "uses": "oncePerMatch" },
     { "id": "extraDie",    "scope": "owner", "uses": "firstThrowOfPhase" },
     { "id": "set42",       "scope": "owner", "uses": "oncePerMatch" },
-    { "id": "valuePlus1",  "scope": "owner", "uses": "match" }
+    { "id": "valuePlus1",  "scope": "owner", "uses": "match" },
+    { "id": "reroll421",   "scope": "owner", "uses": "match" },
+    { "id": "splitGive",   "scope": "owner", "uses": "match", "needsThree": true },
+    { "id": "takeLess",    "scope": "owner", "uses": "match" },
+    { "id": "nenetteGift", "scope": "all",   "uses": "match" }
   ],
 
   "shop": {
@@ -968,7 +1086,8 @@ document.
     "rewardWeights": {
       "give5": 8, "give3": 6,
       "valuePlus1": 7, "extraDie": 8, "set42": 4,
-      "flipDie": 5, "setRerolls": 3
+      "flipDie": 5, "setRerolls": 3,
+      "reroll421": 6, "splitGive": 7, "takeLess": 5, "nenetteGift": 3
     }
   },
 
@@ -1217,6 +1336,71 @@ meurt à la porte du dernier Cercle : c'est le boss du jeu.
 `M8` mesure non pas la probabilité seule, mais **le nombre de parties nécessaires
 pour l'atteindre** — c'est ce chiffre-là qui dit si le garde-fou est au bon cran.
 
+### La forge est devenue rentable — en séparant l'effet de la valeur
+
+Le §17 a prédit deux fois de suite que graver casserait le jeu, et s'est trompé
+deux fois : graver était un **mauvais achat**. La cause, trouvée à la mesure :
+tant qu'on ne pouvait obtenir un effet qu'en changeant la valeur d'une face,
+l'effet était la partie désirable et le changement de valeur était **l'impôt**.
+Or graver un dé lui **retire** des faces — un D6 portant quatre 4 ne peut plus
+montrer 1, 2 ni 3, donc il est exclu d'un 1-1-x, d'une suite, et il ne peut plus
+fournir le « 1 » ni le « 2 » d'un 4-2-1. `D1b` (meilleure combinaison de trois
+parmi quatre) récompense la polyvalence : l'impôt coûtait plus que l'effet ne
+rapportait.
+
+Depuis `F11`, poser un effet ne touche plus à la valeur. Résultat, 200 runs par
+variante, joueur expert — **toutes les lignes clonent**, celles qui gravent le
+font en plus, avec une monnaie séparée :
+
+| Politique d'achat | runs complets | parties par run | forge non dépensée à la mort |
+| --- | --- | --- | --- |
+| clonage seul | 6,5 % | 13,7 | **5,1** |
+| **+ gravure d'EFFETS, 4 faces par dé** | **10,5 %** | **15,9** | 1,7 |
+| **+ gravure d'EFFETS, 2 faces par dé** | **9,0 %** | 14,9 | 3,4 |
+| + gravure de VALEURS, 2 faces par dé | **0,5 %** | 7,8 | 2,3 |
+
+Trois lectures :
+
+1. **La forge vaut enfin son prix.** Graver des effets fait passer le taux de
+   complétion de 6,5 % à 9-10,5 %, et le stock de points de forge inutilisés
+   tombe de 5,1 à 1,7. L'économie de la forge tourne.
+2. **Le piège n'a pas disparu, il s'est isolé.** Graver des valeurs reste
+   catastrophique (0,5 %). C'est assumé (`F11c`) : le joueur voit exactement
+   quelle valeur il remplace, et certains voudront fabriquer leur dé. Ce qui
+   était fautif, c'était que ce soit le *seul* chemin.
+3. **`A7` pouvait donc partir.** On peut maintenant saturer un dé de 4 ; le jeu
+   punit ça tout seul, mieux qu'une règle ne l'interdisait.
+
+> Réserve statistique : ce ne sont pas des comparaisons appariées. Dès la
+> première gravure les tirages divergent, donc chaque ligne est un échantillon
+> indépendant de 200 runs. À ces taux, l'écart-type est de ~2 points : l'écart
+> entre clonage seul et gravure d'effets vaut environ 2 écarts-types — solide
+> comme indication, pas comme preuve. L'écart avec la gravure de valeurs, lui,
+> est massif.
+
+### Deux effets de face sur six font tout le travail
+
+Sur les variantes qui gravent, les effets déclenchés se comptent ainsi — les
+effets passifs (`↻`, `⊖`, `✳`) n'émettent rien et ne sont pas comptés ici :
+
+| Effet | à `forgeThreshold: 3` | à **`forgeThreshold: 2`** |
+| --- | --- | --- |
+| `⇈` un jeton du pot pour tous | 7 372 | 6 396 |
+| `✦` +1 d'argent | 5 179 | 4 469 |
+| `⚒` +1 point de forge | **12** | **218** |
+
+`⚒` exigeait trois symboles visibles **en même temps**, alors qu'un effet n'est
+tiré qu'une fois sur six parmi six : il fallait l'avoir gravé sur trois dés
+différents *et* le sortir simultanément. Passé à deux (`F10e`), il se déclenche
+dix-huit fois plus. Le taux de complétion, lui, ne bouge pas de façon lisible
+(7,5 % contre 10,5 %, soit environ un écart-type) : `⚒` rend la forge plus
+vivante sans déséquilibrer le run.
+
+Attention à une lecture piégeuse du taux de `junk` : il monte de 50 % à 76 %
+entre la ligne de base et la meilleure ligne, mais ce n'est pas la faute du
+clonage — c'est que ces runs vont **beaucoup plus loin**, jusqu'au D100 où
+presque tout est du `junk`. La profondeur atteinte confond la mesure.
+
 ### Le deck de cartes
 
 Un run rapporte de l'ordre de **10 d'argent par partie** aux Cercles 1-2 (la
@@ -1296,6 +1480,13 @@ et 2 ne sont pas touchés.
 
 | Date | Évolution |
 | --- | --- |
+| 2026-09-08 | **`⚒` passe de trois à deux symboles** (`F10e`, seuil mis en configuration). Il exigeait trois symboles visibles simultanément alors qu'un effet n'est tiré qu'une fois sur six : il fallait l'avoir gravé sur trois dés *et* le sortir en même temps. Mesuré : **12 déclenchements sur 200 runs à trois, 218 à deux** — dix-huit fois plus. Le taux de complétion ne bouge pas de façon lisible (7,5 % contre 10,5 %, environ un écart-type sur 200 runs) : l'effet devient vivant sans déséquilibrer le run. |
+| 2026-09-08 | **La forge devient rentable, et `A7` est retiré.** Deux changements liés. `F11` : la gravure **agit sur un seul aspect de la face à la fois** — le graveur propose **3 effets** (la valeur ne bouge pas) et **2 valeurs** (l'effet ne bouge pas). C'est la suppression de l'impôt qui débloque tout : tant qu'un effet ne s'obtenait qu'en changeant une valeur, l'effet était la partie désirable et le changement de valeur la partie coûteuse, parce que graver **retire** des faces à un dé et que `D1b` récompense la polyvalence. `A7` (plafond de faces identiques) est **retiré** : il ne protégeait de rien, c'est `D1b` qui punit la saturation, et bien mieux. Mesuré sur 200 runs par variante : graver des effets **dépasse** le clonage seul — **10,5 %** de runs complets à 4 faces gravées par dé, 9,0 % à 2, contre 6,5 % sans graver — et le stock de points de forge inutilisés à la mort tombe de **5,1 à 1,7**. Graver des **valeurs** reste catastrophique (0,5 %), et c'est assumé (`F11c`) : un piège lisible est un choix de design légitime tant qu'il n'est pas le seul chemin. Confirmation au passage que `⚒` reste du contenu quasi mort : 12 déclenchements sur 200 runs même en gravant à fond. |
+| 2026-09-08 | **Mesure de 1 200 runs** (6 variantes × 200) après l'arrivée des effets de face. Le mode lot grave désormais **à travers l'offre** (`F11`) au lieu de graver en direct : il mesurait jusque-là des règles qui n'existaient plus. Résultat principal : **la forge ne vaut toujours pas son prix**. Clonage seul termine **6,5 %** des runs, gravure en visant les effets 2,0-2,5 %, gravure en visant les valeurs 1,0 % ; le joueur meurt avec **5,1 points de forge non dépensés**. Les effets améliorent donc la gravure sans la sauver — la question ouverte n'est plus « comment empêcher la gravure de casser le jeu » mais **« comment rendre la forge attirante »**. Second résultat : **`⚒` est du contenu quasi mort**, 9 déclenchements sur 200 runs même en gravant à fond, parce qu'il exige trois symboles visibles simultanément alors qu'un effet n'est tiré qu'une fois sur six. `⇈` et `✦` font tout le travail (3 618 et 3 012 déclenchements). Piège de lecture noté au passage : le taux de `junk` monte de 50 % à 76 % entre la ligne de base et la meilleure ligne, non pas à cause du clonage mais parce que ces runs atteignent le D100, où presque tout est du `junk`. |
+| 2026-09-08 | **Les faces des dés portent des effets** (`F10`) et **la gravure devient une offre** (`F11`). Une face n'est plus un nombre mais un couple valeur + effet ; six effets existent — relance gratuite, encaisse un de moins, vaut aussi sa face opposée, un jeton du pot pour tous, +1 d'argent (+10 si tous les dés l'affichent), +1 forge à trois symboles. À la gravure, le jeu propose **3 valeurs distinctes tirées au sort**, chacune portant un effet avec **30 %** de probabilité : on ne choisit plus la valeur, on choisit dans l'offre. **Conséquence structurante** (`F11b`) : le chemin dégénéré que redoutait le §17 — graver les trois dés en 4, 2 et 1 — n'est plus exécutable par construction, puisque la valeur voulue n'est offerte qu'une fois sur deux. Ce n'est donc plus `A7` qui protège le jeu, et la mesure le confirme : à travers l'offre, graver termine 1 % des runs contre **6,5 % en clonant seulement**. Trois points d'implémentation méritent d'être notés. `⇈` puise **dans le pot** et nulle part ailleurs — sinon `J2` (conservation des jetons) tombait, et l'effet devient donc inerte pendant toute la phase de don. `✦` et `⚒` rapportent **hors du barème**, ce sont les deux seuls endroits du jeu où l'on gagne sans rien donner. `✳` oblige l'évaluation de main à essayer les deux valeurs de chaque dé concerné, ce qui multiplie l'espace de recherche par 2 par dé « wild » — l'IA a un chemin de calcul dédié pour rester sous la milliseconde. |
+| 2026-09-08 | **Pilote automatique dans l'interface** (`U17`) : un interrupteur du bandeau remplace le joueur par la machine, qui répond à tout et achète entre les parties — même code que le mode lot, donc ce qu'on regarde est exactement ce que la mesure compte. La politique d'achat sort du fichier de test pour devenir un module partagé, et ce partage a **révélé une erreur de mesure** : l'ancienne version attendait 3 ordres de gravure alors que le joueur a 4 dés depuis `D1b`, donc elle ne gravait **jamais**. La ligne « achats gloutons » du §17 ne mesurait en fait que le clonage. Corrigé, puis mesuré variante par variante : **le clonage seul termine 6,5 % des runs, la gravure saturée 2,5 %, la gravure modérée 0 %**. La prédiction du §17 est donc **renversée** — graver n'est pas la stratégie dégénérée, c'est un mauvais achat. L'explication est mécanique : graver un dé lui **retire** des faces, or « meilleure combinaison de 3 parmi N » (`D1b`) récompense la polyvalence, pas la garantie d'une valeur. `A7` n'est plus le garde-fou anti-dégénérescence : `D1b` l'est déjà. La question ouverte s'inverse — **la gravure vaut-elle son prix ?** |
+| 2026-09-08 | **Quatre corrections nées de l'essai à l'écran.** `C3b` — une règle, pas de l'affichage : **passer clôt ses changements** pour toute la bataille, au lieu de reposer la même question à la seconde passe ; « je garde » devient une décision engageante. `U8c` : les récompenses ne sont plus **dessinées deux fois** — ce sont les cartes déjà à l'écran qui deviennent cliquables et pulsent, le panneau du bas ne fait plus que dire quoi faire. `U8d` : une fois les batailles finies, les récompenses **non prises disparaissent** ; elles ne joueront plus aucun rôle. `U8e` : le **nombre de jets du meneur** s'affiche sur son siège et est rappelé aux suivants — sans lui, `D4`, la seule décision structurante de la manche, ne se voyait nulle part. |
+| 2026-09-08 | **Quatre récompenses ajoutées**, le catalogue remonte de 7 à **11 entrées** — ce qui referme au passage `B3d` (le second tirage avait perdu tout aléa). `B13` **`reroll421`** : un adversaire qui termine sur un 4-2-1 relance automatiquement tous ses dés, une fois par tour — le premier bonus purement défensif du jeu. `B14` **`takeLess`** : le détenteur encaisse un jeton de moins, au minimum 1 ; c'est le **transfert** qui est réduit, pas seulement ce qu'il reçoit, sinon `J2` (conservation des jetons) tomberait. `B15` **`splitGive`** : donner à un adversaire, c'est en donner la moitié à l'autre — donc se délester deux fois plus vite, et gagner plus d'argent quand c'est en phase de don. Sans effet en duel, elle n'y est jamais proposée (`B3e`, `B15b`). `B16` **`nenetteGift`**, de portée `all` comme `setRerolls` : la nénette 2-2-1, pire main du jeu, fait circuler un jeton vers chaque adversaire — pris au pot en répartition, sorti de sa réserve en don — **même en perdant la manche**. La pire main devient une consolation, et le seul endroit du jeu où perdre rapporte quelque chose. Le pas de résolution expose désormais la **valeur réclamée** (`base`) à côté du montant transféré, pour que les tests d'invariant distinguent un plafonnement d'une réduction. Mesuré : **9 % des runs traversent les neuf Cercles** (contre 6 %), et les parties se rallongent un peu — 8 manches et 36 à 41 jets contre 6-7 et 29-32 — les nouveaux bonus faisant circuler davantage de jetons et `reroll421` annulant les grosses mains. |
 | 2026-09-08 | **Catalogue de récompenses simplifié, et `extraDie` recadré.** Le bonus « Prendre des jetons » (`take3`, `take1`) **disparaît** : c'était le plus contre-intuitif du jeu, prendre des jetons aidant l'adversaire à finir sa phase de don. Le catalogue passe de 10 à **7** entrées. « Donner des jetons » s'applique désormais **au moment où il est pris** (`B5`), et les jetons viennent **du pot tant qu'il en reste, puis de la réserve du donneur** (`B6`) — une seule règle qui produit deux récompenses différentes : attaque gratuite à la première série, raccourci vers la victoire à la seconde. Conséquence en cascade : plus aucune récompense n'est différée, donc `applyTimed` disparaît du moteur et `B3c` (ne pas proposer une récompense périmée) devient **sans objet**. Correction signalée à l'essai : `extraDie` valait pour toute la partie alors qu'il ne doit valoir qu'au **premier jet de chaque phase** (`B8`) ; le retrait du dé surnuméraire est désormais **automatique et visible** — le jeu écarte un dé parmi ceux qu'il n'a pas retenus, donc la main du jet est préservée (`B12b`). Mesuré : **6 % des runs traversent les neuf Cercles**, contre 0 sur 600 deux réglages plus tôt, et un run dure 14 parties au lieu de 2,1. Un point neuf à surveiller (`B3d`) : à 7 récompenses au catalogue, le second tirage propose exactement les 3 restantes — il n'a plus d'aléa. |
 | 2026-09-08 | **Deux ajustements d'accessibilité, demandés après essai : le jeu était trop dur.** `D5` **saute** : on s'arrête quand on veut, après avoir vu ses dés — il n'y a plus rien à annoncer avant de lancer, et le bonus `lateStop`, qui n'était que la levée de cette contrainte, disparaît avec elle. `D4` (le meneur plafonne les autres) survit et devient **la** décision de la manche. `D1b` : **le joueur lance 4 dés, les démons 3**, et le jeu retient automatiquement la meilleure combinaison de trois — plus aucun retrait manuel, donc `B12` se simplifie. Le bonus `fourthDie` devient **`extraDie`, « un dé en plus »** : 5 dés pour le joueur, 4 pour un démon, sur toute la partie. Mesuré sur 600 runs, l'effet est net et va bien au-delà de ce qu'on cherchait : **le quatrième dé vaut à lui seul +28 points de taux de victoire** (52 % → 80,6 % à niveau d'IA égal), plus que tout l'écart de niveau entre un démon `mauvais` et un joueur expert. Le verrouillage circulaire du §17 est **levé** — un run dure 8,7 parties au lieu de 2,1, la boutique porte le taux de victoire à 95-98 % aux Cercles 5-7, et **un run sur 200 traverse les neuf Cercles**, là où aucun des 600 précédents n'y arrivait. Effet de bord bienvenu : les parties sont **deux fois plus courtes** (5-6 manches, 24-26 jets contre 8-14 et 40-64), un run complet passant sous l'heure. Un point de vigilance ouvert : la dernière partie du Cercle, à trois participants, se gagne désormais à 63-74 % contre 37,5 % avant — le climax du Cercle est devenu sa partie la plus facile. |
 | 2026-09-08 | **Prototype implémenté** dans `Proto3Html/` (React + TypeScript, 103 tests). Le moteur est un **générateur** : la séquence `S1` se lit linéairement et chaque décision humaine est un `yield`. Il émet une trace d'étapes que l'affichage rejoue dans le temps, à vitesse réglable (`U1`, `U2`, `U13`). Quatre choses que seule l'implémentation pouvait dire. **`D10f`, une règle tombée du moteur** : un test d'intégration a trouvé des parties où personne n'atteignait zéro — parce que quelqu'un y était déjà. Sortir de la répartition sans jeton, c'est avoir déjà fini la phase de don : on gagne la partie sans la jouer, et sans un centime. **`D10g`, un biais mesuré** : quand plusieurs participants sortent à zéro, les départager par l'ordre des sièges donnait au joueur 0 une victoire à 48 % dans les parties à trois, contre 33 % attendus — c'est un pile ou face. **`I5`, la correction qui débloque `S5`** : tant que le niveau des démons ne portait que sur les mains de cartes, il ne changeait **rien** au taux de victoire (52 % contre 52 %), les parties se décidant aux dés ; porté sur le choix des dés à garder, il le fait passer à **80 %**, et `Q4` se referme. Enfin un **bug d'inspecteur de dés** : repérer les faces gravées exige de rejouer la même échelle de montées (6→8→12→20→100) — un saut direct ne range pas les faces pareil et désigne les mauvaises. §17 passe de prédiction à **mesure sur 600 runs** : le modèle est confirmé au chiffre près (2,1 parties par run à `p = 0,52`, 4,8 à `p = 0,80`), la boutique lève bien le taux de victoire de 80 % à 95 % au fil des Cercles — mais **aucun run ne va au bout**, le meilleur s'arrêtant au Cercle 7. `Q2` devient la dernière vraie question. |

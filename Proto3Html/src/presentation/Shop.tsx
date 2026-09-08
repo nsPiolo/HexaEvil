@@ -2,18 +2,20 @@
 
 import { useState } from 'react'
 import type { ShopOptionId } from '../core/config/schema'
-import { canEngrave, engravedFaces } from '../core/dice/dice'
+import { engravedFaces } from '../core/dice/dice'
 import {
   applyEngrave,
   applyShopCards,
   canPlusOne,
+  engraveOptions,
   shopBlockedReason,
   shopCost,
+  type EngraveOption,
   type EngraveOrder,
 } from '../core/rules/run'
 import type { Card, Suit } from '../core/rules/types'
 import { CardView, DieInspector } from './bits'
-import { cardValueLabel, SUIT_LABEL, SUIT_SYMBOL } from './labels'
+import { cardValueLabel, EFFECT_HELP, EFFECT_LABEL, EFFECT_SYMBOL, SUIT_LABEL, SUIT_SYMBOL } from './labels'
 import type { Session } from './session'
 
 const OPTION_LABEL: Record<ShopOptionId, string> = {
@@ -146,34 +148,33 @@ function ShopDetail({ session }: { session: Session }) {
   const [suit, setSuit] = useState<Suit>('spades')
   const [orders, setOrders] = useState<EngraveOrder[]>([])
   const [face, setFace] = useState<number | null>(null)
+  const [pickedDie, setPickedDie] = useState<number | null>(null)
+  const [offers, setOffers] = useState<EngraveOption[]>([])
   if (!shop) return null
 
   const isEngrave = shop.option === 'engraveOne' || shop.option === 'engraveAll'
   if (isEngrave) {
-    const dieIndex = shop.option === 'engraveOne' ? (orders[0]?.dieIndex ?? null) : orders.length
     const total = shop.option === 'engraveOne' ? 1 : run.dice.length
+    const dieIndex = shop.option === 'engraveOne' ? (pickedDie ?? null) : orders.length
     const done = orders.length >= total
     const active = dieIndex !== null && dieIndex < run.dice.length ? run.dice[dieIndex] : null
-    const faces = active?.faces.length ?? 6
 
     return (
       <div className="shop__detail">
         <p className="shop__hint">
           {done
             ? 'Prêt à graver.'
-            : shop.option === 'engraveOne'
-              ? dieIndex === null
-                ? 'Choisissez le dé à graver.'
-                : face === null
-                  ? 'Choisissez la face à remplacer.'
-                  : 'Choisissez la nouvelle valeur.'
-              : `Dé ${orders.length + 1} sur ${total} — ${face === null ? 'choisissez la face' : 'choisissez la valeur'}.`}
+            : dieIndex === null
+              ? 'Choisissez le dé à graver.'
+              : face === null
+                ? `Dé ${dieIndex + 1} — choisissez la face à remplacer.`
+                : `Dé ${dieIndex + 1} — le graveur ne propose que ces valeurs.`}
         </p>
 
         {shop.option === 'engraveOne' && dieIndex === null && (
           <div className="actions">
             {run.dice.map((_, i) => (
-              <button key={i} type="button" className="btn" onClick={() => setOrders([{ dieIndex: i, faceIndex: -1, value: -1 }])}>
+              <button key={i} type="button" className="btn" onClick={() => setPickedDie(i)}>
                 Dé {i + 1}
               </button>
             ))}
@@ -183,24 +184,57 @@ function ShopDetail({ session }: { session: Session }) {
         {active && !done && face === null && (
           <div className="inspector inspector--interactive">
             {active.faces.map((f, i) => (
-              <button key={i} type="button" className="inspector__face inspector__face--btn" onClick={() => setFace(i)}>
-                {f}
+              <button
+                key={i}
+                type="button"
+                className="inspector__face inspector__face--btn"
+                onClick={() => {
+                  setFace(i)
+                  setOffers(engraveOptions(run, dieIndex as number, i, session.rng))
+                }}
+              >
+                {f.value}
+                {f.effect && <em className="inspector__effect">{EFFECT_SYMBOL[f.effect]}</em>}
               </button>
             ))}
           </div>
         )}
 
         {active && !done && face !== null && (
-          <ValuePicker
-            faces={faces}
-            allowed={(v) => canEngrave(active, face, v, run.cfg.dice.maxSameFace).ok}
-            onPick={(v) => {
-              const order = { dieIndex: dieIndex as number, faceIndex: face, value: v }
-              const next = shop.option === 'engraveOne' ? [order] : [...orders, order]
-              setOrders(next)
-              setFace(null)
-            }}
-          />
+          <div className="offers">
+            {offers.length === 0 && <p className="shop__hint">Rien à proposer sur cette face.</p>}
+            {offers.map((o, i) => (
+              <button
+                key={i}
+                type="button"
+                className={`offer ${o.kind === 'effect' ? 'offer--special' : ''}`}
+                onClick={() => {
+                  const order = { dieIndex: dieIndex as number, faceIndex: face, option: o }
+                  setOrders(shop.option === 'engraveOne' ? [order] : [...orders, order])
+                  setFace(null)
+                  setOffers([])
+                }}
+              >
+                {o.kind === 'effect' ? (
+                  <>
+                    <span className="offer__value">{active.faces[face]?.value}</span>
+                    <span className="offer__symbol">{EFFECT_SYMBOL[o.effect]}</span>
+                    <span className="offer__label">{EFFECT_LABEL[o.effect]}</span>
+                    <span className="offer__help">{EFFECT_HELP[o.effect]}</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="offer__value">{o.value}</span>
+                    <span className="offer__symbol">→</span>
+                    <span className="offer__label">Changer la valeur</span>
+                    <span className="offer__help">
+                      La face passe de {active.faces[face]?.value} à {o.value}. Son effet éventuel est conservé.
+                    </span>
+                  </>
+                )}
+              </button>
+            ))}
+          </div>
         )}
 
         <div className="actions">
@@ -274,46 +308,6 @@ function ShopDetail({ session }: { session: Session }) {
           Annuler
         </button>
       </div>
-    </div>
-  )
-}
-
-function ValuePicker({
-  faces,
-  allowed,
-  onPick,
-}: {
-  faces: number
-  allowed: (v: number) => boolean
-  onPick: (v: number) => void
-}) {
-  const [manual, setManual] = useState('')
-  if (faces > 12) {
-    const v = Number(manual)
-    return (
-      <div className="actions">
-        <input
-          className="input"
-          type="number"
-          min={1}
-          max={faces}
-          value={manual}
-          placeholder={`1 à ${faces}`}
-          onChange={(e) => setManual(e.target.value)}
-        />
-        <button type="button" className="btn btn--primary" disabled={!allowed(v)} onClick={() => onPick(v)}>
-          Graver {Number.isFinite(v) && v > 0 ? v : ''}
-        </button>
-      </div>
-    )
-  }
-  return (
-    <div className="actions actions--wrap">
-      {Array.from({ length: faces }, (_, i) => i + 1).map((v) => (
-        <button key={v} type="button" className="btn" disabled={!allowed(v)} onClick={() => onPick(v)}>
-          {v}
-        </button>
-      ))}
     </div>
   )
 }

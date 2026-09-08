@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { engrave } from '../dice/dice'
+import { engrave, values } from '../dice/dice'
 import {
   applyEngrave,
   applyShopCards,
@@ -16,8 +16,9 @@ import type { MatchResult } from '../rules/match'
 import { config } from './helpers'
 
 const cfg = config()
-const win: MatchResult = { ranking: [0, 1], money: [7, 0], rounds: 10, throws: 40, humanWon: true }
-const loss: MatchResult = { ranking: [1, 0], money: [3, 0], rounds: 10, throws: 40, humanWon: false }
+const zero = { bonusMoney: [0, 0], bonusForge: [0, 0] }
+const win: MatchResult = { ranking: [0, 1], money: [7, 0], ...zero, rounds: 10, throws: 40, humanWon: true }
+const loss: MatchResult = { ranking: [1, 0], money: [3, 0], ...zero, rounds: 10, throws: 40, humanWon: false }
 
 describe('R6 — une défaite termine le run', () => {
   it('tue le run et n’efface pas l’argent déjà gagné de la partie', () => {
@@ -74,13 +75,13 @@ describe('F6 — montée de dé au changement de Cercle', () => {
   it('passe en D8 et conserve la gravure', () => {
     const run = createRun(cfg)
     run.dice[0] = engrave(run.dice[0]!, 2, 4)
-    expect(run.dice[0]!.faces).toEqual([1, 2, 4, 4, 5, 6])
+    expect(values(run.dice[0]!)).toEqual([1, 2, 4, 4, 5, 6])
     for (let w = 0; w < currentCircle(run).winsRequired; w++) finishMatch(run, win)
     expect(currentCircle(run).n).toBe(2)
     expect(run.dice[0]!.faces).toHaveLength(6) // le Cercle 2 est encore en D6
     for (let w = 0; w < currentCircle(run).winsRequired; w++) finishMatch(run, win)
     expect(currentCircle(run).n).toBe(3)
-    expect(run.dice[0]!.faces).toEqual([7, 1, 2, 4, 4, 5, 6, 8])
+    expect(values(run.dice[0]!)).toEqual([7, 1, 2, 4, 4, 5, 6, 8])
   })
 })
 
@@ -132,28 +133,46 @@ describe('boutique', () => {
     expect(run.money).toBe(10)
   })
 
-  it('A7 — la gravure refuse une cinquième face identique', () => {
+  it('graver un effet laisse la valeur, graver une valeur laisse l’effet (F11)', () => {
     const run = createRun(cfg)
     run.forgePoints = 10
-    applyEngrave(run, 'engraveOne', [{ dieIndex: 0, faceIndex: 0, value: 4 }])
-    applyEngrave(run, 'engraveOne', [{ dieIndex: 0, faceIndex: 1, value: 4 }])
-    applyEngrave(run, 'engraveOne', [{ dieIndex: 0, faceIndex: 2, value: 4 }])
-    expect(run.dice[0]!.faces.filter((f) => f === 4)).toHaveLength(4)
-    expect(() => applyEngrave(run, 'engraveOne', [{ dieIndex: 0, faceIndex: 4, value: 4 }])).toThrow(/A7/)
-    expect(run.forgePoints).toBe(7)
+    const avant = run.dice[0]!.faces[0]!.value
+    applyEngrave(run, 'engraveOne', [
+      { dieIndex: 0, faceIndex: 0, option: { kind: 'effect', effect: 'money' } },
+    ])
+    expect(run.dice[0]!.faces[0]).toEqual({ value: avant, effect: 'money' })
+    applyEngrave(run, 'engraveOne', [
+      { dieIndex: 0, faceIndex: 0, option: { kind: 'value', value: 5 } },
+    ])
+    expect(run.dice[0]!.faces[0]).toEqual({ value: 5, effect: 'money' })
+    expect(run.forgePoints).toBe(8)
   })
 
-  it('engraveAll grave les trois dés pour 2 points', () => {
+  it('plus aucun plafond de faces identiques (A7 retiré)', () => {
+    const run = createRun(cfg)
+    run.forgePoints = 20
+    for (let f = 0; f < 6; f++) {
+      applyEngrave(run, 'engraveOne', [
+        { dieIndex: 0, faceIndex: f, option: { kind: 'value', value: 4 } },
+      ])
+    }
+    expect(values(run.dice[0]!)).toEqual([4, 4, 4, 4, 4, 4])
+  })
+
+  it('engraveAll grave une face sur chacun des dés du joueur', () => {
     const run = createRun(cfg)
     run.forgePoints = 2
-    // `A2` : « une face de chacun de ses dés » — le joueur en a 4 (`D3b`).
     expect(run.dice).toHaveLength(cfg.dice.playerDice)
     applyEngrave(
       run,
       'engraveAll',
-      run.dice.map((_, i) => ({ dieIndex: i, faceIndex: 0, value: 4 })),
+      run.dice.map((_, i) => ({
+        dieIndex: i,
+        faceIndex: 0,
+        option: { kind: 'effect' as const, effect: 'wild' as const },
+      })),
     )
     expect(run.forgePoints).toBe(0)
-    for (const die of run.dice) expect(die.faces[0]).toBe(4)
+    for (const die of run.dice) expect(die.faces[0]?.effect).toBe('wild')
   })
 })

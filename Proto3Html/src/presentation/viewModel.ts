@@ -5,7 +5,7 @@
  * ne fait qu'accumuler ce que le moteur a déjà dit (`U2`).
  */
 
-import type { Card, DiceHand, HandRank, PhaseId, RewardId } from '../core/rules/types'
+import type { Card, DiceHand, FaceEffectId, HandRank, PhaseId, RewardId } from '../core/rules/types'
 import type { CoinSide, TraceStep } from '../core/rules/trace'
 
 export interface DiceSlot {
@@ -13,6 +13,8 @@ export interface DiceSlot {
   readonly rolled: readonly boolean[]
   /** `D3b` : les 3 dés que le jeu a retenus parmi les N lancés. */
   readonly kept: readonly number[]
+  /** `F10` : l'effet de la face visible de chaque dé. */
+  readonly effects: readonly (FaceEffectId | null)[]
   readonly hand: DiceHand | null
   readonly done: boolean
 }
@@ -42,6 +44,8 @@ export interface View {
   round: number
   leader: number | null
   roundOutcome: { best: number; worst: number; amount: number } | null
+  /** `D4` : le nombre de jets du meneur — c'est le plafond des autres. */
+  leaderThrows: number | null
   coin: CoinView | null
   out: number[]
 }
@@ -78,6 +82,7 @@ function empty(count: number): View {
     round: 0,
     leader: null,
     roundOutcome: null,
+    leaderThrows: null,
     coin: null,
     out: [],
   }
@@ -134,6 +139,7 @@ export function buildView(steps: readonly TraceStep[], upTo: number, count: numb
         v.leader = s.leader
         v.dice = v.dice.map(() => null)
         v.roundOutcome = null
+        v.leaderThrows = null
         v.coin = null
         break
       case 'roundStart':
@@ -141,6 +147,7 @@ export function buildView(steps: readonly TraceStep[], upTo: number, count: numb
         v.leader = s.leader
         v.dice = v.dice.map(() => null)
         v.roundOutcome = null
+        v.leaderThrows = null
         v.coin = null
         break
       case 'throw':
@@ -149,6 +156,7 @@ export function buildView(steps: readonly TraceStep[], upTo: number, count: numb
           values: [...s.values],
           rolled: [...s.rolled],
           kept: [...s.kept],
+          effects: [...s.effects],
           hand: s.hand,
           done: false,
         }
@@ -158,6 +166,17 @@ export function buildView(steps: readonly TraceStep[], upTo: number, count: numb
           values: [...s.values],
           rolled: s.values.map(() => false),
           kept: [...bestIndices(s.values, s.hand)],
+          effects: [...s.effects],
+          hand: s.hand,
+          done: false,
+        }
+        break
+      case 'forcedReroll':
+        v.dice[s.who] = {
+          values: [...s.values],
+          rolled: s.values.map(() => true),
+          kept: [...s.kept],
+          effects: [...s.effects],
           hand: s.hand,
           done: false,
         }
@@ -171,6 +190,7 @@ export function buildView(steps: readonly TraceStep[], upTo: number, count: numb
             values,
             rolled: values.map((_, k) => k === s.dieIndex),
             kept: slot.kept,
+            effects: [...s.effects],
             hand: s.hand,
             done: false,
           }
@@ -180,6 +200,8 @@ export function buildView(steps: readonly TraceStep[], upTo: number, count: numb
       case 'turnEnd': {
         const slot = v.dice[s.who]
         if (slot) v.dice[s.who] = { ...slot, done: true, rolled: slot.values.map(() => false) }
+        // `D4` : ce chiffre-là est le plafond des suivants, il doit se voir.
+        if (s.who === v.leader) v.leaderThrows = s.throws
         v.activeThrower = null
         break
       }
@@ -191,6 +213,9 @@ export function buildView(steps: readonly TraceStep[], upTo: number, count: numb
         break
       case 'rewardSetting':
       case 'rewardApplied':
+      case 'faceBonus':
+      case 'sideGift':
+      case 'nenetteGift':
       case 'phaseEnd':
       case 'matchEnd':
         break

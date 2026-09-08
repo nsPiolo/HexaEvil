@@ -48,32 +48,43 @@ export interface BestHand {
   readonly hand: DiceHand
   /** Indices des dés retenus, pour que l'affichage montre lesquels comptent. */
   readonly indices: readonly number[]
+  /** Valeurs effectivement retenues — une face `wild` peut jouer l'autre (`F10`). */
+  readonly chosen: readonly number[]
+}
+
+/** Valeurs possibles d'un dé : la sienne, plus celle de sa face opposée si `wild`. */
+export function optionsOf(value: number, alt: number | null | undefined): number[] {
+  return alt === null || alt === undefined || alt === value ? [value] : [value, alt]
 }
 
 /**
  * `D3b` : on lance N dés, le jeu retient **automatiquement la meilleure
  * combinaison de trois**. À N = 3 c'est l'identité ; au-delà, on énumère les
- * C(N,3) sous-ensembles — 4 pour quatre dés, 10 pour cinq.
+ * C(N,3) sous-ensembles. `alts` porte la seconde valeur des faces `wild`
+ * (`F10`) : le jeu essaie les deux et garde la meilleure.
  */
 export function bestOfThree(
   values: readonly number[],
   faces: number,
   combos: CombinationsConfig,
   valuePlus1: boolean,
+  alts?: readonly (number | null)[],
 ): BestHand {
   if (values.length < 3) throw new Error(`bestOfThree attend au moins 3 dés, reçu ${values.length}`)
   let best: BestHand | null = null
   for (let a = 0; a < values.length; a++) {
     for (let b = a + 1; b < values.length; b++) {
       for (let c = b + 1; c < values.length; c++) {
-        const indices = [a, b, c]
-        const hand = evaluateDice(
-          indices.map((i) => values[i] as number),
-          faces,
-          combos,
-          valuePlus1,
-        )
-        if (!best || compareDice(hand, best.hand) < 0) best = { hand, indices }
+        const idx = [a, b, c]
+        const opts = idx.map((i) => optionsOf(values[i] as number, alts?.[i]))
+        for (const x of opts[0] as number[]) {
+          for (const y of opts[1] as number[]) {
+            for (const z of opts[2] as number[]) {
+              const hand = evaluateDice([x, y, z], faces, combos, valuePlus1)
+              if (!best || compareDice(hand, best.hand) < 0) best = { hand, indices: idx, chosen: [x, y, z] }
+            }
+          }
+        }
       }
     }
   }
@@ -116,20 +127,29 @@ export function strengthOf(a: number, b: number, c: number, faces: number, combo
   return (10 - spec.rank) * 100_000 + value * 10 + spec.tieBreak
 }
 
-/** `D3b` côté IA : la force de la meilleure main de 3, sans allocation. */
+/** `D3b` côté IA : la force de la meilleure main de 3, allocation minimale. */
 export function bestStrength(
   values: readonly number[],
   faces: number,
   combos: CombinationsConfig,
+  alts?: readonly (number | null)[],
 ): number {
   const n = values.length
-  if (n === 3) return strengthOf(values[0] as number, values[1] as number, values[2] as number, faces, combos)
+  if (n === 3 && !alts) {
+    return strengthOf(values[0] as number, values[1] as number, values[2] as number, faces, combos)
+  }
   let best = -Infinity
   for (let a = 0; a < n; a++) {
     for (let b = a + 1; b < n; b++) {
       for (let c = b + 1; c < n; c++) {
-        const s = strengthOf(values[a] as number, values[b] as number, values[c] as number, faces, combos)
-        if (s > best) best = s
+        for (const x of optionsOf(values[a] as number, alts?.[a])) {
+          for (const y of optionsOf(values[b] as number, alts?.[b])) {
+            for (const z of optionsOf(values[c] as number, alts?.[c])) {
+              const s = strengthOf(x, y, z, faces, combos)
+              if (s > best) best = s
+            }
+          }
+        }
       }
     }
   }

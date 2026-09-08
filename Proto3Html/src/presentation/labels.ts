@@ -5,7 +5,7 @@
  * la règle appliquée sans connaître le GDD par cœur.
  */
 
-import type { DiceHand, HandCategory, HandRank, RewardId, Suit } from '../core/rules/types'
+import type { DiceHand, FaceEffectId, HandCategory, HandRank, RewardId, Suit } from '../core/rules/types'
 import type { TraceStep } from '../core/rules/trace'
 
 export const SUIT_SYMBOL: Record<Suit, string> = {
@@ -82,6 +82,10 @@ export const REWARD_LABEL: Record<RewardId, string> = {
   extraDie: 'Un dé en plus',
   set42: 'Fixer 4 et 2',
   valuePlus1: '+1 en jetons',
+  reroll421: 'Annuler les 4-2-1',
+  splitGive: 'Donner aux deux',
+  takeLess: 'Encaisser moins',
+  nenetteGift: 'La nénette paie',
 }
 
 export const REWARD_HELP: Record<RewardId, string> = {
@@ -92,6 +96,38 @@ export const REWARD_HELP: Record<RewardId, string> = {
   extraDie: 'Un dé de plus au **premier lancer de chaque phase**. Le jeu retire ensuite le dé le moins utile, et retient toujours la meilleure combinaison de trois.',
   set42: 'Une fois par partie : deux dés fixés sur 4 et 2, un seul jet, définitif.',
   valuePlus1: 'Toutes vos combinaisons transfèrent 1 jeton de plus.',
+  reroll421: 'Un adversaire qui termine sur un 4-2-1 relance automatiquement tous ses dés. Une seule fois par tour.',
+  splitGive: 'Quand vous donnez des jetons à un adversaire, l’autre en reçoit la moitié (arrondie à l’inférieur). Sans effet en duel.',
+  takeLess: 'Quand vous encaissez des jetons, vous en prenez un de moins — au minimum 1. Moins de jetons à évacuer, mais moins d’argent.',
+  nenetteGift: 'Pour tout le monde : une nénette (2-2-1) fait circuler un jeton vers chaque adversaire, même si vous perdez la manche.',
+}
+
+/** `F10` : un symbole par effet de face, et sa règle en une ligne. */
+export const EFFECT_SYMBOL: Record<FaceEffectId, string> = {
+  freeReroll: '↻',
+  takeLess: '⊖',
+  wild: '✳',
+  payAll: '⇈',
+  money: '✦',
+  forge: '⚒',
+}
+
+export const EFFECT_LABEL: Record<FaceEffectId, string> = {
+  freeReroll: 'Relance gratuite',
+  takeLess: 'Encaisse un jeton de moins',
+  wild: 'Vaut aussi sa face opposée',
+  payAll: 'Un jeton du pot pour tous',
+  money: '+1 d’argent en fin de tour',
+  forge: 'Deux visibles : +1 point de forge',
+}
+
+export const EFFECT_HELP: Record<FaceEffectId, string> = {
+  freeReroll: 'Quand cette face sort, vous pouvez relancer ce dé sans consommer de jet.',
+  takeLess: 'Visible en fin de lancers : un jeton de moins à encaisser, jamais sous 1.',
+  wild: 'La face vaut sa valeur ou celle de la face opposée — le jeu prend la meilleure combinaison.',
+  payAll: 'À chaque apparition, chaque participant prend un jeton du pot. Vous y compris.',
+  money: 'Visible en fin de lancers : +1 d’argent. Si tous vos dés l’affichent, +10.',
+  forge: 'Deux exemplaires visibles en fin de lancers : +1 point de forge.',
 }
 
 export const PHASE_LABEL = {
@@ -172,6 +208,16 @@ export function describeStep(step: TraceStep, names: readonly string[]): string 
         : `${who(step.who)} n’a plus de jetons — ${step.place}ᵉ`
     case 'phaseEnd':
       return step.phase === 'charge' ? 'Le pot est vide' : 'Phase de don terminée'
+    case 'forcedReroll':
+      return `4-2-1 annulé par ${who(step.owner)} — ${who(step.who)} relance tout et retombe sur ${diceHandLabel(step.hand)}`
+    case 'sideGift':
+      return `${REWARD_LABEL.splitGive} — ${who(step.to)} reçoit aussi ${chips(step.amount)}`
+    case 'nenetteGift':
+      return step.source === 'pot'
+        ? `Nénette de ${who(step.who)} — chaque adversaire prend ${chips(step.amount)} au pot`
+        : `Nénette de ${who(step.who)} — il donne ${chips(step.amount)} à chaque adversaire`
+    case 'faceBonus':
+      return `${EFFECT_SYMBOL[step.effect]} ${who(step.who)} — ${step.detail}`
     case 'matchEnd':
       return step.humanWon ? 'Vous remportez la partie' : 'Partie perdue'
   }
@@ -194,6 +240,10 @@ export const STEP_MS: Record<TraceStep['kind'], number> = {
   roundStart: 700,
   throw: 900,
   dropDie: 1100,
+  faceBonus: 1200,
+  forcedReroll: 1500,
+  sideGift: 1100,
+  nenetteGift: 1300,
   flipUsed: 1200,
   turnEnd: 500,
   roundResult: 1600,

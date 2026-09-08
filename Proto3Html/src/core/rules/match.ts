@@ -13,12 +13,12 @@ import { aiCoin, aiMulligan, aiReward, aiRerolls, aiTarget, aiTurn, type AiSetti
 import { drawHand, mulligan, type DrawState } from '../cards/deck'
 import { compareHands, evaluateHand } from '../cards/hands'
 import { bestOfThree, compareDice, type BestHand } from '../dice/combinations'
-import { flip, throwDie } from '../dice/dice'
+import { flip, oppositeValue, throwDie } from '../dice/dice'
 import type { CircleConfig, GameConfig } from '../config/schema'
 import type { Answer, Ask, TurnAction } from './asks'
 import type { Rng } from './random'
 import type { CoinSide, TraceStep } from './trace'
-import type { Card, DiceHand, Die, HandRank, PhaseId, RewardId } from './types'
+import type { Card, DiceHand, Die, Face, FaceEffectId, HandRank, PhaseId, RewardId } from './types'
 
 export interface MatchParticipant {
   readonly index: number
@@ -38,6 +38,9 @@ export interface MatchLive {
   chips: number[]
   /** `J5` : jetons **donnés** en phase de don. C'est l'argent. */
   given: number[]
+  /** `F10` : argent et forge gagnés par des effets de face, hors barème. */
+  bonusMoney: number[]
+  bonusForge: number[]
   out: number[]
   offered: RewardId[]
   owned: Map<RewardId, number>
@@ -49,6 +52,9 @@ export interface MatchLive {
 export interface MatchResult {
   readonly ranking: readonly number[]
   readonly money: readonly number[]
+  /** `F10` : à ajouter au run par-dessus l'argent des jetons donnés. */
+  readonly bonusMoney: readonly number[]
+  readonly bonusForge: readonly number[]
   readonly rounds: number
   readonly throws: number
   readonly humanWon: boolean
@@ -85,6 +91,8 @@ export function createLive(
     pot: circle.pot,
     chips: participants.map(() => 0),
     given: participants.map(() => 0),
+    bonusMoney: participants.map(() => 0),
+    bonusForge: participants.map(() => 0),
     out: [],
     offered: [],
     owned: new Map(),
@@ -124,6 +132,8 @@ export function* matchProgram(ctx: Ctx): Generator<Yielded, MatchResult, Answer>
     const pool = ctx.cfg.rewards
       .filter((r) => !excluded.has(r.id))
       .filter((r) => !ctx.live.owned.has(r.id))
+      // `B3e` : une récompense qui n'a d'effet qu'à trois n'est pas proposée en duel.
+      .filter((r) => !(r.needsThree === true && ctx.participants.length < 3))
       .map((r) => r.id)
     const offered = ctx.rng.shuffle([...pool]).slice(0, series.duels + 1)
     ctx.live.offered = offered
@@ -151,7 +161,15 @@ export function* matchProgram(ctx: Ctx): Generator<Yielded, MatchResult, Answer>
   const humanWon = human !== undefined && ranking[0] === human.index
   yield* step({ kind: 'matchEnd', ranking, money: [...ctx.live.given], humanWon })
 
-  return { ranking, money: [...ctx.live.given], rounds: ctx.rounds, throws: ctx.throws, humanWon }
+  return {
+    ranking,
+    money: [...ctx.live.given],
+    bonusMoney: [...ctx.live.bonusMoney],
+    bonusForge: [...ctx.live.bonusForge],
+    rounds: ctx.rounds,
+    throws: ctx.throws,
+    humanWon,
+  }
 }
 
 /* ---------------------------------------------------- Bataille de cartes */
@@ -171,9 +189,15 @@ function* cardDuel(
   yield { t: 'step', step: { kind: 'duelDraw', hands: states.map((s) => [...s.hand]) } }
 
   // `C3`/`C6` : deux passes de changement, simultanées et cachées.
+  // `C3b` : **passer clôt ses changements** pour toute la bataille.
+  const passed = new Set<number>()
   for (let pass = 1; pass <= cards.mulligans; pass++) {
     const swaps: number[] = []
     for (const p of ctx.participants) {
+      if (passed.has(p.index)) {
+        swaps.push(0)
+        continue
+      }
       const st = at(states, p.index)
       let wanted: readonly number[]
       if (p.isHuman) {
@@ -192,6 +216,7 @@ function* cardDuel(
       } else {
         wanted = aiMulligan(st.hand, st.pile, cards, p.ai?.topN ?? 1, ctx.rng)
       }
+      if (wanted.length === 0) passed.add(p.index)
       states[p.index] = mulligan(st, wanted, ctx.rng)
       swaps.push(wanted.length)
     }
@@ -261,10 +286,7 @@ function* takeReward(ctx: Ctx, who: number): Generator<Yielded, void, Answer> {
     }
 
     const wanted = spec.amount ?? 0
-    const fromPot = Math.min(wanted, ctx.live.pot)
-    const fromOwner = Math.min(wanted - fromPot, at(ctx.live.chips, who))
-    ctx.live.pot -= fromPot
-    ctx.live.chips[who] = at(ctx.live.chips, who) - fromOwner
+    const { fromPot, fromOwner } = drawChips(ctx, who, wanted)
     ctx.live.chips[target] = at(ctx.live.chips, target) + fromPot + fromOwner
     // `J5` : l'argent ne compte que les jetons donnés **pendant la phase de don**.
     // Se délester ici accélère la victoire mais ne rapporte rien — c'est la même
@@ -282,6 +304,29 @@ function* takeReward(ctx: Ctx, who: number): Generator<Yielded, void, Answer> {
         pot: ctx.live.pot,
         chips: [...ctx.live.chips],
       },
+    }
+
+    // `B15` : donner à un adversaire, c'est en donner la moitié à l'autre.
+    if (ctx.live.owned.get('splitGive') === who) {
+      const half = Math.floor((fromPot + fromOwner) / 2)
+      for (const other of candidates) {
+        if (other === target || half <= 0) continue
+        const side = drawChips(ctx, who, half)
+        const total = side.fromPot + side.fromOwner
+        if (total <= 0) continue
+        ctx.live.chips[other] = at(ctx.live.chips, other) + total
+        yield {
+          t: 'step',
+          step: {
+            kind: 'sideGift',
+            from: who,
+            to: other,
+            amount: total,
+            pot: ctx.live.pot,
+            chips: [...ctx.live.chips],
+          },
+        }
+      }
     }
   }
 
@@ -301,6 +346,15 @@ function* takeReward(ctx: Ctx, who: number): Generator<Yielded, void, Answer> {
       step: { kind: 'rewardSetting', who, id, detail: `${value} relance${value > 1 ? 's' : ''} maximum pour tous` },
     }
   }
+}
+
+/** `B6` : on prélève dans le pot tant qu'il en reste, puis dans sa réserve. */
+function drawChips(ctx: Ctx, from: number, wanted: number): { fromPot: number; fromOwner: number } {
+  const fromPot = Math.min(wanted, ctx.live.pot)
+  const fromOwner = Math.min(wanted - fromPot, at(ctx.live.chips, from))
+  ctx.live.pot -= fromPot
+  ctx.live.chips[from] = at(ctx.live.chips, from) - fromOwner
+  return { fromPot, fromOwner }
 }
 
 /* ------------------------------------------------------------- Pile ou face */
@@ -397,16 +451,18 @@ function* dicePhase(ctx: Ctx, phase: PhaseId): Generator<Yielded, void, Answer> 
     yield { t: 'step', step: { kind: 'roundStart', phase, round: ctx.live.round, leader, order: [...order] } }
 
     const hands: (DiceHand | null)[] = ctx.participants.map(() => null)
+    const faceEffects: (readonly (FaceEffectId | null)[])[] = ctx.participants.map(() => [])
     let leaderThrows = maxThrows
     for (const [k, who] of order.entries()) {
       // `D4` : le meneur plafonne le nombre de jets des autres.
       const cap = k === 0 || !ctx.cfg.rules.leaderCapsThrows ? maxThrows : leaderThrows
-      const turn = yield* takeTurn(ctx, who, cap, phase)
+      const turn = yield* takeTurn(ctx, who, cap, phase, k === 0)
       hands[who] = turn.hand
+      faceEffects[who] = turn.effects
       if (k === 0) leaderThrows = turn.throws
     }
 
-    yield* resolveRound(ctx, phase, hands, order)
+    yield* resolveRound(ctx, phase, hands, order, faceEffects)
 
     const stillActive = activeIndices(ctx, phase)
     const idx = ctx.participants.map((p) => p.index)
@@ -429,17 +485,23 @@ function* dicePhase(ctx: Ctx, phase: PhaseId): Generator<Yielded, void, Answer> 
 interface TurnOutcome {
   readonly hand: DiceHand
   readonly throws: number
+  /** `F10` : effets des faces visibles en fin de tour. */
+  readonly effects: readonly (FaceEffectId | null)[]
 }
 
-function* takeTurn(ctx: Ctx, who: number, maxThrows: number, phase: PhaseId): Generator<Yielded, TurnOutcome, Answer> {
+function* takeTurn(
+  ctx: Ctx,
+  who: number,
+  maxThrows: number,
+  phase: PhaseId,
+  isLeader: boolean,
+): Generator<Yielded, TurnOutcome, Answer> {
   const p = at(ctx.participants, who)
   const faces = ctx.circle.dieFaces
   const combos = ctx.cfg.combinations
   const valuePlus1 = ctx.live.owned.get('valuePlus1') === who
 
   // `B8` : « Un dé en plus » n'ajoute un dé qu'au **premier jet de la phase**.
-  // Il est identique au dernier dé du participant — c'est un dé de plus, pas un
-  // dé différent. Avant les relances, le jeu en écarte un tout seul (`B12b`).
   const extra = ctx.live.owned.get('extraDie') === who && !ctx.usedExtra.has(who)
   const dice: Die[] = extra ? [...p.dice, at(p.dice, p.dice.length - 1)] : [...p.dice]
   let extraPending = extra
@@ -448,11 +510,53 @@ function* takeTurn(ctx: Ctx, who: number, maxThrows: number, phase: PhaseId): Ge
   let faceIdx: number[] = new Array<number>(dice.length).fill(-1)
   let throwNo = 0
   let best: BestHand | null = null
+  /** `F10` : un dé ne se relance gratuitement qu'une fois par jet. */
+  const usedFree = new Set<number>()
+
+  const effectAt = (i: number): FaceEffectId | null => {
+    const fi = faceIdx[i] ?? -1
+    if (fi < 0) return null
+    return (at(dice, i).faces[fi] as Face | undefined)?.effect ?? null
+  }
+  const effectsNow = (): (FaceEffectId | null)[] => dice.map((_, i) => effectAt(i))
+  /** `F10` (`wild`) : la face vaut aussi la valeur de son opposée. */
+  const altsNow = (): (number | null)[] =>
+    dice.map((_, i) => (effectAt(i) === 'wild' ? oppositeValue(at(dice, i), faceIdx[i] as number) : null))
+  const evaluate = (): BestHand => bestOfThree(values as number[], faces, combos, valuePlus1, altsNow())
+
+  /** `F10` (`payAll`) : chaque apparition donne un jeton du pot à tout le monde. */
+  function* payAll(): Generator<Yielded, void, Answer> {
+    const hits = effectsNow().filter((e) => e === 'payAll').length
+    for (let h = 0; h < hits; h++) {
+      let served = 0
+      for (const q of ctx.participants) {
+        if (ctx.live.pot <= 0) break
+        ctx.live.pot -= 1
+        ctx.live.chips[q.index] = at(ctx.live.chips, q.index) + 1
+        served++
+      }
+      if (served === 0) break
+      yield {
+        t: 'step',
+        step: {
+          kind: 'faceBonus',
+          who,
+          effect: 'payAll',
+          amount: served,
+          detail: `${served} jeton${served > 1 ? 's' : ''} du pot répartis`,
+          pot: ctx.live.pot,
+          chips: [...ctx.live.chips],
+        },
+      }
+    }
+  }
 
   for (;;) {
     const canFlip = ctx.live.owned.get('flipDie') === who && !ctx.usedFlip.has(who) && values !== null
     const canSet42 = ctx.live.owned.get('set42') === who && !ctx.usedSet42.has(who) && throwNo < maxThrows
-    if (throwNo >= maxThrows && !canFlip) break
+    const freeRerolls =
+      values === null ? [] : dice.map((_, i) => i).filter((i) => effectAt(i) === 'freeReroll' && !usedFree.has(i))
+    if (throwNo >= maxThrows && !canFlip && freeRerolls.length === 0) break
 
     let action: TurnAction
     if (p.isHuman) {
@@ -466,9 +570,11 @@ function* takeTurn(ctx: Ctx, who: number, maxThrows: number, phase: PhaseId): Ge
             values: values ? [...values] : null,
             hand: best?.hand ?? null,
             kept: best ? [...best.indices] : [],
+            effects: effectsNow(),
+            freeRerolls,
             throwNo,
             maxThrows,
-            isLeader: false,
+            isLeader,
             canFlip,
             canSet42,
             diceCount: dice.length,
@@ -478,12 +584,49 @@ function* takeTurn(ctx: Ctx, who: number, maxThrows: number, phase: PhaseId): Ge
       action = answer.kind === 'turn' ? answer.action : { type: 'stop' }
     } else {
       action =
-        throwNo >= maxThrows
+        throwNo >= maxThrows && freeRerolls.length === 0
           ? { type: 'stop' }
           : aiTurn(
-              { dice, values, hand: best?.hand ?? null, throwNo, maxThrows, faces, combos, topN: p.ai?.topN ?? 1 },
+              {
+                dice,
+                values,
+                alts: values ? altsNow() : null,
+                freeRerolls,
+                throwNo,
+                maxThrows,
+                faces,
+                combos,
+                topN: p.ai?.topN ?? 1,
+              },
               ctx.rng,
             )
+    }
+
+    if (action.type === 'freeReroll') {
+      const i = action.dieIndex
+      if (!values || !freeRerolls.includes(i)) continue
+      usedFree.add(i)
+      const t = throwDie(at(dice, i), ctx.rng)
+      values[i] = t.value
+      faceIdx[i] = t.faceIndex
+      best = evaluate()
+      yield {
+        t: 'step',
+        step: {
+          kind: 'throw',
+          who,
+          throwNo,
+          maxThrows,
+          values: [...values],
+          rolled: dice.map((_, k) => k === i),
+          kept: [...best.indices],
+          effects: effectsNow(),
+          hand: best.hand,
+          via: 'freeReroll',
+        },
+      }
+      yield* payAll()
+      continue
     }
 
     if (action.type === 'flip') {
@@ -496,13 +639,23 @@ function* takeTurn(ctx: Ctx, who: number, maxThrows: number, phase: PhaseId): Ge
       values[i] = flipped.value
       faceIdx[i] = flipped.faceIndex
       ctx.usedFlip.add(who)
-      best = bestOfThree(values, faces, combos, valuePlus1)
-      yield { t: 'step', step: { kind: 'flipUsed', who, dieIndex: i, from, to: flipped.value, hand: best.hand } }
+      best = evaluate()
+      yield {
+        t: 'step',
+        step: {
+          kind: 'flipUsed',
+          who,
+          dieIndex: i,
+          from,
+          to: flipped.value,
+          effects: effectsNow(),
+          hand: best.hand,
+        },
+      }
       continue
     }
 
-    // `D5` : on s'arrête quand on veut, **après** avoir vu ses dés. Il n'y a
-    // plus rien à annoncer avant de lancer.
+    // `D5` : on s'arrête quand on veut, **après** avoir vu ses dés.
     if (action.type === 'stop') {
       if (values === null) continue
       break
@@ -542,8 +695,9 @@ function* takeTurn(ctx: Ctx, who: number, maxThrows: number, phase: PhaseId): Ge
 
     throwNo++
     ctx.throws++
+    usedFree.clear()
     values = nextValues
-    best = bestOfThree(values, faces, combos, valuePlus1)
+    best = evaluate()
     yield {
       t: 'step',
       step: {
@@ -554,15 +708,15 @@ function* takeTurn(ctx: Ctx, who: number, maxThrows: number, phase: PhaseId): Ge
         values: [...values],
         rolled: [...rolled],
         kept: [...best.indices],
+        effects: effectsNow(),
         hand: best.hand,
         via: useSet42 ? 'set42' : extraPending ? 'extraDie' : 'normal',
       },
     }
+    yield* payAll()
 
     if (extraPending) {
-      // `B12b` : le dé en plus a fait son office. Le jeu écarte automatiquement
-      // un dé **parmi ceux qu'il n'a pas retenus** — la main du jet est donc
-      // conservée telle quelle — et on repart aux relances au format normal.
+      // `B12b` : le dé en plus a fait son office, le jeu en écarte un tout seul.
       extraPending = false
       ctx.usedExtra.add(who)
       const before = [...values]
@@ -570,10 +724,18 @@ function* takeTurn(ctx: Ctx, who: number, maxThrows: number, phase: PhaseId): Ge
       dice.splice(dropped, 1)
       values.splice(dropped, 1)
       faceIdx.splice(dropped, 1)
-      best = bestOfThree(values, faces, combos, valuePlus1)
+      best = evaluate()
       yield {
         t: 'step',
-        step: { kind: 'dropDie', who, before, dropped, values: [...values], hand: best.hand },
+        step: {
+          kind: 'dropDie',
+          who,
+          before,
+          dropped,
+          values: [...values],
+          effects: effectsNow(),
+          hand: best.hand,
+        },
       }
     }
 
@@ -588,7 +750,7 @@ function* takeTurn(ctx: Ctx, who: number, maxThrows: number, phase: PhaseId): Ge
     faceIdx = forced.map((f) => f.faceIndex)
     throwNo++
     ctx.throws++
-    best = bestOfThree(forcedValues, faces, combos, valuePlus1)
+    best = evaluate()
     yield {
       t: 'step',
       step: {
@@ -599,14 +761,78 @@ function* takeTurn(ctx: Ctx, who: number, maxThrows: number, phase: PhaseId): Ge
         values: [...forcedValues],
         rolled: forcedValues.map(() => true),
         kept: [...best.indices],
+        effects: effectsNow(),
         hand: best.hand,
         via: 'normal',
+      },
+    }
+    yield* payAll()
+  }
+
+  // `B13` : un adversaire qui termine sur un 4-2-1 relance tout, une fois.
+  const guard = ctx.live.owned.get('reroll421')
+  if (guard !== undefined && guard !== who && best.hand.id === '421') {
+    const before = [...values]
+    const forced = dice.map((d) => throwDie(d, ctx.rng))
+    values = forced.map((f) => f.value)
+    faceIdx = forced.map((f) => f.faceIndex)
+    ctx.throws++
+    best = evaluate()
+    yield {
+      t: 'step',
+      step: {
+        kind: 'forcedReroll',
+        who,
+        owner: guard,
+        before,
+        values: [...values],
+        kept: [...best.indices],
+        effects: effectsNow(),
+        hand: best.hand,
+      },
+    }
+    yield* payAll()
+  }
+
+  // `F10` : les effets qui se comptent **en fin de lancers**.
+  const finalEffects = effectsNow()
+  const moneyFaces = finalEffects.filter((e) => e === 'money').length
+  if (moneyFaces > 0) {
+    const all = moneyFaces === dice.length
+    const gain = all ? 10 : moneyFaces
+    ctx.live.bonusMoney[who] = at(ctx.live.bonusMoney, who) + gain
+    yield {
+      t: 'step',
+      step: {
+        kind: 'faceBonus',
+        who,
+        effect: 'money',
+        amount: gain,
+        detail: all ? 'tous les dés au symbole : +10 d’argent' : `+${gain} d’argent`,
+        pot: ctx.live.pot,
+        chips: [...ctx.live.chips],
+      },
+    }
+  }
+  const forgeFaces = finalEffects.filter((e) => e === 'forge').length
+  if (forgeFaces >= ctx.cfg.dice.faceEffects.forgeThreshold) {
+    ctx.live.bonusForge[who] = at(ctx.live.bonusForge, who) + 1
+    yield {
+      t: 'step',
+      step: {
+        kind: 'faceBonus',
+        who,
+        effect: 'forge',
+        amount: 1,
+        detail: `${forgeFaces} symboles visibles : +1 point de forge`,
+        pot: ctx.live.pot,
+        chips: [...ctx.live.chips],
       },
     }
   }
 
   yield { t: 'step', step: { kind: 'turnEnd', who, hand: best.hand, throws: throwNo } }
-  return { hand: best.hand, throws: throwNo }
+  return { hand: best.hand, throws: throwNo, effects: finalEffects }
 }
 
 /**
@@ -628,6 +854,7 @@ function* resolveRound(
   phase: PhaseId,
   hands: readonly (DiceHand | null)[],
   order: readonly number[],
+  faceEffects: readonly (readonly (FaceEffectId | null)[])[],
 ): Generator<Yielded, void, Answer> {
   const players = order.filter((i) => hands[i] !== null)
   let bestGroup: number[] = []
@@ -656,15 +883,21 @@ function* resolveRound(
       : yield* breakTie(ctx, worstCandidates, 'pire main à égalité')
 
   const bestHand = hands[best] as DiceHand
+  // `B14` et `F10` : la récompense `takeLess` **et** chaque face `takeLess`
+  // visible retirent un jeton à ce qu'encaisse la pire main, jamais sous 1.
+  const cuts =
+    (ctx.live.owned.get('takeLess') === worst ? 1 : 0) +
+    (faceEffects[worst] ?? []).filter((e) => e === 'takeLess').length
+  const base = cuts > 0 ? Math.max(1, bestHand.chipValue - cuts) : bestHand.chipValue
   let amount = 0
   if (phase === 'charge') {
     // `D9a` : la pire main prend, dans le pot, la valeur de la meilleure.
-    amount = Math.min(bestHand.chipValue, ctx.live.pot)
+    amount = Math.min(base, ctx.live.pot)
     ctx.live.pot -= amount
     ctx.live.chips[worst] = at(ctx.live.chips, worst) + amount
   } else if (best !== worst) {
     // `D10a`/`D10b` : la meilleure donne à la pire, plafonné par ce qu'elle a.
-    amount = Math.min(bestHand.chipValue, at(ctx.live.chips, best))
+    amount = Math.min(base, at(ctx.live.chips, best))
     ctx.live.chips[best] = at(ctx.live.chips, best) - amount
     ctx.live.chips[worst] = at(ctx.live.chips, worst) + amount
     ctx.live.given[best] = at(ctx.live.given, best) + amount
@@ -677,11 +910,77 @@ function* resolveRound(
       phase,
       best,
       worst,
+      base,
       amount,
       pot: ctx.live.pot,
       chips: [...ctx.live.chips],
       hands: hands.map((h) => h),
     },
+  }
+
+  // `B15` : donner à un adversaire, c'est en donner la moitié à l'autre.
+  if (phase === 'discharge' && ctx.live.owned.get('splitGive') === best && amount > 0) {
+    const half = Math.floor(amount / 2)
+    for (const other of order) {
+      if (other === best || other === worst || half <= 0) continue
+      if (ctx.live.out.includes(other)) continue
+      const give = Math.min(half, at(ctx.live.chips, best))
+      if (give <= 0) break
+      ctx.live.chips[best] = at(ctx.live.chips, best) - give
+      ctx.live.chips[other] = at(ctx.live.chips, other) + give
+      ctx.live.given[best] = at(ctx.live.given, best) + give
+      yield {
+        t: 'step',
+        step: {
+          kind: 'sideGift',
+          from: best,
+          to: other,
+          amount: give,
+          pot: ctx.live.pot,
+          chips: [...ctx.live.chips],
+        },
+      }
+    }
+  }
+
+  // `B16` : la nénette fait circuler un jeton par adversaire, même en perdant.
+  if (ctx.live.owned.has('nenetteGift')) {
+    for (const i of order) {
+      const h = hands[i]
+      if (!h || h.id !== 'nenette') continue
+      const candidates = order.filter((o) => o !== i && !ctx.live.out.includes(o))
+      const targets: number[] = []
+      if (phase === 'charge') {
+        // Chaque adversaire prend un jeton **du pot** : autant de moins à ramasser.
+        for (const t of candidates) {
+          if (ctx.live.pot <= 0) break
+          ctx.live.pot -= 1
+          ctx.live.chips[t] = at(ctx.live.chips, t) + 1
+          targets.push(t)
+        }
+      } else {
+        for (const t of candidates) {
+          if (at(ctx.live.chips, i) <= 0) break
+          ctx.live.chips[i] = at(ctx.live.chips, i) - 1
+          ctx.live.chips[t] = at(ctx.live.chips, t) + 1
+          ctx.live.given[i] = at(ctx.live.given, i) + 1
+          targets.push(t)
+        }
+      }
+      if (targets.length === 0) continue
+      yield {
+        t: 'step',
+        step: {
+          kind: 'nenetteGift',
+          who: i,
+          targets: [...targets],
+          amount: 1,
+          source: phase === 'charge' ? 'pot' : 'owner',
+          pot: ctx.live.pot,
+          chips: [...ctx.live.chips],
+        },
+      }
+    }
   }
 
   if (phase === 'discharge') {

@@ -3,7 +3,7 @@
  * Un message d'erreur explicite désigne toujours le champ fautif.
  */
 
-import { ALL_SUITS, type CombinationId, type HandCategory, type RewardId } from '../rules/types'
+import { ALL_SUITS, type CombinationId, type FaceEffectId, type HandCategory, type RewardId } from '../rules/types'
 import type { CombinationsConfig, GameConfig } from './schema'
 
 class ConfigError extends Error {
@@ -72,6 +72,15 @@ const CATEGORIES: readonly HandCategory[] = [
   'doublePaire',
   'paire',
   'carteHaute',
+]
+
+const FACE_EFFECTS: readonly FaceEffectId[] = [
+  'freeReroll',
+  'takeLess',
+  'wild',
+  'payAll',
+  'money',
+  'forge',
 ]
 
 const REWARD_IDS: readonly RewardId[] = [
@@ -221,9 +230,23 @@ export function loadConfig(raw: unknown): GameConfig {
     combinations: loadCombinations(root['diceCombinations']),
     dice: {
       startingFaces,
+      faceEffects: (() => {
+        const raw = obj(diceRaw['faceEffects'], 'dice.faceEffects')
+        return {
+          effectOptions: int(raw['effectOptions'], 'dice.faceEffects.effectOptions', 0),
+          valueOptions: int(raw['valueOptions'], 'dice.faceEffects.valueOptions', 0),
+          forgeThreshold: int(raw['forgeThreshold'], 'dice.faceEffects.forgeThreshold', 1),
+          catalogue: arr(raw['catalogue'], 'dice.faceEffects.catalogue').map((e, i) => {
+            const v = str(e, `dice.faceEffects.catalogue[${i}]`)
+            if (!(FACE_EFFECTS as readonly string[]).includes(v)) {
+              fail(`dice.faceEffects.catalogue[${i}]`, `effet inconnu « ${v} »`)
+            }
+            return v as FaceEffectId
+          }),
+        }
+      })(),
       playerDice: int(diceRaw['playerDice'], 'dice.playerDice', 3),
       demonDice: int(diceRaw['demonDice'], 'dice.demonDice', 3),
-      maxSameFace: int(diceRaw['maxSameFace'], 'dice.maxSameFace', 0),
       defaultMaxRerolls: int(diceRaw['defaultMaxRerolls'], 'dice.defaultMaxRerolls', 0),
     },
     cards: {

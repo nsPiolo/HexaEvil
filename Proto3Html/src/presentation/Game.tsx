@@ -65,6 +65,14 @@ export function Game({ cfg }: { cfg: GameConfig }) {
           </span>
         </div>
         <div className="banner__speed">
+          <button
+            type="button"
+            className={`chipbtn ${session.autoPilot ? 'chipbtn--on' : ''}`}
+            onClick={() => session.setAutoPilot(!session.autoPilot)}
+            title="Le jeu joue à votre place, pour regarder la mécanique tourner"
+          >
+            {session.autoPilot ? '⏸ reprendre la main' : '▶ pilote auto'}
+          </button>
           <span className="banner__label">Vitesse</span>
           {[0.5, 1, 2, 4, 12].map((s) => (
             <button
@@ -89,6 +97,12 @@ export function Game({ cfg }: { cfg: GameConfig }) {
               names={names}
               humanIndex={HUMAN}
               ladderSizes={ladderSizes}
+              pickable={ask?.kind === 'reward' ? ask.offered : undefined}
+              onPick={
+                ask?.kind === 'reward'
+                  ? (id) => session.answer({ kind: 'reward', id: id as never })
+                  : undefined
+              }
             />
           </main>
           <footer className="footer">

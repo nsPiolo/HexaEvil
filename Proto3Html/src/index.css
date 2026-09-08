@@ -508,3 +508,64 @@ body {
 }
 
 .seat__note { color: var(--muted); font-size: 0.78rem; }
+
+/* `U8c` : une récompense qu'on peut prendre maintenant doit sauter aux yeux —
+   elle n'est plus redessinée dans le panneau du bas, c'est celle-ci qu'on clique. */
+.reward--pickable {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 1px rgb(224 168 60 / 35%);
+  animation: offerPulse 1.6s ease-in-out infinite;
+}
+.reward--pickable:hover { animation: none; transform: translateY(-3px); }
+
+@keyframes offerPulse {
+  0%, 100% { box-shadow: 0 0 0 1px rgb(224 168 60 / 25%); }
+  50% { box-shadow: 0 0 0 3px rgb(224 168 60 / 30%); }
+}
+
+/* `F10` : les faces peuvent porter un effet. Le symbole doit se lire sur le dé
+   sans masquer la valeur, qui reste l'information principale. */
+.die { position: relative; }
+.die__effect {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 0.72rem;
+  background: var(--gold);
+  color: #2a1a06;
+  box-shadow: 0 0 0 1px #6d4510;
+}
+
+.inspector__face { position: relative; }
+.inspector__effect { font-style: normal; margin-left: 0.15rem; color: var(--gold); }
+
+/* `F11` : la gravure est devenue une offre — trois valeurs, parfois un effet. */
+.offers { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: 0.6rem; }
+
+.offer {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  grid-template-areas: 'value symbol label' 'value symbol help';
+  gap: 0.1rem 0.6rem;
+  align-items: center;
+  text-align: left;
+  padding: 0.7rem 0.9rem;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--ink);
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.offer:hover { border-color: var(--gold); transform: translateY(-2px); }
+.offer--special { border-color: rgb(224 168 60 / 55%); background: linear-gradient(180deg, #33261a, var(--panel-2)); }
+.offer__value { grid-area: value; font-size: 1.8rem; font-weight: 750; font-variant-numeric: tabular-nums; }
+.offer__symbol { grid-area: symbol; font-size: 1.3rem; color: var(--gold); }
+.offer__label { grid-area: label; font-size: 0.86rem; font-weight: 600; }
+.offer__label--plain { grid-area: label; color: var(--muted); font-weight: 400; }
+.offer__help { grid-area: help; font-size: 0.74rem; color: var(--muted); line-height: 1.3; }

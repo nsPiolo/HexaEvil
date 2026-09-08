@@ -84,8 +84,8 @@ export function expectedStrength(
         return
       }
       const i = idx[k] as number
-      for (const face of (dice[i] as Die).faces) {
-        next[i] = face
+      for (const f of (dice[i] as Die).faces) {
+        next[i] = f.value
         walk(k + 1)
       }
     }
@@ -104,7 +104,10 @@ export function expectedStrength(
 export interface AiTurnInput {
   readonly dice: readonly Die[]
   readonly values: readonly number[] | null
-  readonly hand: DiceHand | null
+  /** `F10` : seconde valeur des faces `wild`. */
+  readonly alts?: readonly (number | null)[] | null
+  /** `F10` : dés relançables gratuitement. */
+  readonly freeRerolls?: readonly number[]
   readonly throwNo: number
   readonly maxThrows: number
   readonly faces: number
@@ -125,11 +128,20 @@ export function aiTurn(input: AiTurnInput, rng: Rng): TurnAction {
   const { dice, values, throwNo, maxThrows, faces, combos } = input
   const n = dice.length
   const throwsLeft = maxThrows - throwNo
+  const alts = input.alts ?? undefined
 
   if (values === null) return { type: 'roll', keep: new Array<boolean>(n).fill(false), useSet42: false }
-  if (throwsLeft <= 0) return { type: 'stop' }
 
-  const current = bestStrength(values, faces, combos)
+  const current = bestStrength(values, faces, combos, alts)
+
+  // `F10` : une relance gratuite ne coûte rien — on la prend dès qu'elle espère mieux.
+  for (const i of input.freeRerolls ?? []) {
+    const mask = dice.map((_, k) => k === i)
+    if (expectedStrength(dice, values, mask, faces, combos, rng) > current) {
+      return { type: 'freeReroll', dieIndex: i }
+    }
+  }
+  if (throwsLeft <= 0) return { type: 'stop' }
   const scored: { item: boolean[]; score: number }[] = []
   for (let m = 1; m < 1 << n; m++) {
     const reroll = Array.from({ length: n }, (_, i) => Boolean(m & (1 << i)))

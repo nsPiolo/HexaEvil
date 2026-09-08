@@ -7,11 +7,11 @@
 
 import { settingsFor } from '../ai/ai'
 import { cloneCard, createStartingDeck, newCard } from '../cards/deck'
-import { canEngrave, createDie, engrave, upgradeDie } from '../dice/dice'
+import { canEngrave, createDie, engraveEffect, engraveValue, upgradeDie } from '../dice/dice'
 import type { GameConfig, ShopOptionId } from '../config/schema'
 import { MatchDriver, type MatchParticipant, type MatchResult } from './match'
 import type { Rng } from './random'
-import type { Card, Die, Suit } from './types'
+import type { Card, Die, FaceEffectId, Suit } from './types'
 
 export type RunStatus = 'playing' | 'dead' | 'won'
 
@@ -118,8 +118,10 @@ export interface MatchOutcome {
 }
 
 export function finishMatch(run: RunState, result: MatchResult): MatchOutcome {
-  const money = result.money[HUMAN] ?? 0
+  // `F10` : l'argent des faces s'ajoute à celui des jetons donnés.
+  const money = (result.money[HUMAN] ?? 0) + (result.bonusMoney[HUMAN] ?? 0)
   run.money += money
+  run.forgePoints += result.bonusForge[HUMAN] ?? 0
   run.lastMoney = money
   run.totalMoney += money
   run.matchesPlayed++
@@ -268,24 +270,67 @@ export function applyShopCards(run: RunState, session: ShopSession, selection: C
   pay(run, session.option)
 }
 
+/** `F11` : une gravure agit sur **un seul** aspect de la face à la fois. */
+export type EngraveOption =
+  | { readonly kind: 'effect'; readonly effect: FaceEffectId }
+  | { readonly kind: 'value'; readonly value: number }
+
 export interface EngraveOrder {
   readonly dieIndex: number
   readonly faceIndex: number
-  readonly value: number
+  readonly option: EngraveOption
+}
+
+/**
+ * `F11` : on ne choisit plus librement. Le graveur propose des **effets** — la
+ * valeur de la face ne bouge pas — et quelques **valeurs** tirées au sort, qui
+ * laissent l'effet en place. Les deux sont des achats légitimes : poser un effet
+ * ajoute de la puissance sans rien retirer, changer une valeur reste un pari sur
+ * la répétition — mauvais pari selon §17, mais c'est au joueur de voir.
+ */
+export function engraveOptions(
+  run: RunState,
+  dieIndex: number,
+  faceIndex: number,
+  rng: Rng,
+): EngraveOption[] {
+  const die = run.dice[dieIndex]
+  if (!die) throw new Error(`dé ${dieIndex} introuvable`)
+  const current = die.faces[faceIndex]
+  if (!current) throw new Error(`face ${faceIndex} introuvable`)
+  const cfg = run.cfg.dice.faceEffects
+
+  const effects = rng
+    .shuffle(cfg.catalogue.filter((e) => e !== current.effect))
+    .slice(0, cfg.effectOptions)
+    .map((effect): EngraveOption => ({ kind: 'effect', effect }))
+
+  const pool: number[] = []
+  for (let v = 1; v <= die.faces.length; v++) if (v !== current.value) pool.push(v)
+  const values = rng
+    .shuffle(pool)
+    .slice(0, cfg.valueOptions)
+    .map((value): EngraveOption => ({ kind: 'value', value }))
+
+  return [...effects, ...values]
 }
 
 export function applyEngrave(run: RunState, option: 'engraveOne' | 'engraveAll', orders: readonly EngraveOrder[]): void {
   const expected = option === 'engraveOne' ? 1 : run.dice.length
   if (orders.length !== expected) throw new Error(`${expected} gravure(s) attendue(s), ${orders.length} fournie(s)`)
-  const max = run.cfg.dice.maxSameFace
   for (const o of orders) {
     const die = run.dice[o.dieIndex]
     if (!die) throw new Error(`dé ${o.dieIndex} introuvable`)
-    const check = canEngrave(die, o.faceIndex, o.value, max)
+    const target = o.option.kind === 'value' ? o.option.value : (die.faces[o.faceIndex]?.value ?? 0)
+    const check = canEngrave(die, o.faceIndex, target)
     if (!check.ok) throw new Error(check.reason ?? 'gravure refusée')
   }
   for (const o of orders) {
-    run.dice[o.dieIndex] = engrave(run.dice[o.dieIndex] as Die, o.faceIndex, o.value)
+    const die = run.dice[o.dieIndex] as Die
+    run.dice[o.dieIndex] =
+      o.option.kind === 'effect'
+        ? engraveEffect(die, o.faceIndex, o.option.effect)
+        : engraveValue(die, o.faceIndex, o.option.value)
   }
   pay(run, option)
 }
