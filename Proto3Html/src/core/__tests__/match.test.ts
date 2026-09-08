@@ -450,3 +450,40 @@ describe('F11 — la gravure propose, elle ne laisse plus choisir', () => {
     expect(seen.size).toBeGreaterThan(3)
   })
 })
+
+/**
+ * Régression trouvée à l'essai : le joueur se vidait, gagnait la partie
+ * (`D10d`), puis la nénette d'un adversaire (`B16`) lui rendait un jeton dans
+ * la **même manche** — et comme la sortie n'était contrôlée qu'à la fin de la
+ * manche, la victoire disparaissait. `D11` est explicite : c'est le premier
+ * passage à zéro qui compte, pas l'état final.
+ */
+describe('D10d / D11 — le premier passage à zéro gagne', () => {
+  it('un jeton rendu dans la même manche ne reprend pas la victoire', () => {
+    // Graine 27 à trois : le joueur tombe à 0, puis reçoit la nénette du démon 1.
+    const { steps, result } = play(27, 0, 3)
+    const firstOut = steps.find((s) => s.kind === 'out')
+    expect(firstOut && firstOut.kind === 'out' ? firstOut.who : null).toBe(0)
+    expect(result.ranking[0]).toBe(0)
+    expect(result.humanWon).toBe(true)
+  })
+
+  it('sur 400 parties à trois, le premier à zéro est toujours classé premier', () => {
+    for (let seed = 1; seed <= 400; seed++) {
+      const { steps, result } = play(seed, 0, 3)
+      let inDischarge = false
+      let firstZeros: number[] | null = null
+      for (const s of steps) {
+        if (s.kind === 'phaseStart' && s.phase === 'discharge') inDischarge = true
+        if (!inDischarge || firstZeros !== null) continue
+        if (!('chips' in s) || !Array.isArray(s.chips)) continue
+        const zeros = (s.chips as number[]).map((c, i) => [c, i] as const).filter(([c]) => c === 0)
+        if (zeros.length > 0) firstZeros = zeros.map(([, i]) => i)
+      }
+      if (firstZeros === null) continue
+      // `D10g` : à égalité stricte le pile ou face tranche, donc on accepte
+      // n'importe lequel des ex æquo — mais jamais quelqu'un d'autre.
+      expect(firstZeros).toContain(result.ranking[0])
+    }
+  })
+})

@@ -103,6 +103,9 @@
   "_forge": "J7 : 1 point toutes les N parties jouées du run.",
   "forgePointEveryNMatches": 2,
 
+  "_winBonusMoney": "J9 : prime fixe pour la rencontre gagnée, en plus des jetons donnés.",
+  "winBonusMoney": 5,
+
   "rules": {
     "_leaderCapsThrows": "D4 : le meneur plafonne le nombre de jets des autres.",
     "leaderCapsThrows": true,

@@ -27,6 +27,20 @@ export interface CoinView {
   readonly reason: string
 }
 
+/**
+ * Où en est la partie, pour le fil d'Ariane imprimé sur la table. Le `stage`
+ * suit l'ordre fixe des étapes (`S1`) : batailles, répartition, batailles,
+ * distribution — l'écran en déduit ce qui est derrière et ce qui reste.
+ */
+export interface Timeline {
+  stage: string | null
+  /** Batailles terminées, par série. */
+  duelsDone: number[]
+  /** Index de la bataille en cours dans sa série, `-1` hors bataille. */
+  duelIndex: number
+  over: boolean
+}
+
 export interface View {
   mode: 'duel' | 'dice'
   circle: number
@@ -36,8 +50,14 @@ export interface View {
   ranks: HandRank[] | null
   duelWinner: number | null
   duel: { series: number; index: number; total: number; handSize: number } | null
+  /** Cartes qui viennent d'arriver du deck, par siège — pour les animer. */
+  entering: number[][]
+  /** Cartes qui viennent de quitter la main, avec leur place d'origine. */
+  leaving: { card: Card; at: number }[][]
   offered: RewardId[]
   owned: Map<RewardId, number>
+  /** Récompenses consommées : elles quittent le tapis (spéc. interface). */
+  used: Set<RewardId>
   dice: (DiceSlot | null)[]
   activeThrower: number | null
   phase: PhaseId | null
@@ -48,6 +68,7 @@ export interface View {
   leaderThrows: number | null
   coin: CoinView | null
   out: number[]
+  timeline: Timeline
 }
 
 /** Après un retrait, les indices retenus se recalent sur les valeurs restantes. */
@@ -74,8 +95,11 @@ function empty(count: number): View {
     ranks: null,
     duelWinner: null,
     duel: null,
+    entering: Array.from({ length: count }, () => []),
+    leaving: Array.from({ length: count }, () => [] as { card: Card; at: number }[]),
     offered: [],
     owned: new Map(),
+    used: new Set(),
     dice: Array.from({ length: count }, () => null),
     activeThrower: null,
     phase: null,
@@ -85,11 +109,16 @@ function empty(count: number): View {
     leaderThrows: null,
     coin: null,
     out: [],
+    timeline: { stage: null, duelsDone: [], duelIndex: -1, over: false },
   }
 }
 
 export function buildView(steps: readonly TraceStep[], upTo: number, count: number): View {
   const v = empty(count)
+  const noneEntering = (): number[][] => Array.from({ length: count }, () => [])
+  const noneLeaving = (): { card: Card; at: number }[][] =>
+    Array.from({ length: count }, () => [] as { card: Card; at: number }[])
+
   for (let i = 0; i <= upTo && i < steps.length; i++) {
     const s = steps[i] as TraceStep
     switch (s.kind) {
@@ -107,15 +136,42 @@ export function buildView(steps: readonly TraceStep[], upTo: number, count: numb
         v.ranks = null
         v.duelWinner = null
         v.coin = null
+        v.entering = noneEntering()
+        v.leaving = noneLeaving()
+        v.timeline.stage = `duels${s.series}`
+        v.timeline.duelIndex = s.index
+        while (v.timeline.duelsDone.length <= s.series) v.timeline.duelsDone.push(0)
         break
       case 'duelDraw':
-      case 'duelMulligan':
+        v.hands = s.hands.map((h) => [...h])
+        v.entering = s.hands.map((h) => h.map((c) => c.uid))
+        v.leaving = noneLeaving()
+        break
+      case 'duelMulligan': {
+        // Ce qui entre vient du deck, ce qui sort glisse vers la défausse : les
+        // deux mouvements se voient, c'est ce que demande la spéc.
+        const before = v.hands
+        v.entering = s.hands.map((h, k) => {
+          const old = before[k] ?? []
+          return h.filter((c) => !old.some((p) => p.uid === c.uid)).map((c) => c.uid)
+        })
+        v.leaving = (before.length > 0 ? before : s.hands.map(() => [])).map((h, k) => {
+          const now = s.hands[k] ?? []
+          // On garde la place : le fantôme glisse hors de la case que la
+          // nouvelle carte vient occuper, les deux mouvements se répondent.
+          return h
+            .map((card, at) => ({ card, at }))
+            .filter(({ card }) => !now.some((p) => p.uid === card.uid))
+        })
         v.hands = s.hands.map((h) => [...h])
         break
+      }
       case 'duelReveal':
         v.hands = s.hands.map((h) => [...h])
         v.ranks = [...s.ranks]
         v.revealed = true
+        v.entering = noneEntering()
+        v.leaving = noneLeaving()
         break
       case 'coinFlip':
         v.coin = {
@@ -126,12 +182,20 @@ export function buildView(steps: readonly TraceStep[], upTo: number, count: numb
           reason: s.reason,
         }
         break
-      case 'duelWon':
+      case 'duelWon': {
         v.duelWinner = s.who
+        const series = v.duel?.series ?? 0
+        while (v.timeline.duelsDone.length <= series) v.timeline.duelsDone.push(0)
+        v.timeline.duelsDone[series] = (v.duel?.index ?? 0) + 1
         break
+      }
       case 'rewardTaken':
         v.offered = [...s.remaining]
         v.owned.set(s.id, s.who)
+        break
+      case 'rewardApplied':
+        // Un don s'applique une fois pour toutes : la tuile quitte le tapis.
+        v.used.add(s.id)
         break
       case 'phaseStart':
         v.mode = 'dice'
@@ -141,6 +205,8 @@ export function buildView(steps: readonly TraceStep[], upTo: number, count: numb
         v.roundOutcome = null
         v.leaderThrows = null
         v.coin = null
+        v.timeline.stage = s.phase
+        v.timeline.duelIndex = -1
         break
       case 'roundStart':
         v.round = s.round
@@ -152,6 +218,7 @@ export function buildView(steps: readonly TraceStep[], upTo: number, count: numb
         break
       case 'throw':
         v.activeThrower = s.who
+        if (s.via === 'set42') v.used.add('set42')
         v.dice[s.who] = {
           values: [...s.values],
           rolled: [...s.rolled],
@@ -182,6 +249,7 @@ export function buildView(steps: readonly TraceStep[], upTo: number, count: numb
         }
         break
       case 'flipUsed': {
+        v.used.add('flipDie')
         const slot = v.dice[s.who]
         if (slot) {
           const values = [...slot.values]
@@ -211,13 +279,14 @@ export function buildView(steps: readonly TraceStep[], upTo: number, count: numb
       case 'out':
         if (!v.out.includes(s.who)) v.out.push(s.who)
         break
+      case 'matchEnd':
+        v.timeline.over = true
+        break
       case 'rewardSetting':
-      case 'rewardApplied':
       case 'faceBonus':
       case 'sideGift':
       case 'nenetteGift':
       case 'phaseEnd':
-      case 'matchEnd':
         break
     }
   }

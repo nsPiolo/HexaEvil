@@ -12,6 +12,15 @@ export function newCard(value: number, suit: Suit): Card {
   return { uid: nextUid++, value, suit }
 }
 
+/** Compteur d'`uid`, sauvé avec le run pour qu'un clone d'après reprise reste unique. */
+export function peekUid(): number {
+  return nextUid
+}
+
+export function restoreUid(value: number): void {
+  if (Number.isInteger(value) && value > nextUid) nextUid = value
+}
+
 export function cloneCard(card: Card): Card {
   return { uid: nextUid++, value: card.value, suit: card.suit }
 }

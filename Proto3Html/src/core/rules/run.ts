@@ -109,17 +109,31 @@ export function startMatch(run: RunState, rng: Rng): MatchDriver {
   return driver
 }
 
+/**
+ * `J7` : la prochaine rencontre rapporte-t-elle un point de forge ? La cadence
+ * se compte sur les parties **du run**, sans discontinuité au changement de
+ * Cercle — l'écran doit pouvoir poser le jeton sur la table avant qu'on joue.
+ */
+export function yieldsForgePoint(run: RunState): boolean {
+  return (run.matchesPlayed + 1) % run.cfg.forgePointEveryNMatches === 0
+}
+
 export interface MatchOutcome {
   readonly won: boolean
   readonly money: number
+  /** `J9` : la part de `money` qui vient de la prime de victoire. */
+  readonly winBonus: number
   readonly forgeGained: number
   readonly circleCleared: boolean
   readonly status: RunStatus
 }
 
 export function finishMatch(run: RunState, result: MatchResult): MatchOutcome {
+  // `J9` : gagner la rencontre paie une prime fixe, quelle qu'ait été la partie.
+  // Elle ne sort d'aucune réserve : c'est de l'argent créé, comme `F10`.
+  const winBonus = result.humanWon ? run.cfg.winBonusMoney : 0
   // `F10` : l'argent des faces s'ajoute à celui des jetons donnés.
-  const money = (result.money[HUMAN] ?? 0) + (result.bonusMoney[HUMAN] ?? 0)
+  const money = (result.money[HUMAN] ?? 0) + (result.bonusMoney[HUMAN] ?? 0) + winBonus
   run.money += money
   run.forgePoints += result.bonusForge[HUMAN] ?? 0
   run.lastMoney = money
@@ -138,7 +152,7 @@ export function finishMatch(run: RunState, result: MatchResult): MatchOutcome {
     // `R6` : une défaite termine le run.
     run.status = run.cfg.rules.runEndsOnLoss ? 'dead' : run.status
     if (!run.cfg.rules.runEndsOnLoss) run.wins = 0
-    return { won: false, money, forgeGained, circleCleared: false, status: run.status }
+    return { won: false, money, winBonus, forgeGained, circleCleared: false, status: run.status }
   }
 
   run.wins++
@@ -157,7 +171,7 @@ export function finishMatch(run: RunState, result: MatchResult): MatchOutcome {
       run.dice = run.dice.map((d) => upgradeDie(d, next.dieFaces))
     }
   }
-  return { won: true, money, forgeGained, circleCleared: cleared, status: run.status }
+  return { won: true, money, winBonus, forgeGained, circleCleared: cleared, status: run.status }
 }
 
 /* ----------------------------------------------------------- Boutique */

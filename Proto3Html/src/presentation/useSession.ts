@@ -7,21 +7,15 @@
  */
 
 import { useEffect, useReducer, useState } from 'react'
-import type { GameConfig } from '../core/config/schema'
 import { STEP_MS } from './labels'
-import { Session } from './session'
+import type { Session } from './session'
 
 function easeOutCubic(t: number): number {
   return 1 - (1 - t) ** 3
 }
 
-export interface Playback {
-  readonly session: Session
-  readonly progress: number
-}
-
-export function useSession(cfg: GameConfig): Playback {
-  const [session] = useState(() => new Session(cfg))
+/** Progression 0→1 de l'étape en cours, pour interpoler jetons et pot. */
+export function usePlayback(session: Session): number {
   const [, force] = useReducer((n: number) => n + 1, 0)
   const [progress, setProgress] = useState(1)
 
@@ -63,7 +57,7 @@ export function useSession(cfg: GameConfig): Playback {
 
   useEffect(() => {
     if (!auto || !idle) return
-    if (screen !== 'match' && screen !== 'shop') return
+    if (screen !== 'match' && screen !== 'shop' && screen !== 'transition') return
     if (screen === 'match' && !hasAsk) return
     // Une courte pause avant chaque réponse : sans elle, la partie défile sans
     // qu'on ait le temps de lire ce qui se passe.
@@ -72,5 +66,5 @@ export function useSession(cfg: GameConfig): Playback {
     return () => clearTimeout(timer)
   }, [session, auto, idle, screen, hasAsk, speed, cursor, length])
 
-  return { session, progress }
+  return progress
 }

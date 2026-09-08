@@ -263,6 +263,7 @@ export function loadConfig(raw: unknown): GameConfig {
     rewards,
     shop: shop as GameConfig['shop'],
     forgePointEveryNMatches: int(root['forgePointEveryNMatches'], 'forgePointEveryNMatches', 1),
+    winBonusMoney: int(root['winBonusMoney'], 'winBonusMoney', 0),
     rules: {
       leaderCapsThrows: bool(rulesRaw['leaderCapsThrows'], 'rules.leaderCapsThrows'),
       leaderRotates: bool(rulesRaw['leaderRotates'], 'rules.leaderRotates'),

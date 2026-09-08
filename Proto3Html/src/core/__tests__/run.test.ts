@@ -10,6 +10,7 @@ import {
   openShopOption,
   participantCount,
   shopBlockedReason,
+  yieldsForgePoint,
 } from '../rules/run'
 import { createRng } from '../rules/random'
 import type { MatchResult } from '../rules/match'
@@ -28,7 +29,34 @@ describe('R6 — une défaite termine le run', () => {
     const out = finishMatch(run, loss)
     expect(out.status).toBe('dead')
     expect(run.status).toBe('dead')
-    expect(run.money).toBe(10)
+    // 7 + la prime de victoire, puis 3 sans prime : la défaite ne prime pas.
+    expect(run.money).toBe(7 + cfg.winBonusMoney + 3)
+  })
+})
+
+describe('J9 — la rencontre gagnée paie une prime fixe', () => {
+  it('ajoute la prime à ce que les jetons ont rapporté, et seulement en gagnant', () => {
+    const run = createRun(cfg)
+    const won = finishMatch(run, win)
+    expect(won.winBonus).toBe(cfg.winBonusMoney)
+    expect(won.money).toBe(7 + cfg.winBonusMoney)
+
+    const lost = finishMatch(run, loss)
+    expect(lost.winBonus).toBe(0)
+    expect(lost.money).toBe(3)
+  })
+})
+
+describe('J7 — le point de forge est annoncé avant d’être joué', () => {
+  it('la rencontre qui le rapporte est connue d’avance', () => {
+    const run = createRun(cfg)
+    const n = cfg.forgePointEveryNMatches
+    for (let i = 0; i < n * 3; i++) {
+      // Ce que la table annonce doit être ce que la rencontre paie.
+      const announced = yieldsForgePoint(run)
+      const out = finishMatch(run, win)
+      expect(out.forgeGained > 0).toBe(announced)
+    }
   })
 })
 

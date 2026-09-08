@@ -1,4 +1,4 @@
-/** Boutique entre deux parties (`A1`) et inspecteurs de deck et de dés (`U9`, `U10`). */
+/** Boutique entre deux rencontres (`A1`) — spéc. interface, « Boutique ». */
 
 import { useState } from 'react'
 import type { ShopOptionId } from '../core/config/schema'
@@ -12,6 +12,7 @@ import {
   shopCost,
   type EngraveOption,
   type EngraveOrder,
+  type MatchOutcome,
 } from '../core/rules/run'
 import type { Card, Suit } from '../core/rules/types'
 import { CardView, DieInspector } from './bits'
@@ -34,36 +35,29 @@ const OPTION_HELP: Record<ShopOptionId, string> = {
   clone: 'Parmi 10 cartes tirées au hasard : le deck grossit d’une carte.',
   removeOne: 'Parmi 10 cartes tirées au hasard.',
   recolor: '5 cartes tirées au hasard, la couleur est choisie après les avoir vues.',
-  engraveOne: 'Vous choisissez le dé, la face et la valeur.',
-  engraveAll: 'Une face sur chacun des trois dés.',
+  engraveOne: 'Vous choisissez le dé, la face et ce qu’on y grave.',
+  engraveAll: 'Une face sur chacun de vos dés.',
 }
 
 const NEEDED: Partial<Record<ShopOptionId, number>> = { removeTwo: 2, removeOne: 1, plusOneTwo: 2, clone: 1 }
 
+const SUIT_ORDER: readonly Suit[] = ['spades', 'hearts', 'diamonds', 'clubs']
+
 export function Shop({ session }: { session: Session }) {
   const run = session.run
-  const ladder = [...new Set(run.cfg.circles.map((c) => c.dieFaces))].sort((a, b) => a - b)
   const options = Object.keys(run.cfg.shop) as ShopOptionId[]
 
   return (
     <div className="shop">
-      <div className="shop__head">
+      <header className="shop__head">
         <h2>Boutique</h2>
-        <div className="shop__wallet">
-          <span>
-            <strong>{run.money}</strong> d’argent
-          </span>
-          <span>
-            <strong>{run.forgePoints}</strong> point{run.forgePoints > 1 ? 's' : ''} de forge
-          </span>
-          <span>
-            deck : <strong>{run.deck.length}</strong> cartes
-          </span>
-        </div>
-        <button type="button" className="btn btn--primary" onClick={() => session.beginMatch()}>
-          Partie suivante
+        <p className="shop__lead">Ce que vous emportez au Cercle suivant se décide ici.</p>
+        <button type="button" className="btn btn--primary btn--big" onClick={() => session.beginMatch()}>
+          Lancer la rencontre suivante
         </button>
-      </div>
+      </header>
+
+      {session.outcome && <MatchGains outcome={session.outcome} />}
 
       {session.shopError && <div className="shop__error">{session.shopError}</div>}
 
@@ -78,16 +72,19 @@ export function Shop({ session }: { session: Session }) {
               <button
                 key={id}
                 type="button"
-                className={`option ${blocked ? 'option--blocked' : ''}`}
+                className={`wares ${blocked ? 'wares--blocked' : ''}`}
                 disabled={blocked !== null}
                 onClick={() => session.openShop(id)}
               >
-                <span className="option__title">{OPTION_LABEL[id]}</span>
-                <span className="option__help">{OPTION_HELP[id]}</span>
-                <span className="option__cost">
-                  {cost} {currency === 'money' ? 'd’argent' : `point${cost > 1 ? 's' : ''} de forge`}
+                <span className={`wares__cost ${currency === 'forge' ? 'wares__cost--forge' : ''}`}>
+                  <strong>{cost}</strong>
+                  <em>{currency === 'money' ? 'pièces' : 'forge'}</em>
                 </span>
-                {blocked && <span className="option__blocked">{blocked}</span>}
+                <span className="wares__body">
+                  <span className="wares__title">{OPTION_LABEL[id]}</span>
+                  <span className="wares__help">{OPTION_HELP[id]}</span>
+                  {blocked && <span className="wares__blocked">{blocked}</span>}
+                </span>
               </button>
             )
           })}
@@ -95,49 +92,86 @@ export function Shop({ session }: { session: Session }) {
       )}
 
       <div className="inspectors">
+        <DiceList session={session} />
         <div className="inspector-card">
-          <h3>Vos dés</h3>
-          {run.dice.map((die, i) => (
-            <div key={i} className="inspector-row">
-              <span>Dé {i + 1}</span>
-              <DieInspector die={die} engraved={engravedFaces(die, run.cfg.dice.startingFaces, ladder)} />
-            </div>
-          ))}
-        </div>
-        <div className="inspector-card">
-          <h3>Votre deck</h3>
-          <DeckSummary deck={run.deck} />
+          <h3>Votre deck — {run.deck.length} cartes</h3>
+          <DeckList deck={run.deck} />
         </div>
       </div>
     </div>
   )
 }
 
-function DeckSummary({ deck }: { deck: readonly Card[] }) {
-  const byValue = new Map<number, number>()
-  const bySuit = new Map<Suit, number>()
-  for (const c of deck) {
-    byValue.set(c.value, (byValue.get(c.value) ?? 0) + 1)
-    bySuit.set(c.suit, (bySuit.get(c.suit) ?? 0) + 1)
-  }
-  const values = [...byValue.entries()].sort((a, b) => a[0] - b[0])
+/**
+ * Ce que la rencontre vient de rapporter. Sans cette ligne, la prime de victoire
+ * (`J9`) et le point de forge (`J7`) arrivent en silence : la bourse a changé,
+ * on ne sait pas pourquoi.
+ */
+function MatchGains({ outcome }: { outcome: MatchOutcome }) {
   return (
-    <>
-      <div className="deck-row">
-        {values.map(([v, n]) => (
-          <span key={v} className={`deck-chip ${n > 4 ? 'deck-chip--many' : ''}`}>
-            {cardValueLabel(v)} <em>×{n}</em>
-          </span>
-        ))}
-      </div>
-      <div className="deck-row">
-        {[...bySuit.entries()].map(([s, n]) => (
-          <span key={s} className="deck-chip">
-            {SUIT_SYMBOL[s]} <em>×{n}</em>
-          </span>
-        ))}
-      </div>
-    </>
+    <div className="gains">
+      <span>
+        <strong>+{outcome.money}</strong> pièce{outcome.money > 1 ? 's' : ''} sur cette rencontre
+      </span>
+      {outcome.winBonus > 0 && <span>dont {outcome.winBonus} de prime de victoire</span>}
+      {outcome.forgeGained > 0 && (
+        <span className="gains__forge">
+          <strong>+{outcome.forgeGained}</strong> point de forge
+        </span>
+      )}
+    </div>
+  )
+}
+
+/** Les dés, toutes faces listées ; survoler une face éclaire son opposée (`F2`). */
+function DiceList({ session }: { session: Session }) {
+  const run = session.run
+  const ladder = [...new Set(run.cfg.circles.map((c) => c.dieFaces))].sort((a, b) => a - b)
+  const [hover, setHover] = useState<{ die: number; face: number } | null>(null)
+  return (
+    <div className="inspector-card">
+      <h3>Vos dés</h3>
+      {run.dice.map((die, i) => (
+        <div key={i} className="inspector-row">
+          <span className="inspector-row__name">Dé {i + 1}</span>
+          <DieInspector
+            die={die}
+            engraved={engravedFaces(die, run.cfg.dice.startingFaces, ladder)}
+            hovered={hover?.die === i ? hover.face : null}
+            onHover={(face) => setHover(face === null ? null : { die: i, face })}
+          />
+        </div>
+      ))}
+      <p className="inspector-card__note">Survolez une face : son opposée s’allume — c’est elle que « Retourner un dé » révèle.</p>
+    </div>
+  )
+}
+
+/** Le deck sur quatre lignes, une par couleur, dans l'ordre des valeurs. */
+function DeckList({ deck }: { deck: readonly Card[] }) {
+  return (
+    <div className="decklist">
+      {SUIT_ORDER.map((suit) => {
+        const cards = deck.filter((c) => c.suit === suit).sort((a, b) => a.value - b.value)
+        const red = suit === 'hearts' || suit === 'diamonds'
+        return (
+          <div key={suit} className="decklist__row">
+            <span className={`decklist__suit ${red ? 'decklist__suit--red' : ''}`} title={SUIT_LABEL[suit]}>
+              {SUIT_SYMBOL[suit]}
+            </span>
+            <span className="decklist__cards">
+              {cards.length === 0 && <em className="decklist__empty">aucune</em>}
+              {cards.map((c) => (
+                <span key={c.uid} className={`decklist__card ${red ? 'decklist__card--red' : ''}`}>
+                  {cardValueLabel(c.value)}
+                </span>
+              ))}
+            </span>
+            <span className="decklist__count">{cards.length}</span>
+          </div>
+        )
+      })}
+    </div>
   )
 }
 
@@ -150,6 +184,7 @@ function ShopDetail({ session }: { session: Session }) {
   const [face, setFace] = useState<number | null>(null)
   const [pickedDie, setPickedDie] = useState<number | null>(null)
   const [offers, setOffers] = useState<EngraveOption[]>([])
+  const ladder = [...new Set(run.cfg.circles.map((c) => c.dieFaces))].sort((a, b) => a - b)
   if (!shop) return null
 
   const isEngrave = shop.option === 'engraveOne' || shop.option === 'engraveAll'
@@ -168,7 +203,7 @@ function ShopDetail({ session }: { session: Session }) {
               ? 'Choisissez le dé à graver.'
               : face === null
                 ? `Dé ${dieIndex + 1} — choisissez la face à remplacer.`
-                : `Dé ${dieIndex + 1} — le graveur ne propose que ces valeurs.`}
+                : `Dé ${dieIndex + 1} — le graveur ne propose que ceci.`}
         </p>
 
         {shop.option === 'engraveOne' && dieIndex === null && (
@@ -182,22 +217,14 @@ function ShopDetail({ session }: { session: Session }) {
         )}
 
         {active && !done && face === null && (
-          <div className="inspector inspector--interactive">
-            {active.faces.map((f, i) => (
-              <button
-                key={i}
-                type="button"
-                className="inspector__face inspector__face--btn"
-                onClick={() => {
-                  setFace(i)
-                  setOffers(engraveOptions(run, dieIndex as number, i, session.rng))
-                }}
-              >
-                {f.value}
-                {f.effect && <em className="inspector__effect">{EFFECT_SYMBOL[f.effect]}</em>}
-              </button>
-            ))}
-          </div>
+          <DieInspector
+            die={active}
+            engraved={engravedFaces(active, run.cfg.dice.startingFaces, ladder)}
+            onPick={(i) => {
+              setFace(i)
+              setOffers(engraveOptions(run, dieIndex as number, i, session.rng))
+            }}
+          />
         )}
 
         {active && !done && face !== null && (
@@ -284,8 +311,13 @@ function ShopDetail({ session }: { session: Session }) {
       </div>
       {shop.option === 'recolor' && (
         <div className="actions">
-          {(['diamonds', 'hearts', 'spades', 'clubs'] as Suit[]).map((s) => (
-            <button key={s} type="button" className={`btn ${suit === s ? 'btn--primary' : ''}`} onClick={() => setSuit(s)}>
+          {SUIT_ORDER.map((s) => (
+            <button
+              key={s}
+              type="button"
+              className={`btn ${suit === s ? 'btn--primary' : ''}`}
+              onClick={() => setSuit(s)}
+            >
               {SUIT_SYMBOL[s]} {SUIT_LABEL[s]}
             </button>
           ))}

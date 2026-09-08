@@ -132,8 +132,18 @@ export const EFFECT_HELP: Record<FaceEffectId, string> = {
 
 export const PHASE_LABEL = {
   charge: 'Répartition',
-  discharge: 'Don',
+  discharge: 'Distribution',
 } as const
+
+/** « 1er Cercle », « 1ère rencontre sur 4 » — spéc. interface, écran de jeu. */
+export function ordinal(n: number, feminine = false): string {
+  if (n === 1) return feminine ? '1ère' : '1er'
+  return `${n}ᵉ`
+}
+
+export function pieces(n: number): string {
+  return `${n} pièce${Math.abs(n) > 1 ? 's' : ''}`
+}
 
 /** La phrase qui nomme l'étape en cours, avec la règle qu'elle applique. */
 export function describeStep(step: TraceStep, names: readonly string[]): string {
@@ -177,7 +187,7 @@ export function describeStep(step: TraceStep, names: readonly string[]): string 
     case 'phaseStart':
       return step.phase === 'charge'
         ? `Phase de répartition — on vide le pot, la pire main encaisse. ${who(step.leader)} mène.`
-        : `Phase de don — la meilleure main donne, le premier à zéro gagne. ${who(step.leader)} mène.`
+        : `Phase de distribution — la meilleure main donne, le premier à zéro gagne. ${who(step.leader)} mène.`
     case 'roundStart':
       return `Manche ${step.round} — ${who(step.leader)} ouvre et fixe le nombre de jets`
     case 'throw': {
@@ -207,7 +217,7 @@ export function describeStep(step: TraceStep, names: readonly string[]): string 
         ? `${who(step.who)} n’a plus de jetons — il gagne la partie`
         : `${who(step.who)} n’a plus de jetons — ${step.place}ᵉ`
     case 'phaseEnd':
-      return step.phase === 'charge' ? 'Le pot est vide' : 'Phase de don terminée'
+      return step.phase === 'charge' ? 'Le pot est vide' : 'Phase de distribution terminée'
     case 'forcedReroll':
       return `4-2-1 annulé par ${who(step.owner)} — ${who(step.who)} relance tout et retombe sur ${diceHandLabel(step.hand)}`
     case 'sideGift':

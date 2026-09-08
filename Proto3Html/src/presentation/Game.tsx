@@ -1,149 +1,71 @@
-/** Assemblage : bandeau de run, table, bandeau d'étape, décisions (`U1`-`U16`). */
+/**
+ * L'écran d'un run : table, fin de Cercle, boutique, fin de run — plus les deux
+ * bandeaux en surimpression que la spéc. veut visibles partout.
+ */
 
-import { useMemo } from 'react'
+import { useState } from 'react'
 import type { GameConfig } from '../core/config/schema'
-import { currentCircle, HUMAN, isCircleFinal } from '../core/rules/run'
-import { Prompt } from './Prompt'
-import { Scene } from './Scene'
+import { currentCircle } from '../core/rules/run'
+import { Dialogue } from './Dialogue'
+import { ordinal } from './labels'
+import { Match } from './Match'
+import type { Session } from './session'
 import { Shop } from './Shop'
-import { describeStep } from './labels'
-import { useSession } from './useSession'
-import { buildView } from './viewModel'
+import { usePlayback } from './useSession'
 
-export function Game({ cfg }: { cfg: GameConfig }) {
-  const { session, progress } = useSession(cfg)
+export function Game({ session, cfg, onQuit }: { session: Session; cfg: GameConfig; onQuit: () => void }) {
+  const progress = usePlayback(session)
   const run = session.run
   const circle = currentCircle(run)
-  const names = session.names
-
-  const view = useMemo(
-    () => buildView(session.queue, session.cursor, names.length || 2),
-    // La file est mutée en place : on dépend de sa **longueur**, pas de sa référence.
-    [session, session.queue.length, session.cursor, names.length],
-  )
-  const frame = session.frame(progress)
-  const deltas = session.deltas()
-  const step = session.step
-  const ask = session.ask
-
-  const ladderSizes = useMemo(() => {
-    const out: Record<number, number> = {}
-    for (const [size, ladder] of Object.entries(cfg.cards.handRankings)) out[Number(size)] = ladder.length
-    return out
-  }, [cfg])
+  const screen = session.screen
+  const onFelt = screen === 'match'
 
   return (
-    <div className="app">
-      <header className="banner">
-        <div className="banner__circle">
-          <span className="banner__label">Cercle</span>
-          <strong>{circle.n}</strong>
-          <span className="banner__sub">
-            3 × D{circle.dieFaces} · {circle.cards} carte{circle.cards > 1 ? 's' : ''}
-          </span>
-        </div>
-        <div className="banner__streak">
-          <span className="banner__label">Série</span>
-          <strong>
-            {run.wins} / {circle.winsRequired}
-          </strong>
-          <span className={`banner__sub ${isCircleFinal(run) ? 'banner__sub--alert' : ''}`}>
-            {isCircleFinal(run)
-              ? 'dernière partie du Cercle — trois participants'
-              : `une défaite et le run s’arrête`}
-          </span>
-        </div>
-        <div className="banner__wallet">
-          <span>
-            <strong>{run.money}</strong> argent
-          </span>
-          <span>
-            <strong>{run.forgePoints}</strong> forge
-          </span>
-          <span>
-            <strong>{run.matchesPlayed}</strong> parties
-          </span>
-        </div>
-        <div className="banner__speed">
-          <button
-            type="button"
-            className={`chipbtn ${session.autoPilot ? 'chipbtn--on' : ''}`}
-            onClick={() => session.setAutoPilot(!session.autoPilot)}
-            title="Le jeu joue à votre place, pour regarder la mécanique tourner"
-          >
-            {session.autoPilot ? '⏸ reprendre la main' : '▶ pilote auto'}
-          </button>
-          <span className="banner__label">Vitesse</span>
-          {[0.5, 1, 2, 4, 12].map((s) => (
-            <button
-              key={s}
-              type="button"
-              className={`chipbtn ${session.speed === s ? 'chipbtn--on' : ''}`}
-              onClick={() => session.setSpeed(s)}
-            >
-              {s === 12 ? '⏩' : `×${s}`}
-            </button>
-          ))}
-        </div>
-      </header>
+    <div className={`play ${onFelt ? 'play--felt' : 'play--room'}`}>
+      {/* En haut à gauche : où l'on est. En haut à droite : ce que l'on a. */}
+      <div className="hud hud--left">
+        <strong>{ordinal(circle.n)} Cercle</strong>
+        <span>
+          {ordinal(Math.min(run.wins + 1, circle.winsRequired), true)} rencontre sur {circle.winsRequired}
+        </span>
+      </div>
+      <div className="hud hud--right">
+        <strong>
+          {run.money} <span>pièce{run.money > 1 ? 's' : ''}</span>
+        </strong>
+        <strong>
+          {run.forgePoints} <span>forge</span>
+        </strong>
+      </div>
 
-      {session.screen === 'match' && (
-        <>
-          <main className="stage">
-            <Scene
-              view={view}
-              frame={frame}
-              deltas={deltas}
-              names={names}
-              humanIndex={HUMAN}
-              ladderSizes={ladderSizes}
-              pickable={ask?.kind === 'reward' ? ask.offered : undefined}
-              onPick={
-                ask?.kind === 'reward'
-                  ? (id) => session.answer({ kind: 'reward', id: id as never })
-                  : undefined
-              }
-            />
-          </main>
-          <footer className="footer">
-            <div className="ticker">
-              <span className="ticker__dot" data-playing={!session.idle} />
-              {step ? describeStep(step, names) : ask ? 'À vous de jouer' : '…'}
-              {!session.idle && (
-                <button type="button" className="chipbtn" onClick={() => session.skip()}>
-                  passer l’animation
-                </button>
-              )}
-            </div>
-            {ask && (
-              <Prompt
-                ask={ask}
-                view={view}
-                names={names}
-                ladderSize={ladderSizes[circle.cards] ?? 1}
-                onAnswer={(a) => session.answer(a)}
-              />
-            )}
-          </footer>
-        </>
+      {screen === 'match' && <Match session={session} cfg={cfg} progress={progress} />}
+
+      {screen === 'transition' && (
+        <Dialogue
+          bubbles={session.bubbles}
+          onDone={() => session.closeTransition()}
+          doneLabel="Vers la boutique"
+        />
       )}
 
-      {session.screen === 'shop' && <Shop session={session} />}
+      {screen === 'shop' && <Shop session={session} />}
 
-      {(session.screen === 'dead' || session.screen === 'won') && (
-        <RunEnd session={session} won={session.screen === 'won'} />
+      {(screen === 'dead' || screen === 'won') && (
+        <RunEnd session={session} won={screen === 'won'} onQuit={onQuit} />
       )}
+
+      <DevPanel session={session} onQuit={onQuit} />
     </div>
   )
 }
 
 /** `U15` : écran de fin de run. Le ton est une félicitation, pas un échec. */
-function RunEnd({ session, won }: { session: ReturnType<typeof useSession>['session']; won: boolean }) {
+function RunEnd({ session, won, onQuit }: { session: Session; won: boolean; onQuit: () => void }) {
   const run = session.run
   const circle = currentCircle(run)
   return (
     <div className="runend">
-      <h2>{won ? 'Vous avez traversé les neuf Cercles' : `Vous êtes arrivé au Cercle ${circle.n}`}</h2>
+      <h2>{won ? 'Vous avez traversé les neuf Cercles' : `Vous êtes arrivé au ${ordinal(circle.n)} Cercle`}</h2>
       <p className="runend__lead">
         {won
           ? 'Les Enfers sont derrière vous.'
@@ -151,10 +73,10 @@ function RunEnd({ session, won }: { session: ReturnType<typeof useSession>['sess
       </p>
       <div className="runend__stats">
         <span>
-          <strong>{run.matchesPlayed}</strong> parties jouées
+          <strong>{run.matchesPlayed}</strong> rencontres jouées
         </span>
         <span>
-          <strong>{run.totalMoney}</strong> d’argent gagné en tout
+          <strong>{run.totalMoney}</strong> pièces gagnées en tout
         </span>
         <span>
           <strong>{run.deck.length}</strong> cartes au deck
@@ -163,8 +85,56 @@ function RunEnd({ session, won }: { session: ReturnType<typeof useSession>['sess
           meilleur Cercle atteint : <strong>{run.bestCircle}</strong>
         </span>
       </div>
-      <button type="button" className="btn btn--primary btn--big" onClick={() => session.restart()}>
-        Recommencer au Cercle 1
+      <button type="button" className="btn btn--primary btn--big" onClick={onQuit}>
+        Retour au menu
+      </button>
+    </div>
+  )
+}
+
+/**
+ * Les outils de test — pilote automatique, vitesse, saut d'animation. Ils ne
+ * font pas partie du jeu fini : d'où le panneau replié dans un coin.
+ */
+function DevPanel({ session, onQuit }: { session: Session; onQuit: () => void }) {
+  const [open, setOpen] = useState(false)
+  if (!open) {
+    return (
+      <button type="button" className="devtab" onClick={() => setOpen(true)} title="Outils de test">
+        ⚙
+      </button>
+    )
+  }
+  return (
+    <div className="dev">
+      <button type="button" className="devtab devtab--in" onClick={() => setOpen(false)}>
+        ×
+      </button>
+      <button
+        type="button"
+        className={`chipbtn ${session.autoPilot ? 'chipbtn--on' : ''}`}
+        onClick={() => session.setAutoPilot(!session.autoPilot)}
+      >
+        {session.autoPilot ? '⏸ reprendre la main' : '▶ pilote auto'}
+      </button>
+      <span className="dev__label">Vitesse</span>
+      {[0.5, 1, 2, 4, 12].map((s) => (
+        <button
+          key={s}
+          type="button"
+          className={`chipbtn ${session.speed === s ? 'chipbtn--on' : ''}`}
+          onClick={() => session.setSpeed(s)}
+        >
+          {s === 12 ? '⏩' : `×${s}`}
+        </button>
+      ))}
+      {!session.idle && (
+        <button type="button" className="chipbtn" onClick={() => session.skip()}>
+          passer l’animation
+        </button>
+      )}
+      <button type="button" className="chipbtn" onClick={onQuit}>
+        quitter au menu
       </button>
     </div>
   )

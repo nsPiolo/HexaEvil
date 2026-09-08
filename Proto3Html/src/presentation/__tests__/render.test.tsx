@@ -1,7 +1,7 @@
 import { renderToString } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
-import { Prompt } from '../Prompt'
-import { Scene } from '../Scene'
+import { ActionBar } from '../ActionBar'
+import { Table, type RailStage } from '../Table'
 import { buildView } from '../viewModel'
 import { settingsFor } from '../../core/ai/ai'
 import { evaluateHand } from '../../core/cards/hands'
@@ -18,12 +18,19 @@ import { config } from '../../core/__tests__/helpers'
 
 const cfg = config()
 
+const RAIL: RailStage[] = [
+  { key: 'duels0', label: 'Batailles', blocks: 3, done: 0 },
+  { key: 'charge', label: 'Répartition', blocks: 0, done: 0 },
+  { key: 'duels1', label: 'Batailles', blocks: 2, done: 0 },
+  { key: 'discharge', label: 'Distribution', blocks: 0, done: 0 },
+]
+
 /**
- * Test de fumée : on rejoue une partie entière et on rend la scène **à chaque
+ * Test de fumée : on rejoue une partie entière et on rend la table **à chaque
  * étape**. Il n'assure pas la beauté, il assure qu'aucune étape ne fait planter
  * l'affichage — et que chacune a bien une phrase qui la nomme (`U3`).
  */
-describe('la scène rend toutes les étapes d’une partie', () => {
+describe('la table rend toutes les étapes d’une partie', () => {
   it.each([1, 2, 3])('graine %i', (seed) => {
     const circleIndex = 1
     const circle = cfg.circles[circleIndex]!
@@ -54,13 +61,14 @@ describe('la scène rend toutes les étapes d’une partie', () => {
       const sentence = describeStep(steps[i]!, names)
       expect(sentence.length).toBeGreaterThan(3)
       const html = renderToString(
-        <Scene
+        <Table
           view={view}
           frame={{ pot: 10, chips: [5, 6] }}
           deltas={[0, 0]}
           names={names}
           humanIndex={0}
           ladderSizes={ladderSizes}
+          rail={RAIL}
         />,
       )
       expect(html).toContain('seat')
@@ -68,8 +76,66 @@ describe('la scène rend toutes les étapes d’une partie', () => {
   })
 })
 
+/** Le fil d'Ariane doit avancer : sinon le joueur ne sait pas où il en est. */
+describe('le fil d’Ariane suit la partie', () => {
+  it('passe des batailles à la répartition puis à la distribution', () => {
+    const circleIndex = 0
+    const circle = cfg.circles[circleIndex]!
+    const dice = () => [0, 1, 2].map(() => upgradeDie(createDie(cfg.dice.startingFaces), circle.dieFaces))
+    const participants: MatchParticipant[] = [
+      { index: 0, name: 'Vous', isHuman: true, deck: createStartingDeck(cfg.cards), dice: dice(), ai: null },
+      {
+        index: 1,
+        name: 'Belphégor',
+        isHuman: false,
+        deck: createStartingDeck(cfg.cards),
+        dice: dice(),
+        ai: settingsFor(cfg.ai, 0, circleIndex),
+      },
+    ]
+    const rng = createRng(7)
+    const driver = new MatchDriver({ cfg, circleIndex, participants, rng, isCircleFinal: false })
+    driver.advance()
+    const { steps } = autoPlay(driver, { cfg, circleIndex, participants, rng })
+
+    const stages = new Set<string>()
+    for (let i = 0; i < steps.length; i++) {
+      const stage = buildView(steps, i, 2).timeline.stage
+      if (stage) stages.add(stage)
+    }
+    expect(stages.has('duels0')).toBe(true)
+    expect(stages.has('charge')).toBe(true)
+
+    const final = buildView(steps, steps.length - 1, 2)
+    // Les trois batailles de la première série sont bien comptées une à une.
+    expect(final.timeline.duelsDone[0]).toBe(3)
+  })
+})
+
+/** `J7` : la rencontre qui rapporte un point de forge doit le montrer. */
+describe('le jeton de forge se pose sur la table', () => {
+  const view = buildView([], -1, 2)
+  const props = {
+    view,
+    frame: { pot: 21, chips: [0, 0] },
+    deltas: [0, 0],
+    names: ['Vous', 'Belphégor'],
+    humanIndex: 0,
+    ladderSizes: { 1: 1 },
+    rail: RAIL,
+  }
+
+  it('absent quand rien n’est en jeu', () => {
+    expect(renderToString(<Table {...props} />)).not.toContain('forgetoken')
+  })
+
+  it('présent quand la rencontre le met en jeu', () => {
+    expect(renderToString(<Table {...props} forgeAtStake />)).toContain('forgetoken')
+  })
+})
+
 /** Chaque type de décision doit se rendre : c'est là que le joueur clique. */
-describe('les écrans de décision se rendent tous', () => {
+describe('les commandes du joueur se rendent toutes', () => {
   const names = ['Vous', 'Belphégor']
   const hand = [newCard(9, 'hearts'), newCard(9, 'spades')]
   const rank = evaluateHand(hand, cfg.cards)
@@ -124,9 +190,19 @@ describe('les écrans de décision se rendent tous', () => {
     '%s',
     (_label, ask) => {
       const html = renderToString(
-        <Prompt ask={ask} view={view} names={names} ladderSize={3} onAnswer={() => undefined} />,
+        <ActionBar
+          ask={ask}
+          view={view}
+          names={names}
+          ladderSize={3}
+          swap={[]}
+          keep={[false, false, false, false]}
+          flipMode={false}
+          setFlipMode={() => undefined}
+          onAnswer={() => undefined}
+        />,
       )
-      expect(html).toContain('prompt')
+      expect(html).toContain('bar')
     },
   )
 })

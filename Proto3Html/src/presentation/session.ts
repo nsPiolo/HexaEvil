@@ -7,6 +7,7 @@
  */
 
 import { settingsFor } from '../core/ai/ai'
+import { peekUid, restoreUid } from '../core/cards/deck'
 import type { GameConfig, ShopOptionId } from '../core/config/schema'
 import type { Answer, Ask } from '../core/rules/asks'
 import { autoAnswer } from '../core/rules/autoplay'
@@ -17,6 +18,7 @@ import {
   createRun,
   currentCircle,
   finishMatch,
+  HUMAN,
   openShopOption,
   startMatch,
   type MatchOutcome,
@@ -24,13 +26,16 @@ import {
   type ShopSession,
 } from '../core/rules/run'
 import type { TraceStep } from '../core/rules/trace'
+import { circleCleared, type Bubble } from './dialogues'
+import { addStats, clearSave, writeSave, type SavedRun } from './storage'
 
 export interface Snapshot {
   readonly pot: number
   readonly chips: readonly number[]
 }
 
-export type Screen = 'match' | 'shop' | 'dead' | 'won'
+/** `transition` : l'écran de fin de Cercle, entre la victoire et la boutique. */
+export type Screen = 'match' | 'transition' | 'shop' | 'dead' | 'won'
 
 export class Session {
   readonly cfg: GameConfig
@@ -48,14 +53,59 @@ export class Session {
   outcome: MatchOutcome | null = null
   shop: ShopSession | null = null
   shopError: string | null = null
+  /** Les bulles de l'écran de fin de Cercle, vides le reste du temps. */
+  bubbles: Bubble[] = []
   private resultApplied = false
   private readonly listeners = new Set<() => void>()
 
-  constructor(cfg: GameConfig) {
+  constructor(cfg: GameConfig, saved?: SavedRun | null) {
     this.cfg = cfg
     this.rng = createRng(cfg.seed)
     this.run = createRun(cfg)
-    this.beginMatch()
+    if (saved) {
+      this.restore(saved)
+      // La reprise remet le joueur dans la boutique, jamais au milieu d'une
+      // rencontre : c'est le point de sauvegarde que fixe la spéc.
+      this.screen = 'shop'
+    } else {
+      this.beginMatch()
+    }
+  }
+
+  private restore(saved: SavedRun): void {
+    this.rng.setState(saved.rngState)
+    restoreUid(saved.nextUid)
+    this.run.circleIndex = saved.circleIndex
+    this.run.wins = saved.wins
+    this.run.matchesPlayed = saved.matchesPlayed
+    this.run.money = saved.money
+    this.run.forgePoints = saved.forgePoints
+    this.run.deck = saved.deck.map((c) => ({ ...c }))
+    this.run.dice = saved.dice.map((d) => ({ faces: d.faces.map((f) => ({ ...f })) }))
+    this.run.bestCircle = saved.bestCircle
+    this.run.lastMoney = saved.lastMoney
+    this.run.totalMoney = saved.totalMoney
+  }
+
+  private persist(): void {
+    if (this.run.status !== 'playing') {
+      clearSave()
+      return
+    }
+    writeSave({
+      circleIndex: this.run.circleIndex,
+      wins: this.run.wins,
+      matchesPlayed: this.run.matchesPlayed,
+      money: this.run.money,
+      forgePoints: this.run.forgePoints,
+      deck: this.run.deck.map((c) => ({ ...c })),
+      dice: this.run.dice.map((d) => ({ faces: d.faces.map((f) => ({ ...f })) })),
+      bestCircle: this.run.bestCircle,
+      lastMoney: this.run.lastMoney,
+      totalMoney: this.run.totalMoney,
+      rngState: this.rng.getState(),
+      nextUid: peekUid(),
+    })
   }
 
   subscribe(fn: () => void): () => void {
@@ -100,7 +150,7 @@ export class Session {
     }
   }
 
-  /** Variation en cours par participant, pour les étiquettes flottantes (`U3`). */
+  /** Variation en cours par participant, pour les jetons volants (`U3`). */
   deltas(): number[] {
     if (this.idle) return []
     const before = this.after[this.cursor - 1]
@@ -113,12 +163,20 @@ export class Session {
     this.resultApplied = false
     this.outcome = null
     this.shop = null
+    this.bubbles = []
     this.screen = 'match'
     this.driver = startMatch(this.run, this.rng)
     this.queue = []
     this.after = []
     this.cursor = 0
     this.push(this.driver.steps)
+    this.emit()
+  }
+
+  /** Sortie de l'écran de fin de Cercle : on passe en boutique. */
+  closeTransition(): void {
+    this.bubbles = []
+    this.screen = 'shop'
     this.emit()
   }
 
@@ -164,8 +222,14 @@ export class Session {
    * une décision proprement humaine.
    */
   autoStep(): void {
+    if (this.screen === 'transition') {
+      this.closeTransition()
+      return
+    }
     if (this.screen === 'shop') {
+      const before = this.run.money
       autoShop(this.run, this.rng)
+      addStats({ moneySpent: Math.max(0, before - this.run.money) })
       this.beginMatch()
       return
     }
@@ -185,13 +249,46 @@ export class Session {
     )
   }
 
+  /** Ce que la partie qui vient de finir ajoute au compteur de statistiques. */
+  private tally(won: boolean): void {
+    let battles = 0
+    let battlesWon = 0
+    let count421 = 0
+    for (const s of this.queue) {
+      if (s.kind === 'duelStart') battles++
+      else if (s.kind === 'duelWon' && s.who === HUMAN) battlesWon++
+      else if (s.kind === 'turnEnd' && s.who === HUMAN && s.hand.id === '421') count421++
+    }
+    addStats({
+      battles,
+      battlesWon,
+      count421,
+      matchesWon: won ? 1 : 0,
+      bestCircle: this.run.bestCircle,
+      escapes: this.run.status === 'won' ? 1 : 0,
+    })
+  }
+
   /** Fin d'animation : c'est seulement là qu'on encaisse le résultat de la partie. */
   private settle(): void {
     const result = this.driver?.result
     if (!result || this.resultApplied) return
     this.resultApplied = true
+    const before = currentCircle(this.run)
     this.outcome = finishMatch(this.run, result)
-    this.screen = this.run.status === 'dead' ? 'dead' : this.run.status === 'won' ? 'won' : 'shop'
+    this.tally(this.outcome.won)
+
+    if (this.run.status === 'dead') this.screen = 'dead'
+    else if (this.run.status === 'won') this.screen = 'won'
+    else if (this.outcome.circleCleared) {
+      // Fin de Cercle : le démon commente ce qui change avant la boutique.
+      this.bubbles = circleCleared(before, currentCircle(this.run))
+      this.screen = 'transition'
+    } else this.screen = 'shop'
+
+    // Point de sauvegarde : la rencontre est finie, la boutique n'a pas encore
+    // servi. C'est là que « Continuer » reprendra.
+    this.persist()
   }
 
   answer(answer: Answer): void {
@@ -220,18 +317,16 @@ export class Session {
   }
 
   runShopAction(fn: () => void): void {
+    const beforeMoney = this.run.money
     try {
       fn()
       this.shop = null
       this.shopError = null
+      addStats({ moneySpent: Math.max(0, beforeMoney - this.run.money) })
+      this.persist()
     } catch (e) {
       this.shopError = e instanceof Error ? e.message : String(e)
     }
     this.emit()
-  }
-
-  restart(): void {
-    this.run = createRun(this.cfg, this.run.bestCircle)
-    this.beginMatch()
   }
 }

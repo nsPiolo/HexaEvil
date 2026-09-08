@@ -124,6 +124,8 @@ export interface GameConfig {
   readonly rewards: readonly RewardSpec[]
   readonly shop: Readonly<Record<ShopOptionId, ShopEntry>>
   readonly forgePointEveryNMatches: number
+  /** `J9` : prime fixe encaissée en gagnant une rencontre. */
+  readonly winBonusMoney: number
   readonly rules: RulesConfig
   readonly debugStart: { readonly circle: number; readonly money: number; readonly forgePoints: number }
   readonly ai: AiConfig

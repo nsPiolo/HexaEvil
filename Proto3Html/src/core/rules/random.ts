@@ -11,6 +11,9 @@ export interface Rng {
   /** Mélange en place, algorithme de Fisher-Yates. */
   shuffle<T>(items: T[]): T[]
   pick<T>(items: readonly T[]): T
+  /** État interne, pour sauver un run en cours et le reprendre à l'identique. */
+  getState(): number
+  setState(state: number): void
 }
 
 export function createRng(seed: number): Rng {
@@ -26,6 +29,10 @@ export function createRng(seed: number): Rng {
   return {
     next,
     int,
+    getState: () => state,
+    setState(value: number): void {
+      state = value >>> 0
+    },
     shuffle<T>(items: T[]): T[] {
       for (let i = items.length - 1; i > 0; i--) {
         const j = int(i + 1)

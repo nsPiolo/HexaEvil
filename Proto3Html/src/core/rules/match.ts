@@ -400,6 +400,33 @@ function activeIndices(ctx: Ctx, phase: PhaseId): number[] {
   return all.filter((i) => at(ctx.live.chips, i) > 0)
 }
 
+/**
+ * `D10d` + `D11` : **c'est le premier passage à zéro qui gagne**, pas l'état à la
+ * fin de la manche. Un jeton reçu ensuite — la nénette d'un adversaire (`B16`),
+ * un `splitGive` (`B15`) — ne reprend pas une victoire déjà acquise. Il faut
+ * donc regarder après **chaque** mouvement de jetons, jamais une fois la manche
+ * refermée : sinon un joueur qui s'est vidé se voit rendre un jeton et perd la
+ * partie qu'il venait de gagner.
+ *
+ * `D10g` : plusieurs zéros au même instant se départagent au pile ou face, et
+ * surtout pas par l'ordre des sièges.
+ */
+function* collectZeros(ctx: Ctx, phase: PhaseId, reason: string): Generator<Yielded, void, Answer> {
+  if (phase !== 'discharge') return
+  let zeros = ctx.participants
+    .map((p) => p.index)
+    .filter((i) => at(ctx.live.chips, i) === 0 && !ctx.live.out.includes(i))
+  while (zeros.length > 0) {
+    const first = yield* breakTie(ctx, zeros, reason)
+    ctx.live.out.push(first)
+    yield {
+      t: 'step',
+      step: { kind: 'out', who: first, place: ctx.live.out.length, chips: [...ctx.live.chips] },
+    }
+    zeros = zeros.filter((i) => i !== first)
+  }
+}
+
 function* dicePhase(ctx: Ctx, phase: PhaseId): Generator<Yielded, void, Answer> {
   ctx.live.phase = phase
   ctx.live.round = 0
@@ -419,21 +446,7 @@ function* dicePhase(ctx: Ctx, phase: PhaseId): Generator<Yielded, void, Answer> 
   // `D10f` : sortir de la répartition **sans aucun jeton**, c'est avoir déjà
   // terminé la phase de don (`D10c`) — donc gagner la partie sans la jouer, et
   // sans gagner un centime (`J5`). C'est la cupidité contre la survie à l'état pur.
-  if (phase === 'discharge') {
-    let zeros = ctx.participants.map((p) => p.index).filter((i) => at(ctx.live.chips, i) === 0)
-    // Plusieurs participants peuvent sortir de la répartition à zéro **en même
-    // temps**. Ils sont premiers ex æquo : c'est un départage (`C9`), surtout
-    // pas l'ordre des index — sinon le joueur 0 gagne gratuitement.
-    while (zeros.length > 0) {
-      const first = yield* breakTie(ctx, zeros, 'sortis de la répartition sans jeton')
-      ctx.live.out.push(first)
-      yield {
-        t: 'step',
-        step: { kind: 'out', who: first, place: ctx.live.out.length, chips: [...ctx.live.chips] },
-      }
-      zeros = zeros.filter((i) => i !== first)
-    }
-  }
+  yield* collectZeros(ctx, phase, 'sortis de la répartition sans jeton')
 
   const maxThrows = ctx.live.maxRerolls + 1
   let safety = 0
@@ -918,6 +931,10 @@ function* resolveRound(
     },
   }
 
+  // Le donneur peut s'être vidé ici : il a gagné **maintenant**, avant que la
+  // suite de la manche ne lui rende quoi que ce soit (`D11`).
+  yield* collectZeros(ctx, phase, 'à zéro sur la même manche')
+
   // `B15` : donner à un adversaire, c'est en donner la moitié à l'autre.
   if (phase === 'discharge' && ctx.live.owned.get('splitGive') === best && amount > 0) {
     const half = Math.floor(amount / 2)
@@ -942,6 +959,8 @@ function* resolveRound(
       }
     }
   }
+
+  yield* collectZeros(ctx, phase, 'à zéro sur la même manche')
 
   // `B16` : la nénette fait circuler un jeton par adversaire, même en perdant.
   if (ctx.live.owned.has('nenetteGift')) {
@@ -983,18 +1002,8 @@ function* resolveRound(
     }
   }
 
-  if (phase === 'discharge') {
-    // `D10c`/`D10d` : à 0 jeton on a terminé, et le premier à 0 gagne.
-    for (const i of order) {
-      if (at(ctx.live.chips, i) === 0 && !ctx.live.out.includes(i)) {
-        ctx.live.out.push(i)
-        yield {
-          t: 'step',
-          step: { kind: 'out', who: i, place: ctx.live.out.length, chips: [...ctx.live.chips] },
-        }
-      }
-    }
-  }
+  // `D10c`/`D10d` : à 0 jeton on a terminé, et le premier à 0 gagne.
+  yield* collectZeros(ctx, phase, 'à zéro sur la même manche')
 }
 
 /* ------------------------------------------------------------ Pilote */

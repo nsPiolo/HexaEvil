@@ -559,7 +559,10 @@ document.
   - `D10c` ✅ Un participant tombé à **0 jeton a terminé** : il sort des manches
     suivantes, et les manches continuent entre les autres.
   - `D10d` ✅ **Le premier participant à 0 gagne la partie.** Le classement suit
-    l'ordre de sortie ; le dernier à détenir des jetons est dernier.
+    l'ordre de sortie ; le dernier à détenir des jetons est dernier. 🧪 Le
+    passage à zéro se constate **au moment où il arrive**, après chaque mouvement
+    de jetons — pas à la fin de la manche. Contrôler en fin de manche laissait un
+    jeton reçu entre-temps effacer une victoire déjà acquise (voir `D11`).
   - `D10e` ✅ Si les deux derniers participants se bloquent (celui qui a la pire
     main est aussi le seul détenteur, donc personne ne peut lui donner), la
     manche est **nulle et on rejoue**. Un compteur `maxDeadRounds` (proposition :
@@ -661,8 +664,24 @@ document.
   forge.** 🧪 Le compteur est le nombre de parties **jouées depuis le début du
   run**, pas depuis le début du Cercle : 1 point toutes les 2 parties, sans
   discontinuité au changement de Cercle.
+- `J7b` ✅ **La rencontre qui rapporte un point de forge le pose sur la table**
+  (`U33`). La cadence est connue d'avance, donc l'enjeu doit être visible
+  **avant** qu'on joue, pas se découvrir dans la boutique : c'est ce qui donne
+  à une rencontre sur deux un relief que le taux de victoire seul ne donne pas.
 - `J8` ✅ Argent et points de forge n'ont **aucun plafond** et ne se convertissent
   pas l'un dans l'autre.
+- `J9` ✅ **Gagner une rencontre paie une prime fixe** (`winBonusMoney`, 5
+  pièces), en plus des jetons donnés. Elle ne sort d'aucune réserve : c'est de
+  l'argent créé, comme `F10`. Elle corrige un défaut de `J5` : jusque-là, une
+  victoire rapide et propre — sortir tôt de la phase de don, ou `D10f`, gagner
+  sans jouer — ne rapportait **rien**, alors que traîner en donnant beaucoup
+  rapportait gros. Le joueur qui joue bien était payé moins que celui qui joue
+  longtemps. La prime rend la victoire elle-même rentable sans annuler `D12`
+  (la cupidité paie toujours davantage, elle coûte juste plus de risque).
+  Mesuré, 200 runs par variante : le taux de runs complets monte de **6,5 % à
+  8,0 %** en clonage seul et de **9,0 % à 11,0 %** en gravant des effets, et un
+  run passe de 13,7 à **14,9 parties**. C'est un coup de pouce net mais mesuré —
+  la prime ne rachète pas une mauvaise partie, elle raccourcit la mise en route.
 
 ## 10. Boutique : améliorations entre parties
 
@@ -849,10 +868,12 @@ document.
   identifié, et les bonus actifs de chacun sous forme de pastilles.
 - `U6` ✅ **Le cumul d'argent de la partie en cours est affiché en permanence**
   pendant la phase de don (exigence du brouillon).
-- `U7` 🧪 Bandeau de run permanent : Cercle, série `3 / 6`, argent total, points
-  de forge, parties jouées. La série est l'information la plus tendue de l'écran
-  (`R6b`) : chaque partie est une élimination directe, et l'affichage doit le
-  dire — pas de « défaites : 0 », qui suggérerait qu'on peut en encaisser une.
+- `U7` ✅ **Deux bandeaux en surimpression, visibles sur tous les écrans du
+  run** : en haut à gauche le lieu — « 1er Cercle », « 1ère rencontre sur 4 » —,
+  en haut à droite la fortune — pièces et points de forge. La rencontre en cours
+  est l'information la plus tendue de l'écran (`R6b`) : chaque partie est une
+  élimination directe, et l'affichage doit le dire — pas de « défaites : 0 », qui
+  suggérerait qu'on peut en encaisser une.
 - `U7b` 🧪 **La dernière partie du Cercle est annoncée dès l'entrée dans le
   Cercle** (`R12b`) et signalée sur le compteur de série : c'est la partie à 3
   participants, elle est visible de loin, et tout le Cercle se prépare pour elle.
@@ -860,7 +881,8 @@ document.
   en grand, puis le bilan — parties jouées, victoires, argent total gagné, points
   de forge dépensés, état final du deck et des trois dés, et la partie qui a tué
   le run (phase, main, adversaire). 🧪 Le ton est celui d'une félicitation, pas
-  d'un échec : c'est un run terminé, pas une erreur du joueur.
+  d'un échec : c'est un run terminé, pas une erreur du joueur. Le bouton renvoie
+  au **menu principal**, où le run suivant se lance à neuf.
 - `U16` 🧪 L'écran de fin de run affiche aussi le **meilleur Cercle atteint** sur
   l'ensemble des runs de la session : c'est la seule progression visible d'un run
   à l'autre en v1 (`R8`), et c'est ce qui donne envie de relancer.
@@ -885,7 +907,7 @@ document.
   l'information principale. L'inspecteur (`U9`) et la boutique montrent les mêmes
   symboles, et l'offre de gravure (`F11`) affiche la règle en toutes lettres —
   personne ne doit avoir à retenir six symboles.
-- `U17` ✅ **Pilote automatique** : un interrupteur du bandeau remplace le joueur
+- `U17` ✅ **Pilote automatique** : un interrupteur des outils de test (`U32`) remplace le joueur
   par la machine, qui répond à toutes les questions avec l'IA des démons au
   niveau `expert` et achète entre les parties. Sert à regarder la mécanique
   tourner sans décider, et c'est le même code que le mode lot (`M1`) — donc ce
@@ -910,6 +932,80 @@ document.
   personne ne testera 30 parties d'affilée, ce que `M1` exige.
 - `U14` 🧪 **Mode lot** (IA contre IA, sans affichage) accessible depuis
   l'interface, pour produire `M1` à `M8`.
+
+### L'enveloppe de l'application
+
+Ces règles viennent de `docs/proto3/interface.md`. Elles décrivent ce qui entoure
+la partie — l'application, pas le jeu — et c'est ce qui distingue un prototype
+d'un jeu qu'on peut poser devant quelqu'un sans commentaire.
+
+- `U19` ✅ **Lancement** : logo animé pendant 5 secondes (un clic l'abrège), puis
+  le menu principal — `Continuer` (grisé sans run en cours), `Commencer une
+  nouvelle évasion`, `Statistiques`, `Options`.
+- `U20` ✅ **Statistiques cumulées sur toutes les tentatives** et conservées dans
+  le `localStorage` : tentatives, évasions (valeur et %), meilleur Cercle,
+  rencontres gagnées, argent dépensé, batailles jouées et gagnées (valeur et %),
+  nombre de 4-2-1 posés par le joueur. Le meilleur Cercle est un **maximum**, tout
+  le reste un cumul.
+- `U21` ✅ **Options appliquées immédiatement**, sans validation, et conservées :
+  volume, langue, vitesse d'animation (×0,5 à ×4 par pas de 0,5). Une option sans
+  effet est **grisée avec sa raison** plutôt que retirée — volume tant qu'il n'y a
+  pas de son, langue tant qu'il n'y a que le français. Elle dit ce qui viendra.
+- `U22` ✅ **Introduction dialoguée** : le démon stagiaire explique pourquoi on
+  joue. On avance au bouton ou à la **barre d'espace**, et un bouton `Passer
+  l'introduction` saute tout. C'est là qu'est justifié, en fiction, le quatrième
+  dé du joueur (`D1b`) — la règle la plus arbitraire du jeu y devient une faveur
+  arrachée à un stagiaire.
+- `U23` ✅ **Continuer** : l'état du run — deck, dés, argent, forge, Cercle,
+  série — est sauvé **à la fin de chaque rencontre**, et la reprise remet toujours
+  le joueur **dans la boutique**, jamais au milieu d'une partie. L'état du
+  générateur aléatoire est sauvé avec (`G4`), sinon une reprise rejouerait la même
+  suite de tirages. Une défaite efface la sauvegarde (`R6`).
+- `U24` ✅ **La table est vue du joueur** : sa zone en bas, les adversaires en
+  face. Un adversaire seul s'assied **en face** ; deux se partagent la gauche et
+  la droite. Chaque zone porte le deck posé dos visible, la main ou les dés, la
+  pile de jetons, et le nom de la combinaison **imprimé sur le tapis**.
+- `U25` ✅ **Fil d'Ariane imprimé en haut de la table**, un peu courbé :
+  `Batailles` (un bloc par bataille), `Répartition`, `Batailles`, `Distribution`.
+  Une étape passée est en gras, l'étape en cours a un halo. Il est **construit à
+  partir de `battleSeries`** (`G3`) : changer la séquence dans la configuration
+  change le fil sans toucher à l'affichage.
+- `U26` ✅ **Les commandes du joueur sont posées au-dessus de sa zone**, avec la
+  ligne d'aide entre les boutons et les cartes. Conséquence importante : les
+  cartes qu'on sélectionne et les dés qu'on garde sont **ceux de la table**, pas
+  des copies affichées dans un panneau. Un seul jeu de cartes à l'écran, un seul
+  jeu de dés.
+- `U27` ✅ **Les récompenses sont des tuiles posées sur le tapis**, un peu de
+  travers : **le titre seul**, la règle complète au survol. Quand quelqu'un en
+  prend une, elle **rejoint sa zone de jeu** ; quand elle est consommée, elle
+  **quitte la table** — un don appliqué (`B6`), un dé retourné (`B10`), un 4 et 2
+  fixés (`B11`). Ce qui reste visible dans une zone est donc exactement ce qui
+  agit encore.
+- `U28` ✅ **Les jetons sont des piles, pas des nombres** : des disques empilés,
+  la valeur dessous, et un transfert fait **voler les jetons** entre le centre de
+  la table et la zone concernée. C'est la lecture littérale de `U1` et `U3`.
+- `U29` ✅ **Le jeton de donneur** désigne le meneur, à la manière du poker, et
+  **porte son nombre de jets** une fois sa combinaison validée (`U8e`, `D4`).
+- `U30` ✅ **Écran de fin de Cercle** : avant la boutique, le démon félicite et
+  **annonce ce qui change** — le nombre de cartes des batailles, la taille des
+  dés, le nombre de victoires à réunir. C'est la seule information de progression
+  que le joueur reçoit avant de repayer.
+- `U31` ✅ **Boutique** : fond différent (on quitte la table), coût **à gauche en
+  gros**, tuile grisée si l'on ne peut pas payer. Deux encarts : les dés avec
+  toutes leurs faces — **survoler une face allume son opposée** (`F2`), celle que
+  « Retourner un dé » révélera — et le deck sur **quatre lignes, une par
+  couleur**, toutes les cartes dans l'ordre.
+- `U33` ✅ **L'enjeu de la rencontre est posé sur la table** : à côté du pot, le
+  jeton de forge des rencontres qui en rapportent un (`J7b`). Le pot dit ce qu'on
+  se dispute, le jeton dit ce qu'on emporte.
+- `U34` ✅ **La boutique dit ce que la rencontre a rapporté** — total en pièces,
+  part venant de la prime de victoire (`J9`), point de forge éventuel (`J7`).
+  Sans cette ligne, la bourse change sans qu'on sache pourquoi : `J5` (l'argent
+  est ce qu'on **donne**) est déjà contre-intuitif, une prime muette par-dessus
+  le rendait illisible.
+- `U32` ✅ **Les outils de test sont repliés dans un coin** : pilote automatique,
+  vitesse, saut d'animation, retour au menu. Ils ne font pas partie du jeu fini,
+  ils ne doivent donc pas occuper l'écran — mais ils restent à un clic.
 
 ## 14. Métriques
 
@@ -1324,8 +1420,9 @@ cartes** à deux passes de changement chacune (`S1`).
 Le passage au duel a retiré un tiers des jets ; la seconde série de batailles en
 a rajouté deux. Une partie tient probablement en **3 minutes** avec `U13`
 (vitesse réglable) — mais un run complet en fait alors **plus de 2 heures**
-(43 parties à `p = 0,99`), et le proto n'a **aucune sauvegarde** (`Q2b`, §19).
-C'est acceptable pour un proto, pas pour le jeu.
+(43 parties à `p = 0,99`). Le proto **sauve désormais entre deux rencontres**
+(`U23`), donc un run peut se faire en plusieurs fois — mais la durée reste le
+point à surveiller.
 
 Les 75 % de `junk` sont ce qui rend la phase de répartition lente (transferts de
 1 jeton). C'est `M5` qui dira si les relances corrigent ça ; sinon le levier est
@@ -1506,6 +1603,9 @@ et 2 ne sont pas touchés.
 
 | Date | Évolution |
 | --- | --- |
+| 2026-09-08 | **Un bug de condition de victoire, signalé à l'essai et confirmé sur 400 parties à trois.** Le joueur se vidait, gagnait donc la partie (`D10d`), puis la nénette d'un adversaire (`B16`) lui rendait un jeton **dans la même manche** — et la victoire disparaissait. Cause : la sortie n'était contrôlée **qu'à la fin de la manche**, sur les jetons finaux, alors que `D11` dit explicitement que c'est le *premier passage* à zéro qui compte. Le contrôle a lieu maintenant après **chaque** mouvement de jetons — transfert principal, `splitGive`, nénette — et le départage `D10g` (pile ou face, jamais l'ordre des sièges) s'applique partout, alors qu'il ne couvrait que la sortie de répartition (`D10f`). Diagnostiqué en rejouant 400 parties à trois et en comparant « premier à zéro » au vainqueur déclaré : **1 anomalie sur 400** avant, **0 sur 2 000** après. Conséquence secondaire cohérente : un joueur déjà sorti ne reçoit plus les jetons de la nénette, ce qui préserve `J2`. Fréquence faible mais l'échec est maximal — c'est la partie que le joueur sait avoir gagnée. |
+| 2026-09-08 | **Gagner une rencontre paie 5 pièces** (`J9`), et **la rencontre qui rapporte un point de forge le montre sur la table** (`J7b`, `U33`). La prime corrige un défaut de `J5` : l'argent étant *ce qu'on donne*, une victoire rapide — a fortiori `D10f`, gagner sans jouer — ne rapportait **rien**, et le joueur qui jouait bien était payé moins que celui qui jouait longtemps. La prime rend la victoire rentable en elle-même sans annuler `D12`, la cupidité restant plus lucrative mais plus risquée. Mesuré, 200 runs par variante : runs complets **6,5 % → 8,0 %** en clonage seul, **9,0 % → 11,0 %** en gravant des effets, **0,5 % → 2,0 %** en gravant des valeurs ; un run passe de 13,7 à 14,9 parties. Le classement des politiques d'achat ne bouge pas — la prime déplace le niveau, pas les décisions. Le jeton de forge posé à côté du pot répond à un problème d'affichage plus qu'à un problème de règle : la cadence de `J7` est connue d'avance, l'enjeu doit donc être visible **avant** qu'on joue. La boutique affiche en retour ce que la rencontre a rapporté (`U34`), sans quoi la prime arriverait en silence. |
+| 2026-09-08 | **Le prototype prend la forme de l'application finale** (`U19` à `U32`), d'après `docs/proto3/interface.md`. Ce n'est plus un banc d'essai avec un bandeau de réglages : logo, menu, statistiques persistantes, options, introduction dialoguée, sauvegarde et reprise, écran de fin de Cercle. La partie elle-même est rejouée **sur une table vue du joueur** — sa zone en bas, les adversaires en face, le pot et les tuiles au centre — au lieu d'une rangée de panneaux. Trois décisions structurantes en sont sorties. **Les commandes passent au-dessus de la zone du joueur** (`U26`) : les cartes qu'on sélectionne et les dés qu'on garde sont désormais *ceux de la table*, ce qui supprime le doublon permanent entre la main affichée et la main cliquable — c'est le même défaut que `U8c` avait déjà corrigé pour les récompenses, généralisé. **Les tuiles de récompense disent où en est la partie** (`U27`) : posée au centre elle est à prendre, dans une zone elle agit, absente elle est consommée — l'état d'un bonus se lit sans texte. **Le fil d'Ariane est construit depuis `battleSeries`** (`U25`), donc changer la séquence dans la configuration change l'écran sans toucher au code. Un point d'implémentation à noter : la sauvegarde emporte l'état du générateur aléatoire et le compteur d'`uid` des cartes (`U23`), faute de quoi une reprise rejouerait la même suite de tirages et un clone d'après reprise entrerait en collision avec une carte existante. Écart assumé avec la spéc. : celle-ci fixe le point de sauvegarde « avant la boutique », on sauve **aussi après chaque achat** — la reprise se fait toujours en boutique, mais un achat n'est plus perdu si l'on quitte ensuite. |
 | 2026-09-08 | **Le niveau de l'IA devient une température, plus un rang** (`I5`). Le modèle « tirer au hasard parmi les `topN` meilleurs » avait deux défauts : `topN` est un nombre absolu sur un ensemble de coups qui va de 2 à 32 — aux premiers Cercles il dépassait le nombre de coups possibles et ne discriminait donc **rien** — et surtout il se trompait **sans regarder le coût de l'erreur**, si bien qu'un démon jetait un As à une carte aussi souvent qu'il ratait une subtilité à trois. Remplacé par un tirage de Boltzmann sur les notes **normalisées** (`I5c`, indispensable : l'amplitude passe de ~12 à ~2000 selon la taille de la main). Une erreur grossière devient exponentiellement improbable à tout niveau, tandis que deux coups proches restent interchangeables. Corrigé au passage (`I5d`) : l'échantillonnage croît avec la taille de la main, sinon à 5 cartes le classement est dominé par le bruit et même `T = 0` ne joue le meilleur coup que 41 % du temps (69 % après). **Recalibrage obligatoire** : à échelle égale la température rend les démons bien plus forts que `topN` — les runs étaient tombés de 13,7 à 5,4 parties. Le nouveau barème (`S5`, 400 duels par point au Cercle 1) donne un vrai gradient là où l'ancien était plat : **96 % → 92 % → 82 % → 68 %** de victoires du joueur. Constat notable : même contre un démon parfait (`T = 0`) le joueur gagne 68 %, donc **le plafond de difficulté est fixé par le quatrième dé, pas par l'IA**. Effet de bord sur le §17 : à cette nouvelle difficulté, graver des effets et cloner se valent (6,5 % de runs complets chacun) au lieu de 10,5 % contre 6,5 % — la gravure de valeurs reste, elle, nettement derrière (0,5 %). |
 | 2026-09-08 | **`⚒` passe de trois à deux symboles** (`F10e`, seuil mis en configuration). Il exigeait trois symboles visibles simultanément alors qu'un effet n'est tiré qu'une fois sur six : il fallait l'avoir gravé sur trois dés *et* le sortir en même temps. Mesuré : **12 déclenchements sur 200 runs à trois, 218 à deux** — dix-huit fois plus. Le taux de complétion ne bouge pas de façon lisible (7,5 % contre 10,5 %, environ un écart-type sur 200 runs) : l'effet devient vivant sans déséquilibrer le run. |
 | 2026-09-08 | **La forge devient rentable, et `A7` est retiré.** Deux changements liés. `F11` : la gravure **agit sur un seul aspect de la face à la fois** — le graveur propose **3 effets** (la valeur ne bouge pas) et **2 valeurs** (l'effet ne bouge pas). C'est la suppression de l'impôt qui débloque tout : tant qu'un effet ne s'obtenait qu'en changeant une valeur, l'effet était la partie désirable et le changement de valeur la partie coûteuse, parce que graver **retire** des faces à un dé et que `D1b` récompense la polyvalence. `A7` (plafond de faces identiques) est **retiré** : il ne protégeait de rien, c'est `D1b` qui punit la saturation, et bien mieux. Mesuré sur 200 runs par variante : graver des effets **dépasse** le clonage seul — **10,5 %** de runs complets à 4 faces gravées par dé, 9,0 % à 2, contre 6,5 % sans graver — et le stock de points de forge inutilisés à la mort tombe de **5,1 à 1,7**. Graver des **valeurs** reste catastrophique (0,5 %), et c'est assumé (`F11c`) : un piège lisible est un choix de design légitime tant qu'il n'est pas le seul chemin. Confirmation au passage que `⚒` reste du contenu quasi mort : 12 déclenchements sur 200 runs même en gravant à fond. |
