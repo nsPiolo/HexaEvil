@@ -130,13 +130,15 @@
       "cupide":  { "dischargeGreed": 0.6, "dischargeGreedThreshold": 8 },
       "neutre":  { "dischargeGreed": 0.2, "dischargeGreedThreshold": 4 }
     },
+    "_levels": "I5 : température du tirage de Boltzmann. 0 = joue toujours le meilleur coup ; au-delà de 2 l'effet sature. Calibré au Cercle 1 : T 0 -> le joueur gagne 68 %, T 0.4 -> 82 %, T 1 -> 92 %, T 2 -> 96 %.",
     "levels": {
-      "expert":  { "topN": 1 },
-      "moyen":   { "topN": 3 },
-      "mauvais": { "topN": 6 }
+      "expert":  { "temperature": 0 },
+      "bon":     { "temperature": 0.4 },
+      "moyen":   { "temperature": 1.0 },
+      "mauvais": { "temperature": 2.0 }
     },
     "_levelByCircle": "S5 : le niveau des démons monte avec le Cercle.",
-    "levelByCircle": ["mauvais", "mauvais", "moyen", "moyen", "moyen", "moyen", "expert", "expert", "expert"],
+    "levelByCircle": ["mauvais", "moyen", "moyen", "moyen", "bon", "bon", "expert", "expert", "expert"],
     "rewardWeights": {
       "give5": 8, "give3": 6,
       "valuePlus1": 7, "extraDie": 8, "set42": 4,

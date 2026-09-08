@@ -269,12 +269,19 @@ describe('B13 à B16 — les récompenses ajoutées', () => {
     let seen = 0
     for (let seed = 1; seed <= 40 && seen < 5; seed++) {
       const { steps } = playWith(seed, 'reroll421', 0)
+      const relance = new Set<number>()
       for (const s of steps) {
-        if (s.kind === 'turnEnd' && s.who !== 0) expect(s.hand.id).not.toBe('421')
         if (s.kind === 'forcedReroll') {
           seen++
           expect(s.owner).toBe(0)
           expect(s.who).not.toBe(0)
+          relance.add(s.who)
+        }
+        if (s.kind === 'turnEnd') {
+          // Un adversaire ne peut finir sur un 4-2-1 que si la relance forcée
+          // lui en a redonné un — elle ne se déclenche qu'une fois par tour.
+          if (s.who !== 0 && s.hand.id === '421') expect(relance.has(s.who)).toBe(true)
+          relance.delete(s.who)
         }
       }
     }
@@ -371,11 +378,15 @@ describe('F10/F11 — effets de face', () => {
   it('takeLess — chaque face visible retire un jeton à ce qu’on encaisse', () => {
     const four = [0, 1, 2, 3].map(() => loaded('takeLess'))
     const { steps } = play(3, 1, 2, undefined, four)
+    // La récompense `takeLess` (B14) s'ajoute aux faces, et n'importe qui peut
+    // l'avoir prise : seules les faces du joueur sont garanties.
+    let rewardOwner: number | null = null
     for (const s of steps) {
+      if (s.kind === 'rewardTaken' && s.id === 'takeLess') rewardOwner = s.who
       if (s.kind !== 'roundResult') continue
       const nu = s.hands[s.best]!.chipValue
-      if (s.worst === 0) expect(s.base).toBe(Math.max(1, nu - 4))
-      else expect(s.base).toBe(nu)
+      const cuts = (s.worst === 0 ? 4 : 0) + (rewardOwner === s.worst ? 1 : 0)
+      expect(s.base).toBe(cuts > 0 ? Math.max(1, nu - cuts) : nu)
     }
   })
 

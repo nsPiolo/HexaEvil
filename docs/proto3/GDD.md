@@ -236,10 +236,20 @@ document.
   plein de piques, un démon dont les dés ne portent que des faces paires. La
   structure de données doit le permettre dès maintenant (`K1`, `F1` décrivent
   déjà un deck et des dés par participant) ; seul le contenu manque.
-- `S5` ✅ **En revanche leur niveau de jeu monte par Cercle** (`I5`) : `mauvais`
-  aux Cercles 1-2, `moyen` aux 3-6, `expert` aux 7-9. C'est le seul levier qui
-  rende les premières victoires accessibles à un joueur non équipé — et §17
-  montre que sans lui, le run ne démarre jamais. Voir `Q4`.
+- `S5` ✅ **En revanche leur niveau de jeu monte par Cercle** (`I5`). Calibré au
+  Cercle 1, joueur expert contre un démon seul, 400 duels par point :
+
+| Niveau | `T` | le joueur gagne | Cercles |
+| --- | --- | --- | --- |
+| `mauvais` | 2,0 | 96 % | 1 |
+| `moyen` | 1,0 | 92 % | 2 – 4 |
+| `bon` | 0,4 | 82 % | 5 – 6 |
+| `expert` | 0 | **68 %** | 7 – 9 |
+
+  Deux choses à retenir de cette table. Au-delà de `T = 2` l'effet **sature** :
+  inutile de monter plus haut. Et à `T = 0` le joueur gagne encore 68 % — c'est
+  le quatrième dé (`D1b`) qui parle, pas le niveau. **Le plafond de difficulté du
+  jeu est fixé par l'asymétrie des dés, pas par l'IA.**
 
 ## 4. Bataille de cartes
 
@@ -787,13 +797,29 @@ document.
 - `I4` 🧪 **Récompenses** : un poids par récompense, plus un bonus contextuel
   (par exemple `setRerolls` vaut plus quand le démon est en tête). Le démon prend
   la mieux notée encore disponible. Table `ai.rewardWeights` en configuration.
-- `I5` ✅ **Le niveau (`topN`) porte sur le choix des dés à garder**, pas
-  seulement sur les cartes. C'est la correction la plus importante de
-  l'implémentation : tant que le niveau ne jouait que sur les mains de cartes,
-  il ne changeait **rien** au taux de victoire (52 % contre 52 %). Les parties se
-  décident aux dés. Une fois le niveau porté sur la garde, il fait passer le
-  taux de victoire de **52 % à 80 %** — `S5` devient enfin le levier que le §17
-  lui demandait d'être.
+- `I5` ✅ **Le niveau est une température, pas un rang.** L'IA note tous ses
+  coups, ramène les notes sur `[0, 1]`, puis en tire un avec un poids
+  `exp(note / T)`. `T = 0` joue toujours le meilleur coup ; plus `T` monte, plus
+  l'IA se trompe — mais **sur les décisions serrées d'abord**.
+- `I5b` ✅ **Pourquoi pas un « parmi les N meilleurs ».** C'est ce qu'on faisait,
+  et c'était faux pour deux raisons. `topN` est un nombre absolu appliqué à un
+  ensemble de coups qui va de 2 (une carte) à 32 (cinq cartes) : aux premiers
+  Cercles il valait plus que le nombre de coups possibles, donc il ne
+  discriminait **rien**. Surtout, il se trompait **sans regarder ce que l'erreur
+  coûtait** : un démon jetait un As à une carte aussi souvent qu'il ratait une
+  subtilité à trois. L'exponentielle corrige exactement ça — une erreur grossière
+  devient exponentiellement improbable à tout niveau. Mesuré à `T = 0,5` : garde
+  son As 89 % du temps, sa paire 68 %, et ne trouve le bon coup à 3 cartes que 37 %.
+- `I5c` ✅ **La normalisation n'est pas un détail.** Sans elle `T` n'aurait pas le
+  même sens d'une décision à l'autre : une main d'une carte a une amplitude de
+  notes d'environ 12 points, une main de deux d'environ 2000 (le rang pèse
+  ×1000). On divise donc par l'écart max−min avant d'exponentier.
+- `I5d` ✅ Le nombre de tirages de simulation **croît avec la taille de la main**
+  (`24 × cartes`). À 5 cartes il y a 32 coups possibles : avec un échantillonnage
+  fixe, le classement était dominé par le bruit et même `T = 0` ne jouait le
+  meilleur coup que 41 % du temps. À `24 × cartes`, 69 %.
+- `I5e` ✅ **Le même réglage sert les trois décisions** — garde des dés, échange
+  de cartes, choix de récompense. C'est une seule fonction.
 - `I5b` 🧪 **Cartes** : le démon garde sa meilleure combinaison partielle et
   change le reste, à chacune des deux passes, sans modèle des mains adverses.
 - `I6` 🧪 Trois profils, comme au proto 2 : `prudent` (joue la série),
@@ -1480,6 +1506,7 @@ et 2 ne sont pas touchés.
 
 | Date | Évolution |
 | --- | --- |
+| 2026-09-08 | **Le niveau de l'IA devient une température, plus un rang** (`I5`). Le modèle « tirer au hasard parmi les `topN` meilleurs » avait deux défauts : `topN` est un nombre absolu sur un ensemble de coups qui va de 2 à 32 — aux premiers Cercles il dépassait le nombre de coups possibles et ne discriminait donc **rien** — et surtout il se trompait **sans regarder le coût de l'erreur**, si bien qu'un démon jetait un As à une carte aussi souvent qu'il ratait une subtilité à trois. Remplacé par un tirage de Boltzmann sur les notes **normalisées** (`I5c`, indispensable : l'amplitude passe de ~12 à ~2000 selon la taille de la main). Une erreur grossière devient exponentiellement improbable à tout niveau, tandis que deux coups proches restent interchangeables. Corrigé au passage (`I5d`) : l'échantillonnage croît avec la taille de la main, sinon à 5 cartes le classement est dominé par le bruit et même `T = 0` ne joue le meilleur coup que 41 % du temps (69 % après). **Recalibrage obligatoire** : à échelle égale la température rend les démons bien plus forts que `topN` — les runs étaient tombés de 13,7 à 5,4 parties. Le nouveau barème (`S5`, 400 duels par point au Cercle 1) donne un vrai gradient là où l'ancien était plat : **96 % → 92 % → 82 % → 68 %** de victoires du joueur. Constat notable : même contre un démon parfait (`T = 0`) le joueur gagne 68 %, donc **le plafond de difficulté est fixé par le quatrième dé, pas par l'IA**. Effet de bord sur le §17 : à cette nouvelle difficulté, graver des effets et cloner se valent (6,5 % de runs complets chacun) au lieu de 10,5 % contre 6,5 % — la gravure de valeurs reste, elle, nettement derrière (0,5 %). |
 | 2026-09-08 | **`⚒` passe de trois à deux symboles** (`F10e`, seuil mis en configuration). Il exigeait trois symboles visibles simultanément alors qu'un effet n'est tiré qu'une fois sur six : il fallait l'avoir gravé sur trois dés *et* le sortir en même temps. Mesuré : **12 déclenchements sur 200 runs à trois, 218 à deux** — dix-huit fois plus. Le taux de complétion ne bouge pas de façon lisible (7,5 % contre 10,5 %, environ un écart-type sur 200 runs) : l'effet devient vivant sans déséquilibrer le run. |
 | 2026-09-08 | **La forge devient rentable, et `A7` est retiré.** Deux changements liés. `F11` : la gravure **agit sur un seul aspect de la face à la fois** — le graveur propose **3 effets** (la valeur ne bouge pas) et **2 valeurs** (l'effet ne bouge pas). C'est la suppression de l'impôt qui débloque tout : tant qu'un effet ne s'obtenait qu'en changeant une valeur, l'effet était la partie désirable et le changement de valeur la partie coûteuse, parce que graver **retire** des faces à un dé et que `D1b` récompense la polyvalence. `A7` (plafond de faces identiques) est **retiré** : il ne protégeait de rien, c'est `D1b` qui punit la saturation, et bien mieux. Mesuré sur 200 runs par variante : graver des effets **dépasse** le clonage seul — **10,5 %** de runs complets à 4 faces gravées par dé, 9,0 % à 2, contre 6,5 % sans graver — et le stock de points de forge inutilisés à la mort tombe de **5,1 à 1,7**. Graver des **valeurs** reste catastrophique (0,5 %), et c'est assumé (`F11c`) : un piège lisible est un choix de design légitime tant qu'il n'est pas le seul chemin. Confirmation au passage que `⚒` reste du contenu quasi mort : 12 déclenchements sur 200 runs même en gravant à fond. |
 | 2026-09-08 | **Mesure de 1 200 runs** (6 variantes × 200) après l'arrivée des effets de face. Le mode lot grave désormais **à travers l'offre** (`F11`) au lieu de graver en direct : il mesurait jusque-là des règles qui n'existaient plus. Résultat principal : **la forge ne vaut toujours pas son prix**. Clonage seul termine **6,5 %** des runs, gravure en visant les effets 2,0-2,5 %, gravure en visant les valeurs 1,0 % ; le joueur meurt avec **5,1 points de forge non dépensés**. Les effets améliorent donc la gravure sans la sauver — la question ouverte n'est plus « comment empêcher la gravure de casser le jeu » mais **« comment rendre la forge attirante »**. Second résultat : **`⚒` est du contenu quasi mort**, 9 déclenchements sur 200 runs même en gravant à fond, parce qu'il exige trois symboles visibles simultanément alors qu'un effet n'est tiré qu'une fois sur six. `⇈` et `✦` font tout le travail (3 618 et 3 012 déclenchements). Piège de lecture noté au passage : le taux de `junk` monte de 50 % à 76 % entre la ligne de base et la meilleure ligne, non pas à cause du clonage mais parce que ces runs atteignent le D100, où presque tout est du `junk`. |

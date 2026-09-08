@@ -58,7 +58,7 @@ export function autoAnswer(ask: Ask, ctx: AutoContext): Answer {
           maxThrows: ask.context.maxThrows,
           faces: circle.dieFaces,
           combos: cfg.combinations,
-          topN: settings.topN,
+          temperature: settings.temperature,
         },
         ctx.rng,
       )

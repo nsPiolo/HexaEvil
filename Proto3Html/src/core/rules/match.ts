@@ -214,7 +214,7 @@ function* cardDuel(
         }
         wanted = answer.kind === 'mulligan' ? answer.swap : []
       } else {
-        wanted = aiMulligan(st.hand, st.pile, cards, p.ai?.topN ?? 1, ctx.rng)
+        wanted = aiMulligan(st.hand, st.pile, cards, p.ai?.temperature ?? 0, ctx.rng)
       }
       if (wanted.length === 0) passed.add(p.index)
       states[p.index] = mulligan(st, wanted, ctx.rng)
@@ -596,7 +596,7 @@ function* takeTurn(
                 maxThrows,
                 faces,
                 combos,
-                topN: p.ai?.topN ?? 1,
+                temperature: p.ai?.temperature ?? 0,
               },
               ctx.rng,
             )

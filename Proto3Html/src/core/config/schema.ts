@@ -94,7 +94,7 @@ export interface AiProfile {
 export interface AiConfig {
   readonly demons: readonly { readonly name: string; readonly profile: string; readonly level: string }[]
   readonly profiles: Readonly<Record<string, AiProfile>>
-  readonly levels: Readonly<Record<string, { readonly topN: number }>>
+  readonly levels: Readonly<Record<string, { readonly temperature: number }>>
   readonly levelByCircle: readonly string[]
   readonly rewardWeights: Readonly<Record<string, number>>
 }

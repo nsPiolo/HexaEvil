@@ -172,7 +172,7 @@ export class Session {
     if (this.screen !== 'match') return
     const ask = this.ask
     if (!ask || !this.driver) return
-    const settings = { ...settingsFor(this.cfg.ai, 0, this.run.circleIndex), topN: 1 }
+    const settings = { ...settingsFor(this.cfg.ai, 0, this.run.circleIndex), temperature: 0 }
     this.answer(
       autoAnswer(ask, {
         cfg: this.cfg,

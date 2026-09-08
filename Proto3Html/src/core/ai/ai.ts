@@ -27,7 +27,8 @@ export function strength(hand: DiceHand): number {
 
 export interface AiSettings {
   readonly profile: AiProfile
-  readonly topN: number
+  /** `I5` : 0 = joue toujours le meilleur coup ; plus c'est haut, plus il se trompe. */
+  readonly temperature: number
   readonly weights: Readonly<Record<string, number>>
 }
 
@@ -40,16 +41,55 @@ export function settingsFor(ai: AiConfig, demonIndex: number, circleIndex: numbe
   const levelName = ai.levelByCircle[circleIndex] ?? demon.level
   const level = ai.levels[levelName]
   if (!level) throw new Error(`niveau d'IA inconnu : ${levelName}`)
-  return { profile, topN: level.topN, weights: ai.rewardWeights }
+  return { profile, temperature: level.temperature, weights: ai.rewardWeights }
 }
 
-/** `I5`/`I7` : on choisit parmi les `topN` meilleurs, départage par tirage germé. */
-function pickAmongBest<T>(scored: { item: T; score: number }[], topN: number, rng: Rng): T {
-  const sorted = [...scored].sort((a, b) => b.score - a.score)
-  const slice = sorted.slice(0, Math.max(1, topN))
-  const chosen = slice[rng.int(slice.length)]
-  if (!chosen) throw new Error('pickAmongBest sur une liste vide')
-  return chosen.item
+/**
+ * `I5` : le niveau de jeu, en **une** fonction — les trois décisions de l'IA
+ * (garde des dés, échange de cartes, choix de récompense) passent par ici.
+ *
+ * Tirage de Boltzmann : chaque coup est tiré avec un poids `exp(note / T)`,
+ * après avoir ramené les notes sur `[0, 1]`. Deux propriétés, et ce sont les
+ * deux qu'on cherchait :
+ *
+ * - **la normalisation** rend `T` comparable d'une décision à l'autre. Sans
+ *   elle, une main d'une carte a une amplitude de ~12 points quand une main de
+ *   deux en a ~2000 (le rang pèse ×1000), et aucun réglage unique ne conviendrait
+ *   aux deux ;
+ * - **l'exponentielle** rend une erreur grossière exponentiellement improbable,
+ *   quel que soit le niveau, tout en laissant deux coups proches interchangeables.
+ *   C'est ce qui empêche un démon faible de jeter un As, tout en le laissant rater
+ *   les décisions subtiles.
+ *
+ * L'ancien modèle — tirer au hasard parmi les `topN` meilleurs — faisait l'inverse :
+ * il se trompait sans regarder ce que l'erreur coûtait.
+ *
+ * `I7` : à température nulle on joue le meilleur coup, les ex æquo étant
+ * départagés par le tirage germé, jamais par l'ordre d'énumération.
+ */
+function pickByTemperature<T>(scored: { item: T; score: number }[], temperature: number, rng: Rng): T {
+  if (scored.length === 0) throw new Error('choix sur une liste vide')
+  let max = -Infinity
+  let min = Infinity
+  for (const s of scored) {
+    if (s.score > max) max = s.score
+    if (s.score < min) min = s.score
+  }
+
+  if (temperature <= 0 || max === min) {
+    const best = max === min ? scored : scored.filter((s) => s.score >= max - 1e-9)
+    return (best[rng.int(best.length)] as { item: T }).item
+  }
+
+  const span = max - min
+  const weights = scored.map((s) => Math.exp((s.score - min) / span / temperature))
+  const total = weights.reduce((a, b) => a + b, 0)
+  let draw = rng.next() * total
+  for (let i = 0; i < scored.length; i++) {
+    draw -= weights[i] as number
+    if (draw <= 0) return (scored[i] as { item: T }).item
+  }
+  return (scored[scored.length - 1] as { item: T }).item
 }
 
 /* ------------------------------------------------------------------ Dés */
@@ -113,7 +153,7 @@ export interface AiTurnInput {
   readonly faces: number
   readonly combos: CombinationsConfig
   /** `I5` : un démon faible ne choisit pas toujours la meilleure garde. */
-  readonly topN: number
+  readonly temperature: number
 }
 
 /**
@@ -153,7 +193,7 @@ export function aiTurn(input: AiTurnInput, rng: Rng): TurnAction {
   // `I5` : c'est **ici** que le niveau se joue. Le faire porter uniquement sur
   // les cartes ne changeait rien au taux de victoire — les parties se décident
   // aux dés.
-  const bestMask = pickAmongBest(scored, input.topN, rng)
+  const bestMask = pickByTemperature(scored, input.temperature, rng)
   return { type: 'roll', keep: bestMask.map((r) => !r), useSet42: false }
 }
 
@@ -164,12 +204,15 @@ export function aiMulligan(
   hand: readonly Card[],
   pile: readonly Card[],
   cfg: CardsConfig,
-  topN: number,
+  temperature: number,
   rng: Rng,
 ): number[] {
   const size = hand.length
   if (size === 0 || pile.length === 0) return []
-  const samples = 24
+  // Le nombre de coups double à chaque carte (2^size) : sans plus de tirages,
+  // à 5 cartes le classement est dominé par le bruit et même la température 0
+  // ne joue plus le meilleur coup. On échantillonne donc proportionnellement.
+  const samples = 24 * size
   const scored: { item: number[]; score: number }[] = []
 
   for (let mask = 0; mask < 1 << size; mask++) {
@@ -189,7 +232,7 @@ export function aiMulligan(
     }
     scored.push({ item: swap, score: total / samples })
   }
-  return pickAmongBest(scored, topN, rng)
+  return pickByTemperature(scored, temperature, rng)
 }
 
 /* --------------------------------------------------------- Récompenses */
@@ -200,7 +243,7 @@ export function aiReward(
   rng: Rng,
 ): RewardId {
   const scored = offered.map((id) => ({ item: id, score: settings.weights[id] ?? 1 }))
-  return pickAmongBest(scored, settings.topN, rng)
+  return pickByTemperature(scored, settings.temperature, rng)
 }
 
 /**

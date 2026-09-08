@@ -68,7 +68,7 @@ function measure(
       const ci = run.circleIndex
       const isFinal = run.wins + 1 >= currentCircle(run).winsRequired
       const settings: AiSettings | undefined = expert
-        ? { ...settingsFor(cfg.ai, 0, ci), topN: 1 }
+        ? { ...settingsFor(cfg.ai, 0, ci), temperature: 0 }
         : undefined
       const driver = startMatch(run, rng)
       const { steps, result } = autoPlay(driver, {
