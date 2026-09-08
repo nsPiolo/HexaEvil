@@ -1,0 +1,143 @@
+{
+  "_lecture": "Réglage unique du proto 3 (GDD proto3 §15, règle G1). Toute valeur de gameplay vit ici.",
+  "seed": 1,
+
+  "_participants": "R12 : duel par défaut, 3 dans la dernière partie de chaque Cercle.",
+  "participants": { "default": 2, "circleFinal": 3 },
+
+  "_battleSeries": "S1/B2 : n batailles avant chaque phase, n+1 récompenses tirées.",
+  "battleSeries": [
+    { "phase": "charge", "duels": 3 },
+    { "phase": "discharge", "duels": 2 }
+  ],
+
+  "_circles": "R2 : une entrée par Cercle. pot = 3 * (faces + 1), cf. R3.",
+  "circles": [
+    { "n": 1, "cards": 1, "dieFaces": 6,   "pot": 21,  "winsRequired": 4 },
+    { "n": 2, "cards": 2, "dieFaces": 6,   "pot": 21,  "winsRequired": 4 },
+    { "n": 3, "cards": 2, "dieFaces": 8,   "pot": 27,  "winsRequired": 6 },
+    { "n": 4, "cards": 3, "dieFaces": 8,   "pot": 27,  "winsRequired": 6 },
+    { "n": 5, "cards": 3, "dieFaces": 12,  "pot": 39,  "winsRequired": 8 },
+    { "n": 6, "cards": 4, "dieFaces": 12,  "pot": 39,  "winsRequired": 8 },
+    { "n": 7, "cards": 4, "dieFaces": 20,  "pot": 63,  "winsRequired": 10 },
+    { "n": 8, "cards": 5, "dieFaces": 20,  "pot": 63,  "winsRequired": 10 },
+    { "n": 9, "cards": 5, "dieFaces": 100, "pot": 303, "winsRequired": 3 }
+  ],
+
+  "_diceCombinations": "V1/V2. 'facesPlus' = faces du dé + n. Changer ces 7 lignes change tout l'équilibre.",
+  "_rank3": "V1b : rang 3 partagé, départagé par la valeur puis par triple > pairOfOnes.",
+  "diceCombinations": {
+    "421":        { "rank": 1, "tieBreak": 0, "value": { "facesPlus": 4 } },
+    "triple1":    { "rank": 2, "tieBreak": 0, "value": { "facesPlus": 1 } },
+    "triple":     { "rank": 3, "tieBreak": 1, "value": "dieValue" },
+    "pairOfOnes": { "rank": 3, "tieBreak": 0, "value": "thirdDie" },
+    "straight":   { "rank": 4, "tieBreak": 0, "value": 2 },
+    "junk":       { "rank": 5, "tieBreak": 0, "value": 1 },
+    "nenette":    { "rank": 6, "tieBreak": 0, "value": 2 }
+  },
+
+  "dice": {
+    "_startingFaces": "F1 : la liste des valeurs gravées, pas un nombre de côtés.",
+    "startingFaces": [1, 2, 3, 4, 5, 6],
+    "_counts": "D3b : le joueur lance 4 dés, les démons 3. Le jeu retient la meilleure combinaison de 3.",
+    "playerDice": 4,
+    "demonDice": 3,
+    "_maxSameFace": "A7 : garde-fou anti-dégénérescence. 0 = illimité. À 4, plafond de 29,6 % de 4-2-1 au D6.",
+    "maxSameFace": 4,
+    "defaultMaxRerolls": 2
+  },
+
+  "cards": {
+    "values": [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+    "suits": ["diamonds", "hearts", "spades", "clubs"],
+    "_minDeckSize": "K4 : plancher de taille de deck.",
+    "minDeckSize": 20,
+    "_bounds": "C13 : bornes dures. On n'augmente pas un As, on ne diminue pas un 2.",
+    "minValue": 2,
+    "maxValue": 14,
+    "mulligans": 2,
+    "flushMinSize": 2,
+    "straightMinSize": 3,
+    "_handRankings": "C12 : un classement par taille de main, du meilleur au pire. Calculé par rareté sur le deck neuf.",
+    "handRankings": {
+      "1": ["carteHaute"],
+      "2": ["paire", "couleur", "carteHaute"],
+      "3": ["quinteFlush", "brelan", "suite", "couleur", "paire", "carteHaute"],
+      "4": ["carre", "quinteFlush", "brelan", "suite", "doublePaire", "couleur", "paire", "carteHaute"],
+      "5": ["cinqIdentiques", "quinteFlush", "carre", "full", "couleur", "suite",
+            "brelan", "doublePaire", "paire", "carteHaute"]
+    }
+  },
+
+  "_rewards": "B2 : n+1 tirées sans remise par série. B3b : le 2e tirage exclut les 4 proposées à la 1re. Toutes s'appliquent à la sélection (B5).",
+  "rewards": [
+    { "id": "give3",      "amount": 3, "source": "potThenOwner" },
+    { "id": "give5",      "amount": 5, "source": "potThenOwner" },
+    { "id": "setRerolls", "scope": "all",   "uses": "match" },
+    { "id": "flipDie",    "scope": "owner", "uses": "oncePerMatch" },
+    { "id": "extraDie",   "scope": "owner", "uses": "firstThrowOfPhase" },
+    { "id": "set42",      "scope": "owner", "uses": "oncePerMatch" },
+    { "id": "valuePlus1", "scope": "owner", "uses": "match" },
+    { "id": "reroll421",  "scope": "owner", "uses": "match" },
+    { "id": "splitGive",  "scope": "owner", "uses": "match", "needsThree": true },
+    { "id": "takeLess",   "scope": "owner", "uses": "match" },
+    { "id": "nenetteGift", "scope": "all",  "uses": "match" }
+  ],
+
+  "shop": {
+    "removeTwo":  { "cost": 10, "currency": "money", "pool": 10 },
+    "plusOneTwo": { "cost": 5,  "currency": "money", "pool": 10 },
+    "clone":      { "cost": 5,  "currency": "money", "pool": 10 },
+    "removeOne":  { "cost": 5,  "currency": "money", "pool": 10 },
+    "recolor":    { "cost": 10, "currency": "money", "pool": 5 },
+    "engraveOne": { "cost": 1,  "currency": "forge" },
+    "engraveAll": { "cost": 2,  "currency": "forge" }
+  },
+
+  "_forge": "J7 : 1 point toutes les N parties jouées du run.",
+  "forgePointEveryNMatches": 2,
+
+  "rules": {
+    "_leaderCapsThrows": "D4 : le meneur plafonne le nombre de jets des autres.",
+    "leaderCapsThrows": true,
+    "_leaderRotates": "D6 : true = tourne, false = le vainqueur de la manche mène.",
+    "leaderRotates": true,
+    "_firstLeader": "D7 : qui ouvre la 1re manche d'une phase.",
+    "firstLeader": "lastCardDuelWinner",
+    "_runEndsOnLoss": "R6 : une défaite termine le run et renvoie au Cercle 1.",
+    "runEndsOnLoss": true,
+    "_carryOverBetweenRuns": "R8/Q2 : ce qui traverse un run. Tout à 0 = roguelike strict.",
+    "carryOverBetweenRuns": { "money": 0, "forgePoints": 0, "deck": false, "dice": false },
+    "maxDeadRounds": 20
+  },
+
+  "_debugStart": "G6 : outil de test. circle: 1 = run normal.",
+  "debugStart": { "circle": 1, "money": 0, "forgePoints": 0 },
+
+  "ai": {
+    "demons": [
+      { "name": "Belphégor", "profile": "prudent", "level": "expert" },
+      { "name": "Mammon",    "profile": "cupide",  "level": "moyen" }
+    ],
+    "profiles": {
+      "prudent": { "dischargeGreed": 0.0, "dischargeGreedThreshold": 0 },
+      "cupide":  { "dischargeGreed": 0.6, "dischargeGreedThreshold": 8 },
+      "neutre":  { "dischargeGreed": 0.2, "dischargeGreedThreshold": 4 }
+    },
+    "levels": {
+      "expert":  { "topN": 1 },
+      "moyen":   { "topN": 3 },
+      "mauvais": { "topN": 6 }
+    },
+    "_levelByCircle": "S5 : le niveau des démons monte avec le Cercle.",
+    "levelByCircle": ["mauvais", "mauvais", "moyen", "moyen", "moyen", "moyen", "expert", "expert", "expert"],
+    "rewardWeights": {
+      "give5": 8, "give3": 6,
+      "valuePlus1": 7, "extraDie": 8, "set42": 4,
+      "flipDie": 5, "setRerolls": 3,
+      "reroll421": 6, "splitGive": 7, "takeLess": 5, "nenetteGift": 3
+    }
+  },
+
+  "ui": { "animationSpeed": 1.0, "batchMode": false }
+}
