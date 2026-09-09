@@ -487,3 +487,28 @@ describe('D10d / D11 — le premier passage à zéro gagne', () => {
     }
   })
 })
+
+describe('R14 — on ne perd qu’en finissant dernier', () => {
+  it('à trois, la deuxième place fait continuer le run', () => {
+    let seconds = 0
+    for (let seed = 1; seed <= 200; seed++) {
+      const { result } = play(seed, 0, 3)
+      const place = result.ranking.indexOf(0)
+      expect(result.humanPlace).toBe(place)
+      expect(result.humanFirst).toBe(place === 0)
+      // La seule façon de perdre est d'être le dernier à détenir des jetons.
+      expect(result.humanWon).toBe(place < result.ranking.length - 1)
+      if (place === 1) seconds++
+    }
+    // Le cas doit vraiment se produire, sinon le test ne prouve rien.
+    expect(seconds).toBeGreaterThan(10)
+  })
+
+  it('en duel, c’est toujours « finir premier »', () => {
+    for (const seed of seeds) {
+      const { result } = play(seed, 0, 2)
+      expect(result.humanWon).toBe(result.ranking[0] === 0)
+      expect(result.humanWon).toBe(result.humanFirst)
+    }
+  })
+})

@@ -131,4 +131,13 @@ export type TraceStep =
     }
   | { kind: 'out'; who: number; place: number; chips: readonly number[] }
   | { kind: 'phaseEnd'; phase: PhaseId; pot: number; chips: readonly number[] }
-  | { kind: 'matchEnd'; ranking: readonly number[]; money: readonly number[]; humanWon: boolean }
+  | {
+      kind: 'matchEnd'
+      ranking: readonly number[]
+      money: readonly number[]
+      /** `R14` : le run continue — donc « pas dernier », pas « premier ». */
+      humanWon: boolean
+      humanFirst: boolean
+      /** Place du joueur au classement, à partir de 0. */
+      humanPlace: number
+    }

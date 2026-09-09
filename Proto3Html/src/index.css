@@ -1009,6 +1009,28 @@ body {
   transition: all 0.15s ease;
 }
 .inspector__face--engraved { border-color: var(--gold); color: var(--gold); font-weight: 700; }
+/* `U35` : pendant un achat de gravure, les faces cliquables appellent l'œil. */
+.inspector__face--btn { cursor: pointer; }
+.inspector__face--btn:hover { border-color: var(--ember); background: var(--ember-soft); color: #fff; }
+.inspector__face--pending { border-color: var(--good); color: var(--good); font-weight: 700; }
+.inspector__face--target {
+  border-color: var(--ember);
+  background: var(--ember-soft);
+  color: #fff;
+  box-shadow: 0 0 0 2px rgb(212 84 30 / 45%);
+}
+.inspector-card--calling { border-color: var(--ember-soft); box-shadow: 0 0 0 1px var(--ember-soft); }
+.inspector-card--calling h3 { color: var(--gold); }
+.inspector-row--off { opacity: 0.4; }
+
+.engrave-list { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.engrave-list__item {
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--good);
+  color: var(--good);
+  font-size: 0.76rem;
+}
 .inspector__face--btn { cursor: pointer; }
 .inspector__face--btn:hover { border-color: var(--ember); }
 .inspector__face--hover { background: var(--ember-soft); color: #fff; }

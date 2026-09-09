@@ -229,7 +229,11 @@ export function describeStep(step: TraceStep, names: readonly string[]): string 
     case 'faceBonus':
       return `${EFFECT_SYMBOL[step.effect]} ${who(step.who)} — ${step.detail}`
     case 'matchEnd':
-      return step.humanWon ? 'Vous remportez la partie' : 'Partie perdue'
+      if (!step.humanWon) return 'Vous finissez dernier — la partie est perdue'
+      // `R14` : à trois, finir deuxième suffit pour continuer.
+      return step.humanFirst
+        ? 'Vous remportez la partie'
+        : `Vous finissez ${ordinal(step.humanPlace + 1)} — vous n’êtes pas dernier, le run continue`
   }
 }
 

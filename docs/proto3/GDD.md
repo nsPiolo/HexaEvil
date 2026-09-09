@@ -195,6 +195,28 @@ document.
   transfert direct et symétrique ; à 3, on peut être ni le meilleur ni le pire et
   **ne rien subir**. C'est un jeu différent, pas une version plus dure — d'où
   l'intérêt de le réserver au climax du Cercle. `M2` mesure les deux séparément.
+- `R14` ✅ **On ne perd une rencontre qu'en étant le dernier à détenir des
+  jetons.** C'est la définition de « gagner une rencontre » partout ailleurs
+  dans ce document — la victoire de `R6` (une défaite tue le run), la victoire
+  de `J9` (la prime), la victoire comptée par `winsRequired`. En duel, elle est
+  identique à « finir premier » et ne change rien. **À trois, la deuxième place
+  survit** : le run continue vers le Cercle suivant. La distinction « vraiment
+  premier » reste exposée par le moteur (`humanFirst`) pour l'affichage et les
+  statistiques, mais elle n'a aucune conséquence sur le run.
+
+  La raison est structurelle. `R13` dit qu'à trois on joue à un autre jeu, et le
+  §17 ajoutait qu'exiger la première place à trois concentrait tout le risque du
+  run sur 9 parties sur 59.
+
+  ⚠️ **Mesuré, l'effet est bien plus grand qu'annoncé.** J'avais écrit que la
+  règle ramènerait la dernière partie du Cercle « au niveau des autres sans la
+  rendre triviale » : c'est faux. Elle la rend **quasi automatique** — le joueur
+  survit à **99,6 %** des parties à trois, contre 69 % quand il fallait finir
+  premier. Le taux de runs complets passe de **8 % à 36 %** (clonage seul,
+  200 runs), et un run de 14,9 à **30,3 parties**. Les 9 parties à trois
+  n'étaient pas *un* filtre du run, elles en étaient **le** filtre ; `R14` ne
+  l'assouplit pas, il le retire. C'est un choix d'auteur assumé, mais il faut
+  savoir qu'il déplace le point d'équilibre du jeu entier — voir §17.
 
 ## 3. Séquence d'une partie
 
@@ -995,6 +1017,13 @@ d'un jeu qu'on peut poser devant quelqu'un sans commentaire.
   toutes leurs faces — **survoler une face allume son opposée** (`F2`), celle que
   « Retourner un dé » révélera — et le deck sur **quatre lignes, une par
   couleur**, toutes les cartes dans l'ordre.
+- `U35` ✅ **La gravure se choisit directement sur la liste des faces.** La
+  boutique affiche déjà tous les dés développés face par face (`U31`) : demander
+  « quel dé ? » puis « quelle face ? » redemandait ce qui était sous les yeux.
+  On clique la face, l'offre (`F11`) s'ouvre. Corollaire nécessaire : **l'offre
+  est mémorisée par face** pour la durée de l'achat — sans ça, cliquer une autre
+  face puis revenir relancerait le graveur autant de fois qu'on veut, ce qui
+  viderait `F11` de son sens.
 - `U33` ✅ **L'enjeu de la rencontre est posé sur la table** : à côté du pot, le
   jeton de forge des rencontres qui en rapportent un (`J7b`). Le pot dit ce qu'on
   se dispute, le jeton dit ce qu'on emporte.
@@ -1482,6 +1511,34 @@ font en plus, avec une monnaie séparée :
 | **+ gravure d'EFFETS, 2 faces par dé** | **9,0 %** | 14,9 | 3,4 |
 | + gravure de VALEURS, 2 faces par dé | **0,5 %** | 7,8 | 2,3 |
 
+⚠️ **Ce tableau est daté.** Il vaut pour l'équilibre d'avant `J9` (la prime de
+victoire) et surtout d'avant `R14` (on ne perd qu'en finissant dernier). Depuis,
+200 runs par variante donnent :
+
+| Politique d'achat | runs complets | parties par run | forge non dépensée |
+| --- | --- | --- | --- |
+| clonage seul | **36,0 %** | 30,3 | 6,8 |
+| + gravure d'EFFETS, 2 faces par dé | 35,5 % | 29,4 | 4,4 |
+| + gravure d'EFFETS, 4 faces par dé | 34,5 % | 28,8 | **1,3** |
+| + gravure de VALEURS, 2 faces par dé | 5,5 % | 16,0 | 4,6 |
+
+Deux lectures, et une seule est solide.
+
+1. **Le niveau a changé d'ordre de grandeur** : 8 % → 36 %. C'est très au-delà
+   du bruit et c'est presque entièrement `R14`.
+2. **La hiérarchie des politiques d'achat n'est plus lisible.** 36,0 / 35,5 /
+   34,5 tiennent dans ±3,4 points d'erreur-type à 200 runs : les trois lignes
+   sont indistinguables. Il ne faut **pas** en conclure que graver ne sert plus
+   à rien — seulement que le run est devenu assez facile pour que la boutique ne
+   décide plus de l'issue. Le seul signal qui survit est que graver des
+   **valeurs** reste nettement en dessous (5,5 %), et que graver des effets vide
+   bien le stock de forge (1,3 point inutilisé contre 6,8).
+
+Deux conséquences ouvertes : la durée (30 parties par run, soit largement plus
+d'une heure) redevient le problème que §17 signalait, et le climax du Cercle
+(`R12b`) n'existe plus mécaniquement — la partie annoncée comme le rendez-vous
+du Cercle est désormais celle qu'on ne peut plus perdre.
+
 Trois lectures :
 
 1. **La forge vaut enfin son prix.** Graver des effets fait passer le taux de
@@ -1603,6 +1660,8 @@ et 2 ne sont pas touchés.
 
 | Date | Évolution |
 | --- | --- |
+| 2026-09-08 | **On ne perd une rencontre qu'en finissant dernier** (`R14`) — c'est une redéfinition de « gagner une rencontre », pas un cas particulier des parties à trois, donc `R6` (la défaite tue le run), `J9` (la prime) et le compteur `winsRequired` suivent tous automatiquement. En duel la règle est identique à « finir premier » ; à trois, la deuxième place fait continuer le run. Le moteur expose `humanFirst` à part, pour que l'écran dise « vous finissez 2ᵉ, le run continue » plutôt qu'une victoire qui sonnerait faux. **La mesure a démenti ma prédiction** : j'avais écrit que la règle ramènerait la dernière partie du Cercle au niveau des autres sans la rendre triviale ; elle la rend **quasi automatique**, 99,6 % de survie contre 69 % auparavant. Effet sur le run entier, 200 runs par variante : runs complets **8 % → 36 %** en clonage seul, parties par run **14,9 → 30,3**. Les 9 parties à trois n'étaient pas *un* filtre du run, elles en étaient **le** filtre. Deux conséquences à trancher : la durée d'un run (30 parties) redevient le problème que §17 signalait dès le début, et `R12b` (le climax annoncé du Cercle) n'a plus de contenu mécanique. La hiérarchie des politiques d'achat, elle, devient illisible — 36,0 / 35,5 / 34,5 % tiennent dans une erreur-type — non pas parce que graver ne sert plus, mais parce que la boutique ne décide plus de l'issue. |
+| 2026-09-08 | **La gravure se choisit sur la liste des faces** (`U35`). La boutique affichait déjà tous les dés développés face par face (`U31`), et demandait pourtant « quel dé ? » puis « quelle face ? » — elle redemandait ce qui était sous les yeux du joueur. On clique maintenant la face directement dans le panneau « Vos dés ». Un corollaire est apparu en implémentant : **l'offre du graveur doit être mémorisée par face** pour la durée de l'achat. Cliquer une autre face puis revenir relançait sinon `engraveOptions`, donc un nouveau tirage — le joueur pouvait relancer le graveur autant de fois qu'il voulait et choisir l'effet qu'il visait, ce qui vide `F11` (« on ne choisit plus la valeur, on choisit dans l'offre ») de tout son sens. Le défaut existait déjà avec l'ancien parcours, via le bouton Annuler ; l'accès direct aux faces le rendait simplement trivial. |
 | 2026-09-08 | **Un bug de condition de victoire, signalé à l'essai et confirmé sur 400 parties à trois.** Le joueur se vidait, gagnait donc la partie (`D10d`), puis la nénette d'un adversaire (`B16`) lui rendait un jeton **dans la même manche** — et la victoire disparaissait. Cause : la sortie n'était contrôlée **qu'à la fin de la manche**, sur les jetons finaux, alors que `D11` dit explicitement que c'est le *premier passage* à zéro qui compte. Le contrôle a lieu maintenant après **chaque** mouvement de jetons — transfert principal, `splitGive`, nénette — et le départage `D10g` (pile ou face, jamais l'ordre des sièges) s'applique partout, alors qu'il ne couvrait que la sortie de répartition (`D10f`). Diagnostiqué en rejouant 400 parties à trois et en comparant « premier à zéro » au vainqueur déclaré : **1 anomalie sur 400** avant, **0 sur 2 000** après. Conséquence secondaire cohérente : un joueur déjà sorti ne reçoit plus les jetons de la nénette, ce qui préserve `J2`. Fréquence faible mais l'échec est maximal — c'est la partie que le joueur sait avoir gagnée. |
 | 2026-09-08 | **Gagner une rencontre paie 5 pièces** (`J9`), et **la rencontre qui rapporte un point de forge le montre sur la table** (`J7b`, `U33`). La prime corrige un défaut de `J5` : l'argent étant *ce qu'on donne*, une victoire rapide — a fortiori `D10f`, gagner sans jouer — ne rapportait **rien**, et le joueur qui jouait bien était payé moins que celui qui jouait longtemps. La prime rend la victoire rentable en elle-même sans annuler `D12`, la cupidité restant plus lucrative mais plus risquée. Mesuré, 200 runs par variante : runs complets **6,5 % → 8,0 %** en clonage seul, **9,0 % → 11,0 %** en gravant des effets, **0,5 % → 2,0 %** en gravant des valeurs ; un run passe de 13,7 à 14,9 parties. Le classement des politiques d'achat ne bouge pas — la prime déplace le niveau, pas les décisions. Le jeton de forge posé à côté du pot répond à un problème d'affichage plus qu'à un problème de règle : la cadence de `J7` est connue d'avance, l'enjeu doit donc être visible **avant** qu'on joue. La boutique affiche en retour ce que la rencontre a rapporté (`U34`), sans quoi la prime arriverait en silence. |
 | 2026-09-08 | **Le prototype prend la forme de l'application finale** (`U19` à `U32`), d'après `docs/proto3/interface.md`. Ce n'est plus un banc d'essai avec un bandeau de réglages : logo, menu, statistiques persistantes, options, introduction dialoguée, sauvegarde et reprise, écran de fin de Cercle. La partie elle-même est rejouée **sur une table vue du joueur** — sa zone en bas, les adversaires en face, le pot et les tuiles au centre — au lieu d'une rangée de panneaux. Trois décisions structurantes en sont sorties. **Les commandes passent au-dessus de la zone du joueur** (`U26`) : les cartes qu'on sélectionne et les dés qu'on garde sont désormais *ceux de la table*, ce qui supprime le doublon permanent entre la main affichée et la main cliquable — c'est le même défaut que `U8c` avait déjà corrigé pour les récompenses, généralisé. **Les tuiles de récompense disent où en est la partie** (`U27`) : posée au centre elle est à prendre, dans une zone elle agit, absente elle est consommée — l'état d'un bonus se lit sans texte. **Le fil d'Ariane est construit depuis `battleSeries`** (`U25`), donc changer la séquence dans la configuration change l'écran sans toucher au code. Un point d'implémentation à noter : la sauvegarde emporte l'état du générateur aléatoire et le compteur d'`uid` des cartes (`U23`), faute de quoi une reprise rejouerait la même suite de tirages et un clone d'après reprise entrerait en collision avec une carte existante. Écart assumé avec la spéc. : celle-ci fixe le point de sauvegarde « avant la boutique », on sauve **aussi après chaque achat** — la reprise se fait toujours en boutique, mais un achat n'est plus perdu si l'on quitte ensuite. |

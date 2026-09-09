@@ -18,8 +18,26 @@ import { config } from './helpers'
 
 const cfg = config()
 const zero = { bonusMoney: [0, 0], bonusForge: [0, 0] }
-const win: MatchResult = { ranking: [0, 1], money: [7, 0], ...zero, rounds: 10, throws: 40, humanWon: true }
-const loss: MatchResult = { ranking: [1, 0], money: [3, 0], ...zero, rounds: 10, throws: 40, humanWon: false }
+const win: MatchResult = {
+  ranking: [0, 1],
+  money: [7, 0],
+  ...zero,
+  rounds: 10,
+  throws: 40,
+  humanWon: true,
+  humanFirst: true,
+  humanPlace: 0,
+}
+const loss: MatchResult = {
+  ranking: [1, 0],
+  money: [3, 0],
+  ...zero,
+  rounds: 10,
+  throws: 40,
+  humanWon: false,
+  humanFirst: false,
+  humanPlace: 1,
+}
 
 describe('R6 — une défaite termine le run', () => {
   it('tue le run et n’efface pas l’argent déjà gagné de la partie', () => {

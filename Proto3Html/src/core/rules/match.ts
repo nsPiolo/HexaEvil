@@ -57,7 +57,12 @@ export interface MatchResult {
   readonly bonusForge: readonly number[]
   readonly rounds: number
   readonly throws: number
+  /** `R14` : le joueur n'a **pas** fini dernier — donc le run continue. */
   readonly humanWon: boolean
+  /** Vraiment premier, ce qui n'est plus la même chose à trois. */
+  readonly humanFirst: boolean
+  /** Place au classement, à partir de 0 ; `-1` s'il n'y a pas de joueur humain. */
+  readonly humanPlace: number
 }
 
 export type Yielded = { readonly t: 'step'; readonly step: TraceStep } | { readonly t: 'ask'; readonly ask: Ask }
@@ -158,8 +163,20 @@ export function* matchProgram(ctx: Ctx): Generator<Yielded, MatchResult, Answer>
   ranking.push(...rest)
 
   const human = ctx.participants.find((p) => p.isHuman)
-  const humanWon = human !== undefined && ranking[0] === human.index
-  yield* step({ kind: 'matchEnd', ranking, money: [...ctx.live.given], humanWon })
+  const humanPlace = human === undefined ? -1 : ranking.indexOf(human.index)
+  // `R14` : **on ne perd qu'en étant le dernier à détenir des jetons.** En duel
+  // c'est exactement « finir premier » ; à trois, la deuxième place survit et le
+  // run continue. C'est ce que « gagner une rencontre » veut dire partout ailleurs.
+  const humanWon = humanPlace >= 0 && humanPlace < ranking.length - 1
+  const humanFirst = humanPlace === 0
+  yield* step({
+    kind: 'matchEnd',
+    ranking,
+    money: [...ctx.live.given],
+    humanWon,
+    humanFirst,
+    humanPlace,
+  })
 
   return {
     ranking,
@@ -169,6 +186,8 @@ export function* matchProgram(ctx: Ctx): Generator<Yielded, MatchResult, Answer>
     rounds: ctx.rounds,
     throws: ctx.throws,
     humanWon,
+    humanFirst,
+    humanPlace,
   }
 }
 

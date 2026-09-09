@@ -7,6 +7,7 @@ import { circleCleared, INTRO } from '../dialogues'
 import { Game } from '../Game'
 import { Menu, OptionsScreen, StatsScreen } from '../Menu'
 import { Session } from '../session'
+import { Shop } from '../Shop'
 import { Splash } from '../Splash'
 import { addStats, loadSave, loadStats, resetStats, type Options } from '../storage'
 
@@ -128,6 +129,28 @@ describe('le run se sauve et se reprend', () => {
     expect(back.run.deck.length).toBe(session.run.deck.length)
     expect(back.run.circleIndex).toBe(session.run.circleIndex)
     expect(back.run.dice[0]?.faces.length).toBe(session.run.dice[0]?.faces.length)
+  })
+})
+
+describe('U35 — la gravure se choisit sur la liste des faces', () => {
+  it('ouvre les faces au clic, sans redemander le dé', () => {
+    const session = new Session(cfg)
+    session.run.forgePoints = 5
+    session.screen = 'shop'
+    session.openShop('engraveOne')
+    const html = renderToString(<Shop session={session} />)
+    // Les faces du panneau « Vos dés » deviennent cliquables…
+    expect(html).toContain('inspector__face--btn')
+    expect(html).toContain('cliquez la face à graver')
+    // …et on ne demande plus « quel dé ? ».
+    expect(html).not.toContain('>Dé 1</button>')
+  })
+
+  it('hors gravure, les faces ne sont pas cliquables', () => {
+    const session = new Session(cfg)
+    session.screen = 'shop'
+    const html = renderToString(<Shop session={session} />)
+    expect(html).not.toContain('inspector__face--btn')
   })
 })
 
