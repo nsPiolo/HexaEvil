@@ -84,6 +84,7 @@
     { "id": "extraDie",   "scope": "owner", "uses": "firstThrowOfPhase" },
     { "id": "set42",      "scope": "owner", "uses": "oncePerMatch" },
     { "id": "valuePlus1", "scope": "owner", "uses": "match" },
+    { "id": "lateStop",   "scope": "owner", "uses": "oncePerPhase" },
     { "id": "reroll421",  "scope": "owner", "uses": "match" },
     { "id": "splitGive",  "scope": "owner", "uses": "match", "needsThree": true },
     { "id": "takeLess",   "scope": "owner", "uses": "match" },
@@ -109,6 +110,8 @@
   "rules": {
     "_leaderCapsThrows": "D4 : le meneur plafonne le nombre de jets des autres.",
     "leaderCapsThrows": true,
+    "_minReroll": "D5 : dés qu'un jet doit relancer au minimum. 0 rendrait l'annonce inutile.",
+    "minReroll": 2,
     "_leaderRotates": "D6 : true = tourne, false = le vainqueur de la manche mène.",
     "leaderRotates": true,
     "_firstLeader": "D7 : qui ouvre la 1re manche d'une phase.",
@@ -145,7 +148,7 @@
     "rewardWeights": {
       "give5": 8, "give3": 6,
       "valuePlus1": 7, "extraDie": 8, "set42": 4,
-      "flipDie": 5, "setRerolls": 3,
+      "flipDie": 5, "setRerolls": 3, "lateStop": 7,
       "reroll421": 6, "splitGive": 7, "takeLess": 5, "nenetteGift": 3
     }
   },

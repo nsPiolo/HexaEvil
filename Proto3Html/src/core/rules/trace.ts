@@ -56,6 +56,8 @@ export type TraceStep =
       /** `F10` : l'effet porté par la face visible de chaque dé. */
       effects: readonly (FaceEffectId | null)[]
       hand: DiceHand
+      /** `D5` : le jet a été **annoncé** comme le dernier avant d'être lancé. */
+      last: boolean
       via: 'normal' | 'set42' | 'extraDie' | 'freeReroll'
     }
   | {
@@ -115,6 +117,14 @@ export type TraceStep =
       source: 'pot' | 'owner'
       pot: number
       chips: readonly number[]
+    }
+  | {
+      /** `B18` : le bonus a servi — on s'arrête sans l'avoir annoncé. */
+      kind: 'lateStop'
+      who: number
+      hand: DiceHand
+      throwNo: number
+      maxThrows: number
     }
   | { kind: 'turnEnd'; who: number; hand: DiceHand; throws: number }
   | {

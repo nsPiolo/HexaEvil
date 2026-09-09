@@ -882,6 +882,9 @@ body {
 .btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .btn--primary { background: linear-gradient(180deg, var(--ember), var(--ember-soft)); border-color: var(--ember); color: #fff; font-weight: 600; }
 .btn--bonus { border-color: var(--gold); color: var(--gold); }
+/* `D5` : l'annonce engage — le bouton doit se distinguer du jet ordinaire. */
+.btn--announce { border-color: var(--bad); color: var(--bad); font-weight: 600; }
+.btn--announce:hover:not(:disabled) { background: var(--bad); border-color: var(--bad); color: #fff; }
 .btn--big { padding: 0.65rem 1.5rem; font-size: 1rem; }
 
 .chipbtn {

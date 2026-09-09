@@ -283,6 +283,7 @@ export function buildView(steps: readonly TraceStep[], upTo: number, count: numb
         v.timeline.over = true
         break
       case 'rewardSetting':
+      case 'lateStop':
       case 'faceBonus':
       case 'sideGift':
       case 'nenetteGift':

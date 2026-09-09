@@ -101,6 +101,8 @@ export interface AiConfig {
 
 export interface RulesConfig {
   readonly leaderCapsThrows: boolean
+  /** `D5` : dés qu'un jet doit relancer au minimum — sinon garder tout vaudrait un arrêt. */
+  readonly minReroll: number
   readonly leaderRotates: boolean
   readonly firstLeader: 'lastCardDuelWinner' | 'player'
   readonly runEndsOnLoss: boolean

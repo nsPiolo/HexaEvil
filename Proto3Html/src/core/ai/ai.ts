@@ -8,7 +8,9 @@
  *
  * Limite connue et assumée du proto : le démon meneur ne calcule pas l'effet de
  * son nombre de jets sur le plafond des autres (`D4`). C'est le seul pan
- * stratégique du 4-21 qu'il ne voit pas.
+ * stratégique du 4-21 qu'il ne voit pas — et depuis que `D5` est remise, il
+ * annonce donc son dernier jet (`I8`) sans voir qu'il plafonne les suivants du
+ * même geste.
  */
 
 import { evaluateHand } from '../cards/hands'
@@ -100,27 +102,46 @@ function pickByTemperature<T>(scored: { item: T; score: number }[], temperature:
 const ENUMERATION_BUDGET = 4_000
 const SAMPLE_COUNT = 400
 
-/** Espérance de force après avoir relancé les dés marqués dans `reroll`. */
-export function expectedStrength(
+export interface RollOutlook {
+  /** Espérance de force après le jet. */
+  readonly mean: number
+  /** `D5` : part des tirages qui atteignent `level` — ce qu'annoncer protège. */
+  readonly above: number
+}
+
+/**
+ * Ce qu'un jet promet, en une passe : son espérance, et la part de ses tirages
+ * qui atteignent `level`. La seconde sert à `D5` — si le jet a de bonnes
+ * chances de tomber sur une main qu'on ne voudrait pas relancer, il faut
+ * l'annoncer **avant** de le lancer.
+ */
+export function rollOutlook(
   dice: readonly Die[],
   values: readonly number[],
   reroll: readonly boolean[],
   faces: number,
   combos: CombinationsConfig,
   rng: Rng,
-): number {
+  level = Infinity,
+): RollOutlook {
   const idx: number[] = []
   for (let i = 0; i < dice.length; i++) if (reroll[i]) idx.push(i)
-  if (idx.length === 0) return bestStrength(values, faces, combos)
+  if (idx.length === 0) {
+    const s = bestStrength(values, faces, combos)
+    return { mean: s, above: s >= level ? 1 : 0 }
+  }
 
   const outcomes = idx.reduce((n, i) => n * (dice[i] as Die).faces.length, 1)
   const next = [...values]
+  let total = 0
+  let hits = 0
 
   if (outcomes <= ENUMERATION_BUDGET) {
-    let total = 0
     const walk = (k: number): void => {
       if (k === idx.length) {
-        total += bestStrength(next, faces, combos)
+        const s = bestStrength(next, faces, combos)
+        total += s
+        if (s >= level) hits++
         return
       }
       const i = idx[k] as number
@@ -130,15 +151,28 @@ export function expectedStrength(
       }
     }
     walk(0)
-    return total / outcomes
+    return { mean: total / outcomes, above: hits / outcomes }
   }
 
-  let total = 0
   for (let s = 0; s < SAMPLE_COUNT; s++) {
     for (const i of idx) next[i] = throwDie(dice[i] as Die, rng).value
-    total += bestStrength(next, faces, combos)
+    const v = bestStrength(next, faces, combos)
+    total += v
+    if (v >= level) hits++
   }
-  return total / SAMPLE_COUNT
+  return { mean: total / SAMPLE_COUNT, above: hits / SAMPLE_COUNT }
+}
+
+/** Espérance de force après avoir relancé les dés marqués dans `reroll`. */
+export function expectedStrength(
+  dice: readonly Die[],
+  values: readonly number[],
+  reroll: readonly boolean[],
+  faces: number,
+  combos: CombinationsConfig,
+  rng: Rng,
+): number {
+  return rollOutlook(dice, values, reroll, faces, combos, rng).mean
 }
 
 export interface AiTurnInput {
@@ -148,8 +182,12 @@ export interface AiTurnInput {
   readonly alts?: readonly (number | null)[] | null
   /** `F10` : dés relançables gratuitement. */
   readonly freeRerolls?: readonly number[]
-  readonly throwNo: number
-  readonly maxThrows: number
+  /** `D5` : jets encore disponibles — 0 dès que le dernier a été annoncé. */
+  readonly throwsLeft: number
+  /** `D5` : plancher de dés qu'un jet doit relancer. */
+  readonly minReroll: number
+  /** `B18` : le démon peut encore s'arrêter **après** avoir vu ses dés. */
+  readonly canLateStop?: boolean
   readonly faces: number
   readonly combos: CombinationsConfig
   /** `I5` : un démon faible ne choisit pas toujours la meilleure garde. */
@@ -157,20 +195,74 @@ export interface AiTurnInput {
 }
 
 /**
+ * `D5` : au-delà de cette probabilité de tomber sur une main qu'on garderait,
+ * le démon annonce son dernier jet. À 3 dés, un jet neuf laisse ~24 % de mains
+ * au-dessus de sa propre espérance : le seuil laisse donc passer le premier
+ * jet, et déclenche l'annonce dès qu'un début de main est en place.
+ */
+const ANNOUNCE_THRESHOLD = 0.3
+
+/**
+ * `I8` : échelle de l'erreur d'annonce, en probabilité. Une décision **binaire**
+ * ne peut pas passer par `pickByTemperature` : celui-ci normalise par l'écart
+ * des notes, donc à deux options l'écart *est* l'échelle et l'on se tromperait
+ * autant sur un choix évident que sur un choix serré — le défaut exact que
+ * `I5b` reproche à l'ancien modèle. On tire donc l'erreur sur l'écart **brut**.
+ */
+const ANNOUNCE_MARGIN = 0.1
+
+/**
+ * `D5` : faut-il annoncer ce jet comme le dernier ? On compare la chance qu'il
+ * tombe sur une main qu'on ne voudrait **pas** relancer au seuil ci-dessus. Le
+ * niveau de référence est ce qu'espère un jet neuf : au-dessus, une main vaut
+ * la peine d'être gardée ; en dessous, on préfère la relancer.
+ *
+ * `I5` : le niveau se voit ici aussi — plus `T` monte, plus le démon annonce à
+ * contretemps, mais une annonce franchement mauvaise reste improbable.
+ */
+function announceLast(
+  dice: readonly Die[],
+  values: readonly number[],
+  mask: readonly boolean[],
+  input: AiTurnInput,
+  rng: Rng,
+): boolean {
+  const { faces, combos, temperature } = input
+  const fresh = dice.map(() => true)
+  const level = rollOutlook(dice, values, fresh, faces, combos, rng).mean
+  const chance = rollOutlook(dice, values, mask, faces, combos, rng, level).above
+  const margin = chance - ANNOUNCE_THRESHOLD
+  const best = margin >= 0
+  if (temperature <= 0) return best
+  const wrong = 1 / (1 + Math.exp(Math.abs(margin) / (temperature * ANNOUNCE_MARGIN)))
+  return rng.next() < wrong ? !best : best
+}
+
+/**
  * `I2`/`I3` : le démon maximise la force de sa main dans les deux phases — en
  * répartition pour ne pas être le pire, en don pour être le meilleur et se
  * débarrasser de ses jetons. Le même objectif sert les deux.
  *
- * Depuis que `D5` a sauté, la décision est simple : on relance tant qu'on
- * espère mieux, on s'arrête sinon. Plus rien à annoncer d'avance.
+ * `D5` rend la décision **double** : quels dés relancer, et si c'est le dernier
+ * jet. La seconde se prend à l'aveugle, avant le résultat, et elle est
+ * engageante : ne pas annoncer, c'est s'obliger à faire voler `minReroll` dés
+ * de plus — donc à casser la main qu'on vient d'obtenir.
  */
 export function aiTurn(input: AiTurnInput, rng: Rng): TurnAction {
-  const { dice, values, throwNo, maxThrows, faces, combos } = input
+  const { dice, values, throwsLeft, faces, combos } = input
   const n = dice.length
-  const throwsLeft = maxThrows - throwNo
+  const minReroll = Math.min(Math.max(1, input.minReroll), n)
   const alts = input.alts ?? undefined
+  const canLateStop = input.canLateStop ?? false
 
-  if (values === null) return { type: 'roll', keep: new Array<boolean>(n).fill(false), useSet42: false }
+  if (values === null) {
+    // Premier jet : tout part, l'annonce est la seule décision à prendre.
+    const keep = new Array<boolean>(n).fill(false)
+    const fresh = dice.map(() => true)
+    const zeros = new Array<number>(n).fill(0)
+    const last = throwsLeft <= 1 || (!canLateStop && announceLast(dice, zeros, fresh, input, rng))
+    return { type: 'roll', keep, useSet42: false, last }
+  }
 
   const current = bestStrength(values, faces, combos, alts)
 
@@ -182,19 +274,33 @@ export function aiTurn(input: AiTurnInput, rng: Rng): TurnAction {
     }
   }
   if (throwsLeft <= 0) return { type: 'stop' }
+
+  // `D5` : un jet fait voler au moins `minReroll` dés — les autres masques
+  // n'existent pas, et c'est ce qui donne son prix à l'annonce.
   const scored: { item: boolean[]; score: number }[] = []
   for (let m = 1; m < 1 << n; m++) {
     const reroll = Array.from({ length: n }, (_, i) => Boolean(m & (1 << i)))
-    scored.push({ item: reroll, score: expectedStrength(dice, values, reroll, faces, combos, rng) })
+    if (reroll.filter(Boolean).length < minReroll) continue
+    scored.push({ item: reroll, score: rollOutlook(dice, values, reroll, faces, combos, rng).mean })
   }
   const topValue = Math.max(...scored.map((x) => x.score))
-  if (topValue <= current) return { type: 'stop' }
+
+  if (topValue <= current) {
+    // Aucun jet n'espère mieux que la main en cours. On s'arrête si on en a le
+    // droit (`B18`) ; sinon on subit le jet le moins destructeur — annoncé,
+    // pour qu'il soit le dernier.
+    if (canLateStop) return { type: 'stop' }
+    const leastBad = pickByTemperature(scored, input.temperature, rng)
+    return { type: 'roll', keep: leastBad.map((r) => !r), useSet42: false, last: true }
+  }
 
   // `I5` : c'est **ici** que le niveau se joue. Le faire porter uniquement sur
   // les cartes ne changeait rien au taux de victoire — les parties se décident
   // aux dés.
   const bestMask = pickByTemperature(scored, input.temperature, rng)
-  return { type: 'roll', keep: bestMask.map((r) => !r), useSet42: false }
+  // `B18` dispense d'annoncer : on garde le droit de s'arrêter après coup.
+  const last = throwsLeft <= 1 || (!canLateStop && announceLast(dice, values, bestMask, input, rng))
+  return { type: 'roll', keep: bestMask.map((r) => !r), useSet42: false, last }
 }
 
 /* --------------------------------------------------------------- Cartes */

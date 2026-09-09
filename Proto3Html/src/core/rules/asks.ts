@@ -20,6 +20,14 @@ export interface TurnContext {
   readonly freeRerolls: readonly number[]
   readonly throwNo: number
   readonly maxThrows: number
+  /** `D5` : jets encore disponibles — passe à 0 dès que le dernier est annoncé. */
+  readonly throwsLeft: number
+  /** `D5` : nombre minimal de dés qu'un jet doit relancer. */
+  readonly minReroll: number
+  /** `D5`/`B18` : finir son tour sans lancer — plafond atteint, ou bonus en main. */
+  readonly canStop: boolean
+  /** `B18` : s'arrêter maintenant consommerait « s'arrêter après ». */
+  readonly stopUsesBonus: boolean
   /** `D4` : le meneur fixe le plafond ; pour les autres, `maxThrows` **est** ce plafond. */
   readonly isLeader: boolean
   readonly canFlip: boolean
@@ -36,7 +44,8 @@ export type Ask =
   | { kind: 'turn'; context: TurnContext }
 
 export type TurnAction =
-  | { type: 'roll'; keep: readonly boolean[]; useSet42: boolean }
+  /** `D5` : `last` est **l'annonce** — elle se donne avant de lancer, pas après. */
+  | { type: 'roll'; keep: readonly boolean[]; useSet42: boolean; last: boolean }
   | { type: 'stop' }
   | { type: 'flip'; dieIndex: number }
   | { type: 'freeReroll'; dieIndex: number }

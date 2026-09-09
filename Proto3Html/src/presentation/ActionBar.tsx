@@ -8,7 +8,7 @@
  */
 
 import type { Answer, Ask } from '../core/rules/asks'
-import { CATEGORY_LABEL, diceHandLabel, EFFECT_LABEL, EFFECT_SYMBOL, REWARD_LABEL } from './labels'
+import { CATEGORY_LABEL, diceHandLabel, EFFECT_LABEL, EFFECT_SYMBOL, REWARD_HELP, REWARD_LABEL } from './labels'
 import type { View } from './viewModel'
 
 export interface ActionBarProps {
@@ -105,7 +105,7 @@ export function ActionBar(props: ActionBarProps) {
       const slot = view.dice[c.who]
       const values = c.values ?? slot?.values ?? []
       const n = c.diceCount
-      const throwsLeft = c.maxThrows - c.throwNo
+      const throwsLeft = c.throwsLeft
       const first = c.values === null
       const keepMask = keep.length === n ? keep : new Array<boolean>(n).fill(false)
       const rerolled = keepMask.filter((k) => !k).length
@@ -120,32 +120,68 @@ export function ActionBar(props: ActionBarProps) {
         )
       }
 
-      const roll = (useSet42 = false) =>
+      // `D5` : `last` est l'annonce, et elle se donne **avant** de lancer.
+      const roll = (last: boolean, useSet42 = false) =>
         onAnswer({
           kind: 'turn',
-          action: { type: 'roll', keep: first ? new Array<boolean>(n).fill(false) : [...keepMask], useSet42 },
+          action: { type: 'roll', keep: first ? new Array<boolean>(n).fill(false) : [...keepMask], useSet42, last },
         })
 
+      // `D5` : le dernier jet disponible est le dernier, il n'y a rien à annoncer.
+      const forced = throwsLeft === 1
+      // `D5` : un jet fait voler au moins `minReroll` dés — sinon tout garder
+      // serait un arrêt gratuit.
+      const enough = first || rerolled >= c.minReroll
+      const rollLabel = first ? `Lancer ${n} dés` : `Relancer ${rerolled} dé${rerolled > 1 ? 's' : ''}`
+
+      const now = slot?.hand ? ` Actuellement : ${diceHandLabel(slot.hand)} — ${slot.hand.chipValue} jetons.` : ''
       const help = first
         ? `Vous lancez ${n} dés ; le jeu retient toujours la meilleure combinaison de trois.`
-        : `Cliquez les dés à garder, puis relancez les autres.${
-            slot?.hand ? ` Actuellement : ${diceHandLabel(slot.hand)} — ${slot.hand.chipValue} jetons.` : ''
-          }`
+        : throwsLeft <= 0
+          ? `Votre main est faite.${now}`
+          : `Cliquez les dés à garder, puis relancez les autres — ${c.minReroll} au minimum.${now}`
+      // `D5` : c'est la décision du tour, elle doit être dite avant le clic.
+      const rule =
+        throwsLeft <= 0
+          ? 'Plus aucun jet : il ne reste que vos bonus, puis l’arrêt.'
+          : !enough
+            ? `Il faut relancer au moins ${c.minReroll} dés : désélectionnez un dé gardé.`
+            : forced
+              ? 'C’est votre dernier jet possible.'
+              : `Annoncez maintenant si c’est votre dernier jet : sinon il faudra en relancer ${c.minReroll} de plus après avoir vu ceux-là.`
       // `D4` : le plafond vient du meneur, et il faut le dire.
       const cap = c.isLeader
         ? `Vous menez : le nombre de jets que vous utilisez plafonnera les autres.`
         : `Le meneur s’est arrêté après ${c.maxThrows} jet${c.maxThrows > 1 ? 's' : ''} : c’est votre plafond.`
 
       return (
-        <Bar help={`${help} ${cap}`} tag={`Jet ${c.throwNo + 1} sur ${c.maxThrows}`}>
-          {throwsLeft > 0 && (
-            <button type="button" className="btn btn--primary" onClick={() => roll()}>
-              {first ? `Lancer ${n} dés` : `Relancer ${rerolled} dé${rerolled > 1 ? 's' : ''}`}
+        <Bar
+          help={`${help} ${rule} ${cap}`}
+          tag={`Jet ${throwsLeft > 0 ? c.throwNo + 1 : c.throwNo} sur ${c.maxThrows}`}
+        >
+          {throwsLeft > 0 && !forced && (
+            <button type="button" className="btn btn--primary" disabled={!enough} onClick={() => roll(false)}>
+              {rollLabel}
             </button>
           )}
-          {!first && (
-            <button type="button" className="btn" onClick={() => onAnswer({ kind: 'turn', action: { type: 'stop' } })}>
-              M’arrêter là
+          {throwsLeft > 0 && (
+            <button
+              type="button"
+              className={forced ? 'btn btn--primary' : 'btn btn--announce'}
+              disabled={!enough}
+              onClick={() => roll(true)}
+            >
+              {rollLabel} — dernier jet
+            </button>
+          )}
+          {c.canStop && (
+            <button
+              type="button"
+              className={c.stopUsesBonus ? 'btn btn--bonus' : 'btn'}
+              title={c.stopUsesBonus ? REWARD_HELP.lateStop : undefined}
+              onClick={() => onAnswer({ kind: 'turn', action: { type: 'stop' } })}
+            >
+              {c.stopUsesBonus ? `M’arrêter là — ${REWARD_LABEL.lateStop}` : 'M’arrêter là'}
             </button>
           )}
           {/* `F10` : une relance gratuite ne coûte pas de jet — bouton par dé concerné. */}
@@ -166,7 +202,7 @@ export function ActionBar(props: ActionBarProps) {
             </button>
           )}
           {c.canSet42 && (
-            <button type="button" className="btn btn--bonus" onClick={() => roll(true)}>
+            <button type="button" className="btn btn--bonus" onClick={() => roll(true, true)}>
               Fixer 4 et 2 — jet définitif
             </button>
           )}

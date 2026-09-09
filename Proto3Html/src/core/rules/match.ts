@@ -78,6 +78,8 @@ interface Ctx {
   readonly usedSet42: Set<number>
   /** `B8` : « premier jet de la phase » — donc une seule fois par phase, pas par manche. */
   readonly usedExtra: Set<number>
+  /** `B18` : « s'arrêter après avoir vu ses dés », une fois par phase. */
+  readonly usedLateStop: Set<number>
   lastDuelWinner: number
   rounds: number
   throws: number
@@ -450,6 +452,7 @@ function* dicePhase(ctx: Ctx, phase: PhaseId): Generator<Yielded, void, Answer> 
   ctx.live.phase = phase
   ctx.live.round = 0
   ctx.usedExtra.clear()
+  ctx.usedLateStop.clear()
 
   // `D7` : le meneur de la première manche est le vainqueur de la dernière
   // bataille de cartes qui précède la phase.
@@ -542,6 +545,10 @@ function* takeTurn(
   let faceIdx: number[] = new Array<number>(dice.length).fill(-1)
   let throwNo = 0
   let best: BestHand | null = null
+  /** `D5` : le dernier jet est annoncé — après lui, il ne reste aucun jet. */
+  let announced = false
+  /** `D5` : sans plancher de relance, « je garde tout » serait un arrêt gratuit. */
+  const minReroll = Math.min(ctx.cfg.rules.minReroll, dice.length)
   /** `F10` : un dé ne se relance gratuitement qu'une fois par jet. */
   const usedFree = new Set<number>()
 
@@ -584,11 +591,15 @@ function* takeTurn(
   }
 
   for (;;) {
+    // `D5` : annoncer, c'est se retirer ses jets restants — rien d'autre.
+    const throwsLeft = announced ? 0 : maxThrows - throwNo
     const canFlip = ctx.live.owned.get('flipDie') === who && !ctx.usedFlip.has(who) && values !== null
-    const canSet42 = ctx.live.owned.get('set42') === who && !ctx.usedSet42.has(who) && throwNo < maxThrows
+    const canSet42 = ctx.live.owned.get('set42') === who && !ctx.usedSet42.has(who) && throwsLeft > 0
     const freeRerolls =
       values === null ? [] : dice.map((_, i) => i).filter((i) => effectAt(i) === 'freeReroll' && !usedFree.has(i))
-    if (throwNo >= maxThrows && !canFlip && freeRerolls.length === 0) break
+    // `B18` : le seul moyen de s'arrêter sans l'avoir annoncé.
+    const lateStopLeft = ctx.live.owned.get('lateStop') === who && !ctx.usedLateStop.has(who) && values !== null
+    if (throwsLeft <= 0 && !canFlip && freeRerolls.length === 0) break
 
     let action: TurnAction
     if (p.isHuman) {
@@ -606,6 +617,10 @@ function* takeTurn(
             freeRerolls,
             throwNo,
             maxThrows,
+            throwsLeft,
+            minReroll,
+            canStop: values !== null && (throwsLeft <= 0 || lateStopLeft),
+            stopUsesBonus: throwsLeft > 0 && lateStopLeft,
             isLeader,
             canFlip,
             canSet42,
@@ -616,7 +631,7 @@ function* takeTurn(
       action = answer.kind === 'turn' ? answer.action : { type: 'stop' }
     } else {
       action =
-        throwNo >= maxThrows && freeRerolls.length === 0
+        throwsLeft <= 0 && freeRerolls.length === 0
           ? { type: 'stop' }
           : aiTurn(
               {
@@ -624,8 +639,9 @@ function* takeTurn(
                 values,
                 alts: values ? altsNow() : null,
                 freeRerolls,
-                throwNo,
-                maxThrows,
+                throwsLeft,
+                minReroll,
+                canLateStop: lateStopLeft,
                 faces,
                 combos,
                 temperature: p.ai?.temperature ?? 0,
@@ -654,6 +670,7 @@ function* takeTurn(
           kept: [...best.indices],
           effects: effectsNow(),
           hand: best.hand,
+          last: announced,
           via: 'freeReroll',
         },
       }
@@ -687,15 +704,35 @@ function* takeTurn(
       continue
     }
 
-    // `D5` : on s'arrête quand on veut, **après** avoir vu ses dés.
+    // `D5` : on ne s'arrête **pas** quand on veut. Il faut avoir annoncé son
+    // dernier jet avant de le lancer, avoir épuisé le plafond du meneur — ou
+    // payer l'écart avec `B18`.
     if (action.type === 'stop') {
       if (values === null) continue
+      if (throwsLeft > 0) {
+        if (!lateStopLeft) continue
+        ctx.usedLateStop.add(who)
+        yield {
+          t: 'step',
+          step: { kind: 'lateStop', who, hand: (best as BestHand).hand, throwNo, maxThrows },
+        }
+      }
       break
     }
 
-    if (throwNo >= maxThrows) break
+    // Plus de jet : il ne reste que le retournement, les relances gratuites et l'arrêt.
+    if (throwsLeft <= 0) continue
 
     const useSet42 = action.useSet42 && canSet42
+    // `D5` : un jet relance au moins `minReroll` dés. Sans ce plancher, garder
+    // tous ses dés vaudrait un arrêt, et l'annonce ne coûterait plus rien.
+    if (!useSet42 && values !== null) {
+      const flying = values.filter((_, i) => !(action.keep[i] ?? false)).length
+      if (flying < minReroll) continue
+    }
+    // `B11` : le 4 et 2 fixé est définitif — c'est une annonce en soi.
+    if (action.last || useSet42) announced = true
+
     const n = dice.length
     const rolled = new Array<boolean>(n).fill(false)
     const nextValues: number[] = values ? [...values] : new Array<number>(n).fill(0)
@@ -742,6 +779,7 @@ function* takeTurn(
         kept: [...best.indices],
         effects: effectsNow(),
         hand: best.hand,
+        last: announced,
         via: useSet42 ? 'set42' : extraPending ? 'extraDie' : 'normal',
       },
     }
@@ -795,6 +833,7 @@ function* takeTurn(
         kept: [...best.indices],
         effects: effectsNow(),
         hand: best.hand,
+        last: true,
         via: 'normal',
       },
     }
@@ -1061,6 +1100,7 @@ export class MatchDriver {
       usedFlip: new Set(),
       usedSet42: new Set(),
       usedExtra: new Set(),
+      usedLateStop: new Set(),
       lastDuelWinner: 0,
       rounds: 0,
       throws: 0,

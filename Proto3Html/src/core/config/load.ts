@@ -95,6 +95,7 @@ const REWARD_IDS: readonly RewardId[] = [
   'extraDie',
   'set42',
   'valuePlus1',
+  'lateStop',
 ]
 
 function loadCombinations(raw: unknown): CombinationsConfig {
@@ -266,6 +267,7 @@ export function loadConfig(raw: unknown): GameConfig {
     winBonusMoney: int(root['winBonusMoney'], 'winBonusMoney', 0),
     rules: {
       leaderCapsThrows: bool(rulesRaw['leaderCapsThrows'], 'rules.leaderCapsThrows'),
+      minReroll: int(rulesRaw['minReroll'], 'rules.minReroll', 1),
       leaderRotates: bool(rulesRaw['leaderRotates'], 'rules.leaderRotates'),
       firstLeader,
       runEndsOnLoss: bool(rulesRaw['runEndsOnLoss'], 'rules.runEndsOnLoss'),

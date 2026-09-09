@@ -461,6 +461,7 @@ document.
 | `splitGive` | Donner à un adversaire en donne la moitié à l'autre. **À trois seulement** | son détenteur | toute la partie |
 | `takeLess` | Encaisse un jeton de moins, au minimum 1 | son détenteur | toute la partie |
 | `nenetteGift` | Une nénette fait circuler un jeton vers chaque adversaire | **tous les participants** | toute la partie |
+| `lateStop` | S'arrêter **après** avoir vu ses dés, sans l'avoir annoncé (`D5`) | son détenteur | 🧪 **une fois par phase** |
 
 - `B9` ✅ `setRerolls` est le seul bonus qui touche **tout le monde**, y compris
   celui qui ne l'a pas choisi. Le mettre à 1 est une arme défensive (moins de
@@ -514,6 +515,13 @@ document.
 - `B17` 🧪 `valuePlus1` s'applique **après** le barème (`V2`), donc aussi à la
   combinaison `junk` : un jet raté vaut 2 au lieu de 1. Il ne change **pas** le
   classement des mains (`V4`), seulement le nombre de jetons transférés.
+- `B18` 🧪 **`lateStop` — s'arrêter sans annoncer.** Le bonus du brouillon, qui
+  n'avait plus d'objet tant que `D5` était levée et qui redevient exactement ce
+  qu'il était : son détenteur peut garder sa main **après** l'avoir vue, sans
+  avoir annoncé son dernier jet — **une fois par phase**. C'est la seule
+  dispense de `D5` du jeu, et elle vaut cher : elle transforme un tour risqué en
+  tour sûr, mais une seule fois, donc au bon moment. Le démon qui la détient
+  cesse d'annoncer et s'en sert au premier tour où il ne veut plus relancer.
 
 ## 7. Partie de dés — le 4-21
 
@@ -532,16 +540,32 @@ document.
   autres.
 - `D4` ✅ **Le meneur plafonne les autres** (règle fondatrice du 4-21) : le
   premier participant de la manche décide combien de jets il utilise, et
-  **aucun autre ne peut en faire davantage**. Depuis que `D5` a sauté, c'est la
-  **seule** décision structurante de la manche : s'arrêter tôt sur une bonne
-  main prive les autres de leurs relances.
-- `D5` ✅ **On s'arrête quand on veut, après avoir vu ses dés.** Il n'y a rien à
-  annoncer avant de lancer. C'est un écart délibéré avec le 4-21 classique, où
-  l'on doit déclarer son dernier jet d'avance : la contrainte rendait le jeu
-  inutilement dur, et sa disparition n'enlève rien à `D4`, qui reste la vraie
-  décision de la manche — le meneur choisit toujours combien de jets il *utilise*,
-  et plafonne les autres. Le bonus `lateStop`, qui n'était que la levée de cette
-  contrainte, disparaît avec elle.
+  **aucun autre ne peut en faire davantage**. Avec `D5`, les deux décisions de la
+  manche se tiennent l'une l'autre : s'arrêter tôt sur une bonne main prive les
+  autres de leurs relances, mais s'arrêter tôt suppose de l'avoir **parié avant
+  de lancer**.
+- `D5` ✅ **Le dernier jet s'annonce avant d'être lancé.** On ne décide pas de
+  s'arrêter après avoir vu ses dés : avant chaque jet, on dit s'il est le
+  dernier. Un tour ne peut donc se terminer que de trois façons — sur un jet
+  annoncé, sur le plafond du meneur (`D4`), ou en payant la dispense avec
+  `lateStop` (`B18`). C'est la règle du 4-21 classique, et c'est **elle** qui
+  met la pression : garder une bonne main suppose de l'avoir pariée avant de la
+  voir, et ne pas annoncer, c'est s'obliger à la casser.
+  ⚠️ Elle avait sauté le 2026-09-08 au nom de l'accessibilité. Le jeu était plus
+  simple, mais la tension du 4-21 était partie avec elle et `D4` se retrouvait
+  seule à porter la manche : la règle est **remise** (journal du 2026-09-09).
+- `D5b` ✅ **Un jet fait voler au moins `minReroll` dés** (proposition : **2**).
+  Sans ce plancher, « je garde tout et je relance zéro dé » vaudrait un arrêt
+  gratuit : on brûlerait ses jets sans risque et l'annonce ne coûterait plus
+  rien. **Deux** et non un, et c'est ce qui rend le plancher mordant : à 3 dés on
+  ne peut garder qu'**un seul** dé, et à 4 (`D1b`) le dé hors combinaison ne paie
+  qu'**une** des deux relances obligatoires — la seconde entame toujours la
+  combinaison retenue. Personne, joueur compris, ne peut donc garder sa main sans
+  l'avoir annoncée. Valeur en configuration (`rules.minReroll`) : c'est le premier
+  bouton à tourner si la pression se révèle trop forte à l'essai.
+- `D5c` 🧪 **Le dernier jet disponible n'a rien à annoncer** : quand le plafond
+  du meneur ne laisse plus qu'un jet, il est le dernier par construction.
+  L'interface le dit (`U8f`) au lieu de poser une question sans objet.
 - `D6` ✅ **Le meneur tourne à chaque manche**, dans l'ordre des participants.
   Alternative écartée : le meneur est le vainqueur de la manche précédente, ce
   qui accumule l'avantage du meneur sur un seul joueur.
@@ -870,6 +894,26 @@ document.
   démons dans une position identique ne doivent pas départager par l'ordre
   d'énumération. C'est le bug exact trouvé au proto 2 ; il est déjà connu, il ne
   doit pas se reproduire.
+- `I8` ✅ **L'annonce du dernier jet, côté démon** (`D5`). La décision se prend
+  à l'aveugle, avant le résultat, et le démon la ramène à une probabilité : il
+  mesure, dans la même passe qui calcule l'espérance du jet, **la part des
+  tirages qui dépassent ce qu'un jet neuf espère** — donc la part des mains
+  qu'il ne voudrait pas relancer. Au-dessus de 0,3, il annonce ; en dessous, il
+  garde ses jets. Deux conséquences voulues : il n'annonce pas au premier jet (à
+  3 dés, ~24 % des mains passent ce niveau), et il annonce dès qu'un début de
+  main est en place. Quand aucun jet n'espère mieux que sa main et qu'il ne peut
+  pas s'arrêter, il **subit le jet le moins destructeur en l'annonçant** — c'est
+  la bonne façon de perdre.
+- `I8b` ✅ **Une décision binaire ne peut pas passer par la température de
+  `I5`.** Le tirage de Boltzmann normalise par l'écart des notes ; à deux
+  options, l'écart *est* l'échelle, donc la probabilité d'erreur vaudrait
+  `1/(1+e^{1/T})` **quel que soit** l'écart — on se tromperait autant sur une
+  annonce évidente que sur une annonce serrée, exactement le défaut que `I5b`
+  reproche à l'ancien modèle. L'erreur d'annonce se tire donc sur l'écart brut,
+  en probabilités : `1/(1+e^{|écart| / (T × 0,1)})`. Mesuré à `T = 0` le démon
+  n'annonce au premier jet que 4,6 % du temps (les tours plafonnés à un seul
+  jet) et annonce son second jet 70 % du temps ; à `T = 2` (`mauvais`, Cercle 1)
+  il annonce à contretemps près d'une fois sur deux.
 
 ## 13. Interface
 
@@ -922,8 +966,16 @@ document.
   seules restent les récompenses prises, avec le nom de qui les détient.
 - `U8e` ✅ **Le nombre de jets du meneur est affiché** sur son siège dès qu'il
   s'arrête, et rappelé dans le panneau de décision des suivants — « le meneur
-  s'est arrêté après 2 jets : c'est votre plafond ». Sans ça, `D4`, qui est la
-  seule décision structurante de la manche, est invisible.
+  s'est arrêté après 2 jets : c'est votre plafond ». Sans ça, `D4`, l'une des
+  deux décisions structurantes de la manche, est invisible.
+- `U8f` ✅ **L'annonce est un bouton, pas une case à cocher** (`D5`). Chaque jet
+  se lance par l'un de **deux boutons** : « Relancer 2 dés » et « Relancer
+  2 dés — dernier jet », le second signalé comme engageant. Le panneau dit ce
+  qu'on risque en ne l'annonçant pas — « sinon il faudra en relancer 2 de plus
+  après avoir vu ceux-là ». Quand il ne reste qu'un jet (`D5c`), il n'y a plus
+  qu'un bouton ; quand il n'en reste aucun, « m'arrêter là » apparaît, et il
+  porte le nom du bonus (`B18`) quand c'est lui qui paie l'arrêt. Un jet qui ne
+  ferait pas voler assez de dés (`D5b`) laisse le bouton grisé.
 - `U18` ✅ **Les effets de face se lisent sur le dé** : une pastille dorée dans
   le coin, avec le symbole de `F10`, sans masquer la valeur qui reste
   l'information principale. L'inspecteur (`U9`) et la boutique montrent les mêmes
@@ -1207,6 +1259,8 @@ d'un jeu qu'on peut poser devant quelqu'un sans commentaire.
   "rules": {
     "_leaderCapsThrows": "D4 : le meneur plafonne le nombre de jets des autres.",
     "leaderCapsThrows": true,
+    "_minReroll": "D5b : dés qu'un jet doit relancer au minimum. 0 rendrait l'annonce inutile.",
+    "minReroll": 2,
     "_leaderRotates": "D6 : true = tourne, false = le vainqueur de la manche mène.",
     "leaderRotates": true,
     "_firstLeader": "D7 : qui ouvre la 1re manche d'une phase.",
@@ -1371,8 +1425,43 @@ L'évolution des trois réglages successifs, sur la même mesure :
 | | victoire au C1 | parties par run | runs complets |
 | --- | --- | --- | --- |
 | règles d'origine | 52 % | 2,1 | 0 % |
-| + `D5` ouvert, + 4 dés (`D1b`) | 80,6 % | 5,0 | 0 % |
+| + `D5` levée (depuis **remise**, voir 2026-09-09), + 4 dés (`D1b`) | 80,6 % | 5,0 | 0 % |
 | + « Prendre » retiré, don immédiat (`B5`, `B7`) | **86,7 %** | **7,8** | **6 %** (avec achats) |
+
+### Ce que le retour de `D5` a changé — 400 parties par ligne
+
+Mesure **à la partie** (Cercle 1, duel, decks et dés neufs, mêmes graines des
+deux côtés), avant / après la remise de l'annonce :
+
+| | 3 dés de chaque côté | joueur à 4 dés (`D1b`) |
+| --- | --- | --- |
+| `D5` levée (2026-09-08) | 42,8 % · 14,4 manches | 84,8 % · 9,1 manches |
+| `D5` remise, plancher à 2 (`D5b`) | 44,0 % · 20,9 manches | **91,3 %** · 10,9 manches |
+| idem, joueur expert | 69,0 % | **98,0 %** |
+| `D5` levée, joueur expert | 72,0 % | 93,3 % |
+
+Trois lectures, dont une contre-intuitive :
+
+1. **À armes égales, l'annonce ne change presque rien** — 42,8 → 44,0 % à niveau
+   égal, 72,0 → 69,0 % pour un joueur expert. La règle est donc **équitable** :
+   elle ne favorise personne par elle-même.
+2. **Mais elle amplifie `D1b`.** Le jet forcé coûte beaucoup moins cher à qui
+   lance 4 dés qu'à qui en lance 3 : le quatrième dé valait +42 points de taux de
+   victoire, il en vaut maintenant **+47** (et +29 au lieu de +21 pour un joueur
+   expert). Autrement dit, `D5` remet la pression du 4-21 — mais elle la met
+   surtout **sur les démons**. Si l'on veut qu'elle morde aussi le joueur, le
+   bouton à tourner est `dice.playerDice` (`D1b`), pas `rules.minReroll`, qui ne
+   déplace le taux de victoire que de 2 points d'un réglage à l'autre.
+3. **Les parties s'allongent d'un cinquième** (9,1 → 10,9 manches) : les mains
+   moyennes baissent, donc les transferts aussi, donc le pot se vide moins vite.
+   Le nombre de *jets* par partie baisse en revanche (40,3 → 33,6), les tours
+   s'arrêtant sur l'annonce.
+
+⚠️ **Les tableaux ci-dessus, mesurés au run, sont donc périmés** : ils datent
+d'avant la remise de `D5` (et déjà d'avant `R14`). `npm run measure` ne se
+termine plus dans un temps raisonnable — au taux de victoire actuel, presque tous
+les runs tapent le plafond de 200 parties, ce qui est en soi le résultat le plus
+parlant. À refaire avec un plafond plus bas.
 
 Quatre enseignements :
 
@@ -1623,9 +1712,10 @@ automatique.
 
 ## 18. Questions de revue
 
-Deux passes de revue ont tranché **12 des 15 questions**, dont la seule
-bloquante, et l'implémentation en a fermé une de plus. Il ne reste que `Q2` (ce
-qui traverse un run) et `Q7` (valeur de la suite sur les grands dés).
+Deux passes de revue ont tranché **12 des 16 questions**, dont la seule
+bloquante, et l'implémentation en a fermé une de plus. Il reste `Q2` (ce qui
+traverse un run), `Q7` (valeur de la suite sur les grands dés) et `Q15` (les 4
+dés du joueur face à `D5` remise).
 **Le corps de règles est complet et implémenté** (`Proto3Html`).
 
 | # | Question | État |
@@ -1645,6 +1735,7 @@ qui traverse un run) et `Q7` (valeur de la suite sur les grands dés).
 | ~~`Q12`~~ | **Le pile ou face est-il un vrai choix ?** | ✅ **Non, et c'est assumé** : c'est de la mise en scène, à **animer longuement** pour la tension (`U12`). |
 | ~~`Q13`~~ | **Vivier du second tirage de récompenses.** | ✅ **Catalogue moins les 4 récompenses proposées à la première série** (`B3b`). Son corollaire `B3c` est devenu **sans objet** : depuis que toute récompense s'applique à la sélection (`B5`), aucune ne peut être périmée. Reste un point neuf, `B3d` : à 7 récompenses au catalogue, le second tirage n'a plus d'aléa. |
 | ~~`Q14`~~ | **La suite existe-t-elle à 2 cartes ?** | ✅ **Non** (`C12d`, `straightMinSize: 3`). Une main de 2 n'a donc que trois niveaux — paire, couleur, carte haute — et la quinte flush n'existe qu'à partir de 3 cartes. |
+| `Q15` | **Faut-il rendre les 4 dés du joueur au 4-21 annoncé ?** Depuis que `D5` est remise, le quatrième dé (`D1b`) vaut **+47 points** de taux de victoire au lieu de +42 : le jet forcé de `D5b` coûte beaucoup moins cher à qui lance 4 dés qu'à qui en lance 3, donc la pression du 4-21 pèse d'abord sur les démons (§17). | 🧪 **Nouvelle, née de la mesure du 2026-09-09.** Trois réponses possibles : laisser (l'asymétrie est le levier d'accessibilité assumé), passer `playerDice` à 3 et rendre le jeu franchement dur (44 % au Cercle 1 à niveau égal), ou donner un 4ᵉ dé aux démons aux derniers Cercles via `S5`. À trancher à l'essai, pas au calcul. |
 
 ## 19. Hors périmètre du prototype
 
@@ -1660,6 +1751,7 @@ et 2 ne sont pas touchés.
 
 | Date | Évolution |
 | --- | --- |
+| 2026-09-09 | **`D5` est remise : le dernier jet s'annonce avant d'être lancé.** Retour en arrière assumé sur l'assouplissement de la veille — s'arrêter quand on veut était plus simple, mais la pression du 4-21 était partie avec la contrainte, et `D4` restait seule à porter la manche. Trois pièces : `D5` (l'annonce, avant le jet), `D5b` (**un jet fait voler au moins 2 dés**, `rules.minReroll` — sans ce plancher, « je garde tout » vaudrait un arrêt gratuit et l'annonce ne coûterait rien), `D5c` (le dernier jet disponible n'a rien à annoncer). Le bonus `lateStop` du brouillon, qui n'était que la levée de cette contrainte, **revient avec elle** (`B18`) : son détenteur garde sa main après l'avoir vue, une fois par phase. Côté IA, l'annonce devient une décision à part entière (`I8`) : le démon mesure, dans la passe qui calcule déjà l'espérance du jet, la part des tirages qui dépassent ce qu'espère un jet neuf — au-dessus de 0,3 il annonce. Au passage, `I8b` : une décision **binaire** ne peut pas passer par la température de `I5`, qui normalise par l'écart des notes et se tromperait donc autant sur un choix évident que sur un choix serré ; l'erreur d'annonce se tire sur l'écart brut. **La mesure a démenti l'intention** (§17, 400 parties par ligne) : à 3 dés de chaque côté la règle est neutre (42,8 → 44,0 % à niveau égal), mais avec le quatrième dé du joueur elle fait passer le taux de victoire de **84,8 % à 91,3 %** — le jet forcé coûte beaucoup moins cher à qui lance 4 dés qu'à qui en lance 3. La pression du 4-21 est bien revenue, mais elle pèse d'abord **sur les démons** ; le bouton pour la faire mordre le joueur est `D1b`, pas `minReroll`. Effet de bord : les parties gagnent un cinquième de manches (9,1 → 10,9) pour un cinquième de jets en moins (40,3 → 33,6). |
 | 2026-09-08 | **On ne perd une rencontre qu'en finissant dernier** (`R14`) — c'est une redéfinition de « gagner une rencontre », pas un cas particulier des parties à trois, donc `R6` (la défaite tue le run), `J9` (la prime) et le compteur `winsRequired` suivent tous automatiquement. En duel la règle est identique à « finir premier » ; à trois, la deuxième place fait continuer le run. Le moteur expose `humanFirst` à part, pour que l'écran dise « vous finissez 2ᵉ, le run continue » plutôt qu'une victoire qui sonnerait faux. **La mesure a démenti ma prédiction** : j'avais écrit que la règle ramènerait la dernière partie du Cercle au niveau des autres sans la rendre triviale ; elle la rend **quasi automatique**, 99,6 % de survie contre 69 % auparavant. Effet sur le run entier, 200 runs par variante : runs complets **8 % → 36 %** en clonage seul, parties par run **14,9 → 30,3**. Les 9 parties à trois n'étaient pas *un* filtre du run, elles en étaient **le** filtre. Deux conséquences à trancher : la durée d'un run (30 parties) redevient le problème que §17 signalait dès le début, et `R12b` (le climax annoncé du Cercle) n'a plus de contenu mécanique. La hiérarchie des politiques d'achat, elle, devient illisible — 36,0 / 35,5 / 34,5 % tiennent dans une erreur-type — non pas parce que graver ne sert plus, mais parce que la boutique ne décide plus de l'issue. |
 | 2026-09-08 | **La gravure se choisit sur la liste des faces** (`U35`). La boutique affichait déjà tous les dés développés face par face (`U31`), et demandait pourtant « quel dé ? » puis « quelle face ? » — elle redemandait ce qui était sous les yeux du joueur. On clique maintenant la face directement dans le panneau « Vos dés ». Un corollaire est apparu en implémentant : **l'offre du graveur doit être mémorisée par face** pour la durée de l'achat. Cliquer une autre face puis revenir relançait sinon `engraveOptions`, donc un nouveau tirage — le joueur pouvait relancer le graveur autant de fois qu'il voulait et choisir l'effet qu'il visait, ce qui vide `F11` (« on ne choisit plus la valeur, on choisit dans l'offre ») de tout son sens. Le défaut existait déjà avec l'ancien parcours, via le bouton Annuler ; l'accès direct aux faces le rendait simplement trivial. |
 | 2026-09-08 | **Un bug de condition de victoire, signalé à l'essai et confirmé sur 400 parties à trois.** Le joueur se vidait, gagnait donc la partie (`D10d`), puis la nénette d'un adversaire (`B16`) lui rendait un jeton **dans la même manche** — et la victoire disparaissait. Cause : la sortie n'était contrôlée **qu'à la fin de la manche**, sur les jetons finaux, alors que `D11` dit explicitement que c'est le *premier passage* à zéro qui compte. Le contrôle a lieu maintenant après **chaque** mouvement de jetons — transfert principal, `splitGive`, nénette — et le départage `D10g` (pile ou face, jamais l'ordre des sièges) s'applique partout, alors qu'il ne couvrait que la sortie de répartition (`D10f`). Diagnostiqué en rejouant 400 parties à trois et en comparant « premier à zéro » au vainqueur déclaré : **1 anomalie sur 400** avant, **0 sur 2 000** après. Conséquence secondaire cohérente : un joueur déjà sorti ne reçoit plus les jetons de la nénette, ce qui préserve `J2`. Fréquence faible mais l'échec est maximal — c'est la partie que le joueur sait avoir gagnée. |

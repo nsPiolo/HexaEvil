@@ -86,6 +86,7 @@ export const REWARD_LABEL: Record<RewardId, string> = {
   splitGive: 'Donner aux deux',
   takeLess: 'Encaisser moins',
   nenetteGift: 'La nénette paie',
+  lateStop: 'S’arrêter sans annoncer',
 }
 
 export const REWARD_HELP: Record<RewardId, string> = {
@@ -100,6 +101,8 @@ export const REWARD_HELP: Record<RewardId, string> = {
   splitGive: 'Quand vous donnez des jetons à un adversaire, l’autre en reçoit la moitié (arrondie à l’inférieur). Sans effet en duel.',
   takeLess: 'Quand vous encaissez des jetons, vous en prenez un de moins — au minimum 1. Moins de jetons à évacuer, mais moins d’argent.',
   nenetteGift: 'Pour tout le monde : une nénette (2-2-1) fait circuler un jeton vers chaque adversaire, même si vous perdez la manche.',
+  lateStop:
+    'Une fois par phase : vous gardez votre main **après** l’avoir vue, sans avoir annoncé votre dernier jet. Partout ailleurs, il faut le dire avant de lancer.',
 }
 
 /** `F10` : un symbole par effet de face, et sa règle en une ligne. */
@@ -195,12 +198,16 @@ export function describeStep(step: TraceStep, names: readonly string[]): string 
       const tail = ` · ${diceHandLabel(step.hand)} (${step.hand.chipValue})`
       if (step.via === 'set42') return `${head} · 4 et 2 fixés, jet unique et définitif${tail}`
       const extra = step.values.length > 3 ? ` · meilleurs 3 dés sur ${step.values.length}` : ''
-      return `${head}${extra}${tail}`
+      // `D5` : l'annonce est la décision du tour — elle doit se lire dans le fil.
+      const announced = step.last && step.via === 'normal' ? ' · annoncé comme dernier' : ''
+      return `${head}${extra}${announced}${tail}`
     }
     case 'dropDie':
       return `Le dé en plus a joué : ${who(step.who)} repart avec ${step.values.length} dés, le ${step.before[step.dropped]} est écarté`
     case 'flipUsed':
       return `${who(step.who)} retourne un dé : ${step.from} devient ${step.to} · ${diceHandLabel(step.hand)}`
+    case 'lateStop':
+      return `${who(step.who)} s’arrête sans l’avoir annoncé — « ${REWARD_LABEL.lateStop} » est consommé`
     case 'turnEnd':
       return `${who(step.who)} s’arrête sur ${diceHandLabel(step.hand)} — ${chips(step.hand.chipValue)}`
     case 'roundResult': {
@@ -259,6 +266,7 @@ export const STEP_MS: Record<TraceStep['kind'], number> = {
   sideGift: 1100,
   nenetteGift: 1300,
   flipUsed: 1200,
+  lateStop: 1100,
   turnEnd: 500,
   roundResult: 1600,
   out: 1500,

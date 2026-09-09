@@ -107,6 +107,7 @@ export type RewardId =
   | 'extraDie'
   | 'set42'
   | 'valuePlus1'
+  | 'lateStop'
 
 export type PhaseId = 'charge' | 'discharge'
 

@@ -218,6 +218,43 @@ describe('D4 — le meneur plafonne les autres', () => {
   })
 })
 
+describe('D5 — le dernier jet s’annonce avant d’être lancé', () => {
+  it.each(seeds)('graine %i : un tour ne se termine que sur une annonce ou sur le plafond', (seed) => {
+    const { steps } = play(seed, 0, 3)
+    /** Dernier jet vu pour chaque participant, avec son annonce. */
+    const lastThrow = new Map<number, { throwNo: number; maxThrows: number; last: boolean }>()
+    const usedBonus = new Set<number>()
+    let seen = 0
+    for (const s of steps as TraceStep[]) {
+      if (s.kind === 'throw') lastThrow.set(s.who, { throwNo: s.throwNo, maxThrows: s.maxThrows, last: s.last })
+      if (s.kind === 'lateStop') usedBonus.add(s.who)
+      if (s.kind !== 'turnEnd') continue
+      const t = lastThrow.get(s.who)
+      expect(t).toBeDefined()
+      const capped = s.throws >= (t as { maxThrows: number }).maxThrows
+      // `D5` : les trois seules sorties possibles d'un tour.
+      expect((t as { last: boolean }).last || capped || usedBonus.has(s.who)).toBe(true)
+      if ((t as { last: boolean }).last && !capped) seen++
+      lastThrow.delete(s.who)
+      usedBonus.delete(s.who)
+    }
+    // L'annonce doit vraiment servir : sinon le test ne prouverait rien.
+    expect(seen).toBeGreaterThan(0)
+  })
+
+  it.each(seeds)('graine %i : un jet fait voler au moins minReroll dés', (seed) => {
+    const { steps } = play(seed, 0, 3)
+    const min = cfg.rules.minReroll
+    let seen = 0
+    for (const s of steps as TraceStep[]) {
+      if (s.kind !== 'throw' || s.via !== 'normal' || s.throwNo <= 1) continue
+      expect(s.rolled.filter(Boolean).length).toBeGreaterThanOrEqual(min)
+      seen++
+    }
+    expect(seen).toBeGreaterThan(0)
+  })
+})
+
 describe('tous les Cercles tournent', () => {
   it.each(cfg.circles.map((c, i) => [c.n, i] as const))('Cercle %i', (_n, i) => {
     const { result, circle } = play(5, i, 2)
@@ -258,7 +295,7 @@ describe('B8/B12b — « Un dé en plus »', () => {
   })
 })
 
-describe('B13 à B16 — les récompenses ajoutées', () => {
+describe('B13 à B18 — les récompenses ajoutées', () => {
   /** Force une récompense sur un participant, sans passer par les batailles. */
   function playWith(seed: number, id: string, owner: number, count = 2) {
     const { steps, result, participants, circle } = play(seed, 1, count, (live) => live.owned.set(id as never, owner))
@@ -283,6 +320,25 @@ describe('B13 à B16 — les récompenses ajoutées', () => {
           if (s.who !== 0 && s.hand.id === '421') expect(relance.has(s.who)).toBe(true)
           relance.delete(s.who)
         }
+      }
+    }
+    expect(seen).toBeGreaterThan(0)
+  })
+
+  it('B18 — le détenteur s’arrête sans annoncer, une fois par phase', () => {
+    let seen = 0
+    for (let seed = 1; seed <= 20; seed++) {
+      const { steps } = playWith(seed, 'lateStop', 0)
+      let used = 0
+      for (const s of steps) {
+        if (s.kind === 'phaseStart') used = 0
+        if (s.kind !== 'lateStop') continue
+        seen++
+        used++
+        // Seul le détenteur en profite, et une seule fois par phase.
+        expect(s.who).toBe(0)
+        expect(used).toBeLessThanOrEqual(1)
+        expect(s.throwNo).toBeLessThan(s.maxThrows)
       }
     }
     expect(seen).toBeGreaterThan(0)
