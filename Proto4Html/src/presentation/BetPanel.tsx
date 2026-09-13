@@ -18,30 +18,47 @@ interface Props {
   onPlace: (type: BetTypeId, souls: readonly number[], stake: number) => string | null
   /** Cote de base d'un type, artefacts compris. */
   baseFor: (type: BetTypeId) => number
-  /** En préparation : lancer la course depuis le panneau (le panneau couvre la table). */
+  /** En préparation : lancer la course et ouvrir la boutique depuis le panneau. */
   onStart?: () => void
   onOpenShop?: () => void
+  onClose?: () => void
 }
 
 const TIERS: readonly BetTier[] = ['simple', 'intermediate', 'advanced']
+const NUMERALS = ['I', 'II', 'III', 'IV'] as const
 
-export function BetPanel({ race, money, bets, open, phase, lateBet, onUseLateBet, onPlace, baseFor, onStart, onOpenShop }: Props) {
-  const initialPhase = phase === 'prep'
-  const closed = bettingClosed(race)
+export function BetPanel({ race, money, bets, open, phase, lateBet, onUseLateBet, onPlace, baseFor, onStart, onOpenShop, onClose }: Props) {
   const [type, setType] = useState<BetTypeId>('winner')
+  const [tier, setTier] = useState<BetTier>('simple')
   const [souls, setSouls] = useState<number[]>([])
   const [stake, setStake] = useState<number>(config.economy.stakes[0] ?? 5)
   const [error, setError] = useState<string | null>(null)
 
+  const prep = phase === 'prep'
+  const closed = bettingClosed(race)
   const def = betType(type)
   const slots = slotCount(def, race.souls.length)
-  const base = baseFor(type)
   const progress = raceProgress(race)
-  const mult = currentMultiplier(base, progress, config.economy.decay)
+  const decay = config.economy.decay
+  const multOf = (id: BetTypeId): number => currentMultiplier(baseFor(id), progress, decay)
+  const mult = multOf(type)
   const refusal = useMemo(() => betRefusal(race, type, souls, stake, money, bets), [race, type, souls, stake, money, bets])
-  // On n'affiche le refus qu'une fois les âmes désignées, pour ne pas crier avant que le joueur ait fini.
-  const message = error ?? (souls.length >= slots ? refusal : null)
+  const missing = Math.max(0, slots - souls.length)
+  const net = potentialPayout(stake, mult) - stake
 
+  /** Fourchette de cotes d'un palier, pour l'onglet. */
+  const range = (t: BetTier): string => {
+    const m = BET_TYPES.filter((b) => b.tier === t).map((b) => multOf(b.id))
+    const lo = Math.min(...m)
+    const hi = Math.max(...m)
+    return lo === hi ? fmtMultiplier(lo) : `${fmtMultiplier(lo)} – ${fmtMultiplier(hi)}`
+  }
+
+  const changeTier = (t: BetTier): void => {
+    setTier(t)
+    const first = BET_TYPES.find((b) => b.tier === t)
+    if (first && betType(type).tier !== t) changeType(first.id)
+  }
   const changeType = (id: BetTypeId): void => {
     setType(id)
     setSouls([])
@@ -56,72 +73,92 @@ export function BetPanel({ race, money, bets, open, phase, lateBet, onUseLateBet
     setError(err)
     if (!err) setSouls([])
   }
-
   const soulName = (id: number): string => race.souls[id]?.name ?? `#${id}`
+
+  // Ligne d'état du pied : ce qu'il manque, ou le refus, ou le résumé du pari prêt.
+  let status: string
+  let statusKind = ''
+  if (error) {
+    status = error
+    statusKind = 'bad'
+  } else if (!open) {
+    status = race.finished ? 'Course terminée : les paris sont réglés.' : closed ? `Une âme a dépassé le seuil de ${Math.round(race.track.betThresholdRatio * 100)} % : plus de pari.` : phase === 'pairing' ? 'Les dés sont lancés : les paris reprennent au prochain tour.' : 'Paris suspendus pendant la résolution.'
+  } else if (missing > 0) {
+    status = `Choisis encore ${missing} âme${missing > 1 ? 's' : ''}.`
+  } else if (refusal) {
+    status = refusal
+    statusKind = 'bad'
+  } else {
+    status = `${def.label} · mise ${stake} à ${fmtMultiplier(mult)}.`
+    statusKind = 'good'
+  }
 
   return (
     <section className="bet-panel" aria-label="Paris">
-      <div className="bet-head">
-        <h3>Paris</h3>
-        <span className="money" aria-label="Argent">
+      <header className="bp-head">
+        <div>
+          <h2 className="serif">Poser un pari</h2>
+          <p className="muted">
+            {prep ? 'Au moins un pari pour lancer la course.' : open ? 'Dernier moment pour parier ce tour.' : status}
+            {progress > 0 && open && <> Cotes décotées : course à {Math.round(progress * 100)} %.</>}
+          </p>
+        </div>
+        <span className="money">
           {money} <span className="money-unit">pièces</span>
         </span>
-      </div>
+        {onClose && (
+          <button type="button" className="bp-close" onClick={onClose} aria-label="Fermer">
+            ×
+          </button>
+        )}
+      </header>
 
-      {race.finished && <p className="muted small">Course terminée : les paris sont réglés.</p>}
-      {!race.finished && closed && <p className="muted small">Une âme a dépassé le seuil de {Math.round(race.track.betThresholdRatio * 100)} % : plus de pari sur cette course.</p>}
-      {!race.finished && !closed && !open && phase === 'pairing' && (
-        <div className="late-bet">
-          <p className="muted small">Les dés sont lancés : les paris reprennent au prochain tour.</p>
-          {lateBet && (
-            <button type="button" className="btn btn-artefact" disabled={lateBet.charges <= 0} onClick={onUseLateBet} title="Œil du parieur">
-              Œil du parieur : parier après le lancer ({lateBet.charges} charge{lateBet.charges > 1 ? 's' : ''})
+      <div className="bp-body">
+        {!open && phase === 'pairing' && !closed && lateBet && (
+          <button type="button" className="btn btn-artefact" disabled={lateBet.charges <= 0} onClick={onUseLateBet}>
+            Œil du parieur : parier après le lancer ({lateBet.charges} charge{lateBet.charges > 1 ? 's' : ''})
+          </button>
+        )}
+        {open && phase === 'pairing' && <p className="hint small">Œil du parieur actif : tu paries en connaissant tes dés.</p>}
+
+        <h3 className="bp-section">
+          <span className="numeral">{NUMERALS[0]}</span> Type de pari
+        </h3>
+        <div className="tiers" role="tablist">
+          {TIERS.map((t) => (
+            <button key={t} type="button" role="tab" aria-selected={tier === t} className={'tier' + (tier === t ? ' tier-on' : '')} disabled={!open} onClick={() => changeTier(t)}>
+              <span className="tier-name">{TIER_LABEL[t]}</span>
+              <span className="tier-range">{range(t)}</span>
             </button>
-          )}
-        </div>
-      )}
-      {!race.finished && !closed && !open && phase !== 'pairing' && <p className="muted small">Les paris sont suspendus pendant la résolution.</p>}
-      {open && phase === 'pairing' && <p className="hint small">Œil du parieur actif : vous pariez en connaissant vos dés.</p>}
-      {open && initialPhase && <p className="hint small">Paris initiaux : au moins un pour ouvrir la boutique et lancer la course.</p>}
-
-      <label className="bet-field">
-        <span className="bet-label">Type</span>
-        <select value={type} onChange={(e) => changeType(e.target.value as BetTypeId)} disabled={!open}>
-          {TIERS.map((tier) => (
-            <optgroup key={tier} label={TIER_LABEL[tier]}>
-              {BET_TYPES.filter((t) => t.tier === tier).map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.label} — {fmtMultiplier(currentMultiplier(baseFor(t.id), progress, config.economy.decay))}
-                </option>
-              ))}
-            </optgroup>
           ))}
-        </select>
-      </label>
-      <p className="muted small bet-desc">
-        {def.description}
-        {progress > 0 && <> Cote de base {fmtMultiplier(base)}, décotée à {fmtMultiplier(mult)} : course avancée à {Math.round(progress * 100)} %.</>}
-      </p>
+        </div>
+        <ul className="types">
+          {BET_TYPES.filter((b) => b.tier === tier).map((b) => (
+            <li key={b.id}>
+              <button type="button" className={'type' + (type === b.id ? ' type-on' : '')} disabled={!open} onClick={() => changeType(b.id)} aria-pressed={type === b.id}>
+                <span className="type-text">
+                  <span className="type-name">{b.label}</span>
+                  <span className="type-desc">{b.description}</span>
+                </span>
+                <span className="mult-badge serif">{fmtMultiplier(multOf(b.id))}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
 
-      <div className="bet-field">
-        <span className="bet-label">
-          {def.ordered ? 'Âmes, dans l’ordre' : slots > 1 ? 'Âmes' : 'Âme'} ({souls.length}/{slots})
-        </span>
+        <h3 className="bp-section">
+          <span className="numeral">{NUMERALS[1]}</span> {def.ordered && slots > 1 ? 'Âmes, dans l’ordre' : slots > 1 ? 'Âmes' : 'Âme'}
+          <span className="bp-count">
+            {souls.length}/{slots}
+          </span>
+        </h3>
         <div className="bet-slots">
           {Array.from({ length: slots }, (_, i) => {
             const id = souls[i]
-            const label = def.slots?.[i] ?? (def.ordered ? `${i + 1}` : '·')
+            const label = def.slots?.[i] ?? (def.ordered ? `${i + 1}` : null)
             return (
-              <button
-                key={i}
-                type="button"
-                className={'slot' + (id !== undefined ? ' slot-filled' : '')}
-                style={id !== undefined ? { ['--soul' as string]: soulColor(id) } : undefined}
-                onClick={() => id !== undefined && toggleSoul(id)}
-                disabled={id === undefined || !open}
-                title={id !== undefined ? 'Retirer' : ''}
-              >
-                <span className="slot-tag">{label}</span>
+              <button key={i} type="button" className={'slot' + (id !== undefined ? ' slot-filled' : '')} style={id !== undefined ? { ['--soul' as string]: soulColor(id) } : undefined} onClick={() => id !== undefined && toggleSoul(id)} disabled={id === undefined || !open} title={id !== undefined ? 'Retirer' : ''}>
+                {label && <span className="slot-tag">{label}</span>}
                 {id !== undefined ? soulName(id) : '—'}
               </button>
             )
@@ -132,15 +169,7 @@ export function BetPanel({ race, money, bets, open, phase, lateBet, onUseLateBet
             const zone = isInBetZone(race.track, s.position)
             const picked = souls.includes(s.id)
             return (
-              <button
-                key={s.id}
-                type="button"
-                className={'chip soul-chip' + (picked ? ' chip-on' : '')}
-                style={{ ['--soul' as string]: soulColor(s.id) }}
-                disabled={!open || (!picked && souls.length >= slots)}
-                onClick={() => toggleSoul(s.id)}
-                title={zone ? 'A dépassé le seuil de pari' : `case ${s.position}`}
-              >
+              <button key={s.id} type="button" className={'chip soul-chip' + (picked ? ' chip-on' : '')} style={{ ['--soul' as string]: soulColor(s.id) }} disabled={!open || (!picked && souls.length >= slots)} onClick={() => toggleSoul(s.id)} title={zone ? 'A dépassé le seuil de pari' : `case ${s.position}`}>
                 <span className="lane-dot" style={{ background: soulColor(s.id) }} />
                 {s.name}
                 {zone && <span className="chip-zone">{Math.round(race.track.betThresholdRatio * 100)} %</span>}
@@ -148,10 +177,10 @@ export function BetPanel({ race, money, bets, open, phase, lateBet, onUseLateBet
             )
           })}
         </div>
-      </div>
 
-      <div className="bet-field">
-        <span className="bet-label">Mise</span>
+        <h3 className="bp-section">
+          <span className="numeral">{NUMERALS[2]}</span> Mise
+        </h3>
         <div className="bet-stakes">
           {config.economy.stakes.map((v) => (
             <button key={v} type="button" className={'chip' + (stake === v ? ' chip-on' : '')} disabled={!open || v > money} onClick={() => setStake(v)}>
@@ -159,62 +188,67 @@ export function BetPanel({ race, money, bets, open, phase, lateBet, onUseLateBet
             </button>
           ))}
         </div>
+
+        <h3 className="bp-section">
+          <span className="numeral">{NUMERALS[3]}</span> Paris posés
+          <span className="bp-count">{bets.length}</span>
+        </h3>
+        <BetList race={race} bets={bets} />
       </div>
 
-      <div className="bet-summary">
-        <span>
-          Mise {stake} {fmtMultiplier(mult)} → <strong>{potentialPayout(stake, mult)}</strong> si gagné
-          <span className="muted"> (net +{potentialPayout(stake, mult) - stake})</span>
-        </span>
-        <button type="button" className="btn btn-primary" disabled={!open || refusal !== null} onClick={place}>
-          Parier
-        </button>
-      </div>
-      <p className={'bet-refusal small' + (message ? ' bet-refusal-on' : '')}>{message ?? ''}</p>
-
-      {initialPhase && (onStart || onOpenShop) && (
-        <div className="bet-start">
-          {onOpenShop && (
-            <button type="button" className="btn" disabled={bets.length === 0} onClick={onOpenShop} title={bets.length === 0 ? 'Posez d’abord un pari initial' : undefined}>
+      <footer className="bp-foot">
+        <div className={'bp-status ' + statusKind}>
+          <span>{status}</span>
+          <span className="bp-gain serif">{open && missing === 0 && !refusal ? `+${net}` : '—'}</span>
+        </div>
+        <div className="bp-actions">
+          <button type="button" className="btn btn-primary" disabled={!open || refusal !== null} onClick={place}>
+            Poser le pari
+          </button>
+          {prep && onOpenShop && (
+            <button type="button" className="btn btn-gold" disabled={bets.length === 0} onClick={onOpenShop} title={bets.length === 0 ? 'Pose d’abord un pari' : undefined}>
               Boutique
             </button>
           )}
-          {onStart && (
-            <button type="button" className="btn btn-primary" disabled={bets.length === 0} onClick={onStart} title={bets.length === 0 ? 'Il faut au moins un pari initial' : undefined}>
-              Lancer la course
-            </button>
-          )}
         </div>
-      )}
-
-      <div className="bet-list">
-        <h3>Paris posés ({bets.length})</h3>
-        {bets.length === 0 && <p className="muted small">Aucun pari pour cette course.</p>}
-        <ul>
-          {bets.map((b) => (
-            <li key={b.id} className={`bet bet-${b.status}`}>
-              <span className="bet-type">{betType(b.type).label}</span>
-              <span className="bet-targets">
-                {b.souls.map((id, i) => (
-                  <span key={id}>
-                    {i > 0 && <span className="muted">{betType(b.type).ordered ? ' › ' : ', '}</span>}
-                    <span style={{ color: soulColor(id) }}>{soulName(id)}</span>
-                  </span>
-                ))}
-              </span>
-              <span className="bet-stake">
-                {b.stake} {fmtMultiplier(b.multiplier)}
-                {b.turn > 0 && <span className="muted"> · tour {b.turn}</span>}
-              </span>
-              <span className="bet-status">
-                {b.status === 'open' && 'en cours'}
-                {b.status === 'won' && `gagné +${b.payout}`}
-                {b.status === 'lost' && `perdu −${b.stake}`}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </div>
+        {prep && onStart && (
+          <button type="button" className="btn bp-start" disabled={bets.length === 0} onClick={onStart}>
+            {bets.length === 0 ? 'Lancer la course — pose d’abord un pari' : 'Lancer la course'}
+          </button>
+        )}
+      </footer>
     </section>
+  )
+}
+
+/** Liste des paris posés, avec leur état. Utilisée dans le panneau de paris et sur la table. */
+export function BetList({ race, bets, compact }: { race: RaceState; bets: readonly Bet[]; compact?: boolean }) {
+  const soulName = (id: number): string => race.souls[id]?.name ?? `#${id}`
+  if (bets.length === 0) return <p className="muted small">Aucun pari pour cette course.</p>
+  return (
+    <ul className={'bets' + (compact ? ' bets-compact' : '')}>
+      {bets.map((b) => (
+        <li key={b.id} className={`bet bet-${b.status}`}>
+          <span className="bet-type">{betType(b.type).label}</span>
+          <span className="bet-targets">
+            {b.souls.map((id, i) => (
+              <span key={id}>
+                {i > 0 && <span className="muted">{betType(b.type).ordered ? ' › ' : ', '}</span>}
+                <span style={{ color: soulColor(id) }}>{soulName(id)}</span>
+              </span>
+            ))}
+          </span>
+          <span className="bet-stake">
+            {b.stake} {fmtMultiplier(b.multiplier)}
+            {b.turn > 0 && !compact && <span className="muted"> · tour {b.turn}</span>}
+          </span>
+          <span className="bet-status">
+            {b.status === 'open' && (compact ? `+${potentialPayout(b.stake, b.multiplier) - b.stake} si gagné` : 'en cours')}
+            {b.status === 'won' && `gagné +${b.payout - b.stake}`}
+            {b.status === 'lost' && `perdu −${b.stake}`}
+          </span>
+        </li>
+      ))}
+    </ul>
   )
 }

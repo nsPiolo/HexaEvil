@@ -101,6 +101,17 @@ Tu peux retirer la zone journal
 
 Quand on clique sur le nombre d'artefacts, on affiche la liste des artefacts actif dans une fenêtre en popup.
 
+## Entre deux courses.
+
+Entre deux courses, on passe par un écran où on peut visualiser les 9 cercles, et là où on est.
+
+Représenté par des cercles concentrique avec 3 points dans chaque cercle, en spirale relité par un trait.
+Le premier cercle est au centre.
+
+Le joueur doit cliquer sur la course suivante pour lancer la course.
+
+C'est aussi sur cette page qu'on pourra voir le pouvoir de chaque boss et le monant attendu par le cercle en cours. (on ne peut pas voir le montant des cercles suivants).
+
 ## Fin de la seconde course
 
 Le stagiaire revient pour te proposer de rencontrer son boss.

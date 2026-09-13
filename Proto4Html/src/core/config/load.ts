@@ -103,7 +103,13 @@ export function loadConfig(raw: unknown): RaceConfig {
   if (!Array.isArray(run.circles) || run.circles.length === 0) fail('run.circles', 'tableau non vide attendu')
   const circles = run.circles.map((c, i) => {
     const o = obj(c, `run.circles[${i}]`)
-    return { name: str(o.name, `run.circles[${i}].name`), price: int(o.price, `run.circles[${i}].price`, 0), souls: int(o.souls, `run.circles[${i}].souls`, 2) }
+    return {
+      name: str(o.name, `run.circles[${i}].name`),
+      price: int(o.price, `run.circles[${i}].price`, 0),
+      souls: int(o.souls, `run.circles[${i}].souls`, 2),
+      boss: str(o.boss, `run.circles[${i}].boss`),
+      power: str(o.power, `run.circles[${i}].power`),
+    }
   })
   const maxSouls = Math.max(...circles.map((c) => c.souls))
   if (names.length < maxSouls) fail('souls.names', `il faut au moins ${maxSouls} noms (cercle le plus peuplé)`)

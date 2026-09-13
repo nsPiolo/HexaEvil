@@ -40,28 +40,24 @@ export function GameScreen({ carry, speed, onFinished, onMenu }: Props) {
   useEffect(() => {
     if (ui.phase !== 'prep') setShopOpen(false)
   }, [ui.phase])
+  // Le panneau de paris s'ouvre tout seul une fois, en préparation, et se replie quand parier
+  // devient impossible. Il ne se rouvre jamais de lui-même : c'est au joueur de le demander
+  // (l'Œil du parieur est une demande explicite, on l'ouvre alors).
   useEffect(() => {
-    if (ui.phase === 'prep') setBetsOpen(true)
-    else if (!canBetNow(ui)) setBetsOpen(false)
-    else setBetsOpen(true)
-  }, [ui.phase, ui.lateBetOpen]) // eslint-disable-line react-hooks/exhaustive-deps
+    if (ui.phase !== 'prep') setBetsOpen(false)
+  }, [ui.phase])
+  useEffect(() => {
+    if (ui.lateBetOpen) setBetsOpen(true)
+  }, [ui.lateBetOpen])
 
   const lastEvent = useMemo(() => {
     const entries = ui.log.filter((e) => e.source !== 'shop' && e.source !== 'bet')
     return entries[entries.length - 1]?.text ?? ''
   }, [ui.log])
 
+  // Paris à gauche, boutique à droite : les deux peuvent rester ouverts, on passe de l'un à l'autre librement.
   const openShop = (): void => {
-    if (actions.openShop()) {
-      setShopOpen(true)
-      setBetsOpen(false)
-    }
-  }
-  const toggleBets = (): void => {
-    setBetsOpen((o) => {
-      if (!o) setShopOpen(false)
-      return !o
-    })
+    if (actions.openShop()) setShopOpen(true)
   }
   const activeSoul = ui.phase === 'resolving' || ui.phase === 'opponent' ? (ui.lastResult?.move.soul ?? null) : null
   const n = ui.inventory.artefacts.length
@@ -98,15 +94,15 @@ export function GameScreen({ carry, speed, onFinished, onMenu }: Props) {
         ))}
       </ol>
 
-      {/* Onglet boutique (panneau venant du haut), seulement en préparation */}
-      {ui.phase === 'prep' && (
-        <button type="button" className={'tab tab-top' + (shopOpen ? ' tab-open' : '')} disabled={!shopUnlocked} onClick={() => (shopOpen ? setShopOpen(false) : openShop())} title={shopUnlocked ? undefined : 'Posez d’abord un pari initial'}>
-          {shopOpen ? HUD.close : HUD.shop}
+      {/* Onglet boutique (panneau venant de la droite), seulement en préparation */}
+      {ui.phase === 'prep' && !shopOpen && (
+        <button type="button" className="tab tab-right" disabled={!shopUnlocked} onClick={openShop} title={shopUnlocked ? undefined : 'Pose d’abord un pari initial'}>
+          {HUD.shop}
         </button>
       )}
-      <div className={'drawer drawer-top' + (shopOpen && ui.phase === 'prep' ? ' drawer-open' : '')} aria-hidden={!shopOpen}>
+      <div className={'drawer drawer-right' + (shopOpen && ui.phase === 'prep' ? ' drawer-open' : '')} aria-hidden={!shopOpen}>
         {ui.vitrine && (
-          <ShopPanel vitrine={ui.vitrine} money={ui.money} raceIndex={ui.raceIndex} inventory={ui.inventory} pending={ui.pendingPurchase} onBuy={(id, target) => actions.buy(id, target ?? null)} onCancel={actions.cancelPurchase} onReroll={actions.rerollVitrine} onLeave={() => { setShopOpen(false); setBetsOpen(true) }} />
+          <ShopPanel vitrine={ui.vitrine} money={ui.money} raceIndex={ui.raceIndex} inventory={ui.inventory} pending={ui.pendingPurchase} onBuy={(id, target) => actions.buy(id, target ?? null)} onCancel={actions.cancelPurchase} onReroll={actions.rerollVitrine} onLeave={() => { setShopOpen(false); setBetsOpen(true) }} onClose={() => setShopOpen(false)} />
         )}
         <Inventory inventory={ui.inventory} lateBetCharges={ui.lateBetCharges} compact />
       </div>
@@ -127,14 +123,14 @@ export function GameScreen({ carry, speed, onFinished, onMenu }: Props) {
         )}
       </main>
 
-      {/* Onglet paris (panneau venant du bas) */}
-      {ui.phase !== 'finished' && (
-        <button type="button" className={'tab tab-bottom' + (betsOpen ? ' tab-open' : '')} onClick={toggleBets}>
-          {betsOpen ? HUD.close : `${HUD.bets} (${ui.bets.length})`}
+      {/* Onglet paris (panneau venant de la gauche) */}
+      {ui.phase !== 'finished' && !betsOpen && (
+        <button type="button" className="tab tab-left" onClick={() => setBetsOpen(true)}>
+          {HUD.bets} ({ui.bets.length})
         </button>
       )}
-      <div className={'drawer drawer-bottom' + (betsOpen && ui.phase !== 'finished' ? ' drawer-open' : '')} aria-hidden={!betsOpen}>
-        <BetPanel race={ui.race} money={ui.money} bets={ui.bets} open={canBetNow(ui)} phase={ui.phase} lateBet={ui.inventory.artefacts.includes('lateBet') ? { charges: ui.lateBetCharges, active: ui.lateBetOpen } : null} onUseLateBet={actions.useLateBet} onPlace={actions.placeBet} baseFor={(type) => betBase(type, ui.inventory)} onStart={actions.startRace} onOpenShop={openShop} />
+      <div className={'drawer drawer-left' + (betsOpen && ui.phase !== 'finished' ? ' drawer-open' : '')} aria-hidden={!betsOpen}>
+        <BetPanel race={ui.race} money={ui.money} bets={ui.bets} open={canBetNow(ui)} phase={ui.phase} lateBet={ui.inventory.artefacts.includes('lateBet') ? { charges: ui.lateBetCharges, active: ui.lateBetOpen } : null} onUseLateBet={actions.useLateBet} onPlace={actions.placeBet} baseFor={(type) => betBase(type, ui.inventory)} onStart={actions.startRace} onOpenShop={openShop} onClose={() => setBetsOpen(false)} />
       </div>
 
       {/* Popup artefacts */}

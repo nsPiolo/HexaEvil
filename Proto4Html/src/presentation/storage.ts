@@ -43,7 +43,10 @@ export interface RunSave {
 function isRunSave(v: unknown): v is RunSave {
   if (typeof v !== 'object' || v === null) return false
   const o = v as Record<string, unknown>
-  return typeof o.money === 'number' && typeof o.raceIndex === 'number' && typeof o.inventory === 'object' && o.inventory !== null && Array.isArray((o.inventory as Inventory).dice) && Array.isArray((o.inventory as Inventory).artefacts)
+  if (typeof o.money !== 'number' || typeof o.raceIndex !== 'number' || typeof o.inventory !== 'object' || o.inventory === null) return false
+  const inv = o.inventory as Inventory
+  // Une sauvegarde sans dé Distance rendrait la course injouable : on la traite comme absente.
+  return Array.isArray(inv.dice) && inv.dice.length > 0 && Array.isArray(inv.artefacts)
 }
 
 export function loadRun(): RunSave | null {

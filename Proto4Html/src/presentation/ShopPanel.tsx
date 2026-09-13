@@ -15,12 +15,13 @@ interface Props {
   onCancel: () => void
   onReroll: () => void
   onLeave: () => void
+  onClose?: () => void
 }
 
 const KIND_LABEL = { artefact: 'Artefact', die: 'Dé', forge: 'Forge' } as const
 const RARITY_LABEL = { common: 'commun', rare: 'rare', legendary: 'légendaire' } as const
 
-export function ShopPanel({ vitrine, money, raceIndex, inventory, pending, onBuy, onCancel, onReroll, onLeave }: Props) {
+export function ShopPanel({ vitrine, money, raceIndex, inventory, pending, onBuy, onCancel, onReroll, onLeave, onClose }: Props) {
   const [error, setError] = useState<string | null>(null)
   const pendingItem = pending ? vitrine.find((i) => i.id === pending) ?? null : null
   const hintValue = pendingItem?.kind === 'forge' ? pendingItem.target : null
@@ -32,10 +33,20 @@ export function ShopPanel({ vitrine, money, raceIndex, inventory, pending, onBuy
 
   return (
     <section className="shop" aria-label="Boutique">
-      <div className="bet-head">
-        <h2>Boutique</h2>
-        <span className="muted small">Paris posés : ce qui reste est à dépenser… ou à garder.</span>
-      </div>
+      <header className="bp-head">
+        <div>
+          <h2 className="serif">Boutique</h2>
+          <p className="muted">Paris posés : ce qui reste est à dépenser… ou à garder.</p>
+        </div>
+        <span className="money">
+          {money} <span className="money-unit">pièces</span>
+        </span>
+        {onClose && (
+          <button type="button" className="bp-close" onClick={onClose} aria-label="Fermer">
+            ×
+          </button>
+        )}
+      </header>
 
       {pendingItem && (
         <div className="shop-target">

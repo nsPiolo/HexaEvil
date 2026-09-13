@@ -49,9 +49,9 @@ export const BET_TYPES: readonly BetTypeDef[] = [
 ]
 
 export const TIER_LABEL: Readonly<Record<BetTier, string>> = {
-  simple: 'Paris simples',
-  intermediate: 'Paris intermédiaires',
-  advanced: 'Paris avancés',
+  simple: 'Simples',
+  intermediate: 'Combinés',
+  advanced: 'Avancés',
 }
 
 export function betType(id: BetTypeId): BetTypeDef {

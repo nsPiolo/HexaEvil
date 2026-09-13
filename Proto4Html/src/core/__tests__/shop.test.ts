@@ -3,7 +3,7 @@ import rawConfig from '../../../config/race.json'
 import rawShop from '../../../config/shop.json'
 import { loadConfig } from '../config/load'
 import { defaultDice, plainFace } from '../rules/dice'
-import { buildMoves, createRace, rollOpponentPair, rollPlayerDice, unusedSoulMove } from '../rules/race'
+import { buildMoves, createRace, createTrack, rollOpponentPair, rollPlayerDice, unusedSoulMove } from '../rules/race'
 import { seededRng } from '../rules/rng'
 import { loadShopConfig } from '../shop/load'
 import { applyPurchase, defaultInventory, findItem, forgeFace, generateVitrine, opponentNegativesFlipped, priceAtCircle } from '../shop/shop'
@@ -115,5 +115,17 @@ describe('effets en course', () => {
     expect(race.track.cellsAfterFinish).toBe(cfg.track.cellsAfterFinish + 2)
     expect(race.track.totalCells).toBe(cfg.track.columns + cfg.track.cellsAfterFinish + 2)
     void dice
+  })
+})
+
+describe('Sablier appliqué à la course en cours', () => {
+  it('refait le plateau avec le nouveau seuil sans toucher aux âmes', () => {
+    const race = createRace(cfg)
+    const before = race.track.betThresholdColumn
+    const track = createTrack(cfg.track, { betThresholdRatio: cfg.artefacts.sablier.betThresholdRatio })
+    const after = { ...race, track }
+    expect(after.track.betThresholdColumn).toBeGreaterThan(before)
+    expect(after.track.betThresholdColumn).toBe(Math.ceil(cfg.track.columns * 0.7))
+    expect(after.souls).toBe(race.souls)
   })
 })

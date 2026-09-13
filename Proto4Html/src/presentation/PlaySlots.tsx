@@ -4,6 +4,7 @@ import { isPairingComplete, type RaceState } from '../core/rules/race'
 import type { RaceUi } from './useRace'
 import { fmtDistance, soulColor } from './souls'
 import { FaceChip } from './Inventory'
+import { BetList } from './BetPanel'
 import { HUD } from './texts'
 
 function soulName(race: RaceState, id: number | undefined): string {
@@ -82,6 +83,7 @@ export function PlayerSlot({ ui, onStart, onRoll, onPickSoul, onPickDistance, on
   return (
     <section className="slot slot-player" aria-label="Joueur">
       <p className="hint">{hint()}</p>
+      <div className="slot-body">
       <div className="slot-dice">
         <div className="dice-group">
           <h3>Dés Âme</h3>
@@ -154,6 +156,11 @@ export function PlayerSlot({ ui, onStart, onRoll, onPickSoul, onPickDistance, on
             })}
           </ol>
         )}
+      </div>
+      <aside className="slot-bets" aria-label="Paris posés">
+        <h3>Paris posés ({ui.bets.length})</h3>
+        <BetList race={race} bets={ui.bets} compact />
+      </aside>
       </div>
       <div className="actions">
         {phase === 'prep' && (

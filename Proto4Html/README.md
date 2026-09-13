@@ -31,6 +31,15 @@ npm run build
   dialogue annonce ce qui change (âmes en course, prix suivant) ; sinon fin de run.
   Après le 9e cercle payé : évasion. Prix et nombre d'âmes par cercle dans
   `config/race.json`, textes dans `src/presentation/texts.ts`.
+- Carte des neuf cercles entre deux courses : anneaux concentriques, le premier au
+  centre, trois points par cercle reliés par une spirale (le troisième est le
+  boss). Courses jouées en braise, prochaine course en or avec halo, à venir en
+  gris. Cliquer sur la prochaine course la lance ; cliquer sur un anneau affiche
+  le cercle : boss, pouvoir (décrit dans la config, **pas encore appliqué en
+  course**), prix visible pour le cercle en cours et les cercles traversés
+  seulement. Pas de carte avant la toute première course, l'intro suffit. Les
+  points flottent dans leur tiers de tour (bruit déterministe) pour casser
+  l'alignement.
 - Sauvegarde : l'état (argent, dés, artefacts, prochaine course) est écrit à la
   fin de chaque course et au changement de cercle ; « Continuer » reprend au début
   de la rencontre suivante. Quitter en pleine course rejoue cette rencontre.
@@ -38,10 +47,14 @@ npm run build
   Course · Gains (étape faite en gras, étape en cours avec halo), cercle et course
   en haut à gauche, pièces et nombre d'artefacts en haut à droite (clic = popup
   des artefacts actifs), emplacement de l'adversaire en haut de la table et du
-  joueur en bas. Paris dans un panneau coulissant depuis le bas, boutique dans un
-  panneau depuis le haut (accessible seulement en préparation, après un premier
-  pari) ; on passe librement de l'un à l'autre. Plus de journal : une seule ligne
-  sous le plateau rappelle le dernier événement.
+  joueur en bas. Paris dans un panneau coulissant depuis la gauche (titre en
+  petites capitales, sections I à IV : type par palier avec fourchette de cotes,
+  âmes, mise, paris posés ; pied fixe avec l'état, « Poser le pari », « Boutique »
+  et le lancement), boutique dans un panneau depuis la droite (accessible
+  seulement en préparation, après un premier pari) ; les deux peuvent rester
+  ouverts. Le panneau de paris ne se rouvre jamais tout seul après le départ de la
+  course. Plus de journal : une seule ligne sous le plateau rappelle le dernier
+  événement.
 
 - Plateau : une seule ligne de `columns` cases, ligne d'arrivée, cases après
   l'arrivée, zone des 60 % marquée en couleur (simple repère pour l'instant).
@@ -123,5 +136,5 @@ src/core/__tests__         tests des règles
 src/presentation/App.tsx   routeur d'écrans et orchestration du run (cercles, prix, sauvegarde, stats)
 src/presentation/texts.ts  tous les textes (intro, boss, transitions des 9 cercles, fin), prêts à traduire
 src/presentation/storage.ts localStorage : sauvegarde, statistiques, options
-src/presentation           React : useRace (machine à états d'une rencontre), GameScreen, PlaySlots, BetPanel, ShopPanel, Inventory, Board, Ranking, Dialogue, Screens
+src/presentation           React : useRace (machine à états d'une rencontre), MapScreen, GameScreen, PlaySlots, BetPanel, ShopPanel, Inventory, Board, Ranking, Dialogue, Screens
 ```

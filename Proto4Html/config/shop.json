@@ -13,7 +13,7 @@
       "description": "Une fois par cercle, poser un pari après avoir vu ses dés, avant de les associer." },
     { "id": "sablier", "kind": "artefact", "rarity": "common", "price": 55,
       "name": "Sablier de Charon",
-      "description": "Le seuil de pari passe de 60 % à 70 % du parcours, dès la course suivante." },
+      "description": "Le seuil de pari passe de 60 % à 70 % du parcours, dès cette course." },
     { "id": "boussole", "kind": "artefact", "rarity": "common", "price": 50,
       "name": "Boussole des Limbes",
       "description": "Après vos combinaisons, l'âme du dé Âme inutilisé avance de 1." },
@@ -34,7 +34,7 @@
       "params": { "refundRatio": 0.5 } },
     { "id": "filet", "kind": "artefact", "rarity": "common", "price": 40,
       "name": "Filet du pêcheur",
-      "description": "Deux cases supplémentaires après l'arrivée, dès la course suivante : moins d'ex æquo.",
+      "description": "Deux cases supplémentaires après l'arrivée, dès cette course : moins d'ex æquo.",
       "params": { "extraCells": 2 } },
 
     { "id": "limbes", "kind": "die", "rarity": "common", "price": 30,

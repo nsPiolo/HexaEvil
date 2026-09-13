@@ -160,6 +160,24 @@ export const HUD = {
   menu: 'Menu',
 } as const
 
+export const MAP = {
+  title: 'Les neuf cercles',
+  subtitle: 'Cliquez sur la prochaine course pour la lancer.',
+  current: 'Vous êtes ici',
+  done: 'course jouée',
+  next: 'prochaine course',
+  locked: 'à venir',
+  boss: 'Boss',
+  power: 'Pouvoir',
+  powerPending: 'règle à venir dans le proto',
+  price: 'Prix du cercle',
+  priceHidden: 'inconnu tant que vous n’y êtes pas',
+  race: 'Course {n}',
+  bossRace: 'Course du boss',
+  launch: 'Lancer la course',
+  circleOf: 'Cercle {n} — {name}',
+} as const
+
 export const STATS = {
   title: 'Statistiques',
   attempts: 'Nombre de tentatives',

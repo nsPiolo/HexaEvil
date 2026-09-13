@@ -38,7 +38,7 @@ export function Ranking({ race, settlement, money, continueLabel, onContinue }: 
               <li key={b.id} className={`bet bet-${b.status}`}>
                 <span className="bet-type">{betType(b.type).label}</span>
                 <span className="bet-targets">{b.souls.map((id) => race.souls[id]?.name ?? `#${id}`).join(betType(b.type).ordered ? ' › ' : ', ')}</span>
-                <span className="bet-status">{b.status === 'won' ? `+${b.payout}` : `−${b.stake}`}</span>
+                <span className="bet-status">{b.status === 'won' ? `+${b.payout - b.stake}` : `−${b.stake}`}</span>
               </li>
             ))}
           </ul>

@@ -50,18 +50,18 @@
   },
 
   "run": {
-    "_comment": "racesPerCircle = courses par cercle, la dernière est la rencontre avec le boss. circles = les neuf cercles : prix à payer à la fin du cercle (GDD §4.2), nombre d'âmes en course (GDD §4.1 : +1 aux cercles 2, 4, 6, 8, 9). Le prix du cercle 1 vient de interface.md (200).",
+    "_comment": "racesPerCircle = courses par cercle, la dernière est la rencontre avec le boss. circles = les neuf cercles : prix à payer à la fin du cercle (GDD §4.2), nombre d'âmes en course (GDD §4.1 : +1 aux cercles 2, 4, 6, 8, 9), boss et son pouvoir. Le prix du cercle 1 vient de interface.md (200). Les pouvoirs de boss sont affichés sur la carte mais PAS encore appliqués en course : ce sont des propositions à implémenter.",
     "racesPerCircle": 3,
     "circles": [
-      { "name": "Limbes", "price": 200, "souls": 5 },
-      { "name": "Luxure", "price": 280, "souls": 6 },
-      { "name": "Gourmandise", "price": 380, "souls": 6 },
-      { "name": "Avarice", "price": 500, "souls": 7 },
-      { "name": "Colère", "price": 640, "souls": 7 },
-      { "name": "Hérésie", "price": 800, "souls": 8 },
-      { "name": "Violence", "price": 1000, "souls": 8 },
-      { "name": "Fraude", "price": 1250, "souls": 9 },
-      { "name": "Trahison", "price": 1500, "souls": 10 }
+      { "name": "Limbes", "price": 200, "souls": 5, "boss": "Charon", "power": "Le passeur lance deux paires par tour au lieu d'une." },
+      { "name": "Luxure", "price": 280, "souls": 6, "boss": "Minos", "power": "Les vents éternels : tout -1 devient -2, pour vous comme pour lui." },
+      { "name": "Gourmandise", "price": 380, "souls": 6, "boss": "Cerbère", "power": "Une âme percutée est mordue : elle recule d'une case après le saut." },
+      { "name": "Avarice", "price": 500, "souls": 7, "boss": "Ploutos", "power": "Les paris posés en course coûtent le double de mise." },
+      { "name": "Colère", "price": 640, "souls": 7, "boss": "Phlégyas", "power": "Dans le Styx, reculer sur une âme la fait reculer aussi au lieu d'échanger." },
+      { "name": "Hérésie", "price": 800, "souls": 8, "boss": "Les Furies", "power": "Le seuil de pari tombe à 40 % du parcours." },
+      { "name": "Violence", "price": 1000, "souls": 8, "boss": "Le Minotaure", "power": "Les distances positives de l'adversaire gagnent +1." },
+      { "name": "Fraude", "price": 1250, "souls": 9, "boss": "Géryon", "power": "Les dés Âme mentent : une fois sur quatre ils désignent l'âme voisine." },
+      { "name": "Trahison", "price": 1500, "souls": 10, "boss": "Le stagiaire promu", "power": "Il connaît vos paris : ses paires visent d'abord vos âmes pariées pour les faire reculer." }
     ]
   },
 

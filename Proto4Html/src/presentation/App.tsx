@@ -9,6 +9,7 @@ import { config } from '../core/config'
 import { defaultInventory } from '../core/shop/shop'
 import { Dialogue } from './Dialogue'
 import { GameScreen } from './GameScreen'
+import { MapScreen } from './MapScreen'
 import { EndScreen, Menu, OptionsScreen, Splash, StatsScreen } from './Screens'
 import { clearRun, loadOptions, loadRun, loadStats, saveOptions, saveRun, updateStats, type Options, type RunSave, type Stats } from './storage'
 import { BOSS_ANNOUNCE, CIRCLES, INTRO, MENU, fill, type Line } from './texts'
@@ -20,6 +21,7 @@ type Screen =
   | { kind: 'stats' }
   | { kind: 'options' }
   | { kind: 'intro' }
+  | { kind: 'map'; carry: SessionCarry }
   | { kind: 'game'; carry: SessionCarry; key: number }
   | { kind: 'dialogue'; lines: readonly Line[]; then: Screen; skippable: boolean }
   | { kind: 'end'; end: 'gameover' | 'escape'; price: number; money: number }
@@ -44,6 +46,12 @@ export default function App() {
     setScreen({ kind: 'game', carry, key: gameKey + 1 })
   }, [gameKey])
 
+  /** Entre deux courses : la carte des neuf cercles, d'où le joueur lance la course suivante. Pas de carte avant la toute première course : l'intro suffit. */
+  const toMap = useCallback((carry: SessionCarry): void => {
+    if (carry.raceIndex === 0) startGame(carry)
+    else setScreen({ kind: 'map', carry })
+  }, [startGame])
+
   const newRun = (): void => {
     setStats(updateStats((s) => ({ ...s, attempts: s.attempts + 1 })))
     const carry: SessionCarry = { money: config.economy.startingMoney, inventory: defaultInventory(config), raceIndex: 0, lateBetCharges: 0 }
@@ -55,7 +63,7 @@ export default function App() {
 
   const continueRun = (): void => {
     if (!save) return
-    startGame({ money: save.money, inventory: save.inventory, raceIndex: save.raceIndex, lateBetCharges: save.lateBetCharges })
+    toMap({ money: save.money, inventory: save.inventory, raceIndex: save.raceIndex, lateBetCharges: save.lateBetCharges })
   }
 
   /** Fin d'une rencontre : statistiques, sauvegarde, puis dialogue de boss, transition de cercle ou course suivante. */
@@ -85,11 +93,11 @@ export default function App() {
 
     if (raceInCircle < config.run.racesPerCircle) {
       persist(carry, circle)
-      const next: Screen = { kind: 'game', carry, key: gameKey + 1 }
+      const next: Screen = { kind: 'map', carry }
       if (raceInCircle === config.run.racesPerCircle - 1) {
         setScreen({ kind: 'dialogue', lines: BOSS_ANNOUNCE.map((l) => ({ ...l, text: fill(l.text, { price: circleCfg.price }) })), then: next, skippable: false })
       } else {
-        startGame(carry)
+        toMap(carry)
       }
       return
     }
@@ -114,7 +122,7 @@ export default function App() {
     }
     persist(paid, circle + 1)
     const lines = texts.success.map((l) => ({ ...l, text: fill(l.text, { souls: nextCircleCfg.souls, price: nextCircleCfg.price }) }))
-    setScreen({ kind: 'dialogue', lines, then: { kind: 'game', carry: paid, key: gameKey + 1 }, skippable: false })
+    setScreen({ kind: 'dialogue', lines, then: { kind: 'map', carry: paid }, skippable: false })
   }
 
   switch (screen.kind) {
@@ -140,6 +148,8 @@ export default function App() {
           }}
         />
       )
+    case 'map':
+      return <MapScreen carry={screen.carry} onLaunch={() => startGame(screen.carry)} onMenu={toMenu} />
     case 'game':
       return <GameScreen key={screen.key} carry={screen.carry} speed={options.speed} onFinished={onRaceFinished} onMenu={toMenu} />
     case 'end':

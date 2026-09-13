@@ -15,6 +15,7 @@ import {
   applyMove,
   buildMoves,
   createRace,
+  createTrack,
   endTurn,
   isPairingComplete,
   naturalCombinations,
@@ -296,7 +297,11 @@ export function useRace({ carry, soulCount, speed }: UseRaceProps) {
       const price = priceFor(item, u.raceIndex)
       const lateBetCharges = item.kind === 'artefact' && item.id === 'lateBet' ? config.artefacts.lateBet.chargesPerCircle : u.lateBetCharges
       let next = pushLog({ ...u, money: u.money - price, inventory, lateBetCharges, vitrine: (u.vitrine ?? []).filter((i) => i !== item), pendingPurchase: null, tally: { ...u.tally, spent: u.tally.spent + price } }, 'shop', `${text} (${price} pièces)`)
-      if (item.kind === 'artefact' && (item.id === 'sablier' || item.id === 'filet')) next = pushLog(next, 'shop', `${item.name} s'appliquera à partir de la course suivante.`)
+      // Sablier et Filet changent le plateau : on achète en préparation, personne n'a bougé, le plateau est refait tout de suite.
+      if (item.kind === 'artefact' && (item.id === 'sablier' || item.id === 'filet')) {
+        const track = createTrack(config.track, raceOptions(inventory))
+        next = pushLog({ ...next, race: { ...next.race, track } }, 'shop', item.id === 'sablier' ? `Seuil de pari à ${Math.round(track.betThresholdRatio * 100) } % dès cette course.` : `${track.cellsAfterFinish} cases après l'arrivée dès cette course.`)
+      }
       commit(next)
       return null
     } catch (e) {
@@ -446,7 +451,7 @@ export function useRace({ carry, soulCount, speed }: UseRaceProps) {
     const settlement = settleBets(done.bets, ranking(ended), refundRatio > 0 ? { refundRatio } : {})
     for (const b of settlement.bets) {
       const names = b.souls.map((id) => ended.souls[id]?.name ?? `#${id}`).join(betType(b.type).ordered ? ' > ' : ', ')
-      done = pushLog(done, 'bet', b.status === 'won' ? `Pari ${betType(b.type).label} (${names}) gagné : +${b.payout}.` : `Pari ${betType(b.type).label} (${names}) perdu : −${b.stake}.`)
+      done = pushLog(done, 'bet', b.status === 'won' ? `Pari ${betType(b.type).label} (${names}) gagné : +${b.payout - b.stake} net (mise ${b.stake} rendue).` : `Pari ${betType(b.type).label} (${names}) perdu : −${b.stake}.`)
     }
     if (settlement.refund > 0) done = pushLog(done, 'artefact', `Livre des comptes : ${settlement.refund} pièces remboursées.`)
     const net = settlement.returned - settlement.staked

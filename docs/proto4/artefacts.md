@@ -98,7 +98,7 @@ distance. *Le tour adverse devient une occasion : une paire sur l'une bouge les 
 Dernière place paie -50 %. *Une spécialisation, pas un bonus gratuit.*
 
 **12. Sablier de Charon — 55, C.** Le seuil de pari passe de 60 % à 70 % du
-parcours, à partir de la course suivante. *Fenêtre plus longue ; affaiblit le
+parcours, dès la course où il est acheté. *Fenêtre plus longue ; affaiblit le
 Prophète et renforce les paris tardifs.* ✔ Implémenté dans le proto.
 
 **13. Ticket de la première heure — 90, R.** Les paris posés **avant le premier
