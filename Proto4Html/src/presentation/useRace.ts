@@ -31,12 +31,12 @@ import {
 } from '../core/rules/race'
 import { randomSeed, seededRng, type Rng } from '../core/rules/rng'
 import type { ShopItem } from '../core/shop/items'
-import { applyPurchase, defaultInventory, findItem, generateVitrine, opponentNegativesFlipped, priceAtCircle, type Inventory, type PurchaseTarget } from '../core/shop/shop'
+import { applyPurchase, findItem, generateVitrine, opponentNegativesFlipped, priceAtCircle, type Inventory, type PurchaseTarget } from '../core/shop/shop'
 
-export type Phase = 'betting' | 'shop' | 'idle' | 'rolling' | 'pairing' | 'resolving' | 'opponent' | 'finished'
+export type Phase = 'prep' | 'idle' | 'rolling' | 'pairing' | 'resolving' | 'opponent' | 'finished'
 
-/** Phases pendant lesquelles on peut poser un pari : avant la boutique, et avant de lancer ses dés. */
-export const BETTING_PHASES: readonly Phase[] = ['betting', 'idle']
+/** Phases pendant lesquelles on peut poser un pari : la préparation (paris initiaux + boutique), et avant de lancer ses dés. */
+export const BETTING_PHASES: readonly Phase[] = ['prep', 'idle']
 
 /** Peut-on poser un pari maintenant ? Avant de lancer, ou après le lancer si l'Œil du parieur a été activé ce tour. */
 export function canBetNow(ui: Pick<RaceUi, 'phase' | 'lateBetOpen'>): boolean {
@@ -71,10 +71,19 @@ export interface RaceUi {
   raceIndex: number
   lateBetCharges: number
   lateBetOpen: boolean
-  /** Vitrine de la boutique pour cette visite. */
-  vitrine: ShopItem[]
+  /** Vitrine de la boutique pour cette visite (générée à la première ouverture). */
+  vitrine: ShopItem[] | null
   /** Objet en attente d'une cible (dé à remplacer, face à forger). */
   pendingPurchase: string | null
+  /** Compteurs de la course pour les statistiques. */
+  tally: RaceTally
+}
+
+export interface RaceTally {
+  /** Dépenses en boutique (achats + renouvellements). */
+  spent: number
+  /** Meilleur gain net d'un pari de la course. */
+  bestBet: number
 }
 
 export interface SessionCarry {
@@ -84,8 +93,13 @@ export interface SessionCarry {
   lateBetCharges: number
 }
 
-export const SPEEDS = [0.5, 1, 2, 4] as const
-export type Speed = (typeof SPEEDS)[number]
+export interface UseRaceProps {
+  carry: SessionCarry
+  /** Nombre d'âmes en course pour ce cercle. */
+  soulCount: number
+  /** Multiplicateur de vitesse des animations (option). */
+  speed: number
+}
 
 /** Bonus du Sceau du parieur au-dessus du +1 de la face. */
 const SEAL_BONUS = 2
@@ -130,15 +144,16 @@ function raceOptions(inventory: Inventory): RaceOptions {
   return o
 }
 
-function fullCharges(inventory: Inventory): number {
+/** Charges de l'Œil du parieur pour un cercle neuf. */
+export function fullCharges(inventory: Inventory): number {
   return inventory.artefacts.includes('lateBet') ? config.artefacts.lateBet.chargesPerCircle : 0
 }
 
-function initial(seed: number, carry: SessionCarry): RaceUi {
+function initial(seed: number, carry: SessionCarry, soulCount: number): RaceUi {
   const { circle, raceInCircle } = circleOf(carry.raceIndex)
   return {
-    race: createRace(config, raceOptions(carry.inventory)),
-    phase: 'betting',
+    race: createRace(config, { ...raceOptions(carry.inventory), soulCount }),
+    phase: 'prep',
     roll: null,
     combinations: [],
     selectedSoulDie: null,
@@ -154,15 +169,20 @@ function initial(seed: number, carry: SessionCarry): RaceUi {
     raceIndex: carry.raceIndex,
     lateBetCharges: carry.lateBetCharges,
     lateBetOpen: false,
-    vitrine: [],
+    vitrine: null,
     pendingPurchase: null,
+    tally: { spent: 0, bestBet: 0 },
   }
 }
 
-export function useRace() {
-  const [seed, setSeed] = useState(randomSeed)
-  const [ui, setUi] = useState<RaceUi>(() => initial(seed, { money: config.economy.startingMoney, inventory: defaultInventory(config), raceIndex: 0, lateBetCharges: 0 }))
-  const [speed, setSpeed] = useState<Speed>(1)
+/** Ce que la rencontre rend à la session quand elle est finie. */
+export function carryOut(ui: RaceUi): SessionCarry {
+  return { money: ui.money, inventory: ui.inventory, raceIndex: ui.raceIndex + 1, lateBetCharges: ui.lateBetCharges }
+}
+
+export function useRace({ carry, soulCount, speed }: UseRaceProps) {
+  const [seed] = useState(randomSeed)
+  const [ui, setUi] = useState<RaceUi>(() => initial(seed, carry, soulCount))
   const [auto, setAuto] = useState(false)
 
   const uiRef = useRef<RaceUi>(ui)
@@ -176,7 +196,7 @@ export function useRace() {
   const runId = useRef(0)
   const logId = useRef(1)
   const betId = useRef(1)
-  const speedRef = useRef<Speed>(speed)
+  const speedRef = useRef<number>(speed)
   speedRef.current = speed
 
   const wait = useCallback(async (ms: number, id: number): Promise<boolean> => {
@@ -201,39 +221,15 @@ export function useRace() {
     return s
   }, [])
 
-  // ---- Session et courses ------------------------------------------------
-
-  const startRace = useCallback((carry: SessionCarry) => {
-    runId.current += 1
-    const s = randomSeed()
-    rngRef.current = seededRng(s)
-    logId.current = 1
-    setSeed(s)
-    commit(initial(s, carry))
-  }, [commit])
-
-  /** Nouvelle course, argent et inventaire conservés ; les charges reviennent au changement de cercle. */
-  const newRace = useCallback(() => {
-    const u = uiRef.current
-    const raceIndex = u.raceIndex + 1
-    const newCircle = raceIndex % config.run.racesPerCircle === 0
-    startRace({ money: u.money, inventory: u.inventory, raceIndex, lateBetCharges: newCircle ? fullCharges(u.inventory) : u.lateBetCharges })
-  }, [startRace])
-
-  /** Nouvelle session : capital initial, inventaire vide, cercle 1. */
-  const resetSession = useCallback(() => {
-    startRace({ money: config.economy.startingMoney, inventory: defaultInventory(config), raceIndex: 0, lateBetCharges: 0 })
-  }, [startRace])
-
   // ---- Paris -------------------------------------------------------------
 
   const placeBet = useCallback((type: BetTypeId, souls: readonly number[], stake: number): string | null => {
     const u = uiRef.current
-    if (!canBetNow(u)) return u.phase === 'pairing' ? 'Les dés sont lancés : plus de pari avant le prochain tour.' : u.phase === 'shop' ? 'Les paris initiaux sont clos : ils se posaient avant la boutique.' : 'Attendez la fin de la résolution.'
+    if (!canBetNow(u)) return u.phase === 'pairing' ? 'Les dés sont lancés : plus de pari avant le prochain tour.' : 'Attendez la fin de la résolution.'
     const refusal = betRefusal(u.race, type, souls, stake, u.money, u.bets)
     if (refusal) return refusal
     const multiplier = currentMultiplier(betBase(type, u.inventory), raceProgress(u.race), config.economy.decay)
-    const bet: Bet = { id: betId.current++, type, souls: [...souls], stake, multiplier, turn: u.phase === 'betting' ? 0 : u.race.turn, status: 'open', payout: 0 }
+    const bet: Bet = { id: betId.current++, type, souls: [...souls], stake, multiplier, turn: u.phase === 'prep' ? 0 : u.race.turn, status: 'open', payout: 0 }
     const names = souls.map((id) => u.race.souls[id]?.name ?? `#${id}`).join(betType(type).ordered ? ' > ' : ', ')
     commit(pushLog({ ...u, money: u.money - stake, bets: [...u.bets, bet] }, 'bet', `Pari ${betType(type).label} sur ${names} : mise ${stake} à ${fmtMultiplier(multiplier)}, rapporte ${potentialPayout(stake, multiplier)} si gagné.`))
     return null
@@ -248,25 +244,29 @@ export function useRace() {
 
   // ---- Boutique ----------------------------------------------------------
 
-  /** Paris initiaux clos (au moins un), la boutique ouvre. */
-  const openShop = useCallback(() => {
+  /** La boutique n'ouvre qu'avec au moins un pari initial ; la vitrine est tirée à la première ouverture. */
+  const shopUnlocked = useCallback((u: RaceUi): boolean => u.phase === 'prep' && u.bets.length > 0, [])
+
+  const openShop = useCallback((): boolean => {
     const u = uiRef.current
-    if (u.phase !== 'betting' || u.bets.length === 0) return
-    const vitrine = generateVitrine(shop, u.inventory, rngRef.current)
-    const n = u.bets.length
-    commit(pushLog({ ...u, phase: 'shop', vitrine, pendingPurchase: null }, 'shop', `${n} pari${n > 1 ? 's' : ''} initia${n > 1 ? 'ux' : 'l'} posé${n > 1 ? 's' : ''}. La boutique ouvre : ${vitrine.length} objets en vitrine.`))
-  }, [commit, pushLog])
+    if (!shopUnlocked(u)) return false
+    if (u.vitrine === null) {
+      const vitrine = generateVitrine(shop, u.inventory, rngRef.current)
+      commit(pushLog({ ...u, vitrine, pendingPurchase: null }, 'shop', `La boutique ouvre : ${vitrine.length} objets en vitrine.`))
+    }
+    return true
+  }, [commit, pushLog, shopUnlocked])
 
   const rerollVitrine = useCallback(() => {
     const u = uiRef.current
-    if (u.phase !== 'shop' || u.money < shop.rerollCost) return
+    if (!shopUnlocked(u) || u.money < shop.rerollCost) return
     const vitrine = generateVitrine(shop, u.inventory, rngRef.current)
-    commit(pushLog({ ...u, money: u.money - shop.rerollCost, vitrine, pendingPurchase: null }, 'shop', `Vitrine renouvelée pour ${shop.rerollCost} pièces.`))
-  }, [commit, pushLog])
+    commit(pushLog({ ...u, money: u.money - shop.rerollCost, vitrine, pendingPurchase: null, tally: { ...u.tally, spent: u.tally.spent + shop.rerollCost } }, 'shop', `Vitrine renouvelée pour ${shop.rerollCost} pièces.`))
+  }, [commit, pushLog, shopUnlocked])
 
   /** Pourquoi un objet n'est pas achetable maintenant, ou null. */
   const purchaseRefusal = useCallback((u: RaceUi, item: ShopItem): string | null => {
-    if (u.phase !== 'shop') return 'La boutique est fermée.'
+    if (!shopUnlocked(u)) return 'La boutique est fermée.'
     const price = priceFor(item, u.raceIndex)
     if (u.money < price) return 'Pas assez d’argent.'
     if (item.kind === 'artefact') {
@@ -275,7 +275,7 @@ export function useRace() {
     }
     if (item.kind === 'forge' && !u.inventory.dice.some((d) => d.faces.some((f) => !f.altered))) return 'Plus aucune face à forger.'
     return null
-  }, [])
+  }, [shopUnlocked])
 
   /**
    * Achat. Un dé spécial ou une altération de forge demande une cible : le premier
@@ -283,7 +283,7 @@ export function useRace() {
    */
   const buy = useCallback((itemId: string, target: PurchaseTarget | null = null): string | null => {
     const u = uiRef.current
-    const item = u.vitrine.find((i) => i.id === itemId)
+    const item = u.vitrine?.find((i) => i.id === itemId)
     if (!item) return 'Objet absent de la vitrine.'
     const refusal = purchaseRefusal(u, item)
     if (refusal) return refusal
@@ -295,7 +295,7 @@ export function useRace() {
       const { inventory, text } = applyPurchase(item, u.inventory, target)
       const price = priceFor(item, u.raceIndex)
       const lateBetCharges = item.kind === 'artefact' && item.id === 'lateBet' ? config.artefacts.lateBet.chargesPerCircle : u.lateBetCharges
-      let next = pushLog({ ...u, money: u.money - price, inventory, lateBetCharges, vitrine: u.vitrine.filter((i) => i !== item), pendingPurchase: null }, 'shop', `${text} (${price} pièces)`)
+      let next = pushLog({ ...u, money: u.money - price, inventory, lateBetCharges, vitrine: (u.vitrine ?? []).filter((i) => i !== item), pendingPurchase: null, tally: { ...u.tally, spent: u.tally.spent + price } }, 'shop', `${text} (${price} pièces)`)
       if (item.kind === 'artefact' && (item.id === 'sablier' || item.id === 'filet')) next = pushLog(next, 'shop', `${item.name} s'appliquera à partir de la course suivante.`)
       commit(next)
       return null
@@ -309,10 +309,11 @@ export function useRace() {
     if (u.pendingPurchase !== null) commit({ ...u, pendingPurchase: null })
   }, [commit])
 
-  const leaveShop = useCallback(() => {
+  /** Fin de la préparation : au moins un pari, la course commence. */
+  const startRace = useCallback(() => {
     const u = uiRef.current
-    if (u.phase !== 'shop') return
-    commit(pushLog({ ...u, phase: 'idle', pendingPurchase: null, vitrine: [] }, 'system', 'La course commence.'))
+    if (u.phase !== 'prep' || u.bets.length === 0) return
+    commit(pushLog({ ...u, phase: 'idle', pendingPurchase: null }, 'system', 'La course commence.'))
   }, [commit, pushLog])
 
   // ---- Course ------------------------------------------------------------
@@ -450,32 +451,31 @@ export function useRace() {
     if (settlement.refund > 0) done = pushLog(done, 'artefact', `Livre des comptes : ${settlement.refund} pièces remboursées.`)
     const net = settlement.returned - settlement.staked
     done = pushLog(done, 'system', `Bilan des paris : ${net >= 0 ? '+' : '−'}${Math.abs(net)}. Argent : ${done.money + settlement.returned}.`)
-    commit({ ...done, bets: settlement.bets, settlement, money: done.money + settlement.returned })
+    const bestBet = settlement.bets.reduce((m, b) => Math.max(m, b.payout - b.stake), 0)
+    commit({ ...done, bets: settlement.bets, settlement, money: done.money + settlement.returned, tally: { ...done.tally, bestBet } })
   }, [commit, pushLog, resolveMoves, wait])
 
-  // Mode auto : pari minimal, boutique traversée, combinaisons naturelles.
+  // Mode auto (test) : pari minimal, pas d'achat, combinaisons naturelles.
   useEffect(() => {
     if (!auto) return
-    if (ui.phase === 'betting') {
+    if (ui.phase === 'prep') {
       if (ui.bets.length === 0 && placeBet('winner', [0], config.economy.stakes[0] ?? 0) !== null) {
         setAuto(false)
         return
       }
-      openShop()
-    } else if (ui.phase === 'shop') leaveShop()
-    else if (ui.phase === 'idle') void rollDice()
+      startRace()
+    } else if (ui.phase === 'idle') void rollDice()
     else if (ui.phase === 'pairing') {
       autoPair()
       void resolve()
     }
-  }, [auto, ui.phase, ui.bets.length, placeBet, openShop, leaveShop, rollDice, autoPair, resolve])
+  }, [auto, ui.phase, ui.bets.length, placeBet, startRace, rollDice, autoPair, resolve])
 
   return {
     ui,
-    speed,
-    setSpeed,
     auto,
     setAuto,
-    actions: { newRace, resetSession, openShop, leaveShop, buy, cancelPurchase, rerollVitrine, placeBet, useLateBet, rollDice, pickSoulDie, pickDistanceDie, resetPairing, autoPair, resolve },
+    shopUnlocked: shopUnlocked(ui),
+    actions: { openShop, startRace, buy, cancelPurchase, rerollVitrine, placeBet, useLateBet, rollDice, pickSoulDie, pickDistanceDie, resetPairing, autoPair, resolve },
   }
 }

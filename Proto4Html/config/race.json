@@ -2,8 +2,9 @@
   "_comment": "Paramètres de la course (GDD proto4 §2 et §9.1). Modifier ici, recharger la page.",
 
   "souls": {
+    "_comment": "count = âmes au cercle 1 (les cercles peuvent en ajouter, voir circles). Il faut au moins autant de noms que d'âmes au cercle le plus peuplé.",
     "count": 5,
-    "names": ["Homère", "Virgile", "Aristote", "Platon", "Socrate", "Ovide", "Sénèque", "Euclide"]
+    "names": ["Homère", "Virgile", "Aristote", "Platon", "Socrate", "Ovide", "Sénèque", "Euclide", "Horace", "Lucain", "Hippocrate", "Ptolémée"]
   },
 
   "track": {
@@ -49,8 +50,19 @@
   },
 
   "run": {
-    "_comment": "Structure minimale de run en attendant les cercles complets : sert à remettre les charges « une fois par cercle » des artefacts.",
-    "racesPerCircle": 3
+    "_comment": "racesPerCircle = courses par cercle, la dernière est la rencontre avec le boss. circles = les neuf cercles : prix à payer à la fin du cercle (GDD §4.2), nombre d'âmes en course (GDD §4.1 : +1 aux cercles 2, 4, 6, 8, 9). Le prix du cercle 1 vient de interface.md (200).",
+    "racesPerCircle": 3,
+    "circles": [
+      { "name": "Limbes", "price": 200, "souls": 5 },
+      { "name": "Luxure", "price": 280, "souls": 6 },
+      { "name": "Gourmandise", "price": 380, "souls": 6 },
+      { "name": "Avarice", "price": 500, "souls": 7 },
+      { "name": "Colère", "price": 640, "souls": 7 },
+      { "name": "Hérésie", "price": 800, "souls": 8 },
+      { "name": "Violence", "price": 1000, "souls": 8 },
+      { "name": "Fraude", "price": 1250, "souls": 9 },
+      { "name": "Trahison", "price": 1500, "souls": 10 }
+    ]
   },
 
   "artefacts": {

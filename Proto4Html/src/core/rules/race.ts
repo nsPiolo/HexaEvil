@@ -97,6 +97,8 @@ export interface RaceOptions {
   betThresholdRatio?: number
   /** Cases après l'arrivée en plus (artefact Filet du pêcheur). */
   extraCellsAfterFinish?: number
+  /** Nombre d'âmes en course (dépend du cercle) ; sinon souls.count. */
+  soulCount?: number
 }
 
 export function createTrack(cfg: RaceConfig['track'], options: RaceOptions = {}): Track {
@@ -113,7 +115,8 @@ export function createTrack(cfg: RaceConfig['track'], options: RaceOptions = {})
 
 export function createRace(config: RaceConfig, options: RaceOptions = {}): RaceState {
   const souls: Soul[] = []
-  for (let i = 0; i < config.souls.count; i++) {
+  const count = options.soulCount ?? config.souls.count
+  for (let i = 0; i < count; i++) {
     souls.push({ id: i, name: at(config.souls.names, i, 'souls.names'), position: 0, finishOrder: null })
   }
   return { track: createTrack(config.track, options), souls, turn: 1, finished: false, nextFinishOrder: 1 }

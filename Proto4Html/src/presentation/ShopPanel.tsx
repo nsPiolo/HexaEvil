@@ -114,7 +114,7 @@ export function ShopPanel({ vitrine, money, raceIndex, inventory, pending, onBuy
 
       <div className="actions">
         <button type="button" className="btn btn-primary" onClick={onLeave}>
-          Partir à la course
+          Retour aux paris
         </button>
         <button type="button" className="btn" disabled={money < shop.rerollCost || !!pendingItem} onClick={onReroll}>
           Renouveler la vitrine ({shop.rerollCost})

@@ -40,6 +40,11 @@ function intArray(raw: unknown, field: string): number[] {
   return raw.map((v, i) => int(v, `${field}[${i}]`, Number.NEGATIVE_INFINITY))
 }
 
+function str(raw: unknown, field: string): string {
+  if (typeof raw !== 'string' || raw.trim() === '') fail(field, 'chaîne non vide attendue')
+  return raw
+}
+
 function strArray(raw: unknown, field: string): string[] {
   if (!Array.isArray(raw)) fail(field, 'tableau attendu')
   return raw.map((v, i) => {
@@ -95,6 +100,13 @@ export function loadConfig(raw: unknown): RaceConfig {
 
   const run = obj(root.run, 'run')
   const racesPerCircle = int(run.racesPerCircle, 'run.racesPerCircle', 1)
+  if (!Array.isArray(run.circles) || run.circles.length === 0) fail('run.circles', 'tableau non vide attendu')
+  const circles = run.circles.map((c, i) => {
+    const o = obj(c, `run.circles[${i}]`)
+    return { name: str(o.name, `run.circles[${i}].name`), price: int(o.price, `run.circles[${i}].price`, 0), souls: int(o.souls, `run.circles[${i}].souls`, 2) }
+  })
+  const maxSouls = Math.max(...circles.map((c) => c.souls))
+  if (names.length < maxSouls) fail('souls.names', `il faut au moins ${maxSouls} noms (cercle le plus peuplé)`)
 
   const artefacts = obj(root.artefacts, 'artefacts')
   const lateBet = obj(artefacts.lateBet, 'artefacts.lateBet')
@@ -114,7 +126,7 @@ export function loadConfig(raw: unknown): RaceConfig {
     dice: { distanceFaces, distanceDice, soulDice },
     opponent: { rollsPerTurn },
     economy: { startingMoney, stakes, multipliers, decay: { exponent, minMultiplier } },
-    run: { racesPerCircle },
+    run: { racesPerCircle, circles },
     artefacts: { lateBet: { chargesPerCircle }, sablier: { betThresholdRatio: sablierRatio } },
     animation: { stepMs, diceMs, pauseMs },
   }

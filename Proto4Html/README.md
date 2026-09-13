@@ -1,10 +1,12 @@
-# Proto 4 — « Damned Race Bet », étape 1 : la course
+# Proto 4 — « Sinner's Bet »
 
 Prototype jouable de la course décrite dans
-[`../docs/proto4/GDD.md`](../docs/proto4/GDD.md) (§2), de ses paris (§3) et d'une
-première boutique (§6 : artefacts, dés spéciaux, forge). Pas encore de cartes
-action ni de personnalités. Le catalogue complet prévu est listé dans
-[`../docs/proto4/boutique-README.md`](../docs/proto4/boutique-README.md).
+[`../docs/proto4/GDD.md`](../docs/proto4/GDD.md) (§2), de ses paris (§3), d'une
+première boutique (§6 : artefacts, dés spéciaux, forge) et de la structure de run
+en neuf cercles avec prix à payer (§4), habillée selon
+[`../docs/proto4/interface.md`](../docs/proto4/interface.md). Pas encore de cartes
+action, de personnalités ni de règles spéciales de boss. Le catalogue complet
+prévu est listé dans [`../docs/proto4/boutique-README.md`](../docs/proto4/boutique-README.md).
 
 React + TypeScript, hors Unity. Aucune dépendance au-delà de React.
 
@@ -16,6 +18,30 @@ npm run build
 ```
 
 ## Ce qui est implémenté
+
+- Écrans (interface.md) : logo animé 5 s (un clic abrège), menu principal
+  (Continuer grisé sans run, Nouvelle évasion, Statistiques, Option), intro en
+  bulles avec le démon stagiaire (« Suite », espace, « Passer l'introduction »),
+  statistiques et options en localStorage. Volume et Langue sont grisés (pas de
+  musique, seul le français existe) ; la vitesse des animations (×0,5 à ×4) est
+  prise en compte immédiatement.
+- Run en 9 cercles × 3 courses (la 3e est la rencontre avec le boss, sans règle
+  spéciale pour l'instant). Après la 2e course, le stagiaire annonce le boss et le
+  prix. À la fin du cercle, si l'argent couvre le prix, il est débité et un
+  dialogue annonce ce qui change (âmes en course, prix suivant) ; sinon fin de run.
+  Après le 9e cercle payé : évasion. Prix et nombre d'âmes par cercle dans
+  `config/race.json`, textes dans `src/presentation/texts.ts`.
+- Sauvegarde : l'état (argent, dés, artefacts, prochaine course) est écrit à la
+  fin de chaque course et au changement de cercle ; « Continuer » reprend au début
+  de la rencontre suivante. Quitter en pleine course rejoue cette rencontre.
+- Écran de jeu : table vue du parieur, fil d'Ariane courbé Pari · Boutique ·
+  Course · Gains (étape faite en gras, étape en cours avec halo), cercle et course
+  en haut à gauche, pièces et nombre d'artefacts en haut à droite (clic = popup
+  des artefacts actifs), emplacement de l'adversaire en haut de la table et du
+  joueur en bas. Paris dans un panneau coulissant depuis le bas, boutique dans un
+  panneau depuis le haut (accessible seulement en préparation, après un premier
+  pari) ; on passe librement de l'un à l'autre. Plus de journal : une seule ligne
+  sous le plateau rappelle le dernier événement.
 
 - Plateau : une seule ligne de `columns` cases, ligne d'arrivée, cases après
   l'arrivée, zone des 60 % marquée en couleur (simple repère pour l'instant).
@@ -94,5 +120,8 @@ src/core/rules/dice.ts     dés Distance du joueur, face par face
 src/core/shop/             catalogue (types, chargement de shop.json), vitrine, achats, forge
 src/core/rules/rng.ts      aléatoire déterministe (graine affichée à l'écran)
 src/core/__tests__         tests des règles
-src/presentation           React : useRace (machine à états animée), Inventory, ShopPanel, Board, DicePanel, BetPanel, Log, Ranking
+src/presentation/App.tsx   routeur d'écrans et orchestration du run (cercles, prix, sauvegarde, stats)
+src/presentation/texts.ts  tous les textes (intro, boss, transitions des 9 cercles, fin), prêts à traduire
+src/presentation/storage.ts localStorage : sauvegarde, statistiques, options
+src/presentation           React : useRace (machine à états d'une rencontre), GameScreen, PlaySlots, BetPanel, ShopPanel, Inventory, Board, Ranking, Dialogue, Screens
 ```

@@ -18,12 +18,15 @@ interface Props {
   onPlace: (type: BetTypeId, souls: readonly number[], stake: number) => string | null
   /** Cote de base d'un type, artefacts compris. */
   baseFor: (type: BetTypeId) => number
+  /** En préparation : lancer la course depuis le panneau (le panneau couvre la table). */
+  onStart?: () => void
+  onOpenShop?: () => void
 }
 
 const TIERS: readonly BetTier[] = ['simple', 'intermediate', 'advanced']
 
-export function BetPanel({ race, money, bets, open, phase, lateBet, onUseLateBet, onPlace, baseFor }: Props) {
-  const initialPhase = phase === 'betting'
+export function BetPanel({ race, money, bets, open, phase, lateBet, onUseLateBet, onPlace, baseFor, onStart, onOpenShop }: Props) {
+  const initialPhase = phase === 'prep'
   const closed = bettingClosed(race)
   const [type, setType] = useState<BetTypeId>('winner')
   const [souls, setSouls] = useState<number[]>([])
@@ -77,10 +80,9 @@ export function BetPanel({ race, money, bets, open, phase, lateBet, onUseLateBet
           )}
         </div>
       )}
-      {!race.finished && !closed && !open && phase === 'shop' && <p className="muted small">Paris initiaux clos. Vous pourrez reparier avant chaque lancer.</p>}
-      {!race.finished && !closed && !open && phase !== 'pairing' && phase !== 'shop' && <p className="muted small">Les paris sont suspendus pendant la résolution.</p>}
+      {!race.finished && !closed && !open && phase !== 'pairing' && <p className="muted small">Les paris sont suspendus pendant la résolution.</p>}
       {open && phase === 'pairing' && <p className="hint small">Œil du parieur actif : vous pariez en connaissant vos dés.</p>}
-      {open && initialPhase && <p className="hint small">Paris initiaux : au moins un, autant que vous voulez, puis lancez la course.</p>}
+      {open && initialPhase && <p className="hint small">Paris initiaux : au moins un pour ouvrir la boutique et lancer la course.</p>}
 
       <label className="bet-field">
         <span className="bet-label">Type</span>
@@ -169,6 +171,21 @@ export function BetPanel({ race, money, bets, open, phase, lateBet, onUseLateBet
         </button>
       </div>
       <p className={'bet-refusal small' + (message ? ' bet-refusal-on' : '')}>{message ?? ''}</p>
+
+      {initialPhase && (onStart || onOpenShop) && (
+        <div className="bet-start">
+          {onOpenShop && (
+            <button type="button" className="btn" disabled={bets.length === 0} onClick={onOpenShop} title={bets.length === 0 ? 'Posez d’abord un pari initial' : undefined}>
+              Boutique
+            </button>
+          )}
+          {onStart && (
+            <button type="button" className="btn btn-primary" disabled={bets.length === 0} onClick={onStart} title={bets.length === 0 ? 'Il faut au moins un pari initial' : undefined}>
+              Lancer la course
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="bet-list">
         <h3>Paris posés ({bets.length})</h3>

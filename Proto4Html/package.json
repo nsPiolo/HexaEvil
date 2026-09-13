@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Prototype HTML/React de « Damned Race Bet » (proto 4) — étape 1 : la course seule",
+  "description": "Prototype HTML/React de « Sinner's Bet » (proto 4)",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",

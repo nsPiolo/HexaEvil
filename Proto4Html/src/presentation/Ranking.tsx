@@ -6,10 +6,11 @@ interface Props {
   race: RaceState
   settlement: Settlement | null
   money: number
-  onNewRace: () => void
+  continueLabel: string
+  onContinue: () => void
 }
 
-export function Ranking({ race, settlement, money, onNewRace }: Props) {
+export function Ranking({ race, settlement, money, continueLabel, onContinue }: Props) {
   const ranked = ranking(race)
   const net = settlement ? settlement.returned - settlement.staked : 0
   return (
@@ -47,7 +48,7 @@ export function Ranking({ race, settlement, money, onNewRace }: Props) {
         </div>
       )}
       {settlement && settlement.bets.length === 0 && <p className="muted small">Aucun pari sur cette course.</p>}
-      <button type="button" className="btn btn-primary" onClick={onNewRace}>Nouvelle course</button>
+      <button type="button" className="btn btn-primary" onClick={onContinue}>{continueLabel}</button>
     </section>
   )
 }

@@ -1,4 +1,4 @@
-# Damned Race Bet — Game Design Document
+# Sinner's Bet — Game Design Document
 
 Ce document décrit ce qui est dans le proto html permettant de tester la mécanique du jeu.
 

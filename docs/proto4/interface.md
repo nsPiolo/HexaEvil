@@ -1,6 +1,6 @@
 # Interface
 
-Nom du jeu : `Damned Race Bet`
+Nom du jeu : `Sinner's Bet`
 
 ## 1 . Lancement
 
@@ -121,3 +121,76 @@ Si le joueur a assez d'argent :
 Si le joueur n'a pas assez : 
 
 * `Bon, t'es nul en faite !! Finalement, j'ai trouvé quel punition éternelle tu vas subir, bye.`
+---
+
+## Textes générés pour le proto (cercles 2 à 9 et fin)
+
+> Section ajoutée avec le proto : ces textes vivent dans `Proto4Html/src/presentation/texts.ts`.
+> `{souls}` et `{price}` sont remplacés par les valeurs du cercle suivant (config `run.circles`).
+> Chaque cercle a un texte de réussite (prix payé, annonce du cercle suivant) et un texte d'échec (fin de run).
+
+### Cercle 1 — Limbes
+
+* Réussite : `Félicitations, je ne pensais pas que vous pouviez réussir.` / `Si ça vous va, je vais vous coacher. On va vous tester dans les autres cercles.` / `Prochain arrêt : la Luxure. Des vents éternels y bousculent les âmes, il y en aura {souls} au départ, une de plus. Et le tarif de sortie monte à {price} pièces.`
+* Échec : `Bon, vous êtes nul en fait !! Finalement, j'ai trouvé quelle punition éternelle vous allez subir. Bye.`
+
+### Cercle 2 — Luxure
+
+* Réussite : `Deux cercles ! Mon chef de service a cessé de me tutoyer, c'est bon signe.` / `La Gourmandise nous attend : de la boue jusqu'aux genoux et Cerbère qui ronge tout ce qui traîne. Toujours {souls} âmes au départ, mais la sortie coûte {price} pièces.`
+* Échec : `Dommage. Les vents de la Luxure vous emportent, et moi je retourne classer des dossiers. Bye.`
+
+### Cercle 3 — Gourmandise
+
+* Réussite : `Vous avez le nez pour les bonnes cotes. On m'a confié un badge d'accès au quatrième.` / `L'Avarice : des âmes qui poussent des poids face à face, éternellement. {souls} âmes au départ, une de plus, et {price} pièces pour passer.`
+* Échec : `Cerbère a faim, et vous n'avez plus rien à miser. Vous connaissez la sortie… enfin, non, justement. Bye.`
+
+### Cercle 4 — Avarice
+
+* Réussite : `Quatre cercles. Les avares ont pleuré en vous voyant repartir avec leur argent. Moi, j'ai eu une prime.` / `La Colère, maintenant : le Styx, un marais où les âmes se frappent sans fin. Toujours {souls} âmes, et {price} pièces pour la sortie.`
+* Échec : `Les avares gardent tout, vous compris. Ça finit bizarrement bien pour eux. Bye.`
+
+### Cercle 5 — Colère
+
+* Réussite : `Vous êtes ressorti du Styx sans une éclaboussure. Le boss a demandé votre nom. Le mien aussi, pour une fois.` / `L'Hérésie ensuite : des tombes incandescentes, et {souls} âmes au départ, une de plus. La sortie passe à {price} pièces.`
+* Échec : `Le Styx vous garde. Pas de rancune : je vous mets dans le marais, c'est juste à côté du bureau. Bye.`
+
+### Cercle 6 — Hérésie
+
+* Réussite : `Six cercles. On me laisse remplacer des âmes en course, maintenant. Coach titulaire, presque.` / `La Violence est en trois sous-cercles : fleuve de sang, buissons, sable brûlant. Toujours {souls} âmes, mais {price} pièces pour passer.`
+* Échec : `Les tombes de l'Hérésie ont une place libre, ça tombe bien. Bye.`
+
+### Cercle 7 — Violence
+
+* Réussite : `Sept cercles. Mon boss commence à me regarder de travers. Je crois qu'il a compris qui coache qui.` / `La Fraude : dix fosses concentriques, les Malebolge, pleines de séducteurs et de faussaires. {souls} âmes au départ, une de plus, et {price} pièces de sortie.`
+* Échec : `Le sable brûlant, le fleuve de sang… choisissez, je suis bon prince. Bye.`
+
+### Cercle 8 — Fraude
+
+* Réussite : `Huit cercles. Il ne reste que la Trahison. Et… on m'a promu. Je dirige le neuvième.` / `Ce n'est pas un problème, hein ? Un pacte, c'est un pacte. Il y aura {souls} âmes au départ, gelées dans le Cocyte, et il faudra {price} pièces pour sortir. Pour de bon.`
+* Échec : `Les faussaires vous ont eu à votre propre jeu. Une fosse vous attend au fond des Malebolge. Bye.`
+
+### Cercle 9 — Trahison (fin du jeu)
+
+* Réussite (évasion) :
+  * Démon : `Vous… vous avez payé. Contre moi. Contre le neuvième cercle.`
+  * Démon : `Un pacte, c'est un pacte. La porte est là. Personne n'est jamais remonté d'ici, alors ne racontez pas comment vous avez fait.`
+  * Joueur : `Et vous ?`
+  * Démon : `Moi ? Je suis patron d'un cercle. Il me manque juste un parieur qui sache lire une course. Vous connaissez quelqu'un ?`
+  * Démon : `Allez, filez. Et gardez la monnaie.`
+  * Écran final `Évasion` : `Neuf cercles traversés, {money} pièces en poche. Le stagiaire est devenu boss, et vous, vous êtes sorti.`
+* Échec : `À une pièce près. C'est le cercle de la Trahison, vous vous attendiez à quoi ? Bienvenue dans la glace. Bye.`
+  * Écran final `Punition éternelle` : `Le prix du cercle était de {price} pièces. Il vous en manquait {missing}.`
+
+### Prix et âmes par cercle (config `run.circles`)
+
+| Cercle | Prix | Âmes |
+|---:|---:|---:|
+| 1 Limbes | 200 | 5 |
+| 2 Luxure | 280 | 6 |
+| 3 Gourmandise | 380 | 6 |
+| 4 Avarice | 500 | 7 |
+| 5 Colère | 640 | 7 |
+| 6 Hérésie | 800 | 8 |
+| 7 Violence | 1000 | 8 |
+| 8 Fraude | 1250 | 9 |
+| 9 Trahison | 1500 | 10 |

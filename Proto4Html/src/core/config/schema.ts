@@ -35,6 +35,7 @@ export interface RaceConfig {
   }
   run: {
     racesPerCircle: number
+    circles: readonly { name: string; price: number; souls: number }[]
   }
   artefacts: {
     lateBet: { chargesPerCircle: number }
