@@ -51,6 +51,11 @@ export function handLabel(rank: HandRank, ladderSize: number): string {
 export function diceHandLabel(hand: DiceHand): string {
   const v = hand.values
   switch (hand.id) {
+    // `B23`/`B24` : les combinaisons qui se font sur **tous** les dés.
+    case 'quad':
+      return `${v.length} × ${v[0]}`
+    case 'fullStraight':
+      return `grande suite (${v.length} dés)`
     case '421':
       return '4-2-1'
     case 'triple1':
@@ -82,11 +87,17 @@ export const REWARD_LABEL: Record<RewardId, string> = {
   extraDie: 'Un dé en plus',
   set42: 'Fixer 4 et 2',
   valuePlus1: '+1 en jetons',
-  reroll421: 'Annuler les 4-2-1',
+  reroll421: 'Annuler un 4-2-1',
   splitGive: 'Donner aux deux',
   takeLess: 'Encaisser moins',
   nenetteGift: 'La nénette paie',
   lateStop: 'S’arrêter sans annoncer',
+  wideStraight: 'Suite élargie',
+  onesFloor: 'Deux 1 valent 4',
+  straightFloor: 'Suite à 5 jetons',
+  tripleFloor: 'Brelan à 4 jetons',
+  quadIdentical: '4 identiques',
+  fullStraight: 'Grande suite',
 }
 
 export const REWARD_HELP: Record<RewardId, string> = {
@@ -97,12 +108,22 @@ export const REWARD_HELP: Record<RewardId, string> = {
   extraDie: 'Un dé de plus au **premier lancer de chaque phase**. Le jeu retire ensuite le dé le moins utile, et retient toujours la meilleure combinaison de trois.',
   set42: 'Une fois par partie : deux dés fixés sur 4 et 2, un seul jet, définitif.',
   valuePlus1: 'Toutes vos combinaisons transfèrent 1 jeton de plus.',
-  reroll421: 'Un adversaire qui termine sur un 4-2-1 relance automatiquement tous ses dés. Une seule fois par tour.',
+  reroll421:
+    'Le **premier** 4-2-1 adverse de la rencontre est annulé : son auteur relance tous ses dés, et la main qui sort est définitive. Une seule fois par rencontre.',
   splitGive: 'Quand vous donnez des jetons à un adversaire, l’autre en reçoit la moitié (arrondie à l’inférieur). Sans effet en duel.',
   takeLess: 'Quand vous encaissez des jetons, vous en prenez un de moins — au minimum 1. Moins de jetons à évacuer, mais moins d’argent.',
   nenetteGift: 'Pour tout le monde : une nénette (2-2-1) fait circuler un jeton vers chaque adversaire, même si vous perdez la manche.',
   lateStop:
     'Une fois par phase : vous gardez votre main **après** l’avoir vue, sans avoir annoncé votre dernier jet. Partout ailleurs, il faut le dire avant de lancer.',
+  wideStraight:
+    'Vos suites acceptent un écart de 2 : 2-4-6 et 2-3-5 en sont, comme 3-4-5. Beaucoup plus de suites — et la suite ne vaut que 2 jetons sans « Suite à 5 jetons ».',
+  onesFloor: 'Vos combinaisons à deux 1 (1-1-x) transfèrent au moins 4 jetons.',
+  straightFloor: 'Vos suites transfèrent au moins 5 jetons, au lieu de 2.',
+  tripleFloor: 'Vos brelans transfèrent au moins 4 jetons — un brelan de 1, 2 ou 3 cesse d’être une petite main.',
+  quadIdentical:
+    'Quatre de vos dés sur la même valeur : 10 jetons, +4 par dé de plus. Se lit sur **tous** vos dés et passe devant le 4-2-1.',
+  fullStraight:
+    'Tous vos dés en suite (4 minimum) : 7 jetons. Se lit sur **tous** vos dés et passe devant le 4-2-1.',
 }
 
 /** `F10` : un symbole par effet de face, et sa règle en une ligne. */
@@ -113,6 +134,9 @@ export const EFFECT_SYMBOL: Record<FaceEffectId, string> = {
   payAll: '⇈',
   money: '✦',
   forge: '⚒',
+  ghostDie: '⊞',
+  forceReroll: '⇄',
+  wild35: '⅗',
 }
 
 export const EFFECT_LABEL: Record<FaceEffectId, string> = {
@@ -122,6 +146,9 @@ export const EFFECT_LABEL: Record<FaceEffectId, string> = {
   payAll: 'Un jeton du pot pour tous',
   money: '+1 d’argent en fin de tour',
   forge: 'Deux visibles : +1 point de forge',
+  ghostDie: 'Un dé temporaire en plus',
+  forceReroll: 'Deux fois : un adversaire relance',
+  wild35: 'Compte pour un 3 ou un 5',
 }
 
 export const EFFECT_HELP: Record<FaceEffectId, string> = {
@@ -131,6 +158,12 @@ export const EFFECT_HELP: Record<FaceEffectId, string> = {
   payAll: 'À chaque apparition, chaque participant prend un jeton du pot. Vous y compris.',
   money: 'Visible en fin de lancers : +1 d’argent. Si tous vos dés l’affichent, +10.',
   forge: 'Deux exemplaires visibles en fin de lancers : +1 point de forge.',
+  ghostDie:
+    'Quand cette face sort, un dé de plus est lancé aussitôt et rejoint votre main pour le tour. Il disparaît à la fin de la manche.',
+  forceReroll:
+    'Deux exemplaires visibles en fin de lancers : un adversaire qui a **déjà** joué relance 2 dés de son choix. Inutile quand vous ouvrez la manche.',
+  wild35:
+    'Cette face ne vaut plus sa valeur : elle compte pour un 3 **ou** un 5, selon ce qui vous arrange. C’est un pari — elle peut faire baisser une main.',
 }
 
 export const PHASE_LABEL = {
@@ -156,8 +189,13 @@ export function describeStep(step: TraceStep, names: readonly string[]): string 
       return step.isCircleFinal
         ? `Dernière partie du Cercle ${step.circle} — trois participants, ${chips(step.pot)} dans le pot`
         : `Cercle ${step.circle} — duel, ${chips(step.pot)} dans le pot`
-    case 'rewardsDrawn':
-      return `${step.offered.length} récompenses sur la table pour ${step.offered.length - 1} batailles`
+    case 'bonusPool': {
+      // `B2` : dire **qui** a misé quoi, sinon le pot tombe du ciel.
+      const mises = step.picks
+        .map((list, i) => `${who(i)} mise ${list.map((id) => REWARD_LABEL[id]).join(' et ') || 'rien'}`)
+        .join(' · ')
+      return `${mises} — ${step.pool.length} bonus à se disputer`
+    }
     case 'duelStart':
       return `Bataille de cartes ${step.index + 1} sur ${step.total} — ${step.handSize} carte${step.handSize > 1 ? 's' : ''}`
     case 'duelDraw':
@@ -204,6 +242,10 @@ export function describeStep(step: TraceStep, names: readonly string[]): string 
     }
     case 'dropDie':
       return `Le dé en plus a joué : ${who(step.who)} repart avec ${step.values.length} dés, le ${step.before[step.dropped]} est écarté`
+    case 'ghostDie':
+      return `${EFFECT_SYMBOL.ghostDie} ${who(step.who)} gagne un dé temporaire — il tombe sur ${step.value} · ${diceHandLabel(step.hand)}`
+    case 'forcedDice':
+      return `${EFFECT_SYMBOL.forceReroll} ${who(step.owner)} renvoie ${who(step.who)} aux dés : ${step.dice.length} relancés, ${diceHandLabel(step.hand)} (${step.hand.chipValue})`
     case 'flipUsed':
       return `${who(step.who)} retourne un dé : ${step.from} devient ${step.to} · ${diceHandLabel(step.hand)}`
     case 'lateStop':
@@ -247,7 +289,7 @@ export function describeStep(step: TraceStep, names: readonly string[]): string 
 /** Durée d'affichage d'une étape, en ms, avant application de la vitesse (`U13`). */
 export const STEP_MS: Record<TraceStep['kind'], number> = {
   matchStart: 1400,
-  rewardsDrawn: 1100,
+  bonusPool: 1800,
   duelStart: 700,
   duelDraw: 900,
   duelMulligan: 900,
@@ -266,6 +308,8 @@ export const STEP_MS: Record<TraceStep['kind'], number> = {
   sideGift: 1100,
   nenetteGift: 1300,
   flipUsed: 1200,
+  ghostDie: 1100,
+  forcedDice: 1500,
   lateStop: 1100,
   turnEnd: 500,
   roundResult: 1600,

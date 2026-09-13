@@ -14,7 +14,7 @@
  */
 
 import { evaluateHand } from '../cards/hands'
-import { bestStrength } from '../dice/combinations'
+import { bestStrength, NO_BONUS, type HandBonuses, type Reads } from '../dice/combinations'
 import { throwDie } from '../dice/dice'
 import type { AiConfig, AiProfile, CardsConfig, CombinationsConfig } from '../config/schema'
 import type { Rng } from '../rules/random'
@@ -121,13 +121,14 @@ export function rollOutlook(
   reroll: readonly boolean[],
   faces: number,
   combos: CombinationsConfig,
+  bonuses: HandBonuses,
   rng: Rng,
   level = Infinity,
 ): RollOutlook {
   const idx: number[] = []
   for (let i = 0; i < dice.length; i++) if (reroll[i]) idx.push(i)
   if (idx.length === 0) {
-    const s = bestStrength(values, faces, combos)
+    const s = bestStrength(values, faces, combos, bonuses)
     return { mean: s, above: s >= level ? 1 : 0 }
   }
 
@@ -139,7 +140,7 @@ export function rollOutlook(
   if (outcomes <= ENUMERATION_BUDGET) {
     const walk = (k: number): void => {
       if (k === idx.length) {
-        const s = bestStrength(next, faces, combos)
+        const s = bestStrength(next, faces, combos, bonuses)
         total += s
         if (s >= level) hits++
         return
@@ -156,7 +157,7 @@ export function rollOutlook(
 
   for (let s = 0; s < SAMPLE_COUNT; s++) {
     for (const i of idx) next[i] = throwDie(dice[i] as Die, rng).value
-    const v = bestStrength(next, faces, combos)
+    const v = bestStrength(next, faces, combos, bonuses)
     total += v
     if (v >= level) hits++
   }
@@ -171,15 +172,16 @@ export function expectedStrength(
   faces: number,
   combos: CombinationsConfig,
   rng: Rng,
+  bonuses: HandBonuses = NO_BONUS,
 ): number {
-  return rollOutlook(dice, values, reroll, faces, combos, rng).mean
+  return rollOutlook(dice, values, reroll, faces, combos, bonuses, rng).mean
 }
 
 export interface AiTurnInput {
   readonly dice: readonly Die[]
   readonly values: readonly number[] | null
-  /** `F10` : seconde valeur des faces `wild`. */
-  readonly alts?: readonly (number | null)[] | null
+  /** `F10` : lectures possibles de chaque dé (`wild`, `wild35`). */
+  readonly reads?: Reads | null
   /** `F10` : dés relançables gratuitement. */
   readonly freeRerolls?: readonly number[]
   /** `D5` : jets encore disponibles — 0 dès que le dernier a été annoncé. */
@@ -190,6 +192,8 @@ export interface AiTurnInput {
   readonly canLateStop?: boolean
   readonly faces: number
   readonly combos: CombinationsConfig
+  /** `B17` à `B24` : ce que ses récompenses changent à la lecture de sa main. */
+  readonly bonuses?: HandBonuses
   /** `I5` : un démon faible ne choisit pas toujours la meilleure garde. */
   readonly temperature: number
 }
@@ -228,9 +232,10 @@ function announceLast(
   rng: Rng,
 ): boolean {
   const { faces, combos, temperature } = input
+  const bonuses = input.bonuses ?? NO_BONUS
   const fresh = dice.map(() => true)
-  const level = rollOutlook(dice, values, fresh, faces, combos, rng).mean
-  const chance = rollOutlook(dice, values, mask, faces, combos, rng, level).above
+  const level = rollOutlook(dice, values, fresh, faces, combos, bonuses, rng).mean
+  const chance = rollOutlook(dice, values, mask, faces, combos, bonuses, rng, level).above
   const margin = chance - ANNOUNCE_THRESHOLD
   const best = margin >= 0
   if (temperature <= 0) return best
@@ -252,7 +257,8 @@ export function aiTurn(input: AiTurnInput, rng: Rng): TurnAction {
   const { dice, values, throwsLeft, faces, combos } = input
   const n = dice.length
   const minReroll = Math.min(Math.max(1, input.minReroll), n)
-  const alts = input.alts ?? undefined
+  const reads = input.reads ?? undefined
+  const bonuses = input.bonuses ?? NO_BONUS
   const canLateStop = input.canLateStop ?? false
 
   if (values === null) {
@@ -264,12 +270,12 @@ export function aiTurn(input: AiTurnInput, rng: Rng): TurnAction {
     return { type: 'roll', keep, useSet42: false, last }
   }
 
-  const current = bestStrength(values, faces, combos, alts)
+  const current = bestStrength(values, faces, combos, bonuses, reads)
 
   // `F10` : une relance gratuite ne coûte rien — on la prend dès qu'elle espère mieux.
   for (const i of input.freeRerolls ?? []) {
     const mask = dice.map((_, k) => k === i)
-    if (expectedStrength(dice, values, mask, faces, combos, rng) > current) {
+    if (expectedStrength(dice, values, mask, faces, combos, rng, bonuses) > current) {
       return { type: 'freeReroll', dieIndex: i }
     }
   }
@@ -281,7 +287,7 @@ export function aiTurn(input: AiTurnInput, rng: Rng): TurnAction {
   for (let m = 1; m < 1 << n; m++) {
     const reroll = Array.from({ length: n }, (_, i) => Boolean(m & (1 << i)))
     if (reroll.filter(Boolean).length < minReroll) continue
-    scored.push({ item: reroll, score: rollOutlook(dice, values, reroll, faces, combos, rng).mean })
+    scored.push({ item: reroll, score: rollOutlook(dice, values, reroll, faces, combos, bonuses, rng).mean })
   }
   const topValue = Math.max(...scored.map((x) => x.score))
 
@@ -301,6 +307,38 @@ export function aiTurn(input: AiTurnInput, rng: Rng): TurnAction {
   // `B18` dispense d'annoncer : on garde le droit de s'arrêter après coup.
   const last = throwsLeft <= 1 || (!canLateStop && announceLast(dice, values, bestMask, input, rng))
   return { type: 'roll', keep: bestMask.map((r) => !r), useSet42: false, last }
+}
+
+export interface AiPickInput {
+  readonly dice: readonly Die[]
+  readonly values: readonly number[]
+  readonly reads?: Reads | undefined
+  /** Dés que la victime **doit** relancer, ni plus ni moins. */
+  readonly count: number
+  readonly faces: number
+  readonly combos: CombinationsConfig
+  readonly bonuses: HandBonuses
+  readonly temperature: number
+}
+
+/**
+ * `F10` (`forceReroll`) : subir une relance forcée reste un choix — on prend le
+ * groupe de `count` dés dont l'espérance est la meilleure. C'est la même note
+ * que pour la garde des dés, donc la même température (`I5`).
+ */
+export function aiPickDice(input: AiPickInput, rng: Rng): number[] {
+  const { dice, values, count, faces, combos, bonuses } = input
+  const n = dice.length
+  const scored: { item: number[]; score: number }[] = []
+  for (let m = 1; m < 1 << n; m++) {
+    const idx: number[] = []
+    for (let i = 0; i < n; i++) if (m & (1 << i)) idx.push(i)
+    if (idx.length !== count) continue
+    const reroll = dice.map((_, i) => idx.includes(i))
+    scored.push({ item: idx, score: rollOutlook(dice, values, reroll, faces, combos, bonuses, rng).mean })
+  }
+  if (scored.length === 0) return dice.map((_, i) => i).slice(0, count)
+  return pickByTemperature(scored, input.temperature, rng)
 }
 
 /* --------------------------------------------------------------- Cartes */
@@ -342,6 +380,28 @@ export function aiMulligan(
 }
 
 /* --------------------------------------------------------- Récompenses */
+
+/**
+ * `B2` : ce qu'un participant met au pot. Le démon mise ses bonus **les mieux
+ * notés** (`I4`), un par un et sans remise — donc avec la même température que
+ * partout ailleurs (`I5`). Il ne calcule pas qu'un bonus misé peut finir en
+ * face : c'est la limite assumée de `I1`.
+ */
+export function aiStakeBonuses(
+  owned: readonly RewardId[],
+  count: number,
+  settings: AiSettings,
+  rng: Rng,
+): RewardId[] {
+  const left = [...owned]
+  const chosen: RewardId[] = []
+  while (chosen.length < count && left.length > 0) {
+    const id = aiReward(left, settings, rng)
+    chosen.push(id)
+    left.splice(left.indexOf(id), 1)
+  }
+  return chosen
+}
 
 export function aiReward(
   offered: readonly RewardId[],

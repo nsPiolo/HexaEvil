@@ -5,7 +5,7 @@ import { Table, type RailStage } from '../Table'
 import { buildView } from '../viewModel'
 import { settingsFor } from '../../core/ai/ai'
 import { evaluateHand } from '../../core/cards/hands'
-import { evaluateDice } from '../../core/dice/combinations'
+import { evaluateDice, NO_BONUS } from '../../core/dice/combinations'
 import { newCard } from '../../core/cards/deck'
 import type { Ask } from '../../core/rules/asks'
 import { createStartingDeck } from '../../core/cards/deck'
@@ -36,7 +36,15 @@ describe('la table rend toutes les étapes d’une partie', () => {
     const circle = cfg.circles[circleIndex]!
     const dice = () => [0, 1, 2].map(() => upgradeDie(createDie(cfg.dice.startingFaces), circle.dieFaces))
     const participants: MatchParticipant[] = [
-      { index: 0, name: 'Vous', isHuman: true, deck: createStartingDeck(cfg.cards), dice: dice(), ai: null },
+      {
+        index: 0,
+        name: 'Vous',
+        isHuman: true,
+        deck: createStartingDeck(cfg.cards),
+        dice: dice(),
+        ai: null,
+        bonuses: [...cfg.startingBonuses],
+      },
       {
         index: 1,
         name: 'Belphégor',
@@ -44,6 +52,7 @@ describe('la table rend toutes les étapes d’une partie', () => {
         deck: createStartingDeck(cfg.cards),
         dice: dice(),
         ai: settingsFor(cfg.ai, 0, circleIndex),
+        bonuses: ['takeLess', 'setRerolls'],
       },
     ]
     const rng = createRng(seed)
@@ -83,7 +92,15 @@ describe('le fil d’Ariane suit la partie', () => {
     const circle = cfg.circles[circleIndex]!
     const dice = () => [0, 1, 2].map(() => upgradeDie(createDie(cfg.dice.startingFaces), circle.dieFaces))
     const participants: MatchParticipant[] = [
-      { index: 0, name: 'Vous', isHuman: true, deck: createStartingDeck(cfg.cards), dice: dice(), ai: null },
+      {
+        index: 0,
+        name: 'Vous',
+        isHuman: true,
+        deck: createStartingDeck(cfg.cards),
+        dice: dice(),
+        ai: null,
+        bonuses: [...cfg.startingBonuses],
+      },
       {
         index: 1,
         name: 'Belphégor',
@@ -91,6 +108,7 @@ describe('le fil d’Ariane suit la partie', () => {
         deck: createStartingDeck(cfg.cards),
         dice: dice(),
         ai: settingsFor(cfg.ai, 0, circleIndex),
+        bonuses: ['takeLess', 'setRerolls'],
       },
     ]
     const rng = createRng(7)
@@ -132,6 +150,13 @@ describe('le jeton de forge se pose sur la table', () => {
   it('présent quand la rencontre le met en jeu', () => {
     expect(renderToString(<Table {...props} forgeAtStake />)).toContain('forgetoken')
   })
+
+  /** `U19` : un jeton dont on ne sait pas à quoi il sert n'est qu'un décor. */
+  it('explique au survol qu’il se dépense en boutique', () => {
+    const html = renderToString(<Table {...props} forgeAtStake />)
+    expect(html).toContain('rollover')
+    expect(html).toContain('boutique')
+  })
 })
 
 /** Chaque type de décision doit se rendre : c'est là que le joueur clique. */
@@ -139,15 +164,20 @@ describe('les commandes du joueur se rendent toutes', () => {
   const names = ['Vous', 'Belphégor']
   const hand = [newCard(9, 'hearts'), newCard(9, 'spades')]
   const rank = evaluateHand(hand, cfg.cards)
-  const diceHand = evaluateDice([4, 2, 1], 6, cfg.combinations, false)
+  const diceHand = evaluateDice([4, 2, 1], 6, cfg.combinations)
   const view = buildView([], -1, 2)
 
   const asks: Ask[] = [
     { kind: 'mulligan', who: 0, pass: 1, total: 2, hand, rank },
     { kind: 'coin', who: 0, candidates: [0, 1], reason: 'mains à égalité' },
     { kind: 'reward', who: 0, offered: ['give5', 'valuePlus1', 'flipDie'] },
+    // `B2` : la mise d'ouverture, sur les bonus qu'on possède.
+    { kind: 'stakeBonuses', who: 0, owned: ['give3', 'reroll421', 'takeLess'], count: 2 },
     { kind: 'rewardTarget', who: 0, id: 'give5', candidates: [1] },
     { kind: 'chooseRerolls', who: 0, options: [1, 2, 3] },
+    // `F10` (`forceReroll`) : désigner sa victime, puis subir le choix des dés.
+    { kind: 'faceTarget', who: 0, effect: 'forceReroll', candidates: [1, 2] },
+    { kind: 'pickDice', who: 0, count: 2, values: [4, 2, 1, 6], effects: [null, null, null, null], by: 1 },
     {
       kind: 'turn',
       context: {
@@ -157,6 +187,8 @@ describe('les commandes du joueur se rendent toutes', () => {
         hand: null,
         kept: [],
         effects: [null, null, null, null],
+        reads: [null, null, null, null],
+        bonuses: NO_BONUS,
         freeRerolls: [],
         throwNo: 0,
         maxThrows: 3,
@@ -179,6 +211,8 @@ describe('les commandes du joueur se rendent toutes', () => {
         hand: diceHand,
         kept: [0, 1, 2],
         effects: ['wild', null, 'money', 'freeReroll'],
+        reads: [[4, 3], null, null, null],
+        bonuses: NO_BONUS,
         freeRerolls: [3],
         throwNo: 1,
         maxThrows: 3,
@@ -205,6 +239,7 @@ describe('les commandes du joueur se rendent toutes', () => {
           ladderSize={3}
           swap={[]}
           keep={[false, false, false, false]}
+          staked={['give3']}
           flipMode={false}
           setFlipMode={() => undefined}
           onAnswer={() => undefined}

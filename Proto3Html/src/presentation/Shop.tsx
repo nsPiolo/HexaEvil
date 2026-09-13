@@ -16,11 +16,12 @@ import {
   type ShopSession,
 } from '../core/rules/run'
 import type { Card, Suit } from '../core/rules/types'
-import { CardView, DieInspector } from './bits'
+import { CardView, DieInspector, RewardTile } from './bits'
 import { cardValueLabel, EFFECT_HELP, EFFECT_LABEL, EFFECT_SYMBOL, SUIT_LABEL, SUIT_SYMBOL } from './labels'
 import type { Session } from './session'
 
 const OPTION_LABEL: Record<ShopOptionId, string> = {
+  buyBonus: 'Acheter un bonus',
   removeTwo: 'Retirer deux cartes',
   plusOneTwo: 'Ajouter +1 à deux cartes',
   clone: 'Cloner une carte',
@@ -31,6 +32,7 @@ const OPTION_LABEL: Record<ShopOptionId, string> = {
 }
 
 const OPTION_HELP: Record<ShopOptionId, string> = {
+  buyBonus: 'Il rejoint votre réserve pour tout le run. Vous en miserez deux à chaque rencontre.',
   removeTwo: 'Parmi 10 cartes tirées au hasard dans votre deck.',
   plusOneTwo: 'Parmi 10 cartes tirées au hasard. Un As ne peut pas monter.',
   clone: 'Parmi 10 cartes tirées au hasard : le deck grossit d’une carte.',
@@ -62,7 +64,9 @@ interface Engraving {
 export function Shop({ session }: { session: Session }) {
   const run = session.run
   const shop = session.shop
-  const options = Object.keys(run.cfg.shop) as ShopOptionId[]
+  // `A9` : le deck ne se travaille plus que sur **3 options tirées au sort**
+  // par visite ; les gravures, elles, sont toujours là.
+  const options: ShopOptionId[] = [...run.offers.deck, 'engraveOne', 'engraveAll']
 
   const [orders, setOrders] = useState<EngraveOrder[]>([])
   const [target, setTarget] = useState<{ die: number; face: number } | null>(null)
@@ -121,6 +125,8 @@ export function Shop({ session }: { session: Session }) {
 
       {session.shopError && <div className="shop__error">{session.shopError}</div>}
 
+      {!shop && <BonusPanel session={session} />}
+
       {shop ? (
         engraveOption ? (
           <EngravePanel session={session} engraving={engraving} onChoose={chooseOffer} complete={complete} />
@@ -161,6 +167,48 @@ export function Shop({ session }: { session: Session }) {
           <h3>Votre deck — {run.deck.length} cartes</h3>
           <DeckList deck={run.deck} />
         </div>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * `A9`/`A8` : la réserve de bonus du joueur, et les deux que le marchand
+ * propose cette fois-ci. C'est la seule progression qui se voit d'une rencontre
+ * à l'autre autrement que par le deck et les dés.
+ */
+function BonusPanel({ session }: { session: Session }) {
+  const run = session.run
+  const { cost } = shopCost(run, 'buyBonus')
+  const affordable = run.money >= cost
+  return (
+    <div className="bonuses">
+      <p className="bonuses__lead">
+        Votre réserve est acquise : vous en miserez {run.cfg.bonusPick} à chaque rencontre, et vous les
+        retrouverez à la suivante — même si un adversaire les a utilisés.
+      </p>
+      <div className="bonuses__row">
+        <span className="bonuses__label">Vos bonus ({run.bonuses.length})</span>
+        {run.bonuses.map((id, i) => (
+          <RewardTile key={id} id={id} index={i} />
+        ))}
+      </div>
+      <div className="bonuses__row">
+        <span className="bonuses__label">Le marchand propose</span>
+        {run.offers.bonuses.length === 0 && <span className="bonuses__none">plus rien à vendre</span>}
+        {run.offers.bonuses.map((id, i) => (
+          <span key={id} className="bonuses__buy">
+            <RewardTile id={id} index={i} />
+            <button
+              type="button"
+              className="btn btn--primary"
+              disabled={!affordable}
+              onClick={() => session.buyBonus(id)}
+            >
+              {cost} pièces
+            </button>
+          </span>
+        ))}
       </div>
     </div>
   )

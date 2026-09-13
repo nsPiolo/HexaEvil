@@ -1,0 +1,34 @@
+{
+  "_comment": "Paramètres de la course (GDD proto4 §2 et §9.1). Modifier ici, recharger la page.",
+
+  "souls": {
+    "count": 5,
+    "names": ["Homère", "Virgile", "Aristote", "Platon", "Socrate", "Ovide", "Sénèque", "Euclide"]
+  },
+
+  "track": {
+    "_comment": "columns = cases du départ (colonne 0) à la dernière case avant l'arrivée. L'arrivée est franchie à la colonne `columns`. cellsAfterFinish = cases après l'arrivée pour départager les arrivées du même tour. betThresholdRatio = zone (60 %) au-delà de laquelle on ne pourra plus parier — simple repère visuel dans cette étape.",
+    "columns": 14,
+    "cellsAfterFinish": 3,
+    "betThresholdRatio": 0.6
+  },
+
+  "dice": {
+    "_comment": "distanceFaces = faces d'un dé Distance. distanceDice / soulDice = nombre de dés de chaque type dans le lancer du joueur. Un dé Âme a autant de faces que d'âmes en course. Avec plus de dés Âme que de dés Distance, le joueur choisit quelles âmes bougent ; les dés Âme en trop sont ignorés.",
+    "distanceFaces": [-1, 1, 2, 3],
+    "distanceDice": 2,
+    "soulDice": 3
+  },
+
+  "opponent": {
+    "_comment": "Nombre de paires (1 dé Âme + 1 dé Distance) lancées par l'ordinateur après la résolution du joueur. Chaque paire est résolue séparément.",
+    "rollsPerTurn": 1
+  },
+
+  "animation": {
+    "_comment": "Durées en millisecondes à vitesse ×1. stepMs = un déplacement d'âme ; diceMs = roulement des dés ; pauseMs = respiration entre deux déplacements.",
+    "stepMs": 800,
+    "diceMs": 600,
+    "pauseMs": 350
+  }
+}

@@ -9,7 +9,8 @@ import { settingsFor } from '../ai/ai'
 import { cloneCard, createStartingDeck, newCard } from '../cards/deck'
 import { canEngrave, createDie, engraveEffect, engraveValue, upgradeDie } from '../dice/dice'
 import type { GameConfig, ShopOptionId } from '../config/schema'
-import { MatchDriver, type MatchParticipant, type MatchResult } from './match'
+import type { RewardId } from './types'
+import { MatchDriver, usableBonuses, type MatchParticipant, type MatchResult } from './match'
 import type { Rng } from './random'
 import type { Card, Die, FaceEffectId, Suit } from './types'
 
@@ -25,6 +26,10 @@ export interface RunState {
   forgePoints: number
   deck: Card[]
   dice: Die[]
+  /** `A8` : les bonus que le joueur possède. Ils ne traversent pas un run (`R8`). */
+  bonuses: RewardId[]
+  /** `A9` : l'offre de la boutique, tirée une fois par visite et **mémorisée**. */
+  offers: ShopOffers
   status: RunStatus
   /** Meilleur Cercle atteint sur la session, seule trace d'un run à l'autre (`U16`). */
   bestCircle: number
@@ -32,7 +37,40 @@ export interface RunState {
   totalMoney: number
 }
 
+/** `A9` : ce que la boutique propose à cette visite. Tiré au sort, puis figé. */
+export interface ShopOffers {
+  readonly bonuses: readonly RewardId[]
+  readonly deck: readonly ShopOptionId[]
+}
+
 export const HUMAN = 0
+
+export { usableBonuses }
+
+/** `A9` : l'offre se tire à l'entrée dans la boutique, pas à chaque affichage. */
+export function rollShopOffers(run: RunState, rng: Rng): void {
+  const cfg = run.cfg
+  // Un bonus déjà possédé n'est pas remis en vente : la propriété est booléenne.
+  const catalogue = usableBonuses(cfg, cfg.dice.playerDice, cfg.participants.circleFinal).filter(
+    (id) => !run.bonuses.includes(id),
+  )
+  const deck = (Object.keys(cfg.shop) as ShopOptionId[]).filter((id) => (cfg.shop[id].pool ?? 0) > 0)
+  run.offers = {
+    bonuses: rng.shuffle(catalogue).slice(0, cfg.shopOffers.bonuses),
+    deck: rng.shuffle(deck).slice(0, cfg.shopOffers.deck),
+  }
+}
+
+/** `A9` : l'achat d'un bonus — il rejoint la réserve du joueur pour tout le run. */
+export function buyBonus(run: RunState, id: RewardId): void {
+  if (!run.offers.bonuses.includes(id)) throw new Error(`« ${id} » n'est pas en vente`)
+  if (run.bonuses.includes(id)) throw new Error(`« ${id} » est déjà en réserve`)
+  const { cost, currency } = shopCost(run, 'buyBonus')
+  if (currency !== 'money' || run.money < cost) throw new Error(`il faut ${cost} d'argent`)
+  run.money -= cost
+  run.bonuses.push(id)
+  run.offers = { ...run.offers, bonuses: run.offers.bonuses.filter((b) => b !== id) }
+}
 
 export function createRun(cfg: GameConfig, bestCircle = 1): RunState {
   const start = Math.min(Math.max(1, cfg.debugStart.circle), cfg.circles.length)
@@ -50,6 +88,9 @@ export function createRun(cfg: GameConfig, bestCircle = 1): RunState {
     forgePoints: cfg.debugStart.forgePoints,
     deck: createStartingDeck(cfg.cards),
     dice,
+    // `A8` : tout run repart des mêmes deux bonus (`R8`).
+    bonuses: [...cfg.startingBonuses],
+    offers: { bonuses: [], deck: [] },
     status: 'playing',
     bestCircle: Math.max(bestCircle, start),
     lastMoney: 0,
@@ -72,10 +113,18 @@ export function participantCount(run: RunState): number {
   return isCircleFinal(run) ? run.cfg.participants.circleFinal : run.cfg.participants.default
 }
 
-export function buildParticipants(run: RunState): MatchParticipant[] {
+export function buildParticipants(run: RunState, rng: Rng): MatchParticipant[] {
   const count = participantCount(run)
   const list: MatchParticipant[] = [
-    { index: HUMAN, name: 'Vous', isHuman: true, deck: run.deck, dice: run.dice, ai: null },
+    {
+      index: HUMAN,
+      name: 'Vous',
+      isHuman: true,
+      deck: run.deck,
+      dice: run.dice,
+      ai: null,
+      bonuses: [...run.bonuses],
+    },
   ]
   const circle = currentCircle(run)
   const demonDeck = createStartingDeck(run.cfg.cards)
@@ -92,6 +141,11 @@ export function buildParticipants(run: RunState): MatchParticipant[] {
       deck: demonDeck,
       dice: demonDice,
       ai: settingsFor(run.cfg.ai, d, run.circleIndex),
+      // `B2b` : un démon n'a pas de boutique — ses bonus sont tirés au sort
+      // dans ce qu'il peut **utiliser**, et il les mise tous.
+      bonuses: rng
+        .shuffle(usableBonuses(run.cfg, run.cfg.dice.demonDice, count))
+        .slice(0, run.cfg.bonusPick),
     })
   }
   return list
@@ -101,7 +155,7 @@ export function startMatch(run: RunState, rng: Rng): MatchDriver {
   const driver = new MatchDriver({
     cfg: run.cfg,
     circleIndex: run.circleIndex,
-    participants: buildParticipants(run),
+    participants: buildParticipants(run, rng),
     rng,
     isCircleFinal: isCircleFinal(run),
   })

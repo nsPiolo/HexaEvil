@@ -9,16 +9,26 @@
  * présentation rejoue dans le temps.
  */
 
-import { aiCoin, aiMulligan, aiReward, aiRerolls, aiTarget, aiTurn, type AiSettings } from '../ai/ai'
+import {
+  aiCoin,
+  aiMulligan,
+  aiPickDice,
+  aiReward,
+  aiRerolls,
+  aiStakeBonuses,
+  aiTarget,
+  aiTurn,
+  type AiSettings,
+} from '../ai/ai'
 import { drawHand, mulligan, type DrawState } from '../cards/deck'
 import { compareHands, evaluateHand } from '../cards/hands'
-import { bestOfThree, compareDice, type BestHand } from '../dice/combinations'
-import { flip, oppositeValue, throwDie } from '../dice/dice'
+import { bestHand, compareDice, type BestHand, type HandBonuses, type Reads } from '../dice/combinations'
+import { createDie, flip, oppositeValue, throwDie, upgradeDie } from '../dice/dice'
 import type { CircleConfig, GameConfig } from '../config/schema'
 import type { Answer, Ask, TurnAction } from './asks'
 import type { Rng } from './random'
 import type { CoinSide, TraceStep } from './trace'
-import type { Card, DiceHand, Die, Face, FaceEffectId, HandRank, PhaseId, RewardId } from './types'
+import type { Card, CombinationId, DiceHand, Die, Face, FaceEffectId, HandRank, PhaseId, RewardId } from './types'
 
 export interface MatchParticipant {
   readonly index: number
@@ -27,6 +37,8 @@ export interface MatchParticipant {
   readonly deck: readonly Card[]
   readonly dice: readonly Die[]
   readonly ai: AiSettings | null
+  /** `B2` : les bonus qu'il possède, et parmi lesquels il **mise** (`A8`). */
+  readonly bonuses: readonly RewardId[]
 }
 
 /** État visible en continu par l'affichage, hors animation. */
@@ -80,6 +92,8 @@ interface Ctx {
   readonly usedExtra: Set<number>
   /** `B18` : « s'arrêter après avoir vu ses dés », une fois par phase. */
   readonly usedLateStop: Set<number>
+  /** `B13` : « annuler les 4-2-1 », une seule fois par rencontre. */
+  readonly usedReroll421: Set<number>
   lastDuelWinner: number
   rounds: number
   throws: number
@@ -109,6 +123,71 @@ export function createLive(
   }
 }
 
+/** `F10` : l'effet porté par la face visible de chaque dé. */
+function effectsOf(dice: readonly Die[], faceIdx: readonly number[]): (FaceEffectId | null)[] {
+  return dice.map((d, i) => {
+    const fi = faceIdx[i] ?? -1
+    if (fi < 0) return null
+    return (d.faces[fi] as Face | undefined)?.effect ?? null
+  })
+}
+
+/**
+ * `F10` : ce que chaque dé peut valoir. `wild` **ajoute** la valeur de sa face
+ * opposée ; `wild35` **remplace** la sienne par 3 ou 5 — graver cette face est
+ * donc un pari, elle peut faire baisser une main.
+ */
+function readsOf(
+  ctx: Ctx,
+  dice: readonly Die[],
+  faceIdx: readonly number[],
+  values: readonly number[],
+): Reads {
+  const effects = effectsOf(dice, faceIdx)
+  return dice.map((d, i) => {
+    const e = effects[i]
+    if (e === 'wild') return [at(values, i), oppositeValue(d, faceIdx[i] as number)]
+    if (e === 'wild35') return [...ctx.cfg.dice.faceEffects.wild35Values]
+    return null
+  })
+}
+
+/**
+ * `B17` à `B24` : ce que les récompenses du participant changent à la lecture
+ * d'une main. Les planchers viennent de la configuration, pas du code (`G3`).
+ */
+function bonusesFor(ctx: Ctx, who: number): HandBonuses {
+  const owns = (id: RewardId): boolean => ctx.live.owned.get(id) === who
+  const floors: Partial<Record<CombinationId, number>> = {}
+  for (const r of ctx.cfg.rewards) {
+    if (r.combination === undefined || r.floor === undefined || !owns(r.id)) continue
+    floors[r.combination] = Math.max(floors[r.combination] ?? 0, r.floor)
+  }
+  return {
+    valuePlus1: owns('valuePlus1'),
+    wideStraight: owns('wideStraight'),
+    floors,
+    quad: owns('quadIdentical'),
+    fullStraight: owns('fullStraight'),
+  }
+}
+
+/**
+ * `B3e` : un bonus n'a de sens que si son détenteur peut s'en servir. Deux
+ * filtres, tous deux lus dans la configuration : `needsThree` (sans effet en
+ * duel) et le nombre de dés qu'exige la combinaison à laquelle il touche
+ * (`minDice`, donc `quadIdentical` et `fullStraight` demandent 4 dés).
+ */
+export function usableBonuses(cfg: GameConfig, diceCount: number, participantCount: number): RewardId[] {
+  return cfg.rewards
+    .filter((r) => !(r.needsThree === true && participantCount < 3))
+    .filter((r) => {
+      if (r.combination === undefined) return true
+      return (cfg.combinations[r.combination].minDice ?? 3) <= diceCount
+    })
+    .map((r) => r.id)
+}
+
 const at = <T>(list: readonly T[], i: number): T => {
   const v = list[i]
   if (v === undefined) throw new Error(`index ${i} hors bornes`)
@@ -130,23 +209,10 @@ export function* matchProgram(ctx: Ctx): Generator<Yielded, MatchResult, Answer>
     isCircleFinal: ctx.live.isCircleFinal,
   })
 
-  const firstSeriesOffered: RewardId[] = []
+  // `B2` : le pot de la rencontre, c'est ce que **chacun mise** parmi ses bonus.
+  yield* stakeBonuses(ctx)
 
   for (const [si, series] of ctx.cfg.battleSeries.entries()) {
-    // `B2` : n batailles → n + 1 récompenses. `B3b` : le 2e tirage exclut les
-    // quatre proposées à la première série, prises ou non.
-    const excluded = new Set<RewardId>(firstSeriesOffered)
-    const pool = ctx.cfg.rewards
-      .filter((r) => !excluded.has(r.id))
-      .filter((r) => !ctx.live.owned.has(r.id))
-      // `B3e` : une récompense qui n'a d'effet qu'à trois n'est pas proposée en duel.
-      .filter((r) => !(r.needsThree === true && ctx.participants.length < 3))
-      .map((r) => r.id)
-    const offered = ctx.rng.shuffle([...pool]).slice(0, series.duels + 1)
-    ctx.live.offered = offered
-    if (si === 0) firstSeriesOffered.push(...offered)
-    yield* step({ kind: 'rewardsDrawn', series: si, offered: [...offered] })
-
     for (let d = 0; d < series.duels; d++) {
       const winner = yield* cardDuel(ctx, si, d, series.duels)
       ctx.lastDuelWinner = winner
@@ -190,6 +256,62 @@ export function* matchProgram(ctx: Ctx): Generator<Yielded, MatchResult, Answer>
     humanWon,
     humanFirst,
     humanPlace,
+  }
+}
+
+/**
+ * `B2` : chaque participant **mise** `bonusPick` bonus parmi ceux qu'il
+ * possède ; l'union des mises est le pot de la rencontre, et les batailles de
+ * cartes le répartissent (`B1`). Miser, c'est donc risquer de voir son propre
+ * bonus servir en face — c'est le sel de la boutique (`A9`).
+ */
+function* stakeBonuses(ctx: Ctx): Generator<Yielded, void, Answer> {
+  const count = ctx.cfg.bonusPick
+  const picks: RewardId[][] = []
+  /** Le pot se remplit **au fur et à mesure** : c'est lui qui interdit les doublons. */
+  const pool: RewardId[] = []
+
+  for (const p of ctx.participants) {
+    const usable = usableBonuses(ctx.cfg, p.dice.length, ctx.participants.length)
+    // `B3e` : ce qui n'a aucun effet dans cette configuration n'est pas misable.
+    // `B2c` : ce qui est déjà au pot ne peut pas y être misé deux fois — un
+    // bonus n'a qu'un détenteur.
+    const own = p.bonuses.filter((id) => usable.includes(id) && !pool.includes(id))
+    let owned = own
+    if (!p.isHuman && p.bonuses.length > 0 && own.length < count) {
+      // `B2b` : un démon n'a pas de réserve à lui. Si ce qu'il devait miser est
+      // déjà au pot, il tire ailleurs — sans quoi le pot se refermerait à 3 ou
+      // à 2, et les dernières batailles n'auraient plus rien à distribuer.
+      const extra = ctx.rng
+        .shuffle(usable.filter((id) => !pool.includes(id) && !own.includes(id)))
+        .slice(0, count - own.length)
+      owned = [...own, ...extra]
+    }
+    const wanted = Math.min(count, owned.length)
+    let chosen: RewardId[]
+    if (owned.length <= wanted) {
+      // Rien à décider : tout ce qu'il a part au pot.
+      chosen = [...owned]
+    } else if (p.isHuman) {
+      const answer = yield {
+        t: 'ask',
+        ask: { kind: 'stakeBonuses', who: p.index, owned: [...owned], count: wanted },
+      }
+      const asked = answer.kind === 'stakeBonuses' ? answer.ids : []
+      chosen = []
+      for (const id of asked) if (owned.includes(id) && !chosen.includes(id) && chosen.length < wanted) chosen.push(id)
+      for (const id of owned) if (chosen.length < wanted && !chosen.includes(id)) chosen.push(id)
+    } else {
+      chosen = aiStakeBonuses(owned, wanted, p.ai as AiSettings, ctx.rng)
+    }
+    picks.push(chosen)
+    for (const id of chosen) if (!pool.includes(id)) pool.push(id)
+  }
+
+  ctx.live.offered = pool
+  yield {
+    t: 'step',
+    step: { kind: 'bonusPool', picks: picks.map((l) => [...l]), pool: [...pool] },
   }
 }
 
@@ -487,6 +609,8 @@ function* dicePhase(ctx: Ctx, phase: PhaseId): Generator<Yielded, void, Answer> 
 
     const hands: (DiceHand | null)[] = ctx.participants.map(() => null)
     const faceEffects: (readonly (FaceEffectId | null)[])[] = ctx.participants.map(() => [])
+    /** `F10` (`forceReroll`) : de quoi renvoyer aux dés qui a déjà validé. */
+    const states = new Map<number, TurnState>()
     let leaderThrows = maxThrows
     for (const [k, who] of order.entries()) {
       // `D4` : le meneur plafonne le nombre de jets des autres.
@@ -494,7 +618,12 @@ function* dicePhase(ctx: Ctx, phase: PhaseId): Generator<Yielded, void, Answer> 
       const turn = yield* takeTurn(ctx, who, cap, phase, k === 0)
       hands[who] = turn.hand
       faceEffects[who] = turn.effects
+      states.set(who, turn.state)
       if (k === 0) leaderThrows = turn.throws
+      // `F10` (`forceReroll`) : seuls ceux qui ont **déjà joué** peuvent être
+      // renvoyés aux dés — ouvrir la manche rend donc l'effet inoffensif.
+      const played = order.slice(0, k).filter((q) => states.has(q))
+      if (turn.forces && played.length > 0) yield* forceDice(ctx, who, played, states, hands, faceEffects)
     }
 
     yield* resolveRound(ctx, phase, hands, order, faceEffects)
@@ -517,11 +646,127 @@ function* dicePhase(ctx: Ctx, phase: PhaseId): Generator<Yielded, void, Answer> 
   ctx.live.phase = null
 }
 
+/**
+ * État des dés à la fin d'un tour. `forceReroll` (`F10`) peut y revenir après
+ * coup : la main est validée, mais la manche n'est pas résolue.
+ */
+interface TurnState {
+  readonly dice: readonly Die[]
+  readonly values: readonly number[]
+  readonly faceIdx: readonly number[]
+  readonly bonuses: HandBonuses
+}
+
 interface TurnOutcome {
   readonly hand: DiceHand
   readonly throws: number
   /** `F10` : effets des faces visibles en fin de tour. */
   readonly effects: readonly (FaceEffectId | null)[]
+  /** `F10` (`forceReroll`) : la face est sortie assez de fois pour frapper. */
+  readonly forces: boolean
+  readonly state: TurnState
+}
+
+/**
+ * `F10` (`forceReroll`) : deux faces visibles renvoient **un** adversaire déjà
+ * passé à ses dés. Le graveur désigne sa victime, la victime choisit les dés
+ * qui repartent. Sa nouvelle main est définitive : l'effet ne s'enchaîne jamais,
+ * sans quoi deux graveurs se renverraient la manche indéfiniment.
+ */
+function* forceDice(
+  ctx: Ctx,
+  owner: number,
+  candidates: readonly number[],
+  states: Map<number, TurnState>,
+  hands: (DiceHand | null)[],
+  faceEffects: (readonly (FaceEffectId | null)[])[],
+): Generator<Yielded, void, Answer> {
+  const spec = ctx.cfg.dice.faceEffects
+  const p = at(ctx.participants, owner)
+
+  let target: number
+  if (candidates.length === 1) target = at(candidates, 0)
+  else if (p.isHuman) {
+    const answer = yield {
+      t: 'ask',
+      ask: { kind: 'faceTarget', who: owner, effect: 'forceReroll', candidates: [...candidates] },
+    }
+    const wanted = answer.kind === 'faceTarget' ? answer.target : -1
+    target = candidates.includes(wanted) ? wanted : at(candidates, 0)
+  } else {
+    // Le démon frappe la **meilleure main** : c'est elle qui décide la manche.
+    target = candidates.reduce((chosen, q) => {
+      const a = hands[q]
+      const b = hands[chosen]
+      if (!a) return chosen
+      if (!b) return q
+      return compareDice(a, b) < 0 ? q : chosen
+    }, at(candidates, 0))
+  }
+
+  const st = states.get(target)
+  if (!st) return
+  const victim = at(ctx.participants, target)
+  const dice = [...st.dice]
+  const values = [...st.values]
+  const faceIdx = [...st.faceIdx]
+  const count = Math.min(spec.forceRerollDice, dice.length)
+
+  let picks: readonly number[]
+  if (victim.isHuman) {
+    const answer = yield {
+      t: 'ask',
+      ask: { kind: 'pickDice', who: target, count, values: [...values], effects: effectsOf(dice, faceIdx), by: owner },
+    }
+    picks = answer.kind === 'pickDice' ? answer.dice : []
+  } else {
+    picks = aiPickDice(
+      {
+        dice,
+        values,
+        reads: readsOf(ctx, dice, faceIdx, values),
+        count,
+        faces: ctx.circle.dieFaces,
+        combos: ctx.cfg.combinations,
+        bonuses: st.bonuses,
+        temperature: victim.ai?.temperature ?? 0,
+      },
+      ctx.rng,
+    )
+  }
+
+  // On ne garde que des indices distincts et valides, et on complète au besoin :
+  // la relance est subie, pas négociable.
+  const chosen: number[] = []
+  for (const i of picks) if (i >= 0 && i < dice.length && !chosen.includes(i) && chosen.length < count) chosen.push(i)
+  for (let i = 0; i < dice.length && chosen.length < count; i++) if (!chosen.includes(i)) chosen.push(i)
+
+  const before = [...values]
+  for (const i of chosen) {
+    const t = throwDie(at(dice, i), ctx.rng)
+    values[i] = t.value
+    faceIdx[i] = t.faceIndex
+  }
+  ctx.throws++
+  const reads = readsOf(ctx, dice, faceIdx, values)
+  const best = bestHand(values, ctx.circle.dieFaces, ctx.cfg.combinations, st.bonuses, reads)
+  hands[target] = best.hand
+  faceEffects[target] = effectsOf(dice, faceIdx)
+  states.set(target, { dice, values, faceIdx, bonuses: st.bonuses })
+  yield {
+    t: 'step',
+    step: {
+      kind: 'forcedDice',
+      owner,
+      who: target,
+      dice: [...chosen],
+      before,
+      values: [...values],
+      kept: [...best.indices],
+      effects: effectsOf(dice, faceIdx),
+      hand: best.hand,
+    },
+  }
 }
 
 function* takeTurn(
@@ -534,7 +779,7 @@ function* takeTurn(
   const p = at(ctx.participants, who)
   const faces = ctx.circle.dieFaces
   const combos = ctx.cfg.combinations
-  const valuePlus1 = ctx.live.owned.get('valuePlus1') === who
+  const bonuses = bonusesFor(ctx, who)
 
   // `B8` : « Un dé en plus » n'ajoute un dé qu'au **premier jet de la phase**.
   const extra = ctx.live.owned.get('extraDie') === who && !ctx.usedExtra.has(who)
@@ -552,16 +797,47 @@ function* takeTurn(
   /** `F10` : un dé ne se relance gratuitement qu'une fois par jet. */
   const usedFree = new Set<number>()
 
-  const effectAt = (i: number): FaceEffectId | null => {
-    const fi = faceIdx[i] ?? -1
-    if (fi < 0) return null
-    return (at(dice, i).faces[fi] as Face | undefined)?.effect ?? null
+  const effectAt = (i: number): FaceEffectId | null => (effectsOf(dice, faceIdx)[i] as FaceEffectId | null) ?? null
+  const effectsNow = (): (FaceEffectId | null)[] => effectsOf(dice, faceIdx)
+  const readsNow = (): Reads => readsOf(ctx, dice, faceIdx, (values ?? []) as number[])
+  const evaluate = (): BestHand => bestHand(values as number[], faces, combos, bonuses, readsNow())
+
+  /** `F10` (`ghostDie`) : dés temporaires déjà gagnés dans ce tour. */
+  let ghosts = 0
+
+  /**
+   * `F10` (`ghostDie`) : la face vue, un dé de plus tout de suite. Il rejoint la
+   * main pour le reste du tour et disparaît avec elle. C'est un dé **nu** du
+   * Cercle : il ne peut donc pas déclencher un second fantôme, et le plafond
+   * `ghostDiceMax` borne ce qu'un tour peut accumuler.
+   */
+  function* ghostDice(): Generator<Yielded, void, Answer> {
+    const vs = values
+    if (!vs) return
+    const max = ctx.cfg.dice.faceEffects.ghostDiceMax
+    const hits = effectsNow().filter((e) => e === 'ghostDie').length
+    for (let h = 0; h < hits && ghosts < max; h++) {
+      ghosts++
+      const die = upgradeDie(createDie(ctx.cfg.dice.startingFaces), ctx.circle.dieFaces)
+      const t = throwDie(die, ctx.rng)
+      dice.push(die)
+      vs.push(t.value)
+      faceIdx.push(t.faceIndex)
+      best = evaluate()
+      yield {
+        t: 'step',
+        step: {
+          kind: 'ghostDie',
+          who,
+          value: t.value,
+          values: [...vs],
+          kept: [...best.indices],
+          effects: effectsNow(),
+          hand: best.hand,
+        },
+      }
+    }
   }
-  const effectsNow = (): (FaceEffectId | null)[] => dice.map((_, i) => effectAt(i))
-  /** `F10` (`wild`) : la face vaut aussi la valeur de son opposée. */
-  const altsNow = (): (number | null)[] =>
-    dice.map((_, i) => (effectAt(i) === 'wild' ? oppositeValue(at(dice, i), faceIdx[i] as number) : null))
-  const evaluate = (): BestHand => bestOfThree(values as number[], faces, combos, valuePlus1, altsNow())
 
   /** `F10` (`payAll`) : chaque apparition donne un jeton du pot à tout le monde. */
   function* payAll(): Generator<Yielded, void, Answer> {
@@ -614,6 +890,8 @@ function* takeTurn(
             hand: best?.hand ?? null,
             kept: best ? [...best.indices] : [],
             effects: effectsNow(),
+            reads: readsNow(),
+            bonuses,
             freeRerolls,
             throwNo,
             maxThrows,
@@ -637,7 +915,8 @@ function* takeTurn(
               {
                 dice,
                 values,
-                alts: values ? altsNow() : null,
+                reads: values ? readsNow() : null,
+                bonuses,
                 freeRerolls,
                 throwsLeft,
                 minReroll,
@@ -675,6 +954,7 @@ function* takeTurn(
         },
       }
       yield* payAll()
+      yield* ghostDice()
       continue
     }
 
@@ -785,6 +1065,8 @@ function* takeTurn(
     }
     yield* payAll()
 
+    // `F10` : le dé fantôme arrive **après** le retrait du dé en plus (`B12b`),
+    // pour que le jeu n'écarte jamais un fantôme qu'il vient d'accorder.
     if (extraPending) {
       // `B12b` : le dé en plus a fait son office, le jeu en écarte un tout seul.
       extraPending = false
@@ -808,6 +1090,8 @@ function* takeTurn(
         },
       }
     }
+
+    yield* ghostDice()
 
     if (useSet42) break
   }
@@ -838,11 +1122,15 @@ function* takeTurn(
       },
     }
     yield* payAll()
+    yield* ghostDice()
   }
 
-  // `B13` : un adversaire qui termine sur un 4-2-1 relance tout, une fois.
+  // `B13` : un adversaire qui termine sur un 4-2-1 relance tout — **une seule
+  // fois par rencontre**. Le premier 4-2-1 adverse consomme le bonus ; les
+  // suivants tiennent.
   const guard = ctx.live.owned.get('reroll421')
-  if (guard !== undefined && guard !== who && best.hand.id === '421') {
+  if (guard !== undefined && guard !== who && best.hand.id === '421' && !ctx.usedReroll421.has(guard)) {
+    ctx.usedReroll421.add(guard)
     const before = [...values]
     const forced = dice.map((d) => throwDie(d, ctx.rng))
     values = forced.map((f) => f.value)
@@ -863,6 +1151,7 @@ function* takeTurn(
       },
     }
     yield* payAll()
+    yield* ghostDice()
   }
 
   // `F10` : les effets qui se comptent **en fin de lancers**.
@@ -902,8 +1191,19 @@ function* takeTurn(
     }
   }
 
+  // `F10` (`forceReroll`) : compté sur **tous** les dés, pas seulement les trois
+  // que la combinaison retient.
+  const forces =
+    finalEffects.filter((e) => e === 'forceReroll').length >= ctx.cfg.dice.faceEffects.forceRerollThreshold
+
   yield { t: 'step', step: { kind: 'turnEnd', who, hand: best.hand, throws: throwNo } }
-  return { hand: best.hand, throws: throwNo, effects: finalEffects }
+  return {
+    hand: best.hand,
+    throws: throwNo,
+    effects: finalEffects,
+    forces,
+    state: { dice: [...dice], values: [...(values as number[])], faceIdx: [...faceIdx], bonuses },
+  }
 }
 
 /**
@@ -1101,6 +1401,7 @@ export class MatchDriver {
       usedSet42: new Set(),
       usedExtra: new Set(),
       usedLateStop: new Set(),
+      usedReroll421: new Set(),
       lastDuelWinner: 0,
       rounds: 0,
       throws: 0,

@@ -55,6 +55,12 @@ export type FaceEffectId =
   | 'money'
   /** Trois exemplaires visibles en fin de tour : +1 point de forge. */
   | 'forge'
+  /** À chaque apparition : un dé temporaire de plus, jusqu'à la fin du tour. */
+  | 'ghostDie'
+  /** Deux exemplaires visibles : un adversaire déjà passé relance 2 dés. */
+  | 'forceReroll'
+  /** Ne vaut plus sa valeur : compte pour un 3 ou un 5, au mieux. */
+  | 'wild35'
 
 export interface Face {
   readonly value: number
@@ -74,6 +80,10 @@ export interface DieThrow {
 }
 
 export type CombinationId =
+  /** `B23` : 4 faces identiques ou plus, sur **tous** les dés. */
+  | 'quad'
+  /** `B24` : une suite sur **tous** les dés, 4 minimum. */
+  | 'fullStraight'
   | '421'
   | 'triple1'
   | 'triple'
@@ -108,6 +118,12 @@ export type RewardId =
   | 'set42'
   | 'valuePlus1'
   | 'lateStop'
+  | 'wideStraight'
+  | 'onesFloor'
+  | 'straightFloor'
+  | 'tripleFloor'
+  | 'quadIdentical'
+  | 'fullStraight'
 
 export type PhaseId = 'charge' | 'discharge'
 

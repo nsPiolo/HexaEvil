@@ -10,8 +10,10 @@ import type { Rng } from './random'
 import {
   applyEngrave,
   applyShopCards,
+  buyBonus,
   engraveOptions,
   openShopOption,
+  rollShopOffers,
   shopBlockedReason,
   type EngraveOrder,
   type RunState,
@@ -34,9 +36,21 @@ export function autoShop(
   prefer: EngravePreference = 'effect',
 ): void {
   const targets = [4, 2, 1]
+  // `A9` : une visite, une offre. Le pilote passe par la même porte que le
+  // joueur — sans ça, il gardait l'offre du premier passage pour tout le run.
+  rollShopOffers(run, rng)
+
   let guard = 0
   for (;;) {
     if (guard++ > 40) return
+
+    // `A9` : un bonus d'abord — c'est la seule progression qui touche les
+    // récompenses, et elle passe avant le deck dans cette politique.
+    const bonus = run.offers.bonuses[0]
+    if (bonus !== undefined && shopBlockedReason(run, 'buyBonus') === null) {
+      buyBonus(run, bonus)
+      continue
+    }
 
     if (maxPerDie > 0 && shopBlockedReason(run, 'engraveAll') === null) {
       const orders: (EngraveOrder | null)[] = run.dice.map((die, i) => {
@@ -65,7 +79,7 @@ export function autoShop(
       }
     }
 
-    if (shopBlockedReason(run, 'clone') === null) {
+    if (run.offers.deck.includes('clone') && shopBlockedReason(run, 'clone') === null) {
       const session = openShopOption(run, 'clone', rng)
       const best = [...session.cards].sort((a, b) => b.value - a.value)[0]
       if (best) {

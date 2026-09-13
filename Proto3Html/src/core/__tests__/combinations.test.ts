@@ -1,10 +1,20 @@
 import { describe, expect, it } from 'vitest'
-import { bestOfThree, bestStrength, compareDice, evaluateDice, identify } from '../dice/combinations'
+import {
+  bestHand,
+  bestStrength,
+  compareDice,
+  evaluateDice,
+  identify,
+  NO_BONUS,
+  type HandBonuses,
+} from '../dice/combinations'
 import { config } from './helpers'
 
 const cfg = config()
 const c = cfg.combinations
-const hand = (values: number[], faces = 6, plus = false) => evaluateDice(values, faces, c, plus)
+const bonus = (over: Partial<HandBonuses> = {}): HandBonuses => ({ ...NO_BONUS, ...over })
+const hand = (values: number[], faces = 6, plus = false) =>
+  evaluateDice(values, faces, c, bonus({ valuePlus1: plus }))
 
 describe('V1 — reconnaissance des combinaisons', () => {
   it('reconnaît chaque combinaison, quel que soit l’ordre des dés', () => {
@@ -103,21 +113,21 @@ describe('V4 — classement', () => {
 
 describe('D3b — meilleure combinaison de 3 dés parmi N', () => {
   it('retient les trois dés qui font la meilleure main', () => {
-    const best = bestOfThree([6, 4, 2, 1], 6, c, false)
+    const best = bestHand([6, 4, 2, 1], 6, c)
     expect(best.hand.id).toBe('421')
     expect(best.indices).toEqual([1, 2, 3])
   })
 
   it('à 3 dés, c’est l’identité', () => {
-    const best = bestOfThree([5, 5, 5], 6, c, false)
+    const best = bestHand([5, 5, 5], 6, c)
     expect(best.hand.id).toBe('triple')
     expect(best.indices).toEqual([0, 1, 2])
   })
 
   it('sur 5 dés, choisit le brelan plutôt que la suite', () => {
-    const best = bestOfThree([3, 4, 5, 6, 6], 6, c, false)
+    const best = bestHand([3, 4, 5, 6, 6], 6, c)
     expect(best.hand.id).toBe('straight') // suite 4-5-6 vaut 2, aucun brelan complet
-    const withTriple = bestOfThree([3, 4, 6, 6, 6], 6, c, false)
+    const withTriple = bestHand([3, 4, 6, 6, 6], 6, c)
     expect(withTriple.hand.id).toBe('triple')
     expect(withTriple.hand.baseValue).toBe(6)
   })
@@ -141,7 +151,105 @@ describe('D3b — meilleure combinaison de 3 dés parmi N', () => {
         const sa = bestStrength(a, 6, c)
         const sb = bestStrength(b, 6, c)
         if (sa === sb) continue
-        const cmp = compareDice(bestOfThree(a, 6, c, false).hand, bestOfThree(b, 6, c, false).hand)
+        const cmp = compareDice(bestHand(a, 6, c).hand, bestHand(b, 6, c).hand)
+        expect(Math.sign(sb - sa)).toBe(Math.sign(cmp))
+      }
+    }
+  })
+})
+
+describe('B19 à B24 — ce que les récompenses changent à la lecture d’une main', () => {
+  it('B19 — la suite élargie accepte un écart de 2', () => {
+    expect(identify([2, 4, 6]).id).toBe('junk')
+    expect(identify([2, 4, 6], true).id).toBe('straight')
+    expect(identify([2, 3, 5], true).id).toBe('straight')
+    // Ce qui était déjà une suite en reste une.
+    expect(identify([3, 4, 5], true).id).toBe('straight')
+    // Et ce qui n’en est pas une n’en devient pas une.
+    expect(identify([2, 5, 6], true).id).toBe('junk')
+    expect(identify([1, 1, 3], true).id).toBe('pairOfOnes')
+  })
+
+  it('B20 — un plancher change les jetons transférés, pas le classement', () => {
+    const nu = evaluateDice([3, 4, 5], 6, c)
+    const floored = evaluateDice([3, 4, 5], 6, c, bonus({ floors: { straight: 5 } }))
+    expect(nu.chipValue).toBe(2)
+    expect(floored.chipValue).toBe(5)
+    expect(floored.baseValue).toBe(nu.baseValue)
+    expect(compareDice(nu, floored)).toBe(0)
+  })
+
+  it('B20 — le plancher ne rabaisse jamais une main déjà au-dessus', () => {
+    // 1-1-6 vaut déjà 6 : le plancher à 4 ne doit rien retirer.
+    expect(evaluateDice([1, 1, 6], 6, c, bonus({ floors: { pairOfOnes: 4 } })).chipValue).toBe(6)
+    expect(evaluateDice([1, 1, 2], 6, c, bonus({ floors: { pairOfOnes: 4 } })).chipValue).toBe(4)
+  })
+
+  it('B23 — 4 identiques valent 10 jetons, +4 par dé de plus', () => {
+    const four = bestHand([5, 5, 5, 5], 6, c, bonus({ quad: true }))
+    expect(four.hand.id).toBe('quad')
+    expect(four.hand.chipValue).toBe(10)
+    expect(four.indices).toEqual([0, 1, 2, 3])
+    const five = bestHand([5, 5, 5, 5, 5], 6, c, bonus({ quad: true }))
+    expect(five.hand.chipValue).toBe(14)
+    // Sans la récompense, ce n’est qu’un brelan.
+    expect(bestHand([5, 5, 5, 5], 6, c).hand.id).toBe('triple')
+  })
+
+  it('B23 — et 3 identiques ne suffisent pas', () => {
+    expect(bestHand([5, 5, 5, 2], 6, c, bonus({ quad: true })).hand.id).toBe('triple')
+  })
+
+  it('B24 — une suite sur tous les dés vaut 7 jetons', () => {
+    const best = bestHand([3, 4, 5, 6], 6, c, bonus({ fullStraight: true }))
+    expect(best.hand.id).toBe('fullStraight')
+    expect(best.hand.chipValue).toBe(7)
+    expect(best.indices).toEqual([0, 1, 2, 3])
+    // Il faut **tous** les dés : un intrus et la main retombe sur les meilleurs 3.
+    expect(bestHand([3, 4, 5, 1], 6, c, bonus({ fullStraight: true })).hand.id).toBe('straight')
+    // Et 3 dés ne font jamais une grande suite (`minDice`).
+    expect(bestHand([3, 4, 5], 6, c, bonus({ fullStraight: true })).hand.id).toBe('straight')
+  })
+
+  it('B23/B24 — les deux passent devant le 4-2-1', () => {
+    const quad = bestHand([5, 5, 5, 5], 6, c, bonus({ quad: true })).hand
+    const full = bestHand([3, 4, 5, 6], 6, c, bonus({ fullStraight: true })).hand
+    const best421 = bestHand([4, 2, 1, 6], 6, c).hand
+    expect(compareDice(quad, best421)).toBeLessThan(0)
+    expect(compareDice(full, best421)).toBeLessThan(0)
+    // Entre elles, la valeur départage : 10 (ou plus) contre 7.
+    expect(compareDice(quad, full)).toBeLessThan(0)
+  })
+
+  it('B19 + B24 — la grande suite suit la suite élargie du détenteur', () => {
+    const wide = bonus({ fullStraight: true, wideStraight: true })
+    expect(bestHand([2, 4, 6, 8], 8, c, wide).hand.id).toBe('fullStraight')
+    expect(bestHand([2, 4, 6, 8], 8, c, bonus({ fullStraight: true })).hand.id).not.toBe('fullStraight')
+  })
+
+  it('F10 — une face « 3 ou 5 » ne vaut plus sa valeur imprimée', () => {
+    // Le 6 lu 3 fait la suite 2-3-4 ; sans lecture, ce n’est qu’un junk.
+    expect(bestHand([6, 4, 2], 6, c).hand.id).toBe('junk')
+    expect(bestHand([6, 4, 2], 6, c, NO_BONUS, [[3, 5], null, null]).hand.id).toBe('straight')
+    // Et le 6 n’est plus lisible : un 6-6-6 gravé deux fois n’est plus un brelan de 6.
+    const lu = bestHand([6, 6, 6], 6, c, NO_BONUS, [[3, 5], [3, 5], null])
+    expect(lu.hand.id).not.toBe('triple')
+  })
+
+  it('bestStrength suit bestHand sur les nouvelles combinaisons', () => {
+    const cases: [number[], HandBonuses][] = [
+      [[5, 5, 5, 5], bonus({ quad: true })],
+      [[3, 4, 5, 6], bonus({ fullStraight: true })],
+      [[2, 4, 6, 1], bonus({ wideStraight: true })],
+      [[4, 2, 1, 6], NO_BONUS],
+      [[6, 3, 2, 5], NO_BONUS],
+    ]
+    for (const [va, ba] of cases) {
+      for (const [vb, bb] of cases) {
+        const sa = bestStrength(va, 6, c, ba)
+        const sb = bestStrength(vb, 6, c, bb)
+        if (sa === sb) continue
+        const cmp = compareDice(bestHand(va, 6, c, ba).hand, bestHand(vb, 6, c, bb).hand)
         expect(Math.sign(sb - sa)).toBe(Math.sign(cmp))
       }
     }

@@ -734,6 +734,7 @@ body {
 .tile__title { display: block; white-space: nowrap; }
 .tile__owner { display: block; font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.06em; color: #6b5330; }
 .tile--taken { background: linear-gradient(170deg, #cdbf9f, #a8946f); font-size: 0.72rem; padding: 0.3rem 0.5rem; }
+.tile--staked { outline: 2px solid var(--ember); outline-offset: 2px; box-shadow: 0 0 14px rgba(212, 84, 30, 0.55); }
 .tile--pickable {
   cursor: pointer;
   box-shadow: 0 0 0 2px var(--gold), 0 8px 18px -10px #000;
@@ -741,8 +742,10 @@ body {
 }
 .tile--pickable:hover { transform: rotate(0) translateY(-5px) scale(1.06); animation-play-state: paused; }
 
-/* La règle complète au survol seulement : le tapis reste lisible. */
-.tile__tip {
+/* La règle complète au survol seulement : le tapis reste lisible. La même bulle
+   sert à tout élément qui se déclare `rollover__host` (`U19`). */
+.tile__tip,
+.rollover {
   position: absolute;
   bottom: calc(100% + 0.4rem);
   left: 50%;
@@ -762,7 +765,9 @@ body {
   transition: opacity 0.15s ease;
   z-index: 30;
 }
-.tile:hover .tile__tip { opacity: 1; }
+.tile:hover .tile__tip,
+.rollover__host:hover .rollover { opacity: 1; }
+.rollover__host { position: relative; }
 
 @keyframes dropTile {
   from { opacity: 0; transform: rotate(var(--tilt, 0deg)) translateY(-14px) scale(1.1); }
@@ -955,6 +960,14 @@ body {
 .shop__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr)); gap: 0.6rem; }
 
 /* Le coût à gauche, en gros — la tuile grise si on ne peut pas payer. */
+/* `A9`/`A8` : les bonus du run et l'offre du marchand. */
+.bonuses { display: flex; flex-direction: column; gap: 0.6rem; margin: 0 0 1rem; }
+.bonuses__lead { margin: 0; font-size: 0.82rem; color: var(--muted); }
+.bonuses__row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+.bonuses__label { font-size: 0.78rem; color: var(--muted); min-width: 9rem; }
+.bonuses__none { font-size: 0.8rem; color: var(--muted); font-style: italic; }
+.bonuses__buy { display: flex; align-items: center; gap: 0.4rem; }
+
 .wares {
   display: grid;
   grid-template-columns: 3.6rem 1fr;

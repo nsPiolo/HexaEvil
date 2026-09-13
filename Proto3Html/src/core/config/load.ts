@@ -52,6 +52,8 @@ function str(raw: unknown, field: string): string {
 }
 
 const COMBINATION_IDS: readonly CombinationId[] = [
+  'quad',
+  'fullStraight',
   '421',
   'triple1',
   'triple',
@@ -81,6 +83,9 @@ const FACE_EFFECTS: readonly FaceEffectId[] = [
   'payAll',
   'money',
   'forge',
+  'ghostDie',
+  'forceReroll',
+  'wild35',
 ]
 
 const REWARD_IDS: readonly RewardId[] = [
@@ -96,6 +101,12 @@ const REWARD_IDS: readonly RewardId[] = [
   'set42',
   'valuePlus1',
   'lateStop',
+  'wideStraight',
+  'onesFloor',
+  'straightFloor',
+  'tripleFloor',
+  'quadIdentical',
+  'fullStraight',
 ]
 
 function loadCombinations(raw: unknown): CombinationsConfig {
@@ -110,14 +121,22 @@ function loadCombinations(raw: unknown): CombinationsConfig {
     else if (value === 'dieValue' || value === 'thirdDie') parsed = value
     else if (typeof value === 'object' && value !== null && 'facesPlus' in value) {
       parsed = { facesPlus: int((value as Json)['facesPlus'], `${field}.value.facesPlus`) }
+    } else if (typeof value === 'object' && value !== null && 'flat' in value) {
+      parsed = {
+        flat: int((value as Json)['flat'], `${field}.value.flat`, 1),
+        perExtraDie: int((value as Json)['perExtraDie'], `${field}.value.perExtraDie`, 0),
+      }
     } else {
-      fail(`${field}.value`, "nombre, 'dieValue', 'thirdDie' ou { facesPlus }")
+      fail(`${field}.value`, "nombre, 'dieValue', 'thirdDie', { facesPlus } ou { flat, perExtraDie }")
     }
-    out[id] = {
-      rank: int(spec['rank'], `${field}.rank`, 1),
+    const entry: Record<string, unknown> = {
+      // `B23`/`B24` : rang 0 — les combinaisons sur tous les dés passent devant.
+      rank: int(spec['rank'], `${field}.rank`, 0),
       tieBreak: int(spec['tieBreak'], `${field}.tieBreak`, 0),
       value: parsed,
     }
+    if (spec['minDice'] !== undefined) entry['minDice'] = int(spec['minDice'], `${field}.minDice`, 3)
+    out[id] = entry
   }
   return out as CombinationsConfig
 }
@@ -193,6 +212,14 @@ export function loadConfig(raw: unknown): GameConfig {
     if (r['scope'] !== undefined) spec['scope'] = str(r['scope'], `rewards[${i}].scope`)
     if (r['uses'] !== undefined) spec['uses'] = str(r['uses'], `rewards[${i}].uses`)
     if (r['needsThree'] !== undefined) spec['needsThree'] = bool(r['needsThree'], `rewards[${i}].needsThree`)
+    if (r['combination'] !== undefined) {
+      const combination = str(r['combination'], `rewards[${i}].combination`)
+      if (!(COMBINATION_IDS as readonly string[]).includes(combination)) {
+        fail(`rewards[${i}].combination`, `combinaison inconnue « ${combination} »`)
+      }
+      spec['combination'] = combination
+    }
+    if (r['floor'] !== undefined) spec['floor'] = int(r['floor'], `rewards[${i}].floor`, 1)
     return spec as unknown as GameConfig['rewards'][number]
   })
   const seen = new Set(rewards.map((r) => r.id))
@@ -201,6 +228,8 @@ export function loadConfig(raw: unknown): GameConfig {
   const shopRaw = obj(root['shop'], 'shop')
   const shop: Record<string, unknown> = {}
   for (const [key, value] of Object.entries(shopRaw)) {
+    // Convention du fichier : une clé `_xxx` est un commentaire.
+    if (key.startsWith('_')) continue
     const e = obj(value, `shop.${key}`)
     const currency = str(e['currency'], `shop.${key}.currency`)
     if (currency !== 'money' && currency !== 'forge') fail(`shop.${key}.currency`, "'money' ou 'forge'")
@@ -237,6 +266,12 @@ export function loadConfig(raw: unknown): GameConfig {
           effectOptions: int(raw['effectOptions'], 'dice.faceEffects.effectOptions', 0),
           valueOptions: int(raw['valueOptions'], 'dice.faceEffects.valueOptions', 0),
           forgeThreshold: int(raw['forgeThreshold'], 'dice.faceEffects.forgeThreshold', 1),
+          ghostDiceMax: int(raw['ghostDiceMax'], 'dice.faceEffects.ghostDiceMax', 0),
+          forceRerollThreshold: int(raw['forceRerollThreshold'], 'dice.faceEffects.forceRerollThreshold', 1),
+          forceRerollDice: int(raw['forceRerollDice'], 'dice.faceEffects.forceRerollDice', 1),
+          wild35Values: arr(raw['wild35Values'], 'dice.faceEffects.wild35Values').map((v, i) =>
+            int(v, `dice.faceEffects.wild35Values[${i}]`, 1),
+          ),
           catalogue: arr(raw['catalogue'], 'dice.faceEffects.catalogue').map((e, i) => {
             const v = str(e, `dice.faceEffects.catalogue[${i}]`)
             if (!(FACE_EFFECTS as readonly string[]).includes(v)) {
@@ -262,6 +297,16 @@ export function loadConfig(raw: unknown): GameConfig {
       handRankings,
     },
     rewards,
+    startingBonuses: arr(root['startingBonuses'], 'startingBonuses').map((v, i) => {
+      const id = str(v, `startingBonuses[${i}]`)
+      if (!(REWARD_IDS as readonly string[]).includes(id)) fail(`startingBonuses[${i}]`, `bonus inconnu « ${id} »`)
+      return id as RewardId
+    }),
+    bonusPick: int(root['bonusPick'], 'bonusPick', 1),
+    shopOffers: {
+      bonuses: int(obj(root['shopOffers'], 'shopOffers')['bonuses'], 'shopOffers.bonuses', 0),
+      deck: int(obj(root['shopOffers'], 'shopOffers')['deck'], 'shopOffers.deck', 1),
+    },
     shop: shop as GameConfig['shop'],
     forgePointEveryNMatches: int(root['forgePointEveryNMatches'], 'forgePointEveryNMatches', 1),
     winBonusMoney: int(root['winBonusMoney'], 'winBonusMoney', 0),

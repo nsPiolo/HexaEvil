@@ -5,10 +5,19 @@
   "_participants": "R12 : duel par défaut, 3 dans la dernière partie de chaque Cercle.",
   "participants": { "default": 2, "circleFinal": 3 },
 
-  "_battleSeries": "S1/B2 : n batailles avant chaque phase, n+1 récompenses tirées.",
+  "_startingBonuses": "A8 : les deux bonus que le joueur possède au départ d'un run.",
+  "startingBonuses": ["give3", "reroll421"],
+
+  "_bonusPick": "B2 : bonus que chaque participant mise au début de la rencontre. L'union fait le pot.",
+  "bonusPick": 2,
+
+  "_shopOffers": "A9 : ce que la boutique tire au hasard à chaque visite.",
+  "shopOffers": { "bonuses": 2, "deck": 3 },
+
+  "_battleSeries": "S1 : n batailles avant chaque phase. Le pot vient des mises (B2).",
   "battleSeries": [
     { "phase": "charge", "duels": 3 },
-    { "phase": "discharge", "duels": 2 }
+    { "phase": "discharge", "duels": 1 }
   ],
 
   "_circles": "R2 : une entrée par Cercle. pot = 3 * (faces + 1), cf. R3.",
@@ -26,7 +35,10 @@
 
   "_diceCombinations": "V1/V2. 'facesPlus' = faces du dé + n. Changer ces 7 lignes change tout l'équilibre.",
   "_rank3": "V1b : rang 3 partagé, départagé par la valeur puis par triple > pairOfOnes.",
+  "_rank0": "B23/B24 : les deux combinaisons qui se font sur TOUS les dés passent devant le 4-2-1.",
   "diceCombinations": {
+    "quad":         { "rank": 0, "tieBreak": 1, "value": { "flat": 10, "perExtraDie": 4 }, "minDice": 4 },
+    "fullStraight": { "rank": 0, "tieBreak": 0, "value": 7, "minDice": 4 },
     "421":        { "rank": 1, "tieBreak": 0, "value": { "facesPlus": 4 } },
     "triple1":    { "rank": 2, "tieBreak": 0, "value": { "facesPlus": 1 } },
     "triple":     { "rank": 3, "tieBreak": 1, "value": "dieValue" },
@@ -48,7 +60,14 @@
       "valueOptions": 2,
       "_forgeThreshold": "F10 : symboles ⚒ visibles en fin de lancers pour gagner 1 point de forge.",
       "forgeThreshold": 2,
-      "catalogue": ["freeReroll", "takeLess", "wild", "payAll", "money", "forge"]
+      "_ghostDie": "F10 : dés temporaires qu'un tour peut gagner au plus, garde-fou du proto.",
+      "ghostDiceMax": 2,
+      "_forceReroll": "F10 : faces visibles nécessaires, et dés que la victime relance.",
+      "forceRerollThreshold": 2,
+      "forceRerollDice": 2,
+      "_wild35": "F10 : les deux valeurs que la face prend, au mieux.",
+      "wild35Values": [3, 5],
+      "catalogue": ["freeReroll", "takeLess", "wild", "payAll", "money", "forge", "ghostDie", "forceReroll", "wild35"]
     },
     "defaultMaxRerolls": 2
   },
@@ -85,13 +104,21 @@
     { "id": "set42",      "scope": "owner", "uses": "oncePerMatch" },
     { "id": "valuePlus1", "scope": "owner", "uses": "match" },
     { "id": "lateStop",   "scope": "owner", "uses": "oncePerPhase" },
-    { "id": "reroll421",  "scope": "owner", "uses": "match" },
+    { "id": "reroll421",  "scope": "owner", "uses": "oncePerMatch" },
     { "id": "splitGive",  "scope": "owner", "uses": "match", "needsThree": true },
     { "id": "takeLess",   "scope": "owner", "uses": "match" },
-    { "id": "nenetteGift", "scope": "all",  "uses": "match" }
+    { "id": "nenetteGift", "scope": "all",  "uses": "match" },
+    { "id": "wideStraight",  "scope": "owner", "uses": "match" },
+    { "id": "onesFloor",     "scope": "owner", "uses": "match", "combination": "pairOfOnes", "floor": 4 },
+    { "id": "straightFloor", "scope": "owner", "uses": "match", "combination": "straight",   "floor": 5 },
+    { "id": "tripleFloor",   "scope": "owner", "uses": "match", "combination": "triple",     "floor": 4 },
+    { "id": "quadIdentical", "scope": "owner", "uses": "match", "combination": "quad" },
+    { "id": "fullStraight",  "scope": "owner", "uses": "match", "combination": "fullStraight" }
   ],
 
   "shop": {
+    "_buyBonus": "A9 : acheter un bonus tiré au sort. Il rejoint la réserve du joueur pour tout le run.",
+    "buyBonus":   { "cost": 10, "currency": "money" },
     "removeTwo":  { "cost": 10, "currency": "money", "pool": 10 },
     "plusOneTwo": { "cost": 5,  "currency": "money", "pool": 10 },
     "clone":      { "cost": 5,  "currency": "money", "pool": 10 },
@@ -149,7 +176,10 @@
       "give5": 8, "give3": 6,
       "valuePlus1": 7, "extraDie": 8, "set42": 4,
       "flipDie": 5, "setRerolls": 3, "lateStop": 7,
-      "reroll421": 6, "splitGive": 7, "takeLess": 5, "nenetteGift": 3
+      "reroll421": 6, "splitGive": 7, "takeLess": 5, "nenetteGift": 3,
+      "__dice4": "quadIdentical et fullStraight demandent 4 dés : hors de portée d'un démon, donc poids plancher.",
+      "wideStraight": 7, "onesFloor": 4, "straightFloor": 4, "tripleFloor": 4,
+      "quadIdentical": 1, "fullStraight": 1
     }
   },
 

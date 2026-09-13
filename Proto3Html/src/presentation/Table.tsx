@@ -35,6 +35,10 @@ export interface TableProps {
   /** `U8c` : récompenses cliquables **sur le tapis**, pas redessinées ailleurs. */
   pickable?: readonly string[] | undefined
   onPick?: ((id: string) => void) | undefined
+  /** `B2` : ce que le tapis montre à la place du pot — les bonus du joueur. */
+  mat?: readonly RewardId[] | undefined
+  /** `B2` : tuiles déjà cochées pour la mise. */
+  picked?: readonly RewardId[] | undefined
   /** Les commandes du joueur, posées au-dessus de sa zone. */
   actionBar?: React.ReactNode
   /** `J7` : cette rencontre met un point de forge en jeu, il se voit sur la table. */
@@ -43,7 +47,11 @@ export interface TableProps {
   cardAction?: { readonly selected: readonly number[]; readonly onCard: (index: number) => void } | undefined
   /** Sélection de dés dans la zone du joueur : garder, ou retourner (`B10`). */
   diceAction?:
-    | { readonly mode: 'keep' | 'flip'; readonly keep: readonly boolean[]; readonly onDie: (index: number) => void }
+    | {
+        readonly mode: 'keep' | 'flip' | 'pick'
+        readonly keep: readonly boolean[]
+        readonly onDie: (index: number) => void
+      }
     | undefined
 }
 
@@ -69,7 +77,13 @@ export function Table(props: TableProps) {
           <Pot view={view} frame={frame} />
           {props.forgeAtStake && <ForgeToken />}
         </div>
-        <Mat view={view} pickable={props.pickable} onPick={props.onPick} />
+        <Mat
+          view={view}
+          pickable={props.pickable}
+          mat={props.mat}
+          picked={props.picked}
+          onPick={props.onPick}
+        />
         {view.coin && <Coin coin={view.coin} names={names} />}
       </div>
 
@@ -179,18 +193,22 @@ function Seat(props: TableProps & { index: number; side: Side }) {
                   value={value}
                   effect={slot?.effects[k] ?? null}
                   rolling={slot?.rolled[k] ?? false}
-                  kept={diceAction?.mode === 'keep' ? diceAction.keep[k] : undefined}
+                  kept={diceAction && diceAction.mode !== 'flip' ? diceAction.keep[k] : undefined}
                   // `D3b` : les dés retenus par le jeu ressortent, les autres s'effacent.
                   dimmed={slot !== null && !(slot?.kept.includes(k) ?? true)}
                   onClick={diceAction ? () => diceAction.onDie(k) : undefined}
                   title={
                     diceAction?.mode === 'flip'
                       ? 'Retourner ce dé'
-                      : diceAction
+                      : diceAction?.mode === 'pick'
                         ? diceAction.keep[k]
-                          ? 'Gardé'
-                          : 'Sera relancé'
-                        : undefined
+                          ? 'Relancé'
+                          : 'Gardé'
+                        : diceAction
+                          ? diceAction.keep[k]
+                            ? 'Gardé'
+                            : 'Sera relancé'
+                          : undefined
                   }
                 />
               ))}
@@ -247,15 +265,20 @@ function Pot({ view, frame }: { view: View; frame: Snapshot }) {
 function Mat({
   view,
   pickable,
+  mat,
+  picked,
   onPick,
 }: {
   view: View
   pickable?: readonly string[] | undefined
+  mat?: readonly RewardId[] | undefined
+  picked?: readonly RewardId[] | undefined
   onPick?: ((id: string) => void) | undefined
 }) {
   // `U8d` : les récompenses non prises quittent le tapis une fois les batailles
   // finies — elles ne joueront plus aucun rôle dans la partie.
-  const offered: RewardId[] = view.mode === 'duel' ? view.offered : []
+  // `B2` : pendant la mise, le tapis montre les bonus du joueur, pas le pot.
+  const offered: readonly RewardId[] = mat ?? (view.mode === 'duel' ? view.offered : [])
   if (offered.length === 0) return null
   return (
     <div className="mat">
@@ -264,6 +287,7 @@ function Mat({
           key={id}
           id={id}
           index={i}
+          staked={picked?.includes(id)}
           onClick={pickable?.includes(id) && onPick ? () => onPick(id) : undefined}
         />
       ))}

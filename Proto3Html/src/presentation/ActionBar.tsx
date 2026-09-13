@@ -8,6 +8,7 @@
  */
 
 import type { Answer, Ask } from '../core/rules/asks'
+import type { RewardId } from '../core/rules/types'
 import { CATEGORY_LABEL, diceHandLabel, EFFECT_LABEL, EFFECT_SYMBOL, REWARD_HELP, REWARD_LABEL } from './labels'
 import type { View } from './viewModel'
 
@@ -20,13 +21,15 @@ export interface ActionBarProps {
   swap: readonly number[]
   /** Masque des dés gardés pour la relance. */
   keep: readonly boolean[]
+  /** `B2` : les bonus cochés pour la mise. */
+  staked: readonly RewardId[]
   flipMode: boolean
   setFlipMode: (on: boolean) => void
   onAnswer: (answer: Answer) => void
 }
 
 export function ActionBar(props: ActionBarProps) {
-  const { ask, view, names, ladderSize, swap, keep, flipMode, setFlipMode, onAnswer } = props
+  const { ask, view, names, ladderSize, swap, keep, staked, flipMode, setFlipMode, onAnswer } = props
 
   switch (ask.kind) {
     case 'mulligan':
@@ -68,6 +71,26 @@ export function ActionBar(props: ActionBarProps) {
         </Bar>
       )
 
+    // `B2` : la mise. Les bonus possédés sont sur le tapis, on les y clique.
+    case 'stakeBonuses': {
+      const picked = staked.filter((id) => ask.owned.includes(id))
+      return (
+        <Bar
+          help={`Vos bonus — misez-en ${ask.count} pour cette rencontre en cliquant les tuiles. Les mises de tout le monde font le pot des batailles : un bonus misé peut servir en face **le temps de cette rencontre**. Vous le gardez quand même — votre réserve ne diminue jamais.`}
+          tag={`${picked.length} / ${ask.count}`}
+        >
+          <button
+            type="button"
+            className="btn btn--primary"
+            disabled={picked.length !== ask.count}
+            onClick={() => onAnswer({ kind: 'stakeBonuses', ids: [...picked] })}
+          >
+            Miser ces {ask.count} bonus
+          </button>
+        </Bar>
+      )
+    }
+
     case 'rewardTarget':
       return (
         <Bar help={`${REWARD_LABEL[ask.id]} — sur quel adversaire ?`}>
@@ -99,6 +122,50 @@ export function ActionBar(props: ActionBarProps) {
           ))}
         </Bar>
       )
+
+    // `F10` (`forceReroll`) : le graveur désigne qui repart aux dés.
+    case 'faceTarget':
+      return (
+        <Bar
+          help={`${EFFECT_SYMBOL[ask.effect]} ${EFFECT_LABEL[ask.effect]} — lequel renvoyez-vous aux dés ? Sa main est déjà validée ; il choisira lui-même les dés qui repartent.`}
+        >
+          {ask.candidates.map((i) => (
+            <button
+              key={i}
+              type="button"
+              className="btn btn--primary"
+              onClick={() => onAnswer({ kind: 'faceTarget', target: i })}
+            >
+              {names[i]}
+            </button>
+          ))}
+        </Bar>
+      )
+
+    // `F10` (`forceReroll`) : la victime choisit, elle, quels dés repartent.
+    case 'pickDice': {
+      const picked = keep.slice(0, ask.values.length).filter(Boolean).length
+      return (
+        <Bar
+          help={`${names[ask.by]} vous renvoie aux dés : cliquez les ${ask.count} dés que vous relancez. Votre main était validée, celle qui sort la remplace.`}
+          tag={`${picked} / ${ask.count}`}
+        >
+          <button
+            type="button"
+            className="btn btn--primary"
+            disabled={picked !== ask.count}
+            onClick={() =>
+              onAnswer({
+                kind: 'pickDice',
+                dice: keep.map((on, i) => (on ? i : -1)).filter((i) => i >= 0),
+              })
+            }
+          >
+            Relancer ces {ask.count} dés
+          </button>
+        </Bar>
+      )
+    }
 
     case 'turn': {
       const c = ask.context

@@ -7,7 +7,7 @@
  * refusé, le jeu doit continuer de tourner sans rien mémoriser.
  */
 
-import type { Card, Die } from '../core/rules/types'
+import type { Card, Die, RewardId } from '../core/rules/types'
 
 const PREFIX = 'hexaevil.'
 
@@ -129,6 +129,8 @@ export interface SavedRun {
   forgePoints: number
   deck: Card[]
   dice: Die[]
+  /** `A8` : les bonus possédés. Absent des sauvegardes v1. */
+  bonuses: RewardId[]
   bestCircle: number
   lastMoney: number
   totalMoney: number
@@ -137,7 +139,7 @@ export interface SavedRun {
   savedAt: number
 }
 
-const SAVE_VERSION = 1
+const SAVE_VERSION = 2
 
 export function loadSave(): SavedRun | null {
   try {

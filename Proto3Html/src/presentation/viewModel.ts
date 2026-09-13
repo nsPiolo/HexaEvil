@@ -126,8 +126,8 @@ export function buildView(steps: readonly TraceStep[], upTo: number, count: numb
         v.circle = s.circle
         v.isCircleFinal = s.isCircleFinal
         break
-      case 'rewardsDrawn':
-        v.offered = [...s.offered]
+      case 'bonusPool':
+        v.offered = [...s.pool]
         break
       case 'duelStart':
         v.mode = 'duel'
@@ -238,7 +238,31 @@ export function buildView(steps: readonly TraceStep[], upTo: number, count: numb
           done: false,
         }
         break
+      case 'ghostDie':
+        // `F10` : le dé fantôme arrive seul, en roulant — les autres ne bougent pas.
+        v.dice[s.who] = {
+          values: [...s.values],
+          rolled: s.values.map((_, k) => k === s.values.length - 1),
+          kept: [...s.kept],
+          effects: [...s.effects],
+          hand: s.hand,
+          done: false,
+        }
+        break
+      case 'forcedDice':
+        v.dice[s.who] = {
+          values: [...s.values],
+          rolled: s.values.map((_, k) => s.dice.includes(k)),
+          kept: [...s.kept],
+          effects: [...s.effects],
+          hand: s.hand,
+          // La main était validée : elle le reste, avec ses nouveaux dés.
+          done: true,
+        }
+        break
       case 'forcedReroll':
+        // `B13` : le bonus est consommé pour la rencontre, la tuile se barre.
+        v.used.add('reroll421')
         v.dice[s.who] = {
           values: [...s.values],
           rolled: s.values.map(() => true),

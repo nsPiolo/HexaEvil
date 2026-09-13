@@ -33,7 +33,8 @@ export function Game({ session, cfg, onQuit }: { session: Session; cfg: GameConf
         <strong>
           {run.money} <span>pièce{run.money > 1 ? 's' : ''}</span>
         </strong>
-        <strong>
+        {/* `U19` : le compteur dit **à quoi sert** ce qu'il compte. */}
+        <strong title="Points de forge : ils ne servent qu’à graver vos dés en boutique — poser un effet sur une face, ou en changer la valeur.">
           {run.forgePoints} <span>forge</span>
         </strong>
       </div>

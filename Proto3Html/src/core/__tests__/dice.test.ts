@@ -83,7 +83,7 @@ describe('A6 — bornes de la gravure', () => {
     let die = d6()
     for (let i = 0; i < 6; i++) die = engraveValue(die, i, 4)
     // Trois dés ainsi gravés ne feront jamais ni suite, ni 4-2-1, ni 1-1-x.
-    const hand = evaluateDice([4, 4, 4], 6, cfg.combinations, false)
+    const hand = evaluateDice([4, 4, 4], 6, cfg.combinations)
     expect(hand.id).toBe('triple')
     expect(hand.baseValue).toBe(4)
   })

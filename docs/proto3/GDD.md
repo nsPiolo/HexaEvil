@@ -90,7 +90,9 @@ document.
 | --- | --- | --- |
 | Run | `Run` | Une descente complète, du Cercle 1 au Cercle 9 (`R1`). |
 | Cercle | `Circle` | Palier 1 à 9. Fixe le dé, la main de cartes, le pot et la série exigée (`R2`). |
-| Partie | `Match` | Une confrontation complète : 3 batailles puis 2 phases de dés (`S1`). |
+| Partie | `Match` | Une confrontation complète : une mise, 3 + 1 batailles, 2 phases de dés (`S1`). |
+| Réserve | `bonuses` | Les bonus que le joueur possède, achetés en boutique (`A8`). |
+| Mise | `stake` | Les 2 bonus qu'un participant met au pot d'une rencontre (`B2`). |
 | Série | `streak` | Victoires consécutives dans le Cercle courant (`R5`). |
 | Participant | `Participant` | Le joueur ou un démon. **2 par partie, 3 dans la dernière partie du Cercle** (`R12`). |
 | Manche | `Round` | Un tour de dés de chaque participant, une seule résolution (`D6`). |
@@ -223,21 +225,23 @@ document.
 - `S1` ✅ Une partie se déroule dans cet ordre, sans exception :
 
 ```
- 1. Tirage de 4 récompenses                                     (B2)
- 2. Batailles de cartes 1, 2, 3 — chaque vainqueur en prend une (C1, B4)
+ 1. MISE : chacun met 2 de ses bonus au pot                      (B2, A8)
+ 2. Batailles de cartes 1, 2, 3 — chaque vainqueur en prend un   (C1, B4)
  3. Application des récompenses « avant répartition »           (B6)
  4. PHASE DE RÉPARTITION : manches de dés jusqu'à pot vide      (D9)
- 5. Tirage de 3 NOUVELLES récompenses                           (B2, B3b)
- 6. Batailles de cartes 4, 5 — chaque vainqueur en prend une
- 7. Application des récompenses « avant don » — des DEUX séries (B7)
+ 5. Bataille de cartes 4 — son vainqueur prend dans le même pot  (B2)
+ 6. Application des récompenses « avant don » — des DEUX séries (B7)
  8. PHASE DE DON : manches jusqu'à ce qu'un participant soit à 0 (D10)
  9. Décompte : classement, argent, série, point de forge        (J5, J7, R5)
 10. Boutique (le joueur seul)                                   (A1)
 ```
 
 - `S2` ✅ **Il y a deux séries de batailles, une avant chaque phase** : trois
-  batailles avant la répartition, **deux** avant le don. Soit **5 batailles et 7
-  récompenses tirées par partie**, dont 5 sont prises.
+  batailles avant la répartition, **une** avant le don. Soit **4 batailles** par
+  partie, et donc au plus 4 bonus distribués. 🧪 La seconde série est passée de
+  deux batailles à une le 2026-09-09, le même jour que le passage à la mise
+  (`B2`) : avec un pot de 4 bonus en duel, 4 batailles suffisent à tout
+  distribuer, et la partie est plus courte — ce qui était le vrai problème (§17).
 - `S2b` ✅ **Les récompenses de la première série restent actives pendant la
   phase de don** : un `valuePlus1` gagné à la bataille 2 vaut pour les deux
   phases, et un `extraDie` redonne un dé au premier jet de *chaque* phase. Rien
@@ -245,7 +249,9 @@ document.
   par partie » (`B8`).
 - `S2c` 🧪 La seconde série est le **rattrapage** : le participant qui a perdu
   les trois premières batailles, et qui vient probablement de ramasser tout le
-  pot, a deux chances de revenir avant la phase où tout se joue. C'est une
+  pot, a **une** chance de revenir avant la phase où tout se joue — et depuis
+  `B2`, ce qui reste à prendre est exactement ce que les autres n'ont pas voulu
+  de leurs propres mises. C'est une
   correction d'écart volontaire, et `M4` doit la mesurer séparément de la
   première série.
 - `S3` ✅ La boutique n'est accessible qu'**entre deux parties**, jamais en
@@ -389,31 +395,51 @@ document.
 
 ## 6. Récompenses de bataille
 
-- `B1` ✅ Le vainqueur d'une bataille choisit **une récompense** dans la liste
-  affichée. Une récompense prise n'est plus disponible.
-- `B2` ✅ **Avant une série de `n` batailles, on tire `n + 1` récompenses** au
-  hasard dans le catalogue et on les affiche. Il en reste donc toujours
-  exactement une à la fin de la série : 4 tirées pour les 3 premières batailles,
-  3 tirées pour les 2 dernières (`S1`). Ce qui reste sur la table est autant une
-  information (ce que l'adversaire n'a pas voulu) qu'un regret.
-- `B3` ✅ Le tirage est **sans remise**, et les récompenses d'une série sont
-  **visibles de tous dès le début** de la série. C'est ce qui donne un enjeu
-  différencié aux batailles : la première vaut le meilleur des quatre choix.
-- `B3b` ✅ **Le second tirage repart du catalogue moins les 4 récompenses
-  proposées à la première série** — les 3 prises *et* celle restée sur la table.
-  Le vivier est donc de **6 entrées pour 3 tirages**, et une récompense vue à la
-  première série ne revient jamais dans la même partie : ce qu'on a laissé
-  passer est perdu, et le second tirage apporte du nouveau plutôt que du regret.
+- `B1` ✅ Le vainqueur d'une bataille choisit **un bonus** dans le pot affiché.
+  Un bonus pris n'est plus disponible.
+- `B2` 🧪 **Le pot d'une rencontre, c'est ce que les participants misent.** Il
+  n'y a plus de pioche dans un catalogue générique : au début de la rencontre,
+  chacun voit **ses** bonus (`A8`) et en **mise `bonusPick`** (proposition : 2).
+  Le pot que les batailles répartissent est l'union des mises. Trois
+  conséquences, toutes voulues :
+  - **on mise ce qu'on possède, donc on risque de le voir servir en face** — mais
+    **miser ne coûte pas le bonus** : la réserve (`A8`) ne diminue jamais, on le
+    remisera à la rencontre suivante. Ce qu'on risque, c'est qu'un adversaire
+    s'en serve *le temps de cette rencontre*. C'est ce qui donne enfin un enjeu à
+    la boutique autrement que par le deck et les dés ;
+  - en duel, le pot compte **4 bonus pour 4 batailles** (`S2`) : tout se
+    distribue, il ne reste rien sur la table — l'information « ce que l'adversaire
+    n'a pas voulu » de l'ancien `B2` disparaît ;
+  - à trois, le pot compte 6 bonus pour 4 batailles : **deux resteront**.
+- `B2c` 🧪 **Le pot compte toujours `bonusPick × participants` bonus
+  distincts.** Un bonus n'a qu'un détenteur (`live.owned` est indexé par
+  identifiant), donc deux participants ne peuvent pas miser le même : le pot se
+  remplit **dans l'ordre des sièges**, et chacun mise parmi ce qui n'y est pas
+  déjà. Sans cette règle, le pot se refermait à 3, parfois à 2 — le démon tirant
+  au hasard dans tout le catalogue, y compris ce que le joueur venait de miser —
+  et les dernières batailles n'avaient plus rien à distribuer.
+- `B2b` 🧪 **Un démon n'a pas de boutique** (`S4`), donc pas de réserve : ses
+  deux mises sont tirées au sort dans le catalogue, **filtré par ce qu'il peut
+  utiliser** — un démon à 3 dés ne mise jamais `quadIdentical` ni `fullStraight`
+  (`V8c`), qui exigent 4 dés. Il mise donc toujours tout ce qu'il a — et retire
+  autre chose si son tirage tombe sur un bonus déjà au pot (`B2c`). 🧪 C'est le
+  provisoire le plus visible du modèle : à terme, un démon devrait avoir une
+  réserve qui monte avec le Cercle, comme son niveau de jeu (`S5`).
+- `B3` ✅ Le pot est **visible de tous dès le début de la rencontre**, et il ne
+  bouge plus ensuite. C'est ce qui donne un enjeu différencié aux batailles : la
+  première vaut le meilleur des quatre choix, et chacun sait exactement ce que
+  l'autre a mis en jeu.
+- `B3b` ❌ **Retiré** avec la pioche : il n'y a plus de second tirage à exclure.
 - `B3c` ✅ **Sans objet** : depuis `B5`, toute récompense s'applique à la
   sélection, donc aucune ne peut être périmée. La règle disparaît, et avec elle
   le seul point resté ouvert de `Q13`.
-- `B3d` ✅ **Réglé par l'ajout de `B13` à `B16`** : le catalogue est remonté à
-  **11 entrées**, la première série en propose 4, la seconde en tire 3 parmi les
-  7 restantes. L'aléa du second tirage est revenu.
-- `B3e` ✅ **Une récompense sans effet dans la configuration courante n'est
-  jamais proposée.** Aujourd'hui cela ne vise que `splitGive` (`B15b`), inerte en
-  duel. C'est la même intention que l'ancien `B3c` : ne jamais offrir un choix
-  mort.
+- `B3d` ❌ **Retiré** avec la pioche. La rareté ne vient plus de la taille du
+  catalogue mais de la **boutique** : le joueur ne joue que ce qu'il a acheté.
+- `B3e` ✅ **Un bonus sans effet dans la configuration courante n'est jamais
+  misable.** Deux filtres, tous deux lus en configuration : `needsThree`
+  (`splitGive`, inerte en duel, `B15b`) et le nombre de dés qu'exige la
+  combinaison visée (`minDice`). C'est la même intention que l'ancien `B3c` : ne
+  jamais offrir un choix mort.
 - `B4` ✅ Les démons prennent aussi des récompenses quand ils gagnent une
   bataille, selon `I4`.
 - `B5` ✅ **Toute récompense s'applique au moment où elle est prise.** Il n'y a
@@ -457,11 +483,17 @@ document.
 | `extraDie` | **Un dé en plus** au premier lancer de la phase — 5 pour le joueur, 4 pour un démon | son détenteur | **chaque phase** |
 | `set42` | Avant un jet : fixe 2 dés sur 4 et 2, lance les autres. Jet unique et définitif | son détenteur | 🧪 **une fois par partie** |
 | `valuePlus1` | +1 à la valeur en jetons de ses combinaisons | son détenteur | toute la partie |
-| `reroll421` | Un adversaire qui termine sur un 4-2-1 relance tous ses dés | son détenteur | toute la partie |
+| `reroll421` | Le **premier** 4-2-1 adverse de la rencontre est annulé, son auteur relance tout | son détenteur | 🧪 **une fois par rencontre** |
 | `splitGive` | Donner à un adversaire en donne la moitié à l'autre. **À trois seulement** | son détenteur | toute la partie |
 | `takeLess` | Encaisse un jeton de moins, au minimum 1 | son détenteur | toute la partie |
 | `nenetteGift` | Une nénette fait circuler un jeton vers chaque adversaire | **tous les participants** | toute la partie |
 | `lateStop` | S'arrêter **après** avoir vu ses dés, sans l'avoir annoncé (`D5`) | son détenteur | 🧪 **une fois par phase** |
+| `wideStraight` | Ses suites acceptent un **écart de 2** : 2-4-6, 2-3-5 | son détenteur | toute la partie |
+| `onesFloor` | Ses `1-1-x` transfèrent **au moins 4** jetons | son détenteur | toute la partie |
+| `straightFloor` | Ses suites transfèrent **au moins 5** jetons | son détenteur | toute la partie |
+| `tripleFloor` | Ses brelans transfèrent **au moins 4** jetons | son détenteur | toute la partie |
+| `quadIdentical` | **4 faces identiques** : 10 jetons, +4 par dé de plus | son détenteur | toute la partie |
+| `fullStraight` | **Suite sur tous ses dés** (4 minimum) : 7 jetons | son détenteur | toute la partie |
 
 - `B9` ✅ `setRerolls` est le seul bonus qui touche **tout le monde**, y compris
   celui qui ne l'a pas choisi. Le mettre à 1 est une arme défensive (moins de
@@ -487,10 +519,15 @@ document.
   étape de la trace à part entière (`U2`). Entre deux candidats équivalents, on
   jette la plus grosse valeur : les petites (1, 2, 4) sont celles qui construisent
   un 4-2-1 ou un 1-1-x aux relances.
-- `B13` ✅ **`reroll421` — annuler les 4-2-1.** Un adversaire du détenteur qui
-  **termine ses lancers** sur un 4-2-1 relance automatiquement tous ses dés, et
-  la main qui sort est définitive. 🧪 Une seule fois par tour : si le second jet
-  redonne un 4-2-1, il tient. Sans ce plafond, la règle boucle.
+- `B13` ✅ **`reroll421` — annuler un 4-2-1.** Le **premier** adversaire du
+  détenteur qui **termine ses lancers** sur un 4-2-1 relance automatiquement
+  tous ses dés, et la main qui sort est définitive — même si c'est un second
+  4-2-1 (sans quoi la règle boucle). 🧪 **Une seule fois par rencontre** : le
+  bonus est consommé au premier 4-2-1 adverse, et les suivants tiennent. C'est
+  une correction du 2026-09-09 : il valait « une fois par tour, toute la
+  partie », ce qui en faisait de loin la récompense la plus forte du catalogue —
+  or c'est aussi l'un des deux bonus de départ (`A10`), donc le joueur l'aurait
+  eu à chaque run.
 - `B14` ✅ **`takeLess` — encaisser moins.** Quand le détenteur est la pire main
   et encaisse, il prend **un jeton de moins, au minimum 1**. C'est le transfert
   lui-même qui est réduit, pas seulement ce qu'il reçoit : les jetons restent
@@ -515,6 +552,29 @@ document.
 - `B17` 🧪 `valuePlus1` s'applique **après** le barème (`V2`), donc aussi à la
   combinaison `junk` : un jet raté vaut 2 au lieu de 1. Il ne change **pas** le
   classement des mains (`V4`), seulement le nombre de jetons transférés.
+- `B19` 🧪 **`wideStraight` — la suite élargie.** Chaque pas d'une suite peut
+  valoir 1 **ou 2** : 2-4-6 et 2-3-5 en sont, comme 3-4-5. Au D6, la suite passe
+  de 4 formes à 16 — c'est la récompense qui change le plus la fréquence des
+  mains. À elle seule elle **abaisse** parfois le transfert : une suite ne vaut
+  que 2 jetons, alors que le junk qu'elle remplace en valait 1 — le gain est donc
+  surtout un gain de **classement**, sauf avec `straightFloor` (`B21`).
+- `B20` 🧪 **Trois planchers en jetons.** `onesFloor` (1-1-x ≥ 4),
+  `straightFloor` (suite ≥ 5), `tripleFloor` (brelan ≥ 4). Le plancher joue sur
+  ce qui est **transféré**, jamais sur le classement (`V9`) : c'est la même
+  mécanique que `valuePlus1` (`B17`), et elle se cumule avec elle. Un plancher ne
+  rabaisse jamais une main déjà au-dessus — un 1-1-6 vaut toujours 6.
+- `B21` 🧪 Les trois planchers sont **en configuration**, portés par la
+  récompense elle-même (`combination` + `floor`) : ajouter « la nénette vaut au
+  moins 3 » ne demanderait pas une ligne de code.
+- `B22` 🧪 Les planchers visent des mains **fréquentes et pauvres** — la suite (2
+  jetons), le brelan de 1 à 3, le 1-1-2. C'est un levier de *vitesse* en phase de
+  don : on se déleste plus vite sans gagner une seule manche de plus.
+- `B23` 🧪 **`quadIdentical` — 4 faces identiques.** Sur **tous** les dés : 10
+  jetons, **+4** par dé supplémentaire à la même valeur (donc 14 à cinq dés avec
+  `extraDie` ou un dé fantôme). Rang 0 (`V8b`).
+- `B24` 🧪 **`fullStraight` — la grande suite.** Tous les dés en suite, 4
+  minimum : 7 jetons, rang 0. Elle suit la suite élargie de son détenteur
+  (`B19`) : les deux ensemble rendent 2-4-6-8 valide.
 - `B18` 🧪 **`lateStop` — s'arrêter sans annoncer.** Le bonus du brouillon, qui
   n'avait plus d'objet tant que `D5` était levée et qui redevient exactement ce
   qu'il était : son détenteur peut garder sa main **après** l'avoir vue, sans
@@ -526,6 +586,8 @@ document.
 ## 7. Partie de dés — le 4-21
 
 - `D1` ✅ Une main est faite de **3 dés**, du type fixé par le Cercle (`R2`).
+  🧪 Deux récompenses font exception depuis le 2026-09-09 : `quadIdentical` et
+  `fullStraight` se lisent sur **tous** les dés (`V8`).
 - `D1b` ✅ **Le joueur en lance 4, les démons 3**, et le jeu retient
   **automatiquement la meilleure combinaison de trois** parmi les dés lancés. Le
   joueur n'a aucun retrait à faire : il voit ses quatre dés, les trois retenus
@@ -571,7 +633,7 @@ document.
   qui accumule l'avantage du meneur sur un seul joueur.
 - `D7` ✅ **Le meneur de la première manche d'une phase est le vainqueur de la
   dernière bataille de cartes qui précède cette phase** — la bataille 3 pour la
-  répartition, la bataille 5 pour le don (`S1`). Ensuite le meneur tourne (`D6`).
+  répartition, la bataille 4 pour le don (`S1`). Ensuite le meneur tourne (`D6`).
   C'est ce qui relie enfin les cartes aux dés autrement que par les récompenses :
   gagner la dernière bataille donne le contrôle du nombre de jets de la première
   manche (`D4`), qui est la décision la plus lourde du 4-21.
@@ -640,6 +702,8 @@ document.
 
 | Rang | Combinaison | Exemple (D6) |
 | --- | --- | --- |
+| 0 | **4 faces identiques** (`B23`, récompense) — sur **tous** les dés | 5,5,5,5 |
+| 0 | **Grande suite** (`B24`, récompense) — sur **tous** les dés, 4 minimum | 3,4,5,6 |
 | 1 | **4-2-1** | 4,2,1 |
 | 2 | **1-1-1** | 1,1,1 |
 | 3 | **x-x-x** et **1-1-x**, classés par valeur `x` | 5,5,5 ou 1,1,5 |
@@ -655,6 +719,8 @@ document.
 
 | Combinaison | Valeur | D6 | D8 | D12 | D20 | D100 |
 | --- | --- | --- | --- | --- | --- | --- |
+| 4 identiques (`B23`) | 🧪 `10`, **+4** par dé au-delà de 4 | 10 | 10 | 10 | 10 | 10 |
+| Grande suite (`B24`) | 🧪 `7` | 7 | 7 | 7 | 7 | 7 |
 | 4-2-1 | 🧪 `faces + 4` | **10** ✅ | 12 | 16 | 24 | 104 |
 | 1-1-1 | 🧪 `faces + 1` | **7** ✅ | 9 | 13 | 21 | 101 |
 | 1-1-x / x-x-x | ✅ `x` | 2…6 | 2…8 | 2…12 | 2…20 | 2…100 |
@@ -686,7 +752,25 @@ document.
   qu'il n'y en a que quatre au D6.
 - `V7` ✅ **Sur un dé gravé, seule la valeur affichée compte.** Un D6 dont trois
   faces portent un 4 fait un 4-2-1 exactement comme un dé normal. C'est ce qui
-  rend `F7` dangereux (§17).
+  rend `F7` dangereux (§17). Deux effets de face font exception en **ajoutant**
+  des lectures : `✳` ajoute la face opposée, `⅗` remplace la valeur par 3 ou 5
+  (`F10h`).
+- `V8` 🧪 **Deux combinaisons se lisent sur *tous* les dés**, et n'existent que
+  pour qui détient la récompense correspondante : `quad` (`B23`) et
+  `fullStraight` (`B24`). Elles brisent volontairement `D1` (« une main est faite
+  de 3 dés ») : leur main compte 4 ou 5 dés, et l'affichage les retient tous.
+- `V8b` 🧪 **Elles sont au rang 0, donc au-dessus du 4-2-1.** Deux raisons : à 4
+  dés elles sont plus rares que le 4-2-1 lu en meilleurs-3-sur-4, et ce sont des
+  récompenses *payées* — elles doivent faire gagner la manche. Conséquence
+  assumée : une grande suite à 7 jetons bat un 4-2-1 à 104 au D100. Entre elles,
+  la valeur départage (`V4`), donc `quad` passe devant.
+- `V8c` 🧪 **Un démon ne les fera jamais** : il lance 3 dés (`D1b`), et les deux
+  exigent 4 dés (`minDice`). Elles restent tirables par un démon — qui gaspille
+  alors son choix — et leur poids d'IA est au plancher pour que ce soit rare.
+- `V9` 🧪 **Les planchers en jetons ne changent pas le classement** (`B20`) : une
+  suite à 5 jetons reste, en classement, une suite. Deux suites sont donc à
+  égalité même si l'une transfère 5 jetons et l'autre 2 — exactement comme
+  `valuePlus1` (`B17`, `V4`).
 
 ## 9. Jetons, argent et points de forge
 
@@ -731,10 +815,11 @@ document.
 
 ## 10. Boutique : améliorations entre parties
 
-- `A1` ✅ Entre deux parties, le joueur peut dépenser son argent et ses points de
-  forge. 🧪 La boutique propose **toutes** les options à chaque fois, chacune
-  achetable autant de fois que le joueur peut se le permettre ; il n'y a pas de
-  stock ni de rotation d'offre.
+- `A1` ✅ / 🧪 Entre deux parties, le joueur peut dépenser son argent et ses
+  points de forge. 🧪 **L'offre tourne** depuis le 2026-09-09 (`A9`) : seules
+  **3 options de deck sur 5** sont proposées, tirées au sort à chaque visite, et
+  **2 bonus** sont mis en vente. Les gravures, elles, sont toujours là. Ce qui
+  est proposé reste achetable autant de fois que la bourse le permet.
 - `A2` ✅ Catalogue :
 
 | Id | Option | Coût |
@@ -746,6 +831,7 @@ document.
 | `recolor` | **Redéfinir la couleur** de 5 cartes tirées au hasard (couleur choisie *après* les avoir vues) | 10 |
 | `engraveOne` | Changer la valeur d'**une face d'un** de ses dés | 1 point de forge |
 | `engraveAll` | Changer la valeur d'**une face de chacun** de ses 3 dés | 2 points de forge |
+| `buyBonus` | **Acheter un bonus** parmi 2 tirés au sort — il rejoint la réserve du run (`A8`) | 10 |
 
 - `A3` ✅ Les 10 cartes proposées sont tirées **sans remise dans le deck**, et le
   tirage est refait à chaque achat. Un achat annulé ne consomme rien.
@@ -759,6 +845,27 @@ document.
 - `A6` ✅ `engraveOne` / `engraveAll` : le joueur choisit le **dé** et la
   **face**. Il ne choisit plus la valeur : le graveur lui en **propose trois**
   (`F11`).
+- `A8` 🧪 **Les bonus sont une progression achetée, plus une pioche.** Le joueur
+  possède une **réserve de bonus** qui grossit d'une rencontre à l'autre : c'est
+  elle qu'il mise au début de chaque partie (`B2`). Elle ne traverse pas un run
+  (`R8`) — tout run repart des mêmes deux bonus (`A10`). C'est la troisième
+  chose que la boutique fait grandir, à côté du deck et des dés, et la première
+  qui touche directement aux règles de la partie.
+- `A9` 🧪 **L'offre de la boutique est tirée par visite**, et mémorisée : elle ne
+  bouge pas pendant qu'on la regarde. Deux bonus à **10 pièces** (soit deux
+  victoires, `J9`) tirés dans le catalogue **moins ce qu'on possède déjà** — la
+  propriété est booléenne, on ne rachète pas un bonus — et **3 des 5 options de
+  deck**. Deux effets cherchés : la boutique cesse d'être une liste exhaustive
+  où l'on prend toujours la même chose (§17 montrait le clonage dominant), et
+  l'argent redevient rare face à trois envies simultanées. Les nombres sont en
+  configuration (`shopOffers`).
+- `A10` 🧪 **Le joueur démarre un run avec deux bonus** : « Donner 3 jetons »
+  (`give3`) et « Annuler un 4-2-1 » (`reroll421`, une fois par rencontre, `B13`). Ils sont en configuration
+  (`startingBonuses`). Conséquence à assumer : à la première rencontre d'un run,
+  la mise (`B2`) **n'est pas un choix** — il possède exactement ce qu'il doit
+  miser. Le choix n'apparaît qu'après le premier achat. 🧪 Prévu mais pas fait :
+  **terminer un Cercle donnera un bonus spécifique**, ce qui rendra la réserve
+  moins dépendante de la bourse.
 - `A7` ❌ **Retiré.** Le plafond de faces identiques n'a jamais servi à ce pour
   quoi il avait été posé : ce n'est pas lui qui empêche la dégénérescence, c'est
   `D1b` — la meilleure combinaison de trois parmi quatre récompense la
@@ -792,7 +899,7 @@ document.
 - `F8` ✅ Les nouvelles faces s'insèrent **par paires opposées** aux extrémités,
   pour préserver `F2`.
 - `F10` ✅ **Une face gravée peut porter un effet.** Une face nue n'en a aucun,
-  et les dés de départ n'en portent jamais. Six effets :
+  et les dés de départ n'en portent jamais. Neuf effets :
 
 | Symbole | Effet | Quand |
 | --- | --- | --- |
@@ -802,6 +909,9 @@ document.
 | ⇈ | **Un jeton du pot pour chaque participant**, vous compris | à chaque apparition dans un jet |
 | ✦ | **+1 d'argent**, et **+10** si *tous* les dés l'affichent | face visible en fin de lancers |
 | ⚒ | **+1 point de forge** si **deux** exemplaires sont visibles | face visible en fin de lancers |
+| ⊞ | **Un dé temporaire de plus**, lancé aussitôt, qui rejoint la main du tour | à chaque apparition dans un jet |
+| ⇄ | **Deux exemplaires visibles** : un adversaire déjà passé relance 2 dés de son choix | face visible en fin de lancers |
+| ⅗ | **Compte pour un 3 ou un 5** — et **ne vaut plus** sa valeur imprimée | à l'évaluation de la main |
 
 - `F10a` ✅ `↻` est une **offre, pas une obligation** : le joueur décide. Un dé
   ne se relance gratuitement qu'une fois par jet, sinon la règle boucle.
@@ -820,6 +930,44 @@ document.
 - `F10d` 🧪 `⊖` **se cumule** — avec la récompense `takeLess` (`B14`) et avec les
   autres faces `⊖` visibles. Un dé entièrement gravé en `⊖` réduit donc de 4 ce
   qu'on encaisse, plancher à 1.
+- `F10f` 🧪 **`⊞` — le dé fantôme.** À chaque apparition, un dé de plus est lancé
+  **tout de suite** et rejoint la main pour le reste du tour : le jeu retient
+  toujours la meilleure combinaison de trois (`D3b`), donc un fantôme est une
+  chance de plus, et il compte aussi pour les combinaisons qui se lisent sur tous
+  les dés (`B23`, `B24`). Il disparaît une fois la manche résolue. Trois choix
+  qui bornent l'effet, tous 🧪 :
+  - le fantôme est un dé **nu** du Cercle, jamais une copie du dé qui l'a fait
+    sortir — sinon il ferait sortir un second fantôme, et ainsi de suite ;
+  - un plafond par tour, `ghostDiceMax` (proposition : **2**). Sans lui, quatre
+    dés gravés à fond donnent quatre fantômes par jet, soit seize dés en fin de
+    tour : l'IA n'y tient plus (elle énumère `2^n` gardes) et l'écran non plus ;
+  - il arrive **après** le retrait du dé en plus (`B12b`), pour que le jeu
+    n'écarte jamais un fantôme qu'il vient d'accorder.
+- `F10g` 🧪 **`⇄` — la relance forcée.** Deux faces visibles en fin de lancers, et
+  **un** adversaire qui a *déjà validé sa main dans la manche* relance 2 dés de
+  son choix ; sa nouvelle main remplace l'ancienne. Le seuil et le nombre de dés
+  sont en configuration. Quatre précisions :
+  - on compte sur **tous** les dés du participant, pas seulement les trois que la
+    combinaison retient — c'est le seul effet dont le déclenchement ignore `D3b` ;
+  - **le graveur désigne sa victime** parmi ceux qui ont déjà joué. À trois, c'est
+    une décision tactique de plus ; en duel, il n'y a pas de choix à faire ;
+  - **la victime choisit les dés** qui repartent. Subir ne veut pas dire ne pas
+    jouer, et c'est ce qui empêche l'effet d'être une simple punition ;
+  - l'effet **ne s'enchaîne pas** : si la main relancée fait apparaître deux `⇄`,
+    rien ne se passe. Sans ce garde-fou, deux graveurs se renverraient la manche
+    sans fin ;
+  - ce qui est **déjà crédité reste acquis** : `✦` et `⚒` ont été comptés à la fin
+    du tour de la victime et ne sont pas recomptés. La relance change la **main**
+    et les faces qui comptent encore à la résolution — `⊖` (`B14`, `F10d`).
+  Conséquence assumée : **ouvrir la manche rend `⇄` inoffensif**, personne n'ayant
+  encore joué. C'est le premier effet du jeu qui récompense de *ne pas* mener, et
+  il pousse donc contre `D4`.
+- `F10h` 🧪 **`⅗` — la face 3-ou-5.** Elle **remplace** la valeur imprimée : le dé
+  compte pour 3 ou pour 5, au mieux. C'est le seul effet de face qui peut
+  **abaisser** une main — graver un 6 en `⅗`, c'est renoncer au 6 — donc le seul
+  qui soit un pari. Les deux valeurs sont en configuration (`wild35Values`), et
+  la face reste un ✳ du pauvre : elle sert surtout les suites et les brelans de 3
+  ou de 5.
 - `F11` ✅ **La gravure se propose, et elle agit sur un seul aspect de la face à
   la fois.** Le graveur affiche, pour la face choisie :
 
@@ -904,6 +1052,17 @@ document.
   main est en place. Quand aucun jet n'espère mieux que sa main et qu'il ne peut
   pas s'arrêter, il **subit le jet le moins destructeur en l'annonçant** — c'est
   la bonne façon de perdre.
+- `I10` 🧪 **La mise** (`B2`). Un démon mise ses bonus les mieux notés (`I4`), un
+  par un et sans remise, à la même température que ses autres choix (`I5`).
+  Limite assumée : il ne voit pas qu'un bonus misé peut finir **en face** — donc
+  il ne mise jamais défensivement, alors que c'est exactement ce que la règle
+  rend possible.
+- `I9` 🧪 **Les deux décisions nées de `⇄`** (`F10g`). Quand un démon déclenche
+  la relance forcée, il frappe la **meilleure main** parmi les adversaires déjà
+  passés : c'est elle qui décide la manche, dans les deux phases. Quand il la
+  subit, il choisit les dés qui repartent avec la même note que pour la garde —
+  le groupe de `forceRerollDice` dés dont l'espérance est la meilleure — donc la
+  même température (`I5`). Subir n'est pas ne pas jouer.
 - `I8b` ✅ **Une décision binaire ne peut pas passer par la température de
   `I5`.** Le tirage de Boltzmann normalise par l'écart des notes ; à deux
   options, l'écart *est* l'échelle, donc la probabilité d'erreur vaudrait
@@ -976,6 +1135,36 @@ document.
   qu'un bouton ; quand il n'en reste aucun, « m'arrêter là » apparaît, et il
   porte le nom du bonus (`B18`) quand c'est lui qui paie l'arrêt. Un jet qui ne
   ferait pas voler assez de dés (`D5b`) laisse le bouton grisé.
+- `U8h` 🧪 **La mise se fait sur le tapis** (`B2`, `U8c`). À l'ouverture de la
+  rencontre, le tapis central montre **la réserve du joueur** au lieu du pot : il
+  clique 2 tuiles, elles s'allument, un bouton valide (« Miser ces 2 bonus »), et
+  le tapis bascule alors sur le pot commun. Aucune tuile n'est dessinée deux
+  fois, et le panneau dit ce que la mise coûte : « un bonus misé peut finir chez
+  l'adversaire ». La trace nomme qui a misé quoi (`U3`), sans quoi le pot
+  tomberait du ciel.
+- `U8i` 🧪 **La boutique montre la réserve avant l'étal** : une rangée « vos
+  bonus », une rangée « le marchand propose » avec le prix sur chaque tuile
+  (`A9`). Sans la première, le joueur ne sait pas ce qu'il misera à la rencontre
+  suivante.
+- `U8j` 🧪 **Les deux écrans disent que la mise n'est pas une dépense.** À l'essai,
+  voir un adversaire emporter un bonus misé se lit comme une perte définitive :
+  le panneau de mise précise donc « vous le gardez quand même — votre réserve ne
+  diminue jamais », et la boutique ouvre sur « votre réserve est acquise ». Une
+  règle qui a besoin d'être expliquée deux fois est une règle qui ne se voit pas.
+- `U8g` 🧪 **La relance forcée pose deux questions à l'écran** (`F10g`). Au
+  graveur : « qui renvoyez-vous aux dés ? », un bouton par adversaire déjà passé
+  — et rien du tout en duel, où il n'y a pas de choix. À la victime : « cliquez
+  les 2 dés que vous relancez », sur **ses dés déjà posés**, hors de son tour ;
+  l'étiquette du panneau compte la sélection (`1 / 2`) et le bouton reste grisé
+  tant que le compte n'est pas juste. C'est la seule question du jeu qui arrive à
+  un participant en dehors de son tour, et le fil (`U3`) doit donc nommer qui la
+  provoque.
+- `U19` 🧪 **Un jeton dont on ne sait pas à quoi il sert n'est qu'un décor.** Le
+  jeton de forge posé sur la table (`J7`) explique **au survol** ce qu'il
+  rapporte *et* où cela se dépense : les points de forge ne s'achètent pas et ne
+  servent qu'à graver ses dés en boutique (`A2`). Le compteur du bandeau porte la
+  même phrase. La bulle est celle des tuiles de récompense — même style, même
+  déclenchement — appliquée à tout élément qui se déclare `rollover__host`.
 - `U18` ✅ **Les effets de face se lisent sur le dé** : une pastille dorée dans
   le coin, avec le symbole de `F10`, sans masquer la valeur qui reste
   l'information principale. L'inspecteur (`U9`) et la boutique montrent les mêmes
@@ -1158,10 +1347,19 @@ d'un jeu qu'on peut poser devant quelqu'un sans commentaire.
   "_participants": "R12 : duel par défaut, 3 dans la dernière partie de chaque Cercle.",
   "participants": { "default": 2, "circleFinal": 3 },
 
-  "_battleSeries": "S1/B2 : n batailles avant chaque phase, n+1 récompenses tirées.",
+  "_startingBonuses": "A10 : les deux bonus que le joueur possède au départ d'un run.",
+  "startingBonuses": ["give3", "reroll421"],
+
+  "_bonusPick": "B2 : bonus que chaque participant mise au début de la rencontre. L'union fait le pot.",
+  "bonusPick": 2,
+
+  "_shopOffers": "A9 : ce que la boutique tire au hasard à chaque visite.",
+  "shopOffers": { "bonuses": 2, "deck": 3 },
+
+  "_battleSeries": "S1 : n batailles avant chaque phase. Le pot vient des mises (B2).",
   "battleSeries": [
     { "phase": "charge",    "duels": 3 },
-    { "phase": "discharge", "duels": 2 }
+    { "phase": "discharge", "duels": 1 }
   ],
 
   "_circles": "R2 : une entrée par Cercle. pot = 3 * (faces + 1), cf. R3.",
@@ -1179,7 +1377,10 @@ d'un jeu qu'on peut poser devant quelqu'un sans commentaire.
 
   "_diceCombinations": "V1/V2. 'facesPlus' = faces du dé + n. Changer ces 6 lignes change tout l'équilibre.",
   "_rank3": "V1b : rang 3 partagé, départagé par la valeur puis par triple > pairOfOnes.",
+  "_rank0": "B23/B24 : les deux combinaisons qui se lisent sur TOUS les dés passent devant le 4-2-1.",
   "diceCombinations": {
+    "quad":         { "rank": 0, "tieBreak": 1, "value": { "flat": 10, "perExtraDie": 4 }, "minDice": 4 },
+    "fullStraight": { "rank": 0, "tieBreak": 0, "value": 7, "minDice": 4 },
     "421":        { "rank": 1, "value": { "facesPlus": 4 } },
     "triple1":    { "rank": 2, "value": { "facesPlus": 1 } },
     "triple":     { "rank": 3, "tieBreak": 1, "value": "dieValue" },
@@ -1201,7 +1402,15 @@ d'un jeu qu'on peut poser devant quelqu'un sans commentaire.
       "effectOptions": 3,
       "valueOptions": 2,
       "forgeThreshold": 2,
-      "catalogue": ["freeReroll", "takeLess", "wild", "payAll", "money", "forge"]
+      "_ghostDie": "F10f : dés temporaires qu'un tour peut gagner au plus. Garde-fou du proto.",
+      "ghostDiceMax": 2,
+      "_forceReroll": "F10g : faces visibles nécessaires, et dés que la victime relance.",
+      "forceRerollThreshold": 2,
+      "forceRerollDice": 2,
+      "_wild35": "F10h : les deux valeurs que la face prend, au mieux.",
+      "wild35Values": [3, 5],
+      "catalogue": ["freeReroll", "takeLess", "wild", "payAll", "money", "forge",
+                    "ghostDie", "forceReroll", "wild35"]
     },
     "defaultMaxRerolls": 2
   },
@@ -1240,10 +1449,19 @@ d'un jeu qu'on peut poser devant quelqu'un sans commentaire.
     { "id": "reroll421",   "scope": "owner", "uses": "match" },
     { "id": "splitGive",   "scope": "owner", "uses": "match", "needsThree": true },
     { "id": "takeLess",    "scope": "owner", "uses": "match" },
-    { "id": "nenetteGift", "scope": "all",   "uses": "match" }
+    { "id": "nenetteGift", "scope": "all",   "uses": "match" },
+    { "id": "lateStop",      "scope": "owner", "uses": "oncePerPhase" },
+    { "id": "wideStraight",  "scope": "owner", "uses": "match" },
+    { "id": "onesFloor",     "scope": "owner", "uses": "match", "combination": "pairOfOnes", "floor": 4 },
+    { "id": "straightFloor", "scope": "owner", "uses": "match", "combination": "straight",   "floor": 5 },
+    { "id": "tripleFloor",   "scope": "owner", "uses": "match", "combination": "triple",     "floor": 4 },
+    { "id": "quadIdentical", "scope": "owner", "uses": "match" },
+    { "id": "fullStraight",  "scope": "owner", "uses": "match" }
   ],
 
   "shop": {
+    "_buyBonus":   "A9 : acheter un bonus tiré au sort. Il rejoint la réserve du run.",
+    "buyBonus":    { "cost": 10, "currency": "money" },
     "removeTwo":   { "cost": 10, "currency": "money", "pool": 10 },
     "plusOneTwo":  { "cost": 5,  "currency": "money", "pool": 10 },
     "clone":       { "cost": 5,  "currency": "money", "pool": 10 },
@@ -1427,6 +1645,32 @@ L'évolution des trois réglages successifs, sur la même mesure :
 | règles d'origine | 52 % | 2,1 | 0 % |
 | + `D5` levée (depuis **remise**, voir 2026-09-09), + 4 dés (`D1b`) | 80,6 % | 5,0 | 0 % |
 | + « Prendre » retiré, don immédiat (`B5`, `B7`) | **86,7 %** | **7,8** | **6 %** (avec achats) |
+
+### Ce que la mise des bonus a changé — 60 runs par ligne
+
+Mesuré le 2026-09-09, après le passage à la réserve achetée (`A8`) et à la mise
+(`B2`), pilote automatique des deux côtés, politique d'achat « un bonus dès
+qu'on peut, puis cloner » :
+
+| | victoire au C1 | parties par run | réserve en fin de run | bonus achetés |
+| --- | --- | --- | --- | --- |
+| joueur au niveau des démons | 96,5 % | 15,4 | **12,0** bonus | 10 (100 pièces) |
+| joueur expert | 93,8 % | 17,1 | 12,1 bonus | 10 (101 pièces) |
+
+Quatre lectures :
+
+1. **La progression fonctionne** : on part de 2 bonus et on finit à 12 sur 18.
+   La mise devient donc un vrai choix dès la deuxième ou troisième rencontre.
+2. **Elle est rapide** — un bonus à 10 pièces revient à moins de deux
+   rencontres (la prime de victoire seule en vaut 5, `J9`). Si l'on veut que la
+   réserve reste maigre plus longtemps, c'est le prix qu'il faut monter, pas le
+   nombre d'offres.
+3. **Le pot se partage à peu près équitablement** : 3,8 bonus pris par partie
+   sur 4 batailles, dont **53 % par le joueur**. Miser n'est donc pas une
+   formalité — près d'une fois sur deux, un bonus misé finit en face.
+4. **L'équilibre n'a presque pas bougé** (96,5 % contre 90,8 % avant le
+   changement, à la partie) : le modèle change *ce qu'on joue*, pas le taux de
+   victoire. ⚠️ Le run, en revanche, s'allonge encore : 15 à 17 parties.
 
 ### Ce que le retour de `D5` a changé — 400 parties par ligne
 
@@ -1716,18 +1960,20 @@ Deux passes de revue ont tranché **12 des 16 questions**, dont la seule
 bloquante, et l'implémentation en a fermé une de plus. Il reste `Q2` (ce qui
 traverse un run), `Q7` (valeur de la suite sur les grands dés) et `Q15` (les 4
 dés du joueur face à `D5` remise).
-**Le corps de règles est complet et implémenté** (`Proto3Html`).
+**Le corps de règles est complet et implémenté** (`Proto3Html`). `Q7` est passée
+de question de barème à **problème de durée** au Cercle 9 (525 manches par
+partie) : c'est la plus pressante des trois.
 
 | # | Question | État |
 | --- | --- | --- |
 | ~~`Q1`~~ | **Combien de participants ?** | ✅ **2 en temps normal, 3 dans la dernière partie de chaque Cercle** (`R12`), les deux en configuration. Ça donne au Cercle un climax identifié, et ça change la nature du jeu à ce moment-là : à 2 chaque manche est un transfert forcé, à 3 on peut ne rien subir (`R13`). |
 | `Q2` | **Que traverse un run ?** La défaite qui termine le run est tranchée (`R6`) ; reste `R8`, le roguelike strict où *rien* n'est conservé. | 🧪 **Largement desserré par la mesure (§17)** : avec `D5` ouvert et le quatrième dé (`D1b`), un run dure 8,7 parties, la boutique tourne, et **un run sur 200 traverse les neuf Cercles**. Le roguelike strict devient donc tenable. Reste à décider si 0,5 % est le bon taux de complétion, ou s'il faut un report entre runs pour le remonter. |
 | ~~`Q2b`~~ | **Sauvegarde d'un run en cours ?** | ✅ **Hors périmètre** (§19). Reste bloquant pour le jeu : un run complet dépasse 2 heures. |
-| ~~`Q3`~~ | **Combien de séries de batailles ?** | ✅ **3 batailles avant la répartition, 2 avant le don** (`S1`, `S2`), avec `n + 1` récompenses tirées par série (`B2`). Les récompenses de la première série restent actives pendant la seconde phase (`S2b`). |
+| ~~`Q3`~~ | **Combien de séries de batailles ?** | ✅ **3 batailles avant la répartition, 1 avant le don** (`S1`, `S2`, ramené de 2 à 1 le 2026-09-09), **et il n'y a plus de tirage** : depuis le 2026-09-09, le pot est ce que les participants **misent** parmi leurs bonus achetés (`B2`, `A8`). Les récompenses de la première série restent actives pendant la seconde phase (`S2b`). |
 | ~~`Q4`~~ | **Les démons progressent-ils ?** Non pour l'équipement (`S4`), **oui pour le niveau de jeu** (`S5`, validé). | ✅ **Calibré et mesuré** : `mauvais` aux Cercles 1-2, `moyen` aux 3-6, `expert` aux 7-9 donne 80 % de victoires au Cercle 1 et 4,8 parties par run — assez pour que la boutique existe. Correction indispensable trouvée à l'implémentation : le niveau doit porter sur **le choix des dés à garder** (`I5`), pas seulement sur les cartes, sinon il ne change rien. |
 | ~~`Q5`~~ | **Une carte peut-elle dépasser l'As ?** | ✅ **Non.** Bornes dures 2-14 (`C13`) : on n'augmente pas un As, on ne diminue pas un 2. Un As n'est pas sélectionnable par `plusOneTwo` (`C13b`). |
 | ~~`Q6`~~ | **`flipDie` sur un dé gravé.** | ✅ **Il lit la face opposée telle qu'elle est gravée** (`B10`). Graver le dos d'une face devient donc un coup à part entière. |
-| `Q7` | **Barème des grands dés.** `faces + 4` et `faces + 1` sont validés (`V3`). Reste la **suite**, à 2 jetons du D6 au D100 : à partir du Cercle 5, la réussir est une quasi-défaite. | 🧪 La seule question de barème encore ouverte. |
+| `Q7` | **Barème des grands dés.** `faces + 4` et `faces + 1` sont validés (`V3`). Reste la **suite**, à 2 jetons du D6 au D100 : à partir du Cercle 5, la réussir est une quasi-défaite. | 🧪 **Devenue urgente, mesurée le 2026-09-09.** Le vrai symptôme n'est pas la suite, c'est le `junk` à **1 jeton** face à un pot de **303** au Cercle 9 : une partie y dure **525 manches et 1 630 jets** (325 manches avant le retour de `D5`, qui affaiblit les mains). Le garde-fou du moteur n'est pas déclenché — la partie *se termine* — mais elle est injouable à la main. Trois pistes : indexer `junk` sur la taille du dé, indexer le pot autrement que `3 × (faces + 1)` (`R3`), ou plafonner le nombre de manches d'une phase par une règle et non par un garde-fou. |
 | ~~`Q8`~~ | **Faut-il la nénette ?** | ✅ **Oui.** Le 2-2-1 est la pire main du jeu et vaut 2 jetons (`V5`). |
 | ~~`Q9`~~ | **`removeTwo` est dominée** par deux `removeOne` (`A5`). | ✅ **Les coûts s'ajusteront à la mesure** ; ils sont en configuration (`G3`), donc modifiables sans toucher au code. Le constat `A5` reste vrai au barème actuel. |
 | ~~`Q10`~~ | **La montée de dé efface les gravures** (`F7`). | ✅ **Voulu.** C'est le rééquilibrage automatique du run, et l'entrée au D100 fait du Cercle 9 un vrai boss (§17). |
@@ -1751,6 +1997,11 @@ et 2 ne sont pas touchés.
 
 | Date | Évolution |
 | --- | --- |
+| 2026-09-09 | **Correction : le pot de bonus se refermait.** Le démon tirant ses mises au hasard dans tout le catalogue, il pouvait tomber sur ce que le joueur venait de miser ; le pot dédoublonnant, il tombait à **3 bonus, parfois 2**, et les dernières batailles n'avaient plus rien à distribuer. Le pot se remplit désormais dans l'ordre des sièges, chacun misant parmi ce qui n'y est pas déjà, et un démon retire ailleurs si son tirage est déjà pris (`B2c`) : le pot compte toujours `bonusPick × participants` bonus distincts. Deux phrases ajoutées à l'écran dans la foulée (`U8j`) : voir un adversaire emporter un bonus misé se lisait comme une perte définitive, alors que **la réserve ne diminue jamais**. Le panneau de mise et la boutique le disent maintenant chacun à leur tour. |
+| 2026-09-09 | **`reroll421` passe à une fois par rencontre** (`B13`). Il annulait **chaque** 4-2-1 adverse, une fois par tour, pendant toute la partie : de loin la récompense la plus forte du catalogue, et accessoirement l'un des deux bonus de départ du joueur (`A10`) — il l'aurait donc eue à chaque run. Le premier 4-2-1 adverse le consomme désormais, les suivants tiennent. Le bonus se barre à l'écran dès qu'il a servi, comme `flipDie` et `set42`. |
+| 2026-09-09 | **Les bonus deviennent une progression achetée, et le pot d'une rencontre devient une mise.** Refonte complète de la distribution. Avant : on piochait `n + 1` bonus dans un catalogue générique au début de chaque série de batailles. Maintenant : le joueur **possède** une réserve de bonus (`A8`), il en **mise 2** au début de la rencontre (`B2`), et l'union des mises de tous les participants est le pot que les batailles répartissent. Trois conséquences, toutes cherchées. **Acheter un bonus n'est plus un gain net, c'est une mise** : il peut finir chez l'adversaire, et c'est ce qui donne enfin un enjeu à la boutique autrement que par le deck et les dés. **La rareté change de nature** : elle ne vient plus de la taille du catalogue (18 entrées) mais de la bourse — on ne joue que ce qu'on a acheté, à 10 pièces le bonus, soit deux victoires (`J9`). **La boutique cesse d'être une liste exhaustive** (`A9`) : à chaque visite elle tire 2 bonus à vendre — hors de ce qu'on possède déjà — et **3 options de deck sur 5**, les gravures restant toujours disponibles ; §17 montrait que le clonage dominait tout, il faut maintenant qu'il soit proposé. Le joueur démarre avec `give3` et `reroll421` (`A10`), donc **la première mise d'un run n'est pas un choix** — le choix naît du premier achat. Côté démon, le provisoire est visible (`B2b`) : sans boutique, ses deux mises sont tirées au sort dans ce qu'il peut **utiliser** (un démon à 3 dés ne mise jamais un bonus qui exige 4 dés), et il mise donc tout ce qu'il a. Deux règles meurent : `B3b` (le second tirage excluait le premier) et `B3d` (l'aléa venait du vivier). Deux détails d'implémentation qui comptent : l'offre de boutique est **tirée à l'entrée et mémorisée** sur le run, sinon elle changeait à chaque rendu ; et les tests de récompense passent désormais par un pot **vide** pour isoler la récompense qu'ils forcent — sans quoi une bataille la redistribuait sous leurs pieds. Sauvegarde en v2 (la réserve fait partie du run) : les sauvegardes v1 sont abandonnées. **Mesuré sur 60 runs** (§17) : on part de 2 bonus et on finit à **12 sur 18**, soit 10 achats et 100 pièces par run — la progression marche, mais elle est **rapide** (un bonus vaut moins de deux rencontres), et c'est le prix qu'il faudra monter si l'on veut une réserve maigre plus longtemps. Le pot se partage à 53 / 47 en faveur du joueur : miser n'est pas une formalité. Le taux de victoire au Cercle 1 ne bouge presque pas (96,5 % contre 90,8 %) — le modèle change *ce qu'on joue*, pas la difficulté. Un bug trouvé à la mesure : le pilote automatique ne retirait l'offre qu'**une fois par run** (la condition de tirage exigeait que les deux étals soient vides), ce qui plafonnait la réserve à 4 bonus et cachait toute la progression. |
+| 2026-09-09 | **Trois gravures et six récompenses de plus, et le catalogue double.** Les gravures (`F10f` à `F10h`) : `⊞` **dé fantôme** — la face sortie, un dé temporaire de plus est lancé aussitôt et rejoint la main du tour ; `⇄` **relance forcée** — deux faces visibles et un adversaire *déjà passé* relance 2 dés de son choix, le graveur désignant sa victime ; `⅗` **face 3-ou-5** — elle **remplace** la valeur imprimée, donc c'est le premier effet de face qui peut faire *baisser* une main. Les récompenses (`B19` à `B24`) : suite élargie (écart de 2), trois planchers en jetons (1-1-x ≥ 4, suite ≥ 5, brelan ≥ 4), **4 faces identiques** (10 jetons, +4 par dé de plus) et **grande suite** (tous les dés, 4 minimum, 7 jetons). Trois décisions structurantes prises au passage. `V8` : les deux dernières se lisent sur **tous** les dés et brisent donc `D1` (« une main est faite de 3 dés ») ; elles sont au **rang 0**, au-dessus du 4-2-1, parce qu'elles sont plus rares à 4 dés et qu'elles sont *payées* — une grande suite à 7 jetons bat donc un 4-2-1 à 104 au D100. `V9`/`B20` : les planchers changent ce qui est **transféré**, pas le classement, comme `valuePlus1` (`B17`). `F10g` : la relance forcée ne s'enchaîne jamais (sans quoi deux graveurs se renverraient la manche sans fin) et ne touche que qui a déjà joué — **c'est le premier effet du jeu qui récompense de ne pas mener**, donc qui pousse contre `D4`. Deux garde-fous d'implémentation, tous deux en configuration : `ghostDiceMax: 2` (quatre dés gravés à fond donneraient seize dés en fin de tour, et l'IA énumère `2^n` gardes), et les deux nouvelles combinaisons exigent 4 dés (`minDice`), donc **un démon à 3 dés ne les fera jamais** (`V8c`) — leur poids d'IA est au plancher pour qu'il ne gaspille pas son choix. Effet mesuré sur 400 parties au Cercle 1 : le taux de victoire ne bouge quasiment pas (90,8 % contre 91,3 %), les nouvelles combinaisons sortant très rarement (grande suite 0,2 % des mains, 4 identiques 0,0 %) — le catalogue passé de 12 à **18 récompenses** dilue chaque récompense, et il faut à la fois la tirer, la gagner et la réussir. |
+| 2026-09-09 | **La seconde série passe de deux batailles à une** (`S2`, `battleSeries`). Une partie compte donc **4 batailles et 6 récompenses tirées**, dont 4 prises, au lieu de 5 et 7. Deux raisons : le catalogue vient de doubler (18 récompenses), donc une bataille de moins rend chaque récompense plus rare sans la rendre inatteignable ; et les parties s'étaient allongées d'un cinquième avec le retour de `D5`. `S2c` (la seconde série est un rattrapage) survit mais s'affaiblit : celui qui vient de ramasser le pot n'a plus qu'**une** chance de revenir avant la phase où tout se joue. Le test qui figeait la forme de `S1` la **déduit** maintenant de la configuration — il avait déjà rôti une fois. |
 | 2026-09-09 | **`D5` est remise : le dernier jet s'annonce avant d'être lancé.** Retour en arrière assumé sur l'assouplissement de la veille — s'arrêter quand on veut était plus simple, mais la pression du 4-21 était partie avec la contrainte, et `D4` restait seule à porter la manche. Trois pièces : `D5` (l'annonce, avant le jet), `D5b` (**un jet fait voler au moins 2 dés**, `rules.minReroll` — sans ce plancher, « je garde tout » vaudrait un arrêt gratuit et l'annonce ne coûterait rien), `D5c` (le dernier jet disponible n'a rien à annoncer). Le bonus `lateStop` du brouillon, qui n'était que la levée de cette contrainte, **revient avec elle** (`B18`) : son détenteur garde sa main après l'avoir vue, une fois par phase. Côté IA, l'annonce devient une décision à part entière (`I8`) : le démon mesure, dans la passe qui calcule déjà l'espérance du jet, la part des tirages qui dépassent ce qu'espère un jet neuf — au-dessus de 0,3 il annonce. Au passage, `I8b` : une décision **binaire** ne peut pas passer par la température de `I5`, qui normalise par l'écart des notes et se tromperait donc autant sur un choix évident que sur un choix serré ; l'erreur d'annonce se tire sur l'écart brut. **La mesure a démenti l'intention** (§17, 400 parties par ligne) : à 3 dés de chaque côté la règle est neutre (42,8 → 44,0 % à niveau égal), mais avec le quatrième dé du joueur elle fait passer le taux de victoire de **84,8 % à 91,3 %** — le jet forcé coûte beaucoup moins cher à qui lance 4 dés qu'à qui en lance 3. La pression du 4-21 est bien revenue, mais elle pèse d'abord **sur les démons** ; le bouton pour la faire mordre le joueur est `D1b`, pas `minReroll`. Effet de bord : les parties gagnent un cinquième de manches (9,1 → 10,9) pour un cinquième de jets en moins (40,3 → 33,6). |
 | 2026-09-08 | **On ne perd une rencontre qu'en finissant dernier** (`R14`) — c'est une redéfinition de « gagner une rencontre », pas un cas particulier des parties à trois, donc `R6` (la défaite tue le run), `J9` (la prime) et le compteur `winsRequired` suivent tous automatiquement. En duel la règle est identique à « finir premier » ; à trois, la deuxième place fait continuer le run. Le moteur expose `humanFirst` à part, pour que l'écran dise « vous finissez 2ᵉ, le run continue » plutôt qu'une victoire qui sonnerait faux. **La mesure a démenti ma prédiction** : j'avais écrit que la règle ramènerait la dernière partie du Cercle au niveau des autres sans la rendre triviale ; elle la rend **quasi automatique**, 99,6 % de survie contre 69 % auparavant. Effet sur le run entier, 200 runs par variante : runs complets **8 % → 36 %** en clonage seul, parties par run **14,9 → 30,3**. Les 9 parties à trois n'étaient pas *un* filtre du run, elles en étaient **le** filtre. Deux conséquences à trancher : la durée d'un run (30 parties) redevient le problème que §17 signalait dès le début, et `R12b` (le climax annoncé du Cercle) n'a plus de contenu mécanique. La hiérarchie des politiques d'achat, elle, devient illisible — 36,0 / 35,5 / 34,5 % tiennent dans une erreur-type — non pas parce que graver ne sert plus, mais parce que la boutique ne décide plus de l'issue. |
 | 2026-09-08 | **La gravure se choisit sur la liste des faces** (`U35`). La boutique affichait déjà tous les dés développés face par face (`U31`), et demandait pourtant « quel dé ? » puis « quelle face ? » — elle redemandait ce qui était sous les yeux du joueur. On clique maintenant la face directement dans le panneau « Vos dés ». Un corollaire est apparu en implémentant : **l'offre du graveur doit être mémorisée par face** pour la durée de l'achat. Cliquer une autre face puis revenir relançait sinon `engraveOptions`, donc un nouveau tirage — le joueur pouvait relancer le graveur autant de fois qu'il voulait et choisir l'effet qu'il visait, ce qui vide `F11` (« on ne choisit plus la valeur, on choisit dans l'offre ») de tout son sens. Le défaut existait déjà avec l'ancien parcours, via le bouton Annuler ; l'accès direct aux faces le rendait simplement trivial. |

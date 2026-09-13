@@ -4,6 +4,7 @@
  */
 
 import type { Card, DiceHand, FaceEffectId, HandRank, PhaseId, RewardId } from './types'
+import type { HandBonuses, Reads } from '../dice/combinations'
 import type { CoinSide } from './trace'
 
 export interface TurnContext {
@@ -16,6 +17,10 @@ export interface TurnContext {
   readonly kept: readonly number[]
   /** Effet porté par la face visible de chaque dé (`F10`). */
   readonly effects: readonly (FaceEffectId | null)[]
+  /** `F10` : lectures de chaque dé — `wild` et `wild35` en donnent plusieurs. */
+  readonly reads: Reads
+  /** `B17` à `B24` : ce que ses récompenses changent à la lecture de sa main. */
+  readonly bonuses: HandBonuses
   /** Dés relançables gratuitement, tout de suite (`F10`, `freeReroll`). */
   readonly freeRerolls: readonly number[]
   readonly throwNo: number
@@ -39,8 +44,24 @@ export type Ask =
   | { kind: 'mulligan'; who: number; pass: number; total: number; hand: readonly Card[]; rank: HandRank }
   | { kind: 'coin'; who: number; candidates: readonly number[]; reason: string }
   | { kind: 'reward'; who: number; offered: readonly RewardId[] }
+  /** `B2` : les bonus que le joueur met en jeu, parmi les siens. */
+  | { kind: 'stakeBonuses'; who: number; owned: readonly RewardId[]; count: number }
   | { kind: 'rewardTarget'; who: number; id: RewardId; candidates: readonly number[] }
   | { kind: 'chooseRerolls'; who: number; options: readonly number[] }
+  /** `F10` (`forceReroll`) : sur qui le graveur renvoie la relance forcée. */
+  | { kind: 'faceTarget'; who: number; effect: FaceEffectId; candidates: readonly number[] }
+  /**
+   * `F10` (`forceReroll`) : la victime choisit les dés qu'elle relance. Sa main
+   * est déjà validée, donc la question arrive **hors** de son tour.
+   */
+  | {
+      kind: 'pickDice'
+      who: number
+      count: number
+      values: readonly number[]
+      effects: readonly (FaceEffectId | null)[]
+      by: number
+    }
   | { kind: 'turn'; context: TurnContext }
 
 export type TurnAction =
@@ -54,6 +75,9 @@ export type Answer =
   | { kind: 'mulligan'; swap: readonly number[] }
   | { kind: 'coin'; side: CoinSide }
   | { kind: 'reward'; id: RewardId }
+  | { kind: 'stakeBonuses'; ids: readonly RewardId[] }
   | { kind: 'rewardTarget'; target: number }
   | { kind: 'chooseRerolls'; value: number }
+  | { kind: 'faceTarget'; target: number }
+  | { kind: 'pickDice'; dice: readonly number[] }
   | { kind: 'turn'; action: TurnAction }

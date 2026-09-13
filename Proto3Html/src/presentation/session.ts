@@ -19,13 +19,16 @@ import {
   currentCircle,
   finishMatch,
   HUMAN,
+  buyBonus,
   openShopOption,
+  rollShopOffers,
   startMatch,
   type MatchOutcome,
   type RunState,
   type ShopSession,
 } from '../core/rules/run'
 import type { TraceStep } from '../core/rules/trace'
+import type { RewardId } from '../core/rules/types'
 import { circleCleared, type Bubble } from './dialogues'
 import { addStats, clearSave, writeSave, type SavedRun } from './storage'
 
@@ -64,6 +67,7 @@ export class Session {
     this.run = createRun(cfg)
     if (saved) {
       this.restore(saved)
+      rollShopOffers(this.run, this.rng)
       // La reprise remet le joueur dans la boutique, jamais au milieu d'une
       // rencontre : c'est le point de sauvegarde que fixe la spéc.
       this.screen = 'shop'
@@ -85,6 +89,8 @@ export class Session {
     this.run.bestCircle = saved.bestCircle
     this.run.lastMoney = saved.lastMoney
     this.run.totalMoney = saved.totalMoney
+    // `A8` : les bonus font partie du run, donc de la sauvegarde.
+    this.run.bonuses = [...saved.bonuses]
   }
 
   private persist(): void {
@@ -100,6 +106,7 @@ export class Session {
       forgePoints: this.run.forgePoints,
       deck: this.run.deck.map((c) => ({ ...c })),
       dice: this.run.dice.map((d) => ({ faces: d.faces.map((f) => ({ ...f })) })),
+      bonuses: [...this.run.bonuses],
       bestCircle: this.run.bestCircle,
       lastMoney: this.run.lastMoney,
       totalMoney: this.run.totalMoney,
@@ -176,7 +183,25 @@ export class Session {
   /** Sortie de l'écran de fin de Cercle : on passe en boutique. */
   closeTransition(): void {
     this.bubbles = []
+    this.enterShop()
+    this.emit()
+  }
+
+  /** `A9` : l'offre de la boutique se tire **une fois par visite**. */
+  private enterShop(): void {
     this.screen = 'shop'
+    rollShopOffers(this.run, this.rng)
+  }
+
+  /** `A9` : achat d'un bonus, qui rejoint la réserve du run. */
+  buyBonus(id: RewardId): void {
+    try {
+      buyBonus(this.run, id)
+      this.shopError = null
+      this.persist()
+    } catch (e) {
+      this.shopError = e instanceof Error ? e.message : String(e)
+    }
     this.emit()
   }
 
@@ -284,7 +309,7 @@ export class Session {
       // Fin de Cercle : le démon commente ce qui change avant la boutique.
       this.bubbles = circleCleared(before, currentCircle(this.run))
       this.screen = 'transition'
-    } else this.screen = 'shop'
+    } else this.enterShop()
 
     // Point de sauvegarde : la rencontre est finie, la boutique n'a pas encore
     // servi. C'est là que « Continuer » reprendra.

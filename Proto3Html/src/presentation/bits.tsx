@@ -175,9 +175,15 @@ export function ChipStack({
  */
 export function ForgeToken() {
   return (
-    <div className="forgetoken" title="Cette rencontre rapporte un point de forge (J7)">
+    <div className="forgetoken rollover__host">
       <span className="forgetoken__disc">{EFFECT_SYMBOL.forge}</span>
       <span className="forgetoken__label">1 forge en jeu</span>
+      {/* `U19` : un jeton dont on ne sait pas à quoi il sert n'est qu'un décor. */}
+      <span className="rollover">
+        Cette rencontre rapporte <strong>un point de forge</strong>, gagnée ou perdue. Les points de forge
+        ne s’achètent pas et ne servent qu’à une chose : <strong>graver vos dés</strong> en boutique — poser
+        un effet sur une face, ou en changer la valeur.
+      </span>
     </div>
   )
 }
@@ -191,18 +197,26 @@ export function RewardTile({
   index,
   owner,
   ownerName,
+  staked,
   onClick,
 }: {
   id: RewardId
   index?: number | undefined
   owner?: number | undefined
   ownerName?: string | undefined
+  /** `B2` : tuile cochée pour la mise. */
+  staked?: boolean | undefined
   onClick?: (() => void) | undefined
 }) {
   const taken = owner !== undefined
   // Rotation déterministe : la même tuile penche toujours pareil.
   const tilt = ((index ?? 0) % 5) * 2.4 - 4.8
-  const cls = ['tile', taken ? 'tile--taken' : '', onClick ? 'tile--pickable' : '']
+  const cls = [
+    'tile',
+    taken ? 'tile--taken' : '',
+    staked ? 'tile--staked' : '',
+    onClick ? 'tile--pickable' : '',
+  ]
   return (
     <button
       type="button"

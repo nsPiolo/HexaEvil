@@ -3,13 +3,16 @@ import { engrave, values } from '../dice/dice'
 import {
   applyEngrave,
   applyShopCards,
+  buyBonus,
   createRun,
   currentCircle,
   finishMatch,
   isCircleFinal,
   openShopOption,
   participantCount,
+  rollShopOffers,
   shopBlockedReason,
+  usableBonuses,
   yieldsForgePoint,
 } from '../rules/run'
 import { createRng } from '../rules/random'
@@ -220,5 +223,64 @@ describe('boutique', () => {
     )
     expect(run.forgePoints).toBe(0)
     for (const die of run.dice) expect(die.faces[0]?.effect).toBe('wild')
+  })
+})
+
+describe('A8/A9 — les bonus s’achètent, l’offre se tire par visite', () => {
+  it('A6 — un run démarre sur les deux bonus de départ', () => {
+    const run = createRun(cfg)
+    expect(run.bonuses).toEqual([...cfg.startingBonuses])
+    expect(run.bonuses).toHaveLength(2)
+  })
+
+  it('A5 — la boutique tire 2 bonus et 3 options de deck, sans doublon', () => {
+    const run = createRun(cfg)
+    rollShopOffers(run, createRng(3))
+    expect(run.offers.bonuses).toHaveLength(cfg.shopOffers.bonuses)
+    expect(run.offers.deck).toHaveLength(cfg.shopOffers.deck)
+    expect(new Set(run.offers.bonuses).size).toBe(run.offers.bonuses.length)
+    expect(new Set(run.offers.deck).size).toBe(run.offers.deck.length)
+    // Les gravures ne sont jamais dans le tirage : elles restent toujours là.
+    for (const id of run.offers.deck) expect((cfg.shop[id].pool ?? 0) > 0).toBe(true)
+  })
+
+  it('A5 — ce qu’on possède déjà n’est pas remis en vente', () => {
+    for (let seed = 1; seed <= 20; seed++) {
+      const run = createRun(cfg)
+      rollShopOffers(run, createRng(seed))
+      for (const id of run.offers.bonuses) expect(run.bonuses).not.toContain(id)
+    }
+  })
+
+  it('A5 — l’achat coûte son prix, entre en réserve et quitte l’étal', () => {
+    const run = createRun(cfg)
+    rollShopOffers(run, createRng(7))
+    const id = run.offers.bonuses[0]!
+    run.money = 10
+    buyBonus(run, id)
+    expect(run.bonuses).toContain(id)
+    expect(run.money).toBe(0)
+    expect(run.offers.bonuses).not.toContain(id)
+    // Et on ne le rachète pas.
+    expect(() => buyBonus(run, id)).toThrow()
+  })
+
+  it('A5 — sans argent, pas de bonus', () => {
+    const run = createRun(cfg)
+    rollShopOffers(run, createRng(11))
+    run.money = 9
+    expect(() => buyBonus(run, run.offers.bonuses[0]!)).toThrow(/argent/)
+    expect(run.bonuses).toHaveLength(2)
+  })
+
+  it('B2b — le filtre d’utilisabilité écarte ce qui demande 4 dés ou trois joueurs', () => {
+    const forDemon = usableBonuses(cfg, cfg.dice.demonDice, 2)
+    expect(forDemon).not.toContain('quadIdentical')
+    expect(forDemon).not.toContain('fullStraight')
+    expect(forDemon).not.toContain('splitGive')
+    const forPlayer = usableBonuses(cfg, cfg.dice.playerDice, 3)
+    expect(forPlayer).toContain('quadIdentical')
+    expect(forPlayer).toContain('fullStraight')
+    expect(forPlayer).toContain('splitGive')
   })
 })

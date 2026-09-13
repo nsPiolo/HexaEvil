@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { settingsFor } from '../ai/ai'
 import { createStartingDeck } from '../cards/deck'
-import { createDie, engrave, oppositeValue, upgradeDie } from '../dice/dice'
-import { bestOfThree } from '../dice/combinations'
-import { createRun, engraveOptions } from '../rules/run'
-import type { Die } from '../rules/types'
+import { createDie, engrave, engraveEffect, oppositeValue, upgradeDie } from '../dice/dice'
+import { bestHand, NO_BONUS } from '../dice/combinations'
+import { createRun, engraveOptions, usableBonuses } from '../rules/run'
+import type { Die, FaceEffectId, RewardId } from '../rules/types'
 import { autoPlay } from '../rules/autoplay'
 import { MatchDriver, type MatchParticipant } from '../rules/match'
 import { createRng } from '../rules/random'
@@ -19,6 +19,12 @@ function play(
   count = 2,
   prepare?: (live: MatchDriver['live']) => void,
   playerDice?: readonly Die[],
+  /**
+   * `A8` : ce que chacun possède, donc ce qui peut arriver dans le pot (`B2`).
+   * `NO_BONUSES` vide le pot : c'est ainsi qu'on **isole** une récompense forcée
+   * à la main, sans qu'une bataille la redistribue.
+   */
+  bonuses?: { readonly player: readonly RewardId[]; readonly demons: readonly RewardId[] },
 ) {
   const circle = cfg.circles[circleIndex]!
   const dice = (n: number) =>
@@ -31,6 +37,7 @@ function play(
       deck: createStartingDeck(cfg.cards),
       dice: playerDice ? [...playerDice] : dice(cfg.dice.playerDice),
       ai: null,
+      bonuses: [...(bonuses?.player ?? cfg.startingBonuses)],
     },
   ]
   for (let d = 0; d < count - 1; d++) {
@@ -41,6 +48,13 @@ function play(
       deck: createStartingDeck(cfg.cards),
       dice: dice(cfg.dice.demonDice),
       ai: settingsFor(cfg.ai, d, circleIndex),
+      // `B2b` : les bonus d'un démon sont tirés dans ce qu'il peut utiliser.
+      bonuses:
+        bonuses?.demons !== undefined
+          ? [...bonuses.demons]
+          : createRng(seed + d)
+              .shuffle(usableBonuses(cfg, cfg.dice.demonDice, count))
+              .slice(0, cfg.bonusPick),
     })
   }
   const rng = createRng(seed)
@@ -53,33 +67,100 @@ function play(
 
 const seeds = [1, 2, 3, 7, 11, 42, 99]
 
+/** Pot vide : plus aucune récompense ne circule, on n'observe que la forcée. */
+const NO_BONUSES = { player: [], demons: [] } as const
+
 describe('S1 — séquence d’une partie', () => {
-  it('déroule 3 batailles, la répartition, 2 batailles, le don', () => {
+  it('mise les bonus une fois, puis déroule batailles et phases', () => {
     const { steps } = play(1)
     const shape = steps
-      .filter((s) => s.kind === 'duelStart' || s.kind === 'phaseStart' || s.kind === 'rewardsDrawn')
-      .map((s) => (s.kind === 'phaseStart' ? `phase:${s.phase}` : s.kind === 'duelStart' ? `duel${s.series}` : `tirage${s.series}`))
-    expect(shape).toEqual([
-      'tirage0', 'duel0', 'duel0', 'duel0',
-      'phase:charge',
-      'tirage1', 'duel1', 'duel1',
-      'phase:discharge',
-    ])
+      .filter((s) => s.kind === 'duelStart' || s.kind === 'phaseStart' || s.kind === 'bonusPool')
+      .map((s) => (s.kind === 'phaseStart' ? `phase:${s.phase}` : s.kind === 'duelStart' ? `duel${s.series}` : 'mise'))
+    // La forme est **déduite** de la configuration : `battleSeries` a déjà
+    // changé une fois (3 et 2, puis 3 et 1), le test ne doit pas la figer.
+    // `B2` : la mise est unique et ouvre la partie.
+    const expected = [
+      'mise',
+      ...cfg.battleSeries.flatMap((series, i) => [
+        ...Array.from({ length: series.duels }, () => `duel${i}`),
+        `phase:${series.phase}`,
+      ]),
+    ]
+    expect(shape).toEqual(expected)
   })
 
-  it('B2 — n batailles, n + 1 récompenses tirées', () => {
-    const { steps } = play(3)
-    const draws = steps.filter((s) => s.kind === 'rewardsDrawn')
-    expect(draws[0]!.offered).toHaveLength(cfg.battleSeries[0]!.duels + 1)
-    expect(draws[1]!.offered).toHaveLength(cfg.battleSeries[1]!.duels + 1)
-  })
-
-  it('B3b — le 2e tirage exclut les 4 récompenses proposées à la 1re série', () => {
+  it('B2 — le pot est l’union des mises, une seule fois par rencontre', () => {
     for (const seed of seeds) {
-      const { steps } = play(seed)
-      const draws = steps.filter((s) => s.kind === 'rewardsDrawn')
-      const first = new Set(draws[0]!.offered)
-      for (const id of draws[1]!.offered) expect(first.has(id)).toBe(false)
+      const { steps, participants } = play(seed, 0, 3)
+      const pools = steps.filter((s) => s.kind === 'bonusPool')
+      expect(pools).toHaveLength(1)
+      const pool = pools[0]!
+      expect(pool.picks).toHaveLength(participants.length)
+      for (const [i, list] of pool.picks.entries()) {
+        expect(list.length).toBeLessThanOrEqual(cfg.bonusPick)
+        const p = participants[i]!
+        for (const id of list) {
+          // Le joueur ne mise que sa réserve. Un démon, qui n'en a pas (`B2b`),
+          // mise le tirage — éventuellement refait pour éviter un doublon.
+          if (p.isHuman) expect(p.bonuses).toContain(id)
+          else expect(usableBonuses(cfg, p.dice.length, participants.length)).toContain(id)
+        }
+      }
+      // L'union, sans doublon.
+      const union = [...new Set(pool.picks.flat())]
+      expect([...pool.pool].sort()).toEqual(union.sort())
+    }
+  })
+
+  it('B2 — on ne peut prendre qu’un bonus du pot, et jamais deux fois le même', () => {
+    for (const seed of seeds) {
+      const { steps } = play(seed, 0, 3)
+      const pool = steps.find((s) => s.kind === 'bonusPool')!
+      const taken: string[] = []
+      for (const s of steps as TraceStep[]) {
+        if (s.kind !== 'rewardTaken') continue
+        expect(pool.pool).toContain(s.id)
+        expect(taken).not.toContain(s.id)
+        taken.push(s.id)
+      }
+      // Jamais plus de prises que de bonus misés, ni que de batailles.
+      const duels = cfg.battleSeries.reduce((n, b) => n + b.duels, 0)
+      expect(taken.length).toBeLessThanOrEqual(Math.min(pool.pool.length, duels))
+    }
+  })
+
+  it('B2c — le pot compte toujours autant de bonus distincts que de mises', () => {
+    // Le démon tirait dans tout le catalogue, y compris ce que le joueur venait
+    // de miser : le pot se refermait à 3, parfois à 2, et les dernières
+    // batailles n'avaient plus rien à distribuer.
+    for (let seed = 1; seed <= 30; seed++) {
+      for (const count of [2, 3]) {
+        const { steps, participants } = play(seed, 0, count)
+        const pool = steps.find((s) => s.kind === 'bonusPool')!
+        expect(new Set(pool.pool).size).toBe(pool.pool.length)
+        expect(pool.pool).toHaveLength(cfg.bonusPick * participants.length)
+        // Chaque mise est distincte, y compris d'une mise à l'autre.
+        expect(new Set(pool.picks.flat()).size).toBe(pool.picks.flat().length)
+      }
+    }
+  })
+
+  it('B2 — miser ne coûte pas le bonus : la réserve du joueur ne bouge pas', () => {
+    const reserve: RewardId[] = ['give3', 'reroll421', 'takeLess', 'wideStraight']
+    const { participants } = play(4, 0, 2, undefined, undefined, { player: reserve, demons: ['give5'] })
+    // Le moteur travaille sur une copie : la réserve du run est intouchable.
+    expect(participants[0]!.bonuses).toEqual(reserve)
+  })
+
+  it('B2b — un démon ne mise que des bonus utilisables avec ses 3 dés', () => {
+    const usable = usableBonuses(cfg, cfg.dice.demonDice, 3)
+    for (const seed of seeds) {
+      const { steps, participants } = play(seed, 0, 3)
+      const pool = steps.find((s) => s.kind === 'bonusPool')!
+      for (const [i, list] of pool.picks.entries()) {
+        if (participants[i]!.isHuman) continue
+        for (const id of list) expect(usable).toContain(id)
+      }
     }
   })
 
@@ -298,29 +379,41 @@ describe('B8/B12b — « Un dé en plus »', () => {
 describe('B13 à B18 — les récompenses ajoutées', () => {
   /** Force une récompense sur un participant, sans passer par les batailles. */
   function playWith(seed: number, id: string, owner: number, count = 2) {
-    const { steps, result, participants, circle } = play(seed, 1, count, (live) => live.owned.set(id as never, owner))
+    const { steps, result, participants, circle } = play(
+      seed,
+      1,
+      count,
+      (live) => live.owned.set(id as never, owner),
+      undefined,
+      NO_BONUSES,
+    )
     return { steps, result, participants, circle }
   }
 
-  it('B13 — un 4-2-1 adverse est relancé, jamais le sien', () => {
+  it('B13 — un 4-2-1 adverse est relancé, jamais le sien, et une seule fois par rencontre', () => {
     let seen = 0
     for (let seed = 1; seed <= 40 && seen < 5; seed++) {
       const { steps } = playWith(seed, 'reroll421', 0)
-      const relance = new Set<number>()
+      let used = 0
+      let relanced: number | null = null
       for (const s of steps) {
         if (s.kind === 'forcedReroll') {
           seen++
+          used++
           expect(s.owner).toBe(0)
           expect(s.who).not.toBe(0)
-          relance.add(s.who)
+          relanced = s.who
         }
         if (s.kind === 'turnEnd') {
-          // Un adversaire ne peut finir sur un 4-2-1 que si la relance forcée
-          // lui en a redonné un — elle ne se déclenche qu'une fois par tour.
-          if (s.who !== 0 && s.hand.id === '421') expect(relance.has(s.who)).toBe(true)
-          relance.delete(s.who)
+          // Un adversaire ne peut finir sur un 4-2-1 que si la relance lui en a
+          // redonné un — ou si le bonus était **déjà consommé** (une fois par
+          // rencontre), auquel cas son 4-2-1 tient.
+          if (s.who !== 0 && s.hand.id === '421') expect(relanced === s.who || used >= 1).toBe(true)
+          if (relanced === s.who) relanced = null
         }
       }
+      // Le bonus ne se déclenche qu'une fois dans toute la rencontre.
+      expect(used).toBeLessThanOrEqual(1)
     }
     expect(seen).toBeGreaterThan(0)
   })
@@ -465,8 +558,8 @@ describe('F10/F11 — effets de face', () => {
     expect(wild.faces[0]).toEqual({ value: 1, effect: 'wild' })
     expect(oppositeValue(wild, 0)).toBe(6)
     // 1(wild→6), 6, 6 doit être lu comme un brelan de 6, pas comme un 1-1-x.
-    const nu = bestOfThree([1, 6, 6], 6, cfg.combinations, false)
-    const avecWild = bestOfThree([1, 6, 6], 6, cfg.combinations, false, [6, null, null])
+    const nu = bestHand([1, 6, 6], 6, cfg.combinations)
+    const avecWild = bestHand([1, 6, 6], 6, cfg.combinations, NO_BONUS, [[1, 6], null, null])
     expect(nu.hand.id).toBe('junk')
     expect(avecWild.hand.id).toBe('triple')
     expect(avecWild.hand.baseValue).toBe(6)
@@ -566,5 +659,157 @@ describe('R14 — on ne perd qu’en finissant dernier', () => {
       expect(result.humanWon).toBe(result.ranking[0] === 0)
       expect(result.humanWon).toBe(result.humanFirst)
     }
+  })
+})
+
+describe('F10 — les trois gravures ajoutées', () => {
+  /** Un dé dont **toutes** les faces portent l'effet : il sortira à coup sûr. */
+  function dieWith(effect: FaceEffectId, faces: number): Die {
+    let die = upgradeDie(createDie(cfg.dice.startingFaces), faces)
+    for (let i = 0; i < die.faces.length; i++) die = engraveEffect(die, i, effect)
+    return die
+  }
+
+  const playerWith = (effect: FaceEffectId, seed: number, circleIndex = 0, count = 2) => {
+    const circle = cfg.circles[circleIndex]!
+    const dice = Array.from({ length: cfg.dice.playerDice }, () => dieWith(effect, circle.dieFaces))
+    return play(seed, circleIndex, count, undefined, dice, NO_BONUSES)
+  }
+
+  it('ghostDie — le dé temporaire rejoint la main, sans dépasser le plafond', () => {
+    const max = cfg.dice.faceEffects.ghostDiceMax
+    let seen = 0
+    for (const seed of seeds) {
+      const { steps } = playerWith('ghostDie', seed)
+      let inTurn = 0
+      let dice = 0
+      for (const s of steps as TraceStep[]) {
+        // Le compte de dés change aussi quand le dé en plus est écarté (`B12b`).
+        if ((s.kind === 'throw' || s.kind === 'dropDie' || s.kind === 'forcedReroll') && s.who === 0) {
+          dice = s.values.length
+          continue
+        }
+        if (s.kind === 'ghostDie') {
+          seen++
+          inTurn++
+          expect(s.who).toBe(0)
+          // Il s'ajoute vraiment : un dé de plus que le jet qui l'a fait sortir.
+          expect(s.values.length).toBe(dice + 1)
+          dice = s.values.length
+          expect(inTurn).toBeLessThanOrEqual(max)
+        }
+        if (s.kind === 'turnEnd' && s.who === 0) inTurn = 0
+      }
+    }
+    expect(seen).toBeGreaterThan(0)
+  })
+
+  it('ghostDie — la main du tour peut se lire sur plus de dés qu’on n’en lance', () => {
+    const { steps } = playerWith('ghostDie', 3)
+    const wide = steps.filter((s) => s.kind === 'ghostDie' && s.values.length > cfg.dice.playerDice)
+    expect(wide.length).toBeGreaterThan(0)
+  })
+
+  it('forceReroll — renvoie aux dés un adversaire qui a déjà joué, lui seul', () => {
+    let seen = 0
+    for (let seed = 1; seed <= 12; seed++) {
+      const { steps } = playerWith('forceReroll', seed, 0, 3)
+      const played = new Set<number>()
+      for (const s of steps as TraceStep[]) {
+        if (s.kind === 'roundStart') played.clear()
+        if (s.kind === 'turnEnd') played.add(s.who)
+        if (s.kind !== 'forcedDice') continue
+        seen++
+        expect(s.owner).toBe(0)
+        expect(s.who).not.toBe(0)
+        // `F10` : on ne renvoie aux dés que qui a **déjà** validé sa main.
+        expect(played.has(s.who)).toBe(true)
+        expect(s.dice).toHaveLength(cfg.dice.faceEffects.forceRerollDice)
+        expect(new Set(s.dice).size).toBe(s.dice.length)
+        // Les dés désignés ont bougé, les autres non.
+        for (let i = 0; i < s.values.length; i++) {
+          if (!s.dice.includes(i)) expect(s.values[i]).toBe(s.before[i])
+        }
+      }
+    }
+    expect(seen).toBeGreaterThan(0)
+  })
+
+  it('forceReroll — la manche se résout sur la main relancée, pas sur l’ancienne', () => {
+    for (let seed = 1; seed <= 12; seed++) {
+      const { steps } = playerWith('forceReroll', seed, 0, 3)
+      let forced: { who: number; hand: unknown } | null = null
+      for (const s of steps as TraceStep[]) {
+        if (s.kind === 'forcedDice') forced = { who: s.who, hand: s.hand }
+        if (s.kind === 'roundResult' && forced) {
+          expect(s.hands[forced.who]).toEqual(forced.hand)
+          forced = null
+        }
+      }
+    }
+  })
+
+  it('les trois gravures tournent jusqu’au bout d’une partie', () => {
+    for (const effect of ['ghostDie', 'forceReroll', 'wild35'] as FaceEffectId[]) {
+      const { result } = playerWith(effect, 5, 1)
+      expect(result.ranking).toHaveLength(2)
+    }
+  })
+})
+
+describe('B19 à B24 — les récompenses de lecture, en partie', () => {
+  /** Force une récompense sur le joueur, sans passer par les batailles. */
+  const withReward = (id: string, seed: number, circleIndex = 0) =>
+    play(seed, circleIndex, 2, (live) => live.owned.set(id as never, 0), undefined, NO_BONUSES)
+
+  it('B20 — le plancher ne joue que pour son détenteur', () => {
+    let seen = 0
+    for (let seed = 1; seed <= 20; seed++) {
+      const { steps } = withReward('straightFloor', seed)
+      for (const s of steps as TraceStep[]) {
+        if (s.kind !== 'turnEnd' || s.hand.id !== 'straight') continue
+        seen++
+        expect(s.hand.chipValue).toBe(s.who === 0 ? 5 : 2)
+        // Le classement, lui, ne bouge pas (`V4`).
+        expect(s.hand.baseValue).toBe(2)
+      }
+    }
+    expect(seen).toBeGreaterThan(0)
+  })
+
+  it('B19 — seul le détenteur voit ses suites élargies', () => {
+    let seen = 0
+    for (let seed = 1; seed <= 20; seed++) {
+      const { steps } = withReward('wideStraight', seed)
+      for (const s of steps as TraceStep[]) {
+        if (s.kind !== 'turnEnd' || s.hand.id !== 'straight') continue
+        const v = [...s.hand.values].sort((a, b) => a - b)
+        const gaps = [(v[1] as number) - (v[0] as number), (v[2] as number) - (v[1] as number)]
+        if (gaps.some((g) => g === 2)) {
+          seen++
+          expect(s.who).toBe(0)
+        }
+      }
+    }
+    expect(seen).toBeGreaterThan(0)
+  })
+
+  it('B23/B24 — les combinaisons sur tous les dés sortent, et pour le joueur seul', () => {
+    const found = new Set<string>()
+    for (const id of ['quadIdentical', 'fullStraight']) {
+      for (let seed = 1; seed <= 40; seed++) {
+        const { steps } = withReward(id, seed)
+        for (const s of steps as TraceStep[]) {
+          if (s.kind !== 'turnEnd') continue
+          if (s.hand.id !== 'quad' && s.hand.id !== 'fullStraight') continue
+          found.add(s.hand.id)
+          // Un démon lance 3 dés : ces mains lui sont hors de portée.
+          expect(s.who).toBe(0)
+          expect(s.hand.values.length).toBeGreaterThanOrEqual(4)
+          expect(s.hand.chipValue).toBeGreaterThanOrEqual(7)
+        }
+      }
+    }
+    expect([...found].sort()).toEqual(['fullStraight', 'quad'])
   })
 })

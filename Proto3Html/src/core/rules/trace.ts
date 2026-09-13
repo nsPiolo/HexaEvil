@@ -13,7 +13,12 @@ export type CoinSide = 'pile' | 'face'
 
 export type TraceStep =
   | { kind: 'matchStart'; circle: number; names: readonly string[]; pot: number; isCircleFinal: boolean }
-  | { kind: 'rewardsDrawn'; series: number; offered: readonly RewardId[] }
+  | {
+      /** `B2` : ce que chacun a misé, et le pot qui en résulte. */
+      kind: 'bonusPool'
+      picks: readonly (readonly RewardId[])[]
+      pool: readonly RewardId[]
+    }
   | { kind: 'duelStart'; series: number; index: number; total: number; handSize: number }
   | { kind: 'duelDraw'; hands: readonly (readonly Card[])[] }
   | { kind: 'duelMulligan'; pass: number; swaps: readonly number[]; hands: readonly (readonly Card[])[] }
@@ -87,6 +92,29 @@ export type TraceStep =
       detail: string
       pot: number
       chips: readonly number[]
+    }
+  | {
+      /** `F10` (`ghostDie`) : un dé temporaire rejoint la main pour le tour. */
+      kind: 'ghostDie'
+      who: number
+      value: number
+      values: readonly number[]
+      kept: readonly number[]
+      effects: readonly (FaceEffectId | null)[]
+      hand: DiceHand
+    }
+  | {
+      /** `F10` (`forceReroll`) : un adversaire déjà passé est renvoyé aux dés. */
+      kind: 'forcedDice'
+      owner: number
+      who: number
+      /** Indices des dés relancés, choisis par la victime. */
+      dice: readonly number[]
+      before: readonly number[]
+      values: readonly number[]
+      kept: readonly number[]
+      effects: readonly (FaceEffectId | null)[]
+      hand: DiceHand
     }
   | {
       /** `B13` : un 4-2-1 adverse est annulé, tous les dés repartent. */

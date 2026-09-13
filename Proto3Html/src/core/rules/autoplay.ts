@@ -7,7 +7,18 @@
  * reste une décision proprement humaine.
  */
 
-import { aiCoin, aiReward, aiRerolls, aiTarget, aiTurn, settingsFor, type AiSettings } from '../ai/ai'
+import {
+  aiCoin,
+  aiPickDice,
+  aiReward,
+  aiRerolls,
+  aiStakeBonuses,
+  aiTarget,
+  aiTurn,
+  settingsFor,
+  type AiSettings,
+} from '../ai/ai'
+import { NO_BONUS } from '../dice/combinations'
 import type { GameConfig } from '../config/schema'
 import type { Answer, Ask } from './asks'
 import type { MatchDriver, MatchParticipant } from './match'
@@ -39,10 +50,37 @@ export function autoAnswer(ask: Ask, ctx: AutoContext): Answer {
       return { kind: 'coin', side: aiCoin(ctx.rng) }
     case 'reward':
       return { kind: 'reward', id: aiReward(ask.offered, settings, ctx.rng) }
+    case 'stakeBonuses':
+      return { kind: 'stakeBonuses', ids: aiStakeBonuses(ask.owned, ask.count, settings, ctx.rng) }
     case 'rewardTarget':
       return { kind: 'rewardTarget', target: aiTarget(ask.candidates, ctx.chips) }
     case 'chooseRerolls':
       return { kind: 'chooseRerolls', value: aiRerolls(settings, ask.options) }
+    case 'faceTarget':
+      // `F10` (`forceReroll`) : le pilote frappe au hasard germé, faute de voir
+      // les mains adverses — le moteur, lui, vise la meilleure (§12).
+      return { kind: 'faceTarget', target: ask.candidates[ctx.rng.int(ask.candidates.length)] as number }
+    case 'pickDice': {
+      const p = ctx.participants[ask.who]
+      if (!p) throw new Error('participant introuvable')
+      const dice = [...p.dice]
+      while (dice.length < ask.values.length) dice.push(dice[dice.length - 1] as (typeof dice)[number])
+      return {
+        kind: 'pickDice',
+        dice: aiPickDice(
+          {
+            dice: dice.slice(0, ask.values.length),
+            values: ask.values,
+            count: ask.count,
+            faces: circle.dieFaces,
+            combos: cfg.combinations,
+            bonuses: NO_BONUS,
+            temperature: settings.temperature,
+          },
+          ctx.rng,
+        ),
+      }
+    }
     case 'turn': {
       const p = ctx.participants[ask.context.who]
       if (!p) throw new Error('participant introuvable')
@@ -53,6 +91,8 @@ export function autoAnswer(ask: Ask, ctx: AutoContext): Answer {
         {
           dice,
           values: ask.context.values,
+          reads: ask.context.reads,
+          bonuses: ask.context.bonuses,
           freeRerolls: ask.context.freeRerolls,
           throwsLeft: ask.context.throwsLeft,
           minReroll: ask.context.minReroll,
