@@ -12,6 +12,11 @@ est un point de départ pour la configuration du POC (GDD §9.1).
 | [`des.md`](des.md) | Dés spéciaux | 4 | 9 |
 | [`cartes.md`](cartes.md) | Cartes action consommables | 50 | 60 |
 
+Les objets marqués ✔ dans les listes sont implémentés dans `Proto4Html`
+(catalogue et prix dans `Proto4Html/config/shop.json`). Dans le proto, la boutique
+ouvre **après les paris initiaux** (au moins un) et avant la course, conformément
+au cycle macro révisé du GDD §2.1.
+
 ## Hypothèses économiques
 
 L'argent sert à parier, acheter et payer le prix du cercle : une même pièce a

@@ -16,8 +16,11 @@ import {
   type RaceState,
 } from '../rules/race'
 import { seededRng } from '../rules/rng'
+import { defaultDice, plainFace } from '../rules/dice'
 
 const cfg: RaceConfig = loadConfig(rawConfig)
+const dice = defaultDice(cfg)
+const roll = (distance: number[], soul: number[]) => ({ distance, faces: distance.map(plainFace), soul })
 
 function withPositions(positions: number[]): RaceState {
   const race = createRace({ ...cfg, souls: { ...cfg.souls, count: positions.length } })
@@ -25,7 +28,7 @@ function withPositions(positions: number[]): RaceState {
 }
 
 function move(soul: number, distance: number): Move {
-  return { source: 'player', soul, distance, parts: [{ soulDie: 0, distanceDie: 0, distance }] }
+  return { source: 'player', soul, distance, parts: [{ soulDie: 0, distanceDie: 0, distance }], notes: [] }
 }
 
 describe('config', () => {
@@ -53,7 +56,7 @@ describe('plateau', () => {
 
 describe('dés', () => {
   it('lance autant de dés que la config le demande, dans les faces autorisées', () => {
-    const roll = rollPlayerDice(cfg, 5, seededRng(1))
+    const roll = rollPlayerDice(cfg, 5, seededRng(1), dice)
     expect(roll.distance).toHaveLength(cfg.dice.distanceDice)
     expect(roll.soul).toHaveLength(cfg.dice.soulDice)
     roll.distance.forEach((d) => expect(cfg.dice.distanceFaces).toContain(d))
@@ -66,28 +69,28 @@ describe('dés', () => {
     expect(pair.soul).toHaveLength(1)
   })
   it('est déterministe à graine égale', () => {
-    expect(rollPlayerDice(cfg, 5, seededRng(42))).toEqual(rollPlayerDice(cfg, 5, seededRng(42)))
+    expect(rollPlayerDice(cfg, 5, seededRng(42), dice)).toEqual(rollPlayerDice(cfg, 5, seededRng(42), dice))
   })
 })
 
 describe('combinaisons', () => {
   it("respecte l'ordre choisi par le joueur", () => {
-    const roll = { distance: [3, -1], soul: [0, 1] }
-    const moves = buildMoves(roll, [{ soulDie: 1, distanceDie: 0 }, { soulDie: 0, distanceDie: 1 }], 'player')
+    const r = roll([3, -1], [0, 1])
+    const moves = buildMoves(r, [{ soulDie: 1, distanceDie: 0 }, { soulDie: 0, distanceDie: 1 }], 'player')
     expect(moves.map((m) => [m.soul, m.distance])).toEqual([[1, 3], [0, -1]])
   })
   it("laisse un dé Âme inutilisé quand il y en a plus que de dés Distance", () => {
-    const roll = { distance: [3, -1], soul: [0, 1, 2] }
-    expect(isPairingComplete(roll, [{ soulDie: 2, distanceDie: 0 }])).toBe(false)
+    const r = roll([3, -1], [0, 1, 2])
+    expect(isPairingComplete(r, [{ soulDie: 2, distanceDie: 0 }])).toBe(false)
     const combos = [{ soulDie: 2, distanceDie: 0 }, { soulDie: 0, distanceDie: 1 }]
-    expect(isPairingComplete(roll, combos)).toBe(true)
-    const moves = buildMoves(roll, combos, 'player')
+    expect(isPairingComplete(r, combos)).toBe(true)
+    const moves = buildMoves(r, combos, 'player')
     expect(moves.map((m) => [m.soul, m.distance])).toEqual([[2, 3], [0, -1]])
-    expect(naturalCombinations(roll)).toHaveLength(2)
+    expect(naturalCombinations(r)).toHaveLength(2)
   })
   it('cumule les distances quand deux dés désignent la même âme', () => {
-    const roll = { distance: [3, -1], soul: [2, 2, 4] }
-    const moves = buildMoves(roll, naturalCombinations(roll), 'player')
+    const r = roll([3, -1], [2, 2, 4])
+    const moves = buildMoves(r, naturalCombinations(r), 'player')
     expect(moves).toHaveLength(1)
     expect(moves[0]?.distance).toBe(2)
     expect(moves[0]?.parts).toHaveLength(2)
@@ -175,8 +178,8 @@ describe('course complète simulée', () => {
       let state = createRace(cfg)
       let guard = 0
       while (!state.finished && guard++ < 1000) {
-        const roll = rollPlayerDice(cfg, state.souls.length, rng)
-        for (const m of buildMoves(roll, naturalCombinations(roll), 'player')) state = applyMove(state, m).state
+        const r = rollPlayerDice(cfg, state.souls.length, rng, dice)
+        for (const m of buildMoves(r, naturalCombinations(r), 'player')) state = applyMove(state, m).state
         for (let i = 0; i < cfg.opponent.rollsPerTurn; i++) {
           const pair = rollOpponentPair(cfg, state.souls.length, rng)
           for (const m of buildMoves(pair, naturalCombinations(pair), 'opponent')) state = applyMove(state, m).state

@@ -195,12 +195,33 @@ export interface Settlement {
   bets: Bet[]
   /** Total misé sur la course. */
   staked: number
-  /** Total rendu au joueur. */
+  /** Total rendu au joueur, remboursement compris. */
   returned: number
+  /** Livre des comptes : remboursement partiel du plus gros pari perdu (0 sinon). */
+  refund: number
+}
+
+export interface SettleOptions {
+  /** Livre des comptes : part remboursée du plus gros pari perdu. */
+  refundRatio?: number
+}
+
+/** Fer à cheval : facteurs appliqués à la cote de base selon le type. */
+export interface BaseModifiers {
+  winnerFactor?: number
+  lastFactor?: number
+}
+
+/** Cote de base d'un type, une fois les artefacts appliqués, arrondie au centième. */
+export function effectiveBase(type: BetTypeId, base: number, mods: BaseModifiers): number {
+  let m = base
+  if (type === 'winner' && mods.winnerFactor !== undefined) m *= mods.winnerFactor
+  if (type === 'last' && mods.lastFactor !== undefined) m *= mods.lastFactor
+  return Math.round(m * 100) / 100
 }
 
 /** Règle tous les paris ouverts contre le classement définitif, à la cote figée de chaque pari. */
-export function settleBets(bets: readonly Bet[], ranked: readonly Ranked[]): Settlement {
+export function settleBets(bets: readonly Bet[], ranked: readonly Ranked[], options: SettleOptions = {}): Settlement {
   let staked = 0
   let returned = 0
   const settled = bets.map((b) => {
@@ -214,5 +235,11 @@ export function settleBets(bets: readonly Bet[], ranked: readonly Ranked[]): Set
     returned += payout
     return { ...b, status: won ? 'won' : 'lost', payout } as Bet
   })
-  return { bets: settled, staked, returned }
+  let refund = 0
+  if (options.refundRatio) {
+    const biggestLost = settled.filter((b) => b.status === 'lost').reduce((m, b) => Math.max(m, b.stake), 0)
+    refund = Math.round(biggestLost * options.refundRatio)
+    returned += refund
+  }
+  return { bets: settled, staked, returned, refund }
 }

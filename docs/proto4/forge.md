@@ -14,6 +14,9 @@ Règles de forge proposées :
 - l'altération est permanente pour le run et suit le dé s'il est remplacé par un
   dé spécial (elle est perdue, pas remboursée).
 
+Les faces marquées ✔ sont implémentées dans `Proto4Html`. Dans le proto, une face
+forgée ne peut pas être reforgée et un dé garde toujours une face positive.
+
 Le prix dépend de la face remplacée : altérer le `-1` est moins cher qu'altérer
 le `3`, parce qu'on perd moins. Les prix ci-dessous sont donnés pour la face
 cible recommandée, avec un supplément si l'on choisit une autre face.
@@ -22,9 +25,9 @@ cible recommandée, avec un supplément si l'on choisit une autre face.
 
 | # | Face | Cible recommandée | Type | Impact | Prix |
 |---:|---|:-:|---|---|---:|
-| 1 | Limée | -1 | correction | Faible | 15 |
-| 2 | Retournée ⚠ | -1 | correction risquée | Moyen | 35 |
-| 3 | Dorée | 1 | argent | Moyen | 30 |
+| 1 | Limée ✔ | -1 | correction | Faible | 15 |
+| 2 | Retournée ⚠ ✔ | -1 | correction risquée | Moyen | 35 |
+| 3 | Dorée ✔ | 1 | argent | Moyen | 30 |
 | 4 | Explosive ⚠ | 2 | collision | Fort | 55 |
 | 5 | Bond | 3 | position | Fort | 60 |
 | 6 | Miroir | 1 | dés | Moyen | 40 |
@@ -32,7 +35,7 @@ cible recommandée, avec un supplément si l'on choisit une autre face.
 | 8 | Élan ⚠ | 2 | risque | Fort | 50 |
 | 9 | Gel | -1 | tour adverse | Moyen | 40 |
 | 10 | Aimant | 1 | position | Moyen | 45 |
-| 11 | Sceau du parieur | 1 | paris | Fort | 55 |
+| 11 | Sceau du parieur ✔ | 1 | paris | Fort | 55 |
 | 12 | Face vide (dé Âme) | une âme | choix | Fort | 60 |
 | 13 | Face double (dé Âme) | une âme | cumul | Moyen | 40 |
 | 14 | Face du meneur (dé Âme) | une âme | position | Fort | 65 |

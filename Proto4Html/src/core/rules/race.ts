@@ -9,6 +9,7 @@
  * colonne sont sur la même case. Les rétrécissements de piste viendront plus tard.
  */
 import type { RaceConfig } from '../config/schema'
+import { plainFace, type DistanceDie, type Face } from './dice'
 import type { Rng } from './rng'
 
 export type SoulId = number
@@ -43,9 +44,11 @@ export interface RaceState {
   nextFinishOrder: number
 }
 
-/** Un lancer : valeurs des dés Distance, et âme désignée par chaque dé Âme. */
+/** Un lancer : valeurs des dés Distance (avec la face sortie), et âme désignée par chaque dé Âme. */
 export interface Roll {
   distance: readonly number[]
+  /** Face sortie pour chaque dé Distance (effets de forge). Même longueur que `distance`. */
+  faces: readonly Face[]
   soul: readonly SoulId[]
 }
 
@@ -55,7 +58,7 @@ export interface Combination {
   distanceDie: number
 }
 
-export type MoveSource = 'player' | 'opponent'
+export type MoveSource = 'player' | 'opponent' | 'artefact'
 
 /** Déplacement à résoudre. Plusieurs combinaisons sur la même âme sont cumulées ici (§2.5.1). */
 export interface Move {
@@ -63,6 +66,8 @@ export interface Move {
   soul: SoulId
   distance: number
   parts: readonly { soulDie: number; distanceDie: number; distance: number }[]
+  /** Modificateurs appliqués (artefacts, faces forgées), pour le journal. */
+  notes: readonly string[]
 }
 
 export type Collision =
@@ -90,14 +95,17 @@ function at<T>(arr: readonly T[], i: number, what: string): T {
 export interface RaceOptions {
   /** Remplace track.betThresholdRatio (artefact Sablier). */
   betThresholdRatio?: number
+  /** Cases après l'arrivée en plus (artefact Filet du pêcheur). */
+  extraCellsAfterFinish?: number
 }
 
 export function createTrack(cfg: RaceConfig['track'], options: RaceOptions = {}): Track {
   const ratio = options.betThresholdRatio ?? cfg.betThresholdRatio
+  const cellsAfterFinish = cfg.cellsAfterFinish + (options.extraCellsAfterFinish ?? 0)
   return {
     columns: cfg.columns,
-    cellsAfterFinish: cfg.cellsAfterFinish,
-    totalCells: cfg.columns + cfg.cellsAfterFinish,
+    cellsAfterFinish,
+    totalCells: cfg.columns + cellsAfterFinish,
     betThresholdRatio: ratio,
     betThresholdColumn: Math.ceil(cfg.columns * ratio),
   }
@@ -111,20 +119,54 @@ export function createRace(config: RaceConfig, options: RaceOptions = {}): RaceS
   return { track: createTrack(config.track, options), souls, turn: 1, finished: false, nextFinishOrder: 1 }
 }
 
-export function rollPlayerDice(config: RaceConfig, soulCount: number, rng: Rng): Roll {
-  const distance: number[] = []
-  for (let i = 0; i < config.dice.distanceDice; i++) distance.push(at(config.dice.distanceFaces, rng.int(config.dice.distanceFaces.length), 'distanceFaces'))
+/** Lancer du joueur avec ses propres dés Distance (forgés ou spéciaux). */
+export function rollPlayerDice(config: RaceConfig, soulCount: number, rng: Rng, dice: readonly DistanceDie[]): Roll {
+  const faces: Face[] = dice.map((d) => at(d.faces, rng.int(d.faces.length), `faces du ${d.name}`))
   const soul: SoulId[] = []
   for (let i = 0; i < config.dice.soulDice; i++) soul.push(rng.int(soulCount))
-  return { distance, soul }
+  return { distance: faces.map((f) => f.value), faces, soul }
 }
 
-/** Une paire de l'adversaire : un dé Âme, un dé Distance (§2.5.2). */
-export function rollOpponentPair(config: RaceConfig, soulCount: number, rng: Rng): Roll {
-  return {
-    distance: [at(config.dice.distanceFaces, rng.int(config.dice.distanceFaces.length), 'distanceFaces')],
-    soul: [rng.int(soulCount)],
+export interface OpponentOptions {
+  /** Face retournée : les -1 de l'adversaire valent +1. */
+  flipNegatives?: boolean
+}
+
+/** Une paire de l'adversaire : un dé Âme, un dé Distance de base (§2.5.2). */
+export function rollOpponentPair(config: RaceConfig, soulCount: number, rng: Rng, options: OpponentOptions = {}): Roll {
+  let value = at(config.dice.distanceFaces, rng.int(config.dice.distanceFaces.length), 'distanceFaces')
+  if (options.flipNegatives && value < 0) value = -value
+  return { distance: [value], faces: [plainFace(value)], soul: [rng.int(soulCount)] }
+}
+
+/** Contexte des modificateurs appliqués aux distances du joueur. */
+export interface MoveContext {
+  turn: number
+  /** Clepsydre fêlée : au tour 1, négatif → 0, positif → +1. */
+  clepsydre: boolean
+  /** Âmes visées par un pari actif du joueur (Sceau du parieur). */
+  bettedSouls: ReadonlySet<SoulId>
+  /** Bonus du Sceau quand l'âme est pariée (+2 par-dessus le +1 de la face). */
+  sealBonus: number
+}
+
+function effectiveDistance(face: Face, soul: SoulId, ctx: MoveContext | undefined, notes: string[]): number {
+  let d = face.value
+  if (!ctx) return d
+  if (ctx.clepsydre && ctx.turn === 1) {
+    if (d < 0) {
+      notes.push(`Clepsydre : ${d} → 0`)
+      d = 0
+    } else if (d > 0) {
+      notes.push(`Clepsydre : +${d} → +${d + 1}`)
+      d += 1
+    }
   }
+  if (face.effect === 'betSeal' && ctx.bettedSouls.has(soul)) {
+    notes.push(`Sceau du parieur : +${ctx.sealBonus}`)
+    d += ctx.sealBonus
+  }
+  return d
 }
 
 /**
@@ -132,21 +174,33 @@ export function rollOpponentPair(config: RaceConfig, soulCount: number, rng: Rng
  * Si deux combinaisons visent la même âme, les distances se cumulent en un seul
  * déplacement, résolu à la place de la première occurrence.
  */
-export function buildMoves(roll: Roll, combinations: readonly Combination[], source: MoveSource): Move[] {
+export function buildMoves(roll: Roll, combinations: readonly Combination[], source: MoveSource, ctx?: MoveContext): Move[] {
   const moves: Move[] = []
   for (const c of combinations) {
     const soul = at(roll.soul, c.soulDie, 'dé Âme')
-    const distance = at(roll.distance, c.distanceDie, 'dé Distance')
+    const face = roll.faces[c.distanceDie] ?? plainFace(at(roll.distance, c.distanceDie, 'dé Distance'))
+    const notes: string[] = []
+    const distance = effectiveDistance(face, soul, ctx, notes)
     const part = { soulDie: c.soulDie, distanceDie: c.distanceDie, distance }
     const existing = moves.find((m) => m.soul === soul)
     if (existing) {
       existing.distance += distance
       existing.parts = [...existing.parts, part]
+      existing.notes = [...existing.notes, ...notes]
     } else {
-      moves.push({ source, soul, distance, parts: [part] })
+      moves.push({ source, soul, distance, parts: [part], notes })
     }
   }
   return moves
+}
+
+/** Boussole des Limbes : l'âme du premier dé Âme inutilisé avance de 1. Null si tous les dés Âme ont servi. */
+export function unusedSoulMove(roll: Roll, combinations: readonly Combination[]): Move | null {
+  const used = new Set(combinations.map((c) => c.soulDie))
+  const idx = roll.soul.findIndex((_, i) => !used.has(i))
+  if (idx < 0) return null
+  const soul = at(roll.soul, idx, 'dé Âme')
+  return { source: 'artefact', soul, distance: 1, parts: [{ soulDie: idx, distanceDie: -1, distance: 1 }], notes: ['Boussole des Limbes'] }
 }
 
 /**

@@ -18,28 +18,28 @@ information, tour adverse, plateau.
 |---:|---|---|:-:|---|---:|
 | 1 | Relance jumelle | dés | C | Moyen | 45 |
 | 2 | Quatrième tête de Cerbère | dés | R | Fort | 90 |
-| 3 | Boussole des Limbes | dés | C | Moyen | 50 |
-| 4 | Clepsydre fêlée | dés | C | Moyen | 40 |
+| 3 | Boussole des Limbes ✔ | dés | C | Moyen | 50 |
+| 4 | Clepsydre fêlée ✔ | dés | C | Moyen | 40 |
 | 5 | Fiole de sang ⚠ | dés / argent | R | Fort | 70 |
 | 6 | Verrou de Minos | dés | R | Fort | 85 |
 | 7 | Semelles de plomb | collisions | C | Moyen | 45 |
 | 8 | Bât de chameau | collisions | R | Fort | 95 |
 | 9 | Balance truquée | collisions | C | Moyen | 40 |
 | 10 | Chaîne du Coccyte | collisions | R | Fort | 80 |
-| 11 | Fer à cheval rouillé | paris | C | Moyen | 50 |
+| 11 | Fer à cheval rouillé ✔ | paris | C | Moyen | 50 |
 | 12 | Sablier de Charon ✔ | paris | C | Moyen | 55 |
 | 13 | Ticket de la première heure | paris | R | Fort | 90 |
-| 14 | Livre des comptes | paris | C | Moyen | 60 |
+| 14 | Livre des comptes ✔ | paris | C | Moyen | 60 |
 | 15 | Talisman des ex æquo | paris | C | Faible | 30 |
 | 16 | Encensoir du dernier | paris | C | Moyen | 45 |
 | 17 | Pièce à deux faces ⚠ | paris | R | Fort | 75 |
-| 18 | Bourse percée | argent | C | Moyen | 50 |
+| 18 | Bourse percée ✔ | argent | C | Moyen | 50 |
 | 19 | Tribune infernale | argent / plateau | R | Fort | 85 |
 | 20 | Dette infernale ⚠ | argent | L | Extrême | 150 |
 | 21 | Œil de Charon | information | R | Fort | 95 |
 | 22 | Fouet du contremaître | tour adverse | R | Fort | 90 |
 | 23 | Miroir de Narcisse | tour adverse | L | Extrême | 180 |
-| 24 | Filet du pêcheur | plateau | C | Moyen | 40 |
+| 24 | Filet du pêcheur ✔ | plateau | C | Moyen | 40 |
 | 25 | Sceau du stagiaire | boutique | C | Moyen | 55 |
 | 26 | Marteau d'Héphaïstos | boutique / forge | C | Moyen | 50 |
 | 27 | Œil du parieur ✔ | paris / information | R | Fort | 80 |

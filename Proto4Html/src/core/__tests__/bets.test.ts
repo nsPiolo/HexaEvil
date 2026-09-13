@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { loadConfig } from '../config/load'
 import rawConfig from '../../../config/race.json'
-import { BET_TYPES, betRefusal, bettingClosed, currentMultiplier, isSameBet, evaluateBet, potentialPayout, raceProgress, settleBets, slotCount, type Bet } from '../rules/bets'
+import { BET_TYPES, betRefusal, bettingClosed, currentMultiplier, effectiveBase, isSameBet, evaluateBet, potentialPayout, raceProgress, settleBets, slotCount, type Bet } from '../rules/bets'
 import { createRace, ranking, type RaceState } from '../rules/race'
 
 const cfg = loadConfig(rawConfig)
@@ -130,6 +130,23 @@ describe('règlement', () => {
     expect(s.returned).toBe(potentialPayout(10, 3.5))
     expect(s.bets.map((b) => b.status)).toEqual(['won', 'lost'])
     expect(s.bets[1]?.payout).toBe(0)
+    expect(s.refund).toBe(0)
+  })
+  it('le Livre des comptes rembourse la moitié du plus gros pari perdu', () => {
+    const bets: Bet[] = [
+      { id: 1, type: 'winner', souls: [0], stake: 10, multiplier: 3.5, turn: 0, status: 'open', payout: 0 },
+      { id: 2, type: 'last', souls: [2], stake: 20, multiplier: 2, turn: 3, status: 'open', payout: 0 },
+    ]
+    const s = settleBets(bets, ranked, { refundRatio: 0.5 })
+    expect(s.refund).toBe(10)
+    expect(s.returned).toBe(10)
+  })
+  it('le Fer à cheval modifie la cote de base du Vainqueur et du Dernier seulement', () => {
+    const mods = { winnerFactor: 1.5, lastFactor: 0.5 }
+    expect(effectiveBase('winner', 3.5, mods)).toBe(5.25)
+    expect(effectiveBase('last', 3.5, mods)).toBe(1.75)
+    expect(effectiveBase('duel', 1.8, mods)).toBe(1.8)
+    expect(effectiveBase('winner', 3.5, {})).toBe(3.5)
   })
   it('la config impose des multiplicateurs supérieurs à 1', () => {
     const raw = JSON.parse(JSON.stringify(rawConfig))

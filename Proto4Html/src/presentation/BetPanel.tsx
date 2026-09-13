@@ -16,11 +16,13 @@ interface Props {
   lateBet: { charges: number; active: boolean } | null
   onUseLateBet: () => void
   onPlace: (type: BetTypeId, souls: readonly number[], stake: number) => string | null
+  /** Cote de base d'un type, artefacts compris. */
+  baseFor: (type: BetTypeId) => number
 }
 
 const TIERS: readonly BetTier[] = ['simple', 'intermediate', 'advanced']
 
-export function BetPanel({ race, money, bets, open, phase, lateBet, onUseLateBet, onPlace }: Props) {
+export function BetPanel({ race, money, bets, open, phase, lateBet, onUseLateBet, onPlace, baseFor }: Props) {
   const initialPhase = phase === 'betting'
   const closed = bettingClosed(race)
   const [type, setType] = useState<BetTypeId>('winner')
@@ -30,7 +32,7 @@ export function BetPanel({ race, money, bets, open, phase, lateBet, onUseLateBet
 
   const def = betType(type)
   const slots = slotCount(def, race.souls.length)
-  const base = config.economy.multipliers[type]
+  const base = baseFor(type)
   const progress = raceProgress(race)
   const mult = currentMultiplier(base, progress, config.economy.decay)
   const refusal = useMemo(() => betRefusal(race, type, souls, stake, money, bets), [race, type, souls, stake, money, bets])
@@ -75,7 +77,8 @@ export function BetPanel({ race, money, bets, open, phase, lateBet, onUseLateBet
           )}
         </div>
       )}
-      {!race.finished && !closed && !open && phase !== 'pairing' && <p className="muted small">Les paris sont suspendus pendant la résolution.</p>}
+      {!race.finished && !closed && !open && phase === 'shop' && <p className="muted small">Paris initiaux clos. Vous pourrez reparier avant chaque lancer.</p>}
+      {!race.finished && !closed && !open && phase !== 'pairing' && phase !== 'shop' && <p className="muted small">Les paris sont suspendus pendant la résolution.</p>}
       {open && phase === 'pairing' && <p className="hint small">Œil du parieur actif : vous pariez en connaissant vos dés.</p>}
       {open && initialPhase && <p className="hint small">Paris initiaux : au moins un, autant que vous voulez, puis lancez la course.</p>}
 
@@ -86,7 +89,7 @@ export function BetPanel({ race, money, bets, open, phase, lateBet, onUseLateBet
             <optgroup key={tier} label={TIER_LABEL[tier]}>
               {BET_TYPES.filter((t) => t.tier === tier).map((t) => (
                 <option key={t.id} value={t.id}>
-                  {t.label} — {fmtMultiplier(currentMultiplier(config.economy.multipliers[t.id], progress, config.economy.decay))}
+                  {t.label} — {fmtMultiplier(currentMultiplier(baseFor(t.id), progress, config.economy.decay))}
                 </option>
               ))}
             </optgroup>

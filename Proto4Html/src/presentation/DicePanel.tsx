@@ -3,6 +3,7 @@ import { bettingClosed } from '../core/rules/bets'
 import { isPairingComplete, type RaceState } from '../core/rules/race'
 import type { RaceUi } from './useRace'
 import { fmtDistance, soulColor } from './souls'
+import { FaceChip } from './Inventory'
 
 interface Props {
   ui: RaceUi
@@ -31,7 +32,8 @@ export function DicePanel({ ui, onBegin, onRoll, onPickSoul, onPickDistance, onR
 
   const hint = (): string => {
     switch (phase) {
-      case 'betting': return ui.bets.length === 0 ? 'Posez au moins un pari initial pour pouvoir lancer la course.' : 'Vous pouvez encore parier, ou lancer la course.'
+      case 'betting': return ui.bets.length === 0 ? 'Posez au moins un pari initial pour pouvoir ouvrir la boutique.' : 'Vous pouvez encore parier, ou passer à la boutique.'
+      case 'shop': return 'Boutique ouverte.'
       case 'idle': return `Tour ${race.turn} — lancez les dés.${bettingClosed(race) ? '' : ' Dernier moment pour parier ce tour.'}`
       case 'rolling': return 'Les dés roulent…'
       case 'pairing':
@@ -83,6 +85,8 @@ export function DicePanel({ ui, onBegin, onRoll, onPickSoul, onPickDistance, onR
         <div className="dice-row">
           {Array.from({ length: distCount }, (_, i) => {
             const d = roll?.distance[i]
+            const face = roll?.faces[i]
+            const die = ui.inventory.dice[i]
             const order = orderOfDist(i)
             const cls = ['die', 'die-dist']
             if (rolling) cls.push('die-rolling')
@@ -91,10 +95,16 @@ export function DicePanel({ ui, onBegin, onRoll, onPickSoul, onPickDistance, onR
             if (pairing && selectedSoulDie !== null && order < 0) cls.push('die-target')
             if (phase === 'resolving' && resolvingIndex !== null && combinations[resolvingIndex]?.distanceDie === i) cls.push('die-resolving')
             return (
-              <button key={i} type="button" className={cls.join(' ')} disabled={!pairing || selectedSoulDie === null || order >= 0} onClick={() => onPickDistance(i)}>
-                {rolling || d === undefined ? '?' : fmtDistance(d)}
-                {order >= 0 && <span className="die-order">{order + 1}</span>}
-              </button>
+              <span key={i} className="die-wrap">
+                <button type="button" className={cls.join(' ') + (face?.altered ? ' die-forged' : '')} disabled={!pairing || selectedSoulDie === null || order >= 0} onClick={() => onPickDistance(i)} title={die?.name}>
+                  {rolling || d === undefined ? '?' : fmtDistance(d)}
+                  {face?.effect === 'gold' && <span className="die-effect">✦</span>}
+                  {face?.effect === 'betSeal' && <span className="die-effect">♠</span>}
+                  {order >= 0 && <span className="die-order">{order + 1}</span>}
+                </button>
+                {die && die.kind !== 'base' && <span className="die-name">{die.name}</span>}
+                {die && die.kind === 'base' && die.faces.some((f) => f.altered) && <span className="die-name">{die.faces.filter((f) => f.altered).map((f, k) => <FaceChip key={k} face={f} dim />)}</span>}
+              </span>
             )
           })}
         </div>
@@ -137,7 +147,7 @@ export function DicePanel({ ui, onBegin, onRoll, onPickSoul, onPickDistance, onR
       </div>
 
       <div className="actions">
-        {phase === 'betting' && <button type="button" className="btn btn-primary" disabled={ui.bets.length === 0} onClick={onBegin} title={ui.bets.length === 0 ? 'Il faut au moins un pari initial' : undefined}>Commencer la course</button>}
+        {phase === 'betting' && <button type="button" className="btn btn-primary" disabled={ui.bets.length === 0} onClick={onBegin} title={ui.bets.length === 0 ? 'Il faut au moins un pari initial' : undefined}>Valider les paris et ouvrir la boutique</button>}
         {phase === 'idle' && <button type="button" className="btn btn-primary" onClick={onRoll}>Lancer les dés</button>}
         {pairing && (
           <>

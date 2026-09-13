@@ -6,16 +6,18 @@ Distance. Ajouter un dé Distance impose donc d'avoir 3 dés Âme au moins, ce q
 est le cas de base (3 Âme / 2 Distance) : ajouter un troisième dé Distance
 consomme le dé Âme « inutilisé ».
 
+Les dés marqués ✔ sont implémentés dans `Proto4Html`.
+
 Les faces des dés spéciaux peuvent ensuite être forgées (voir [`forge.md`](forge.md)).
 
 ## Récapitulatif
 
 | # | Dé | Type | Faces | Mode | Impact | Prix | Rang |
 |---:|---|---|---|---|---|---:|---:|
-| 1 | Dé des Limbes | Distance | `1, 1, 2, 2` | remplace | Faible | 30 | 0 |
-| 2 | Dé de la Colère | Distance | `-2, 0, 3, 4` | remplace | Moyen | 55 | 0 |
-| 3 | Dé de Glace | Distance | `-1, -1, 2, 5` | remplace | Moyen | 60 | 2 |
-| 4 | Dé de Prodigalité ⚠ | Distance | `2, 3, 3, 4` | remplace | Fort | 80 | 2 |
+| 1 | Dé des Limbes ✔ | Distance | `1, 1, 2, 2` | remplace | Faible | 30 | 0 |
+| 2 | Dé de la Colère ✔ | Distance | `-2, 0, 3, 4` | remplace | Moyen | 55 | 0 |
+| 3 | Dé de Glace ✔ | Distance | `-1, -1, 2, 5` | remplace | Moyen | 60 | 2 |
+| 4 | Dé de Prodigalité ⚠ ✔ | Distance | `2, 3, 3, 4` | remplace | Fort | 80 | 2 |
 | 5 | Dé de Fraude | Distance | `1, 2, 3, ?` | remplace | Fort | 90 | 2 |
 | 6 | Troisième dé Distance | Distance | `-1, 1, 2, 3` | ajoute | Fort | 100 | 2 |
 | 7 | Dé Âme pipé | Âme | 2 faces d'une âme choisie | remplace | Moyen | 50 | 0 |

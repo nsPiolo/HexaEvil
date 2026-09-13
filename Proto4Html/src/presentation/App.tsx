@@ -4,11 +4,13 @@ import { DicePanel } from './DicePanel'
 import { Log } from './Log'
 import { Ranking } from './Ranking'
 import { BetPanel } from './BetPanel'
-import { ArtefactBar } from './ArtefactBar'
-import { SPEEDS, canBetNow, circleOf, useRace } from './useRace'
+import { ShopPanel } from './ShopPanel'
+import { Inventory } from './Inventory'
+import { SPEEDS, betBase, canBetNow, circleOf, useRace } from './useRace'
 
 const PHASE_LABEL = {
   betting: 'Paris initiaux',
+  shop: 'Boutique',
   idle: 'À vous de lancer',
   rolling: 'Lancer',
   pairing: 'Associations',
@@ -21,13 +23,13 @@ export default function App() {
   const { ui, speed, setSpeed, auto, setAuto, actions } = useRace()
   const activeSoul = ui.phase === 'resolving' || ui.phase === 'opponent' ? (ui.lastResult?.move.soul ?? null) : null
   const { circle, raceInCircle } = circleOf(ui.raceIndex)
-  const hasLateBet = ui.artefacts.includes('lateBet')
+  const hasLateBet = ui.inventory.artefacts.includes('lateBet')
 
   return (
     <div className="app" style={{ ['--step' as string]: `${config.animation.stepMs / speed}ms` }}>
       <header className="topbar">
         <div>
-          <h1>Damned Race Bet <span className="muted">— proto 4, étape 1 : la course</span></h1>
+          <h1>Damned Race Bet <span className="muted">— proto 4</span></h1>
           <p className="muted small">
             {config.souls.count} âmes · {config.track.columns} cases + {config.track.cellsAfterFinish} après l'arrivée · dés Distance {config.dice.distanceFaces.join('/')} · adversaire {config.opponent.rollsPerTurn} paire{config.opponent.rollsPerTurn > 1 ? 's' : ''}/tour · graine {ui.seed}
           </p>
@@ -49,17 +51,29 @@ export default function App() {
         </div>
       </header>
 
-      <ArtefactBar owned={ui.artefacts} lateBetCharges={ui.lateBetCharges} onToggle={actions.toggleArtefact} />
+      <Inventory inventory={ui.inventory} lateBetCharges={ui.lateBetCharges} compact />
 
       <Board race={ui.race} lastResult={ui.lastResult} activeSoul={activeSoul} />
 
       <div className="bottom">
         {ui.phase === 'finished' ? (
           <Ranking race={ui.race} settlement={ui.settlement} money={ui.money} onNewRace={actions.newRace} />
+        ) : ui.phase === 'shop' ? (
+          <ShopPanel
+            vitrine={ui.vitrine}
+            money={ui.money}
+            raceIndex={ui.raceIndex}
+            inventory={ui.inventory}
+            pending={ui.pendingPurchase}
+            onBuy={(id, target) => actions.buy(id, target ?? null)}
+            onCancel={actions.cancelPurchase}
+            onReroll={actions.rerollVitrine}
+            onLeave={actions.leaveShop}
+          />
         ) : (
           <DicePanel
             ui={ui}
-            onBegin={actions.beginRace}
+            onBegin={actions.openShop}
             onRoll={() => void actions.rollDice()}
             onPickSoul={actions.pickSoulDie}
             onPickDistance={actions.pickDistanceDie}
@@ -76,6 +90,7 @@ export default function App() {
           lateBet={hasLateBet ? { charges: ui.lateBetCharges, active: ui.lateBetOpen } : null}
           onUseLateBet={actions.useLateBet}
           onPlace={actions.placeBet}
+          baseFor={(type) => betBase(type, ui.inventory)}
         />
         <Log entries={ui.log} />
       </div>

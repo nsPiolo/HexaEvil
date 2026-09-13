@@ -1,9 +1,10 @@
 # Proto 4 — « Damned Race Bet », étape 1 : la course
 
 Prototype jouable de la course décrite dans
-[`../docs/proto4/GDD.md`](../docs/proto4/GDD.md) (§2) et de ses paris (§3),
-**sans** boutique, cartes, artefacts ni archétypes. Le contenu de boutique prévu
-est listé dans [`../docs/proto4/boutique-README.md`](../docs/proto4/boutique-README.md).
+[`../docs/proto4/GDD.md`](../docs/proto4/GDD.md) (§2), de ses paris (§3) et d'une
+première boutique (§6 : artefacts, dés spéciaux, forge). Pas encore de cartes
+action ni de personnalités. Le catalogue complet prévu est listé dans
+[`../docs/proto4/boutique-README.md`](../docs/proto4/boutique-README.md).
 
 React + TypeScript, hors Unity. Aucune dépendance au-delà de React.
 
@@ -43,10 +44,22 @@ npm run build
   l'âme de tête vers le seuil 60 %), jusqu'à un plancher : un pari tardif rapporte
   moins qu'un pari initial. Exposant et plancher sont dans la config.
   Règlement sur le classement définitif uniquement, bilan affiché et journalisé.
-- Artefacts (barre provisoire en attendant la boutique) : **Œil du parieur**,
-  qui ouvre une fois par cercle la fenêtre de pari après le lancer, et **Sablier
-  de Charon**, qui repousse le seuil à 70 % dès la course suivante. Une notion
-  minimale de cercle (3 courses, en config) sert à remettre les charges.
+- Boutique (GDD §6.1), dans l'ordre du cycle macro révisé : **paris initiaux
+  d'abord, boutique ensuite, course enfin**. Il faut au moins un pari pour ouvrir
+  la boutique, pour que le joueur ne puisse pas tout dépenser sans enjeu. Vitrine
+  de 4 objets tirés au sort par rareté, renouvelable contre 10 pièces, prix qui
+  grandissent de 25 % par cercle. Catalogue et prix dans
+  [`config/shop.json`](config/shop.json), effets dans le code indexés par id.
+  - 8 artefacts (5 emplacements) : Œil du parieur, Sablier de Charon, Boussole des
+    Limbes, Clepsydre fêlée, Fer à cheval rouillé, Bourse percée, Livre des
+    comptes, Filet du pêcheur.
+  - 4 dés spéciaux qui remplacent un dé Distance : Limbes, Colère, Glace,
+    Prodigalité (payant à l'usage).
+  - 4 altérations de forge, une face à la fois : Limée, Dorée, Retournée (avec sa
+    contrepartie sur l'adversaire), Sceau du parieur.
+  L'inventaire (artefacts, dés face par face) reste visible pendant la course.
+  Une notion minimale de cercle (3 courses, en config) sert aux charges « une fois
+  par cercle » et à la croissance des prix.
 - Chaque geste est animé : roulement des dés, déplacement du jeton, bulle « +3 »,
   signal de collision, journal détaillé. Vitesse ×0,5 à ×4, mode Auto pour
   enchaîner des courses.
@@ -72,12 +85,14 @@ avec le nom du champ fautif.
 ## Arborescence
 
 ```
-config/race.json           paramètres, lisibles et modifiables
+config/race.json           paramètres de course, paris, animation
+config/shop.json           catalogue de la boutique : noms, textes, prix, raretés
 src/core/config            schéma + validation
 src/core/rules/race.ts     règles pures : plateau, lancer, combinaisons, collisions, classement
 src/core/rules/bets.ts     les dix paris : validité, évaluation, règlement, décote
-src/core/rules/artefacts.ts artefacts implémentés
+src/core/rules/dice.ts     dés Distance du joueur, face par face
+src/core/shop/             catalogue (types, chargement de shop.json), vitrine, achats, forge
 src/core/rules/rng.ts      aléatoire déterministe (graine affichée à l'écran)
 src/core/__tests__         tests des règles
-src/presentation           React : useRace (machine à états animée), ArtefactBar, Board, DicePanel, BetPanel, Log, Ranking
+src/presentation           React : useRace (machine à états animée), Inventory, ShopPanel, Board, DicePanel, BetPanel, Log, Ranking
 ```

@@ -466,7 +466,7 @@ p { margin: 0; }
 .bad { color: var(--bad); }
 .phase-betting { border-color: var(--gold); background: #2f2216; }
 
-/* ---- Artefacts (barre provisoire) -------------------------------------- */
+/* ---- Inventaire et boutique ------------------------------------------- */
 
 .artefact-bar { display: flex; flex-direction: column; gap: 6px; }
 .artefact-list { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -492,6 +492,47 @@ p { margin: 0; }
 .btn-artefact { border-color: var(--gold); color: var(--gold); }
 .btn-artefact:hover:not(:disabled) { background: #2f2216; }
 .late-bet { display: flex; flex-direction: column; gap: 8px; }
+
+.inventory { display: flex; gap: 24px; flex-wrap: wrap; padding: 8px 16px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+.inv-group { display: flex; flex-direction: column; gap: 4px; }
+.inv-items { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.inv-artefact { padding: 3px 10px; border-radius: 999px; background: #2f2216; border: 1px solid #4a331b; color: var(--gold); font-size: 0.8rem; font-weight: 600; }
+.inv-die { display: inline-flex; align-items: center; gap: 3px; padding: 3px 8px; border-radius: 8px; background: var(--panel-2); font-size: 0.8rem; }
+.inv-die-name { font-weight: 600; margin-right: 6px; }
+.face { display: inline-flex; align-items: center; min-width: 26px; justify-content: center; padding: 1px 5px; border-radius: 5px; background: var(--bg-2); border: 1px solid var(--line); font-variant-numeric: tabular-nums; font-weight: 700; font-size: 0.8rem; }
+.face-neg { color: var(--bad); }
+.face-altered { border-color: var(--gold); color: var(--gold); background: #2f2216; }
+.face-dim { opacity: 0.8; font-size: 0.7rem; min-width: 20px; }
+.face-effect { margin-left: 2px; font-size: 0.7rem; }
+.die-wrap { display: inline-flex; flex-direction: column; align-items: center; gap: 3px; }
+.die-name { font-size: 0.65rem; color: var(--muted); display: inline-flex; gap: 2px; max-width: 72px; text-align: center; }
+.die-forged { border-color: var(--gold); }
+.die-effect { position: absolute; bottom: 2px; right: 5px; font-size: 0.7rem; color: var(--gold); }
+
+.shop { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+.vitrine { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
+.shop-item { display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 10px; background: var(--panel-2); border: 1px solid var(--line); border-top: 3px solid var(--line); animation: rise 300ms ease-out both; }
+.shop-item header { display: flex; justify-content: space-between; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.shop-item h3 { font-size: 0.95rem; text-transform: none; letter-spacing: 0; color: var(--ink); }
+.shop-item p { flex: 1; color: var(--muted); }
+.shop-item footer { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.kind-artefact { border-top-color: var(--gold); }
+.kind-die { border-top-color: var(--human); }
+.kind-forge { border-top-color: var(--ember); }
+.shop-rarity.rarity-rare { color: var(--human); }
+.shop-rarity.rarity-legendary { color: var(--gold); }
+.shop-price { font-weight: 700; color: var(--gold); font-variant-numeric: tabular-nums; }
+.shop-price-over { color: var(--bad); }
+.shop-faces-preview { display: flex; gap: 4px; }
+.shop-target { display: flex; flex-direction: column; gap: 10px; padding: 12px; border-radius: 10px; background: var(--panel-2); border: 1px dashed var(--gold); }
+.shop-dice { display: flex; flex-direction: column; gap: 8px; }
+.shop-die { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.shop-faces { display: flex; gap: 6px; }
+.face-btn { padding: 4px; border-radius: 8px; border: 2px solid transparent; background: none; transition: border-color 150ms, transform 120ms; }
+.face-btn:hover:not(:disabled) { border-color: var(--ink); transform: translateY(-2px); }
+.face-btn:disabled { opacity: 0.4; }
+.face-btn-hint { border-color: var(--gold); animation: pulse 900ms ease-in-out infinite; }
+.phase-shop { border-color: var(--ember); background: #3a1d12; }
 
 /* ---- Classement ---------------------------------------------------------- */
 
