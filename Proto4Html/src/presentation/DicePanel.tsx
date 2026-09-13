@@ -1,15 +1,16 @@
 import { config } from '../core/config'
+import { bettingClosed } from '../core/rules/bets'
 import { isPairingComplete, type RaceState } from '../core/rules/race'
 import type { RaceUi } from './useRace'
 import { fmtDistance, soulColor } from './souls'
 
 interface Props {
   ui: RaceUi
+  onBegin: () => void
   onRoll: () => void
   onPickSoul: (i: number) => void
   onPickDistance: (i: number) => void
   onReset: () => void
-  onAutoPair: () => void
   onResolve: () => void
 }
 
@@ -17,7 +18,7 @@ function soulName(race: RaceState, id: number | undefined): string {
   return id === undefined ? '?' : (race.souls[id]?.name ?? `#${id}`)
 }
 
-export function DicePanel({ ui, onRoll, onPickSoul, onPickDistance, onReset, onAutoPair, onResolve }: Props) {
+export function DicePanel({ ui, onBegin, onRoll, onPickSoul, onPickDistance, onReset, onResolve }: Props) {
   const { phase, roll, race, combinations, selectedSoulDie, resolvingIndex, opponentRoll } = ui
   const pairing = phase === 'pairing'
   const rolling = phase === 'rolling'
@@ -30,7 +31,8 @@ export function DicePanel({ ui, onRoll, onPickSoul, onPickDistance, onReset, onA
 
   const hint = (): string => {
     switch (phase) {
-      case 'idle': return `Tour ${race.turn} — lancez les dés.`
+      case 'betting': return ui.bets.length === 0 ? 'Posez au moins un pari initial pour pouvoir lancer la course.' : 'Vous pouvez encore parier, ou lancer la course.'
+      case 'idle': return `Tour ${race.turn} — lancez les dés.${bettingClosed(race) ? '' : ' Dernier moment pour parier ce tour.'}`
       case 'rolling': return 'Les dés roulent…'
       case 'pairing':
         if (complete) return 'Ordre fixé. Résolvez, ou réinitialisez pour changer.'
@@ -40,6 +42,7 @@ export function DicePanel({ ui, onRoll, onPickSoul, onPickDistance, onReset, onA
       case 'opponent': return "Tour de l'adversaire…"
       case 'finished': return 'Course terminée.'
     }
+    return ''
   }
 
   return (
@@ -134,11 +137,11 @@ export function DicePanel({ ui, onRoll, onPickSoul, onPickDistance, onReset, onA
       </div>
 
       <div className="actions">
+        {phase === 'betting' && <button type="button" className="btn btn-primary" disabled={ui.bets.length === 0} onClick={onBegin} title={ui.bets.length === 0 ? 'Il faut au moins un pari initial' : undefined}>Commencer la course</button>}
         {phase === 'idle' && <button type="button" className="btn btn-primary" onClick={onRoll}>Lancer les dés</button>}
         {pairing && (
           <>
             <button type="button" className="btn btn-primary" disabled={!complete} onClick={onResolve}>Résoudre</button>
-            <button type="button" className="btn" onClick={onAutoPair}>Associer dans l'ordre</button>
             <button type="button" className="btn" disabled={combinations.length === 0} onClick={onReset}>Réinitialiser</button>
           </>
         )}

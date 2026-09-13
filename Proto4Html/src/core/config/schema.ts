@@ -1,3 +1,5 @@
+import type { BetTypeId } from '../rules/betTypes'
+
 /** Forme validée de `config/race.json` (GDD proto4 §9.1 : tout ce qui est chiffré vit là). */
 export interface RaceConfig {
   souls: {
@@ -21,6 +23,22 @@ export interface RaceConfig {
   }
   opponent: {
     rollsPerTurn: number
+  }
+  economy: {
+    startingMoney: number
+    stakes: readonly number[]
+    multipliers: Readonly<Record<BetTypeId, number>>
+    decay: {
+      exponent: number
+      minMultiplier: number
+    }
+  }
+  run: {
+    racesPerCircle: number
+  }
+  artefacts: {
+    lateBet: { chargesPerCircle: number }
+    sablier: { betThresholdRatio: number }
   }
   animation: {
     stepMs: number

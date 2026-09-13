@@ -1,8 +1,17 @@
+import { betType, type Settlement } from '../core/rules/bets'
 import { ranking, type RaceState } from '../core/rules/race'
 import { soulColor } from './souls'
 
-export function Ranking({ race, onNewRace }: { race: RaceState; onNewRace: () => void }) {
+interface Props {
+  race: RaceState
+  settlement: Settlement | null
+  money: number
+  onNewRace: () => void
+}
+
+export function Ranking({ race, settlement, money, onNewRace }: Props) {
   const ranked = ranking(race)
+  const net = settlement ? settlement.returned - settlement.staked : 0
   return (
     <section className="ranking" aria-label="Classement">
       <h2>Classement final</h2>
@@ -20,6 +29,24 @@ export function Ranking({ race, onNewRace }: { race: RaceState; onNewRace: () =>
           </li>
         ))}
       </ol>
+      {settlement && settlement.bets.length > 0 && (
+        <div className="settlement">
+          <h3>Bilan des paris</h3>
+          <ul>
+            {settlement.bets.map((b) => (
+              <li key={b.id} className={`bet bet-${b.status}`}>
+                <span className="bet-type">{betType(b.type).label}</span>
+                <span className="bet-targets">{b.souls.map((id) => race.souls[id]?.name ?? `#${id}`).join(betType(b.type).ordered ? ' › ' : ', ')}</span>
+                <span className="bet-status">{b.status === 'won' ? `+${b.payout}` : `−${b.stake}`}</span>
+              </li>
+            ))}
+          </ul>
+          <p className={'settlement-net ' + (net >= 0 ? 'good' : 'bad')}>
+            {net >= 0 ? `Gain net +${net}` : `Perte nette −${Math.abs(net)}`} · argent : {money}
+          </p>
+        </div>
+      )}
+      {settlement && settlement.bets.length === 0 && <p className="muted small">Aucun pari sur cette course.</p>}
       <button type="button" className="btn btn-primary" onClick={onNewRace}>Nouvelle course</button>
     </section>
   )

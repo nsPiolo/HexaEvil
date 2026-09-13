@@ -2,6 +2,7 @@
  * Chargement et validation de la configuration.
  * Une erreur désigne toujours le champ fautif, pour qu'un réglage cassé se voie au premier écran.
  */
+import { BET_TYPE_IDS, type BetTypeId } from '../rules/betTypes'
 import type { RaceConfig } from './schema'
 
 export class ConfigError extends Error {
@@ -71,6 +72,37 @@ export function loadConfig(raw: unknown): RaceConfig {
   const opponent = obj(root.opponent, 'opponent')
   const rollsPerTurn = int(opponent.rollsPerTurn, 'opponent.rollsPerTurn', 0)
 
+  const economy = obj(root.economy, 'economy')
+  const startingMoney = int(economy.startingMoney, 'economy.startingMoney', 0)
+  const stakes = intArray(economy.stakes, 'economy.stakes')
+  if (stakes.some((v) => v <= 0)) fail('economy.stakes', 'mises strictement positives attendues')
+  const mults = obj(economy.multipliers, 'economy.multipliers')
+  const multipliers = {} as Record<BetTypeId, number>
+  for (const id of BET_TYPE_IDS) {
+    const m = num(mults[id], `economy.multipliers.${id}`)
+    if (m <= 1) fail(`economy.multipliers.${id}`, 'doit être supérieur à 1, sinon un pari gagné fait perdre de l\'argent')
+    multipliers[id] = m
+  }
+
+  const decayRaw = obj(economy.decay, 'economy.decay')
+  const exponent = num(decayRaw.exponent, 'economy.decay.exponent')
+  if (exponent <= 0) fail('economy.decay.exponent', 'doit être strictement positif')
+  const minMultiplier = num(decayRaw.minMultiplier, 'economy.decay.minMultiplier')
+  if (minMultiplier <= 1) fail('economy.decay.minMultiplier', 'doit être supérieur à 1')
+  for (const id of BET_TYPE_IDS) {
+    if (multipliers[id] < minMultiplier) fail(`economy.multipliers.${id}`, `doit valoir au moins economy.decay.minMultiplier (${minMultiplier})`)
+  }
+
+  const run = obj(root.run, 'run')
+  const racesPerCircle = int(run.racesPerCircle, 'run.racesPerCircle', 1)
+
+  const artefacts = obj(root.artefacts, 'artefacts')
+  const lateBet = obj(artefacts.lateBet, 'artefacts.lateBet')
+  const chargesPerCircle = int(lateBet.chargesPerCircle, 'artefacts.lateBet.chargesPerCircle', 1)
+  const sablier = obj(artefacts.sablier, 'artefacts.sablier')
+  const sablierRatio = num(sablier.betThresholdRatio, 'artefacts.sablier.betThresholdRatio')
+  if (sablierRatio <= betThresholdRatio || sablierRatio >= 1) fail('artefacts.sablier.betThresholdRatio', `doit être entre track.betThresholdRatio (${betThresholdRatio}) exclu et 1 exclu`)
+
   const animation = obj(root.animation, 'animation')
   const stepMs = int(animation.stepMs, 'animation.stepMs', 0)
   const diceMs = int(animation.diceMs, 'animation.diceMs', 0)
@@ -81,6 +113,9 @@ export function loadConfig(raw: unknown): RaceConfig {
     track: { columns, cellsAfterFinish, betThresholdRatio },
     dice: { distanceFaces, distanceDice, soulDice },
     opponent: { rollsPerTurn },
+    economy: { startingMoney, stakes, multipliers, decay: { exponent, minMultiplier } },
+    run: { racesPerCircle },
+    artefacts: { lateBet: { chargesPerCircle }, sablier: { betThresholdRatio: sablierRatio } },
     animation: { stepMs, diceMs, pauseMs },
   }
 }

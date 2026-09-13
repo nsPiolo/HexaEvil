@@ -25,6 +25,40 @@
     "rollsPerTurn": 1
   },
 
+  "economy": {
+    "_comment": "startingMoney = capital au début de la session (conservé de course en course). stakes = mises proposées. multipliers = ce que rapporte une mise gagnante (mise × multiplicateur, la mise est débitée au moment du pari). Cotes équitables à 5 âmes, pour comparaison : vainqueur 5, top 3 1,67, pas top 3 2,5, dernier 5, top 3 désordre 10, deux dans le top 3 3,33, duel 2, podium exact 60, classement complet 120, vainqueur + dernier 20.",
+    "startingMoney": 100,
+    "stakes": [5, 10, 20, 50],
+    "multipliers": {
+      "winner": 3.5,
+      "top3": 1.5,
+      "notTop3": 2,
+      "last": 3.5,
+      "podiumAnyOrder": 7,
+      "twoInTop3": 2.5,
+      "duel": 1.8,
+      "podiumExact": 40,
+      "fullRankingExact": 80,
+      "winnerAndLast": 14
+    },
+    "decay": {
+      "_comment": "Plus la course avance, moins un pari est risqué : sa cote baisse. progress = position de l'âme de tête / colonne du seuil 60 % (0 au départ, 1 au seuil). cote = 1 + (base − 1) × (1 − progress)^exponent, jamais sous minMultiplier. exponent 1 = linéaire ; plus grand = la cote tient bon au début et chute vite à l'approche du seuil.",
+      "exponent": 1.5,
+      "minMultiplier": 1.2
+    }
+  },
+
+  "run": {
+    "_comment": "Structure minimale de run en attendant les cercles complets : sert à remettre les charges « une fois par cercle » des artefacts.",
+    "racesPerCircle": 3
+  },
+
+  "artefacts": {
+    "_comment": "Valeurs des artefacts déjà implémentés (activables depuis la barre provisoire de l'écran, en attendant la boutique).",
+    "lateBet": { "chargesPerCircle": 1 },
+    "sablier": { "betThresholdRatio": 0.7 }
+  },
+
   "animation": {
     "_comment": "Durées en millisecondes à vitesse ×1. stepMs = un déplacement d'âme ; diceMs = roulement des dés ; pauseMs = respiration entre deux déplacements.",
     "stepMs": 800,

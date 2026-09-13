@@ -28,7 +28,9 @@ export interface Track {
   cellsAfterFinish: number
   /** columns + cellsAfterFinish ; la dernière case est `totalCells - 1`. */
   totalCells: number
-  /** Première colonne de la zone « plus de pari » (60 %). */
+  /** Part du parcours au-delà de laquelle on ne parie plus (0,6 par défaut, 0,7 avec le Sablier). */
+  betThresholdRatio: number
+  /** Première colonne de la zone « plus de pari ». */
   betThresholdColumn: number
 }
 
@@ -85,21 +87,28 @@ function at<T>(arr: readonly T[], i: number, what: string): T {
   return v
 }
 
-export function createTrack(cfg: RaceConfig['track']): Track {
+export interface RaceOptions {
+  /** Remplace track.betThresholdRatio (artefact Sablier). */
+  betThresholdRatio?: number
+}
+
+export function createTrack(cfg: RaceConfig['track'], options: RaceOptions = {}): Track {
+  const ratio = options.betThresholdRatio ?? cfg.betThresholdRatio
   return {
     columns: cfg.columns,
     cellsAfterFinish: cfg.cellsAfterFinish,
     totalCells: cfg.columns + cfg.cellsAfterFinish,
-    betThresholdColumn: Math.ceil(cfg.columns * cfg.betThresholdRatio),
+    betThresholdRatio: ratio,
+    betThresholdColumn: Math.ceil(cfg.columns * ratio),
   }
 }
 
-export function createRace(config: RaceConfig): RaceState {
+export function createRace(config: RaceConfig, options: RaceOptions = {}): RaceState {
   const souls: Soul[] = []
   for (let i = 0; i < config.souls.count; i++) {
     souls.push({ id: i, name: at(config.souls.names, i, 'souls.names'), position: 0, finishOrder: null })
   }
-  return { track: createTrack(config.track), souls, turn: 1, finished: false, nextFinishOrder: 1 }
+  return { track: createTrack(config.track, options), souls, turn: 1, finished: false, nextFinishOrder: 1 }
 }
 
 export function rollPlayerDice(config: RaceConfig, soulCount: number, rng: Rng): Roll {

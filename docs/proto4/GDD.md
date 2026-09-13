@@ -61,8 +61,8 @@ Le joueur ne dirige pas directement les coureurs. Il lit une situation partielle
 ### 2.1 Cycle macro
 
 1. Découvrir le cercle, son prix et ses règles spéciales.
-2. Préparer la course : boutique, amélioration des dés, coaching et ajustement des âmes.
-3. Poser les paris initiaux sur une ou plusieurs âmes.
+2. Poser les paris initiaux sur une ou plusieurs âmes.
+3. Préparer la course : boutique, amélioration des dés, coaching et ajustement des âmes.
 4. Lancer les dés et choisir les associations et l'ordre de résolution.
 5. Résoudre les déplacements, les collisions, les cases et les effets actifs.
 6. Poser éventuellement de nouveaux paris tant que la fenêtre autorisée est ouverte.

@@ -5,7 +5,9 @@ proposée : **5 emplacements** au départ, +1 aux rangs 2 et 4 du stagiaire.
 Remplacer un artefact le détruit ; revente à 40 % du prix.
 
 Rareté : **C**ommune (visible dès le rang 0), **R**are (rang 2), **L**égendaire
-(rang 4, une par vitrine au maximum). Les objets ⚠ ont une contrepartie.
+(rang 4, une par vitrine au maximum). Les objets ⚠ ont une contrepartie. Les
+objets ✔ sont déjà implémentés dans `Proto4Html` (activables depuis la barre
+provisoire d'artefacts, en attendant la boutique).
 
 Familles couvertes : dés et combinaisons, collisions, paris, économie,
 information, tour adverse, plateau.
@@ -25,7 +27,7 @@ information, tour adverse, plateau.
 | 9 | Balance truquée | collisions | C | Moyen | 40 |
 | 10 | Chaîne du Coccyte | collisions | R | Fort | 80 |
 | 11 | Fer à cheval rouillé | paris | C | Moyen | 50 |
-| 12 | Sablier de Charon | paris | C | Moyen | 55 |
+| 12 | Sablier de Charon ✔ | paris | C | Moyen | 55 |
 | 13 | Ticket de la première heure | paris | R | Fort | 90 |
 | 14 | Livre des comptes | paris | C | Moyen | 60 |
 | 15 | Talisman des ex æquo | paris | C | Faible | 30 |
@@ -40,6 +42,7 @@ information, tour adverse, plateau.
 | 24 | Filet du pêcheur | plateau | C | Moyen | 40 |
 | 25 | Sceau du stagiaire | boutique | C | Moyen | 55 |
 | 26 | Marteau d'Héphaïstos | boutique / forge | C | Moyen | 50 |
+| 27 | Œil du parieur ✔ | paris / information | R | Fort | 80 |
 
 ## Fiches
 
@@ -94,9 +97,9 @@ distance. *Le tour adverse devient une occasion : une paire sur l'une bouge les 
 **11. Fer à cheval rouillé — 50, C.** Le pari Vainqueur pur paie +50 %. Le pari
 Dernière place paie -50 %. *Une spécialisation, pas un bonus gratuit.*
 
-**12. Sablier de Charon — 55, C.** Le seuil de pari passe de 60 % à 75 % du
-parcours. *Fenêtre plus longue ; affaiblit le Prophète et renforce les paris
-tardifs.*
+**12. Sablier de Charon — 55, C.** Le seuil de pari passe de 60 % à 70 % du
+parcours, à partir de la course suivante. *Fenêtre plus longue ; affaiblit le
+Prophète et renforce les paris tardifs.* ✔ Implémenté dans le proto.
 
 **13. Ticket de la première heure — 90, R.** Les paris posés **avant le premier
 lancer** paient +1 au multiplicateur ; les paris posés en course paient -0,5.
@@ -113,6 +116,12 @@ réussite pour toute condition « devant » ou « dans le top 3 » des deux âme
 **16. Encensoir du dernier — 45, C.** Le pari Dernière place paie x2 si l'âme
 dernière est à 5 cases ou plus de l'avant-dernière. *Un pari d'écart : on lit la
 traîne, pas seulement la tête.*
+
+**27. Œil du parieur — 80, R.** Une fois par cercle, après avoir lancé ses dés
+et avant de les associer, le joueur peut poser un pari. *Normalement un pari se
+pose avant le lancer ; ici on parie en connaissant ses 5 dés, mais pas le tour
+adverse. Une seule charge par cercle pour que le moment choisi compte.* ✔
+Implémenté dans le proto.
 
 **17. Pièce à deux faces ⚠ — 75, R.** Après le premier lancer de la course, vous
 pouvez doubler la mise de tous vos paris actifs. Si vous le faites, le tour adverse

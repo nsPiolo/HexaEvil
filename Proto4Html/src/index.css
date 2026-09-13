@@ -249,13 +249,14 @@ p { margin: 0; }
 
 .bottom {
   display: grid;
-  grid-template-columns: minmax(0, 3fr) minmax(280px, 2fr);
+  grid-template-columns: minmax(0, 5fr) minmax(300px, 4fr) minmax(260px, 3fr);
   gap: 16px;
   align-items: stretch;
 }
-@media (max-width: 900px) { .bottom { grid-template-columns: 1fr; } }
+@media (max-width: 1100px) { .bottom { grid-template-columns: 1fr 1fr; } .log { grid-column: 1 / -1; } }
+@media (max-width: 720px) { .bottom { grid-template-columns: 1fr; } }
 
-.dice-panel, .log, .ranking {
+.dice-panel, .log, .ranking, .bet-panel {
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -365,6 +366,132 @@ p { margin: 0; }
 .log-player { border-left-color: var(--human); }
 .log-opponent { border-left-color: var(--ember); background: rgba(212, 84, 30, 0.08); }
 .log-system { border-left-color: var(--gold); color: var(--gold); }
+.log-bet { border-left-color: var(--good); background: rgba(78, 168, 106, 0.08); }
+
+/* ---- Argent et paris -------------------------------------------------- */
+
+.money {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--gold);
+  font-size: 1.1rem;
+  transition: transform 200ms;
+}
+.money-unit { font-weight: 400; font-size: 0.75rem; color: var(--muted); }
+.money-top { padding: 4px 10px; border-radius: 999px; background: #2f2216; border: 1px solid #4a331b; }
+
+.bet-panel { gap: 10px; }
+.bet-head { display: flex; justify-content: space-between; align-items: baseline; }
+.bet-field { display: flex; flex-direction: column; gap: 6px; }
+.bet-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.bet-desc { margin-top: -4px; min-height: 1.2em; }
+.bet-panel select {
+  font: inherit;
+  color: var(--ink);
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 7px 10px;
+}
+.bet-panel select:disabled { opacity: 0.5; }
+
+.bet-slots { display: flex; gap: 6px; flex-wrap: wrap; }
+.slot {
+  position: relative;
+  min-width: 84px;
+  padding: 8px 10px 6px;
+  border-radius: 8px;
+  border: 1px dashed var(--line);
+  background: var(--bg-2);
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.85rem;
+  transition: background 150ms, border-color 150ms, transform 150ms;
+}
+.slot-filled { border-style: solid; border-color: var(--soul); color: var(--ink); background: var(--panel-2); animation: pop 200ms ease-out; }
+.slot-filled:hover:not(:disabled) { border-color: var(--bad); }
+.slot-tag {
+  position: absolute;
+  top: -8px;
+  left: 8px;
+  font-size: 0.65rem;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.slot-filled .slot-tag { color: var(--soul); }
+
+.bet-souls { display: flex; gap: 6px; flex-wrap: wrap; }
+.soul-chip { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
+.soul-chip.chip-on { background: var(--panel-2); border-color: var(--soul); box-shadow: 0 0 0 1px var(--soul); }
+.soul-chip:disabled { opacity: 0.4; }
+.chip-zone { font-size: 0.65rem; color: var(--gold); font-weight: 400; }
+
+.bet-stakes { display: flex; gap: 6px; }
+.bet-summary { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 0.9rem; }
+.bet-refusal { min-height: 1.2em; color: var(--bad); opacity: 0; transition: opacity 150ms; margin-top: -6px; }
+.bet-refusal-on { opacity: 1; }
+
+.bet-list { border-top: 1px dashed var(--line); padding-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.bet-list ul, .settlement ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
+.bet {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  gap: 10px;
+  align-items: baseline;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--panel-2);
+  font-size: 0.85rem;
+  border-left: 3px solid var(--line);
+  animation: slide-in 200ms ease-out;
+}
+.settlement .bet { grid-template-columns: auto 1fr auto; }
+.bet-type { font-weight: 600; }
+.bet-targets { font-weight: 600; }
+.bet-stake { color: var(--muted); font-variant-numeric: tabular-nums; }
+.bet-status { font-variant-numeric: tabular-nums; color: var(--muted); }
+.bet-open { border-left-color: var(--gold); }
+.bet-won { border-left-color: var(--good); }
+.bet-won .bet-status { color: var(--good); font-weight: 700; }
+.bet-lost { border-left-color: var(--bad); opacity: 0.8; }
+.bet-lost .bet-status { color: var(--bad); font-weight: 700; }
+
+.settlement { display: flex; flex-direction: column; gap: 6px; border-top: 1px dashed var(--line); padding-top: 10px; }
+.settlement-net { font-weight: 700; font-size: 1.05rem; }
+.good { color: var(--good); }
+.bad { color: var(--bad); }
+.phase-betting { border-color: var(--gold); background: #2f2216; }
+
+/* ---- Artefacts (barre provisoire) -------------------------------------- */
+
+.artefact-bar { display: flex; flex-direction: column; gap: 6px; }
+.artefact-list { display: flex; gap: 8px; flex-wrap: wrap; }
+.artefact {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  max-width: 360px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  text-align: left;
+  opacity: 0.7;
+  transition: border-color 150ms, background 150ms, opacity 150ms, transform 120ms;
+}
+.artefact:hover { opacity: 1; border-color: var(--muted); transform: translateY(-1px); }
+.artefact-on { opacity: 1; border-color: var(--gold); background: #2f2216; box-shadow: inset 3px 0 0 var(--gold); }
+.artefact-name { font-weight: 700; }
+.artefact-desc { font-size: 0.75rem; color: var(--muted); }
+.artefact-charges { font-size: 0.75rem; color: var(--gold); font-weight: 600; }
+.btn-artefact { border-color: var(--gold); color: var(--gold); }
+.btn-artefact:hover:not(:disabled) { background: #2f2216; }
+.late-bet { display: flex; flex-direction: column; gap: 8px; }
 
 /* ---- Classement ---------------------------------------------------------- */
 

@@ -1,9 +1,9 @@
 # Proto 4 — « Damned Race Bet », étape 1 : la course
 
 Prototype jouable de la course décrite dans
-[`../docs/proto4/GDD.md`](../docs/proto4/GDD.md) (§2), **sans** paris, boutique,
-cartes, artefacts ni archétypes. Le but de cette étape est de regarder ce que
-donnent des lancers de dés successifs sur le plateau avant d'ajouter le reste.
+[`../docs/proto4/GDD.md`](../docs/proto4/GDD.md) (§2) et de ses paris (§3),
+**sans** boutique, cartes, artefacts ni archétypes. Le contenu de boutique prévu
+est listé dans [`../docs/proto4/boutique-README.md`](../docs/proto4/boutique-README.md).
 
 React + TypeScript, hors Unity. Aucune dépendance au-delà de React.
 
@@ -31,6 +31,22 @@ npm run build
 - Fin de course : dès qu'une âme a franchi l'arrivée, le tour se termine quand même
   (combinaisons restantes + adversaire), puis classement par position, ex æquo
   départagés par ordre de franchissement.
+- Argent et paris (GDD §3) : capital de départ conservé de course en course
+  (« Recommencer » le remet à zéro). Phase de paris initiaux avant la course, **au
+  moins un pari obligatoire** pour lancer la course, puis paris en course
+  **uniquement avant de lancer ses dés** (une fois lancés, il faut attendre le tour
+  suivant), tant qu'il reste de l'argent et qu'**aucune** âme n'a atteint le seuil
+  60 %. Un même pari (type + âmes) ne peut pas être posé deux fois. Les dix
+  types de paris du GDD sont disponibles, avec leur multiplicateur en config ; la
+  mise est débitée au moment du pari, un pari gagné rend mise × cote. La **cote est
+  figée au moment du pari** et décroît avec l'avancement de la course (position de
+  l'âme de tête vers le seuil 60 %), jusqu'à un plancher : un pari tardif rapporte
+  moins qu'un pari initial. Exposant et plancher sont dans la config.
+  Règlement sur le classement définitif uniquement, bilan affiché et journalisé.
+- Artefacts (barre provisoire en attendant la boutique) : **Œil du parieur**,
+  qui ouvre une fois par cercle la fenêtre de pari après le lancer, et **Sablier
+  de Charon**, qui repousse le seuil à 70 % dès la course suivante. Une notion
+  minimale de cercle (3 courses, en config) sert à remettre les charges.
 - Chaque geste est animé : roulement des dés, déplacement du jeton, bulle « +3 »,
   signal de collision, journal détaillé. Vitesse ×0,5 à ×4, mode Auto pour
   enchaîner des courses.
@@ -42,6 +58,9 @@ npm run build
 - La ligne de départ et la dernière case après l'arrivée se partagent sans collision.
 - Les paires de l'adversaire ne se cumulent pas entre elles (chaque paire est une
   résolution).
+- Le seuil de pari est **global** : dès qu'une âme l'atteint, plus aucun pari sur
+  la course. Les paris exacts (podium, classement complet) échouent en cas
+  d'ex æquo sur les places concernées.
 
 ## Configuration
 
@@ -56,7 +75,9 @@ avec le nom du champ fautif.
 config/race.json           paramètres, lisibles et modifiables
 src/core/config            schéma + validation
 src/core/rules/race.ts     règles pures : plateau, lancer, combinaisons, collisions, classement
+src/core/rules/bets.ts     les dix paris : validité, évaluation, règlement, décote
+src/core/rules/artefacts.ts artefacts implémentés
 src/core/rules/rng.ts      aléatoire déterministe (graine affichée à l'écran)
 src/core/__tests__         tests des règles
-src/presentation           React : useRace (machine à états animée), Board, DicePanel, Log, Ranking
+src/presentation           React : useRace (machine à états animée), ArtefactBar, Board, DicePanel, BetPanel, Log, Ranking
 ```

@@ -35,7 +35,7 @@ export function Board({ race, lastResult, activeSoul }: Props) {
       <div className="cells cells-head">
         {cols.map((c) => (
           <div key={c} className={cellClass(c) + ' head'}>
-            {c === 0 ? 'Départ' : c === track.betThresholdColumn ? '60 %' : c === track.columns ? 'Arrivée' : c}
+            {c === 0 ? 'Départ' : c === track.betThresholdColumn ? `${Math.round(track.betThresholdRatio * 100)} %` : c === track.columns ? 'Arrivée' : c}
           </div>
         ))}
       </div>

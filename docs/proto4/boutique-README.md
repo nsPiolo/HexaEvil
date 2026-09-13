@@ -7,7 +7,7 @@ est un point de départ pour la configuration du POC (GDD §9.1).
 | Fichier | Contenu | Minimum demandé | Fourni |
 |---|---|---:|---:|
 | [`personnalites.md`](personnalites.md) | Personnalités à donner aux âmes | 10 | 14 |
-| [`artefacts.md`](artefacts.md) | Passifs permanents du run | 20 | 26 |
+| [`artefacts.md`](artefacts.md) | Passifs permanents du run | 20 | 27 |
 | [`forge.md`](forge.md) | Altérations de face de dé | 10 | 14 |
 | [`des.md`](des.md) | Dés spéciaux | 4 | 9 |
 | [`cartes.md`](cartes.md) | Cartes action consommables | 50 | 60 |
