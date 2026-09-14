@@ -71,7 +71,7 @@ export function MapScreen({ carry, onLaunch, onMenu }: Props) {
       </div>
       <div className="hud hud-right">
         <span className="hud-big money">{fill(HUD.coins, { n: carry.money })}</span>
-        <button type="button" className="chip" onClick={onMenu}>
+        <button type="button" className="btn-stone btn-stone-sm" onClick={onMenu}>
           {HUD.menu}
         </button>
       </div>

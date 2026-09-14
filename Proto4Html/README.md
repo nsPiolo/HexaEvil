@@ -19,12 +19,14 @@ npm run build
 
 ## Ce qui est implémenté
 
-- Écrans (interface.md) : logo animé 5 s (un clic abrège), menu principal
+- Écrans (interface.md) : écran de chargement 5 s avec le logo peint
+  (`public/menu/splash.jpg`, un clic abrège), menu principal
   (Continuer grisé sans run, Nouvelle évasion, Statistiques, Option) habillé selon
-  `docs/proto4/illus_menu.jpeg` : l'illustration en fond (`public/menu-bg.jpg`,
-  réduite à 1920 px), floutée derrière le bloc du menu, dalles de pierre bleu-gris
-  en CSS, dalle de lave pour l'action principale, titre en lettres de braise, cadre
-  blanc brossé ; intro en
+  `docs/proto4/illus_menu.jpeg` avec six images de `public/menu/` (fond peint
+  `bg.jpeg`, titre, trois variantes de dalle de pierre, dalle de lave ; les dalles
+  sont des sprites à deux rangées, repos et survol), générées avec Gemini d'après
+  `docs/proto4/prompts-menu.md`. Pas de cadre autour de l'écran. Les libellés
+  restent du texte HTML sur les dalles ; intro en
   bulles avec le démon stagiaire (« Suite », espace, « Passer l'introduction »),
   statistiques et options en localStorage. Volume et Langue sont grisés (pas de
   musique, seul le français existe) ; la vitesse des animations (×0,5 à ×4) est
@@ -68,8 +70,8 @@ npm run build
   âmes, mise, paris posés ; pied fixe avec l'état, « Poser le pari », « Boutique »
   et le lancement), boutique dans un panneau depuis la gauche (accessible
   seulement en préparation, après un premier pari) ; les deux peuvent rester
-  ouverts. Le panneau de paris ne se rouvre jamais tout seul après le départ de la
-  course. Plus de journal : une seule ligne sous le plateau rappelle le dernier
+  ouverts ; le HUD du côté d'un panneau ouvert se décale pour rester visible. Le
+  panneau de paris ne se rouvre jamais tout seul après le départ de la course. Plus de journal : une seule ligne sous le plateau rappelle le dernier
   événement. En fin de course, le classement et le bilan des paris s'affichent
   dans une **modale** au-dessus de la table (après une courte respiration pour
   voir le dernier déplacement) ; « Voir la table » la referme, l'onglet « Gains »

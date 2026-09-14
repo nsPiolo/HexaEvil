@@ -77,7 +77,7 @@ export function GameScreen({ carry, speed, onFinished, onMenu }: Props) {
   const n = ui.inventory.artefacts.length
 
   return (
-    <div className="table" style={{ ['--step' as string]: `${config.animation.stepMs / speed}ms` }}>
+    <div className={'table' + (betsOpen && ui.phase !== 'finished' ? ' bets-open' : '') + (shopOpen && ui.phase === 'prep' ? ' shop-open' : '')} style={{ ['--step' as string]: `${config.animation.stepMs / speed}ms` }}>
       {/* Overlays */}
       <div className="hud hud-left">
         <span className="hud-big">{fill(HUD.circle, { ordinal })}</span>
@@ -94,7 +94,7 @@ export function GameScreen({ carry, speed, onFinished, onMenu }: Props) {
           <button type="button" className={'chip' + (auto ? ' chip-on' : '')} onClick={() => setAuto(!auto)} title="Mode test : enchaîne les tours tout seul">
             auto
           </button>
-          <button type="button" className="chip" onClick={onMenu}>
+          <button type="button" className="btn-stone btn-stone-sm" onClick={onMenu}>
             {HUD.menu}
           </button>
         </span>

@@ -97,6 +97,20 @@ p { margin: 0; }
 }
 .btn:hover:not(:disabled) { border-color: var(--muted); transform: translateY(-1px); }
 .btn:disabled { opacity: 0.4; }
+/* Petite pierre peinte (public/menu/btn-small.png, sprite : repos en haut, survol en bas). Le libellé reste du texte. */
+.btn-stone {
+  border: 0; border-radius: 0; background: url('/menu/btn-small.png') top / 100% 200% no-repeat;
+  height: 52px; aspect-ratio: 3456 / 1216; padding: 0 20px 7px;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: #f4f1ea; font-weight: 700; font-size: 0.95rem; white-space: nowrap;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.75), 0 0 8px rgba(0, 0, 0, 0.5);
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.45));
+  transition: transform 120ms, opacity 150ms;
+}
+.btn-stone:hover:not(:disabled), .btn-stone:focus-visible { background-position: bottom; border-color: transparent; transform: translateY(-1px); }
+.btn-stone:active:not(:disabled) { transform: translateY(1px); }
+.btn-stone:focus-visible { outline: 2px solid var(--gold); outline-offset: -6px; }
+.btn-stone-sm { height: 34px; padding: 0 14px 5px; font-size: 0.8rem; }
 .btn-primary { background: var(--ember); border-color: var(--ember); color: #fff; font-weight: 600; }
 .btn-primary:hover:not(:disabled) { background: #e8652c; }
 
@@ -587,108 +601,86 @@ p { margin: 0; }
   text-align: center;
 }
 
-/* ---- Splash : logo animé 5 s ---- */
-.splash { cursor: pointer; background: radial-gradient(ellipse at 50% 70%, #3a1d12 0%, var(--bg) 60%); }
-.logo { position: relative; display: flex; flex-direction: column; align-items: center; gap: 12px; }
-.logo-flame {
-  width: 120px; height: 160px; border-radius: 50% 50% 45% 45% / 60% 60% 40% 40%;
-  background: radial-gradient(ellipse at 50% 80%, #ffd27a 0%, var(--ember) 35%, #7a2a0c 70%, transparent 72%);
-  filter: blur(1px);
-  animation: flame 900ms ease-in-out infinite alternate, appear 800ms ease-out both;
-}
-.logo-title { display: flex; gap: 0.35em; font-size: clamp(2rem, 6vw, 4.5rem); letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink); text-shadow: 0 0 24px rgba(212, 84, 30, 0.6); }
-.logo-word { display: inline-block; opacity: 0; animation: word-in 700ms cubic-bezier(0.2, 0.8, 0.2, 1.2) both; }
-.logo-sub { color: var(--muted); font-style: italic; opacity: 0; animation: appear 800ms ease-out 1.6s both; }
-@keyframes flame { from { transform: scaleY(1) translateY(0); } to { transform: scaleY(1.08) translateY(-6px) skewX(2deg); } }
-@keyframes word-in { from { opacity: 0; transform: translateY(30px) scale(0.8); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
+/* ---- Splash : le logo peint plein écran, fondu à l'apparition ---- */
+.splash { cursor: pointer; padding: 0; background: #040507; } /* couleur mesurée sur les bords de splash.jpg */
+.splash-logo { position: absolute; inset: 0; margin: 0; line-height: 0; animation: appear 900ms ease-out both; }
+/* contain, pas cover : les bords de l'image sont noirs comme le fond, et le titre reste entier en portrait. */
+.splash-logo img { width: 100%; height: 100%; object-fit: contain; object-position: center; display: block; }
 @keyframes appear { from { opacity: 0; } to { opacity: 1; } }
 
-/* ---- Menu (docs/proto4/illus_menu.jpeg) : gorge infernale peinte, dalles de pierre, titre de braise ---- */
+/* ---- Menu : six images dans public/menu/ (prompts et tailles dans docs/proto4/prompts-menu.md).
+   Les libellés restent du texte HTML par-dessus les dalles ; survol, état désactivé et focus sont en CSS. ---- */
 .menu {
   position: relative; overflow: hidden;
-  background: #1b2430 url('/menu-bg.jpg') center 40% / cover no-repeat;
+  background: #1b2430 url('/menu/bg.jpeg') center 45% / cover no-repeat;
 }
-/* Cadre blanc « déchiré » : plusieurs ombres internes, nettes puis diffuses, pour un bord peint à la brosse. */
-.menu::before {
-  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 1;
-  box-shadow:
-    inset 0 0 0 9px #f4f0e8,
-    inset 0 0 0 13px rgba(244, 240, 232, 0.6),
-    inset 0 0 6px 16px rgba(244, 240, 232, 0.35),
-    inset 0 0 30px 20px rgba(244, 240, 232, 0.18);
-}
-/* Le bloc du menu floute l'illustration derrière lui : les dalles peintes dans l'image s'y fondent. */
+/* Le bloc du menu se pose directement sur l'illustration : ni flou ni voile, le fond peint est fait pour. */
 .menu-panel {
   position: relative; z-index: 2;
   display: flex; flex-direction: column; align-items: center; gap: 30px;
-  padding: 36px 44px 44px; border-radius: 28px;
-  background: radial-gradient(ellipse at 50% 45%, rgba(18, 24, 34, 0.55) 0%, rgba(18, 24, 34, 0.25) 60%, rgba(18, 24, 34, 0) 100%);
-  -webkit-backdrop-filter: blur(14px) saturate(0.9);
-  backdrop-filter: blur(14px) saturate(0.9);
+  padding: 36px 44px 44px;
 }
-.menu-title {
-  margin: 0;
-  font-family: Impact, 'Arial Black', 'Helvetica Neue', Arial, sans-serif; font-weight: 900;
-  font-size: clamp(2.6rem, 6.5vw, 4.8rem); line-height: 1; letter-spacing: 0.05em; text-transform: uppercase;
-  background: linear-gradient(180deg, #ffc26a 0%, #f58a2e 42%, #c8421c 74%, #6e1c0e 100%);
-  -webkit-background-clip: text; background-clip: text; color: transparent;
-  -webkit-text-stroke: 1.5px rgba(38, 14, 8, 0.85);
-  filter: drop-shadow(0 3px 0 #2a1410) drop-shadow(0 8px 10px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 22px rgba(255, 130, 40, 0.5));
-}
-.menu-list { display: flex; flex-direction: column; gap: 14px; width: min(520px, 90vw); }
-/* Dalle de pierre bleu-gris : dégradé de roche, coups de brosse, arête claire en haut, épaisseur sombre en bas, une fissure. */
+.menu-title { margin: 0; line-height: 0; }
+.menu-title img { display: block; width: min(461px, 80vw); height: auto; filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.5)); }
+.menu-list { display: flex; flex-direction: column; gap: 14px; width: min(548px, 92vw); }
+/* Dalle : sprite à deux rangées (repos en haut, survol en bas), chaque rangée 548 × 94 px CSS
+   (dalle 520 × 66 + 14 px d'ombre autour). Trois variantes de pierre pour casser la répétition. */
 .menu-btn {
-  position: relative; width: 100%; padding: 15px 24px;
+  position: relative; width: 100%; aspect-ratio: 548 / 94; padding: 0 30px 6px;
+  border: 0; background: url('/menu/btn-stone-1.png') top / 100% 200% no-repeat;
   color: #f4f1ea; font-size: 1.12rem; font-weight: 700; letter-spacing: 0.01em;
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.75), 0 0 10px rgba(0, 0, 0, 0.5);
-  border: 2px solid #1c2934;
-  border-radius: 16px 9px 13px 8px / 9px 14px 8px 13px;
-  background:
-    linear-gradient(98deg, rgba(255, 255, 255, 0.16) 0 28%, transparent 29% 58%, rgba(255, 255, 255, 0.09) 59% 80%, transparent 81%),
-    linear-gradient(180deg, #93a9ba 0%, #72899a 36%, #56697b 64%, #3d4f60 100%);
-  box-shadow:
-    inset 0 2px 0 rgba(255, 255, 255, 0.4),
-    inset 3px 0 0 rgba(255, 255, 255, 0.14),
-    inset 0 -4px 0 rgba(0, 0, 0, 0.35),
-    0 6px 0 #1a2530,
-    0 12px 20px rgba(0, 0, 0, 0.55);
-  transition: transform 120ms, box-shadow 120ms, filter 150ms, opacity 150ms;
+  transition: transform 120ms, opacity 150ms;
 }
-.menu-btn::after {
-  content: ''; position: absolute; left: 10%; right: 34%; top: 58%; height: 1px; pointer-events: none;
-  background: linear-gradient(90deg, transparent, rgba(16, 26, 36, 0.6) 15% 85%, transparent);
-  transform: rotate(-1.4deg);
-}
-.menu-btn:nth-child(2) { border-radius: 9px 15px 8px 14px / 13px 8px 14px 9px; }
-.menu-btn:nth-child(2)::after { left: 30%; right: 12%; top: 40%; transform: rotate(1.1deg); }
-.menu-btn:nth-child(3) { border-radius: 13px 8px 16px 10px / 8px 13px 9px 15px; }
-.menu-btn:nth-child(4) { border-radius: 8px 14px 9px 15px / 14px 9px 13px 8px; }
-.menu-btn:nth-child(4)::after { left: 18%; right: 40%; top: 36%; transform: rotate(-0.8deg); }
-.menu-btn:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.1); box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.45), inset 3px 0 0 rgba(255, 255, 255, 0.14), inset 0 -4px 0 rgba(0, 0, 0, 0.35), 0 8px 0 #1a2530, 0 16px 24px rgba(0, 0, 0, 0.55); }
-.menu-btn:active:not(:disabled) { transform: translateY(3px); box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.3), inset 0 -2px 0 rgba(0, 0, 0, 0.35), 0 3px 0 #1a2530, 0 6px 10px rgba(0, 0, 0, 0.5); }
-.menu-btn:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+.menu-btn:nth-child(3) { background-image: url('/menu/btn-stone-2.png'); }
+.menu-btn:nth-child(4) { background-image: url('/menu/btn-stone-3.png'); }
+.menu-btn:hover:not(:disabled), .menu-btn:focus-visible { background-position: bottom; transform: translateY(-1px); }
+.menu-btn:active:not(:disabled) { transform: translateY(2px); }
+.menu-btn:focus-visible { outline: 3px solid var(--gold); outline-offset: -8px; border-radius: 12px; }
 .menu-btn:disabled { opacity: 0.6; filter: saturate(0.55) brightness(0.9); }
-/* Dalle de lave pour l'action principale. */
-.menu-btn-primary {
-  color: #fff7ec; border-color: #5a1e0c;
-  background:
-    linear-gradient(98deg, rgba(255, 235, 170, 0.28) 0 26%, transparent 27% 58%, rgba(255, 210, 140, 0.16) 59% 80%, transparent 81%),
-    linear-gradient(180deg, #ffbb5a 0%, #f5852c 38%, #dc5b1c 66%, #a33912 100%);
-  box-shadow:
-    inset 0 2px 0 rgba(255, 240, 200, 0.5),
-    inset 3px 0 0 rgba(255, 230, 180, 0.2),
-    inset 0 -4px 0 rgba(90, 30, 12, 0.5),
-    0 6px 0 #5a1e0c,
-    0 12px 20px rgba(0, 0, 0, 0.55),
-    0 0 28px rgba(255, 120, 40, 0.4);
-}
-.menu-btn-primary::after { background: linear-gradient(90deg, transparent, rgba(90, 30, 12, 0.55) 15% 85%, transparent); }
-.menu-btn-primary:hover:not(:disabled) { box-shadow: inset 0 2px 0 rgba(255, 240, 200, 0.5), inset 3px 0 0 rgba(255, 230, 180, 0.2), inset 0 -4px 0 rgba(90, 30, 12, 0.5), 0 8px 0 #5a1e0c, 0 16px 24px rgba(0, 0, 0, 0.55), 0 0 36px rgba(255, 130, 50, 0.55); }
+.menu-btn-primary { background-image: url('/menu/btn-lava.png'); color: #fff7ec; }
 @media (max-width: 640px) { .menu-panel { padding: 24px 16px 32px; } }
 
 /* ---- Stats / Options ---- */
-.panel-screen { justify-content: flex-start; align-items: stretch; max-width: 640px; margin: 0 auto; text-align: left; }
-.panel-screen h1 { font-size: 1.6rem; }
+/* Statistiques et Option : la gorge du menu en fond, floutée et assombrie, fixée à la fenêtre (l'écran lui-même est étroit). */
+.panel-screen { position: relative; isolation: isolate; justify-content: flex-start; align-items: stretch; max-width: 640px; margin: 0 auto; text-align: left; }
+.panel-screen::before {
+  content: ''; position: fixed; inset: -24px; z-index: -1; pointer-events: none;
+  background: #1b2430 url('/menu/bg.jpeg') center 45% / cover no-repeat;
+  filter: blur(12px) brightness(0.5) saturate(0.85);
+}
+.panel-screen h1 {
+  margin: 0; text-align: center; font-family: 'Cormorant Garamond', Georgia, serif; font-size: 2.2rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.1em; color: #f2a45a;
+  text-shadow: 0 0 2px #5a1e0c, 0 2px 0 #3a120a, 0 6px 14px rgba(0, 0, 0, 0.7);
+}
+.panel-screen .back { margin-bottom: -8px; position: relative; z-index: 1; }
+/* Parchemin (public/menu/scroll.png, 1400 × 1793) en neuf tranches : rouleaux et lisières fixes, corps étiré selon le contenu.
+   Tranches en % de l'image ; `--s` = échelle d'affichage (largeur affichée / largeur de l'image). La zone de texte reste
+   à l'intérieur des lisières déchirées et sous l'ombre du rouleau : c'est le padding. */
+.scroll {
+  --s: 0.457; /* 640 px affichés pour 1400 px d'image */
+  width: min(640px, 100%); align-self: center; box-sizing: border-box; position: relative;
+  border-style: solid;
+  border-width: calc(322px * var(--s)) calc(192px * var(--s)) calc(319px * var(--s)) calc(192px * var(--s));
+  border-image: url('/menu/scroll.png') 17.96% 13.7% 17.8% 13.7% fill / calc(322px * var(--s)) calc(192px * var(--s)) calc(319px * var(--s)) calc(192px * var(--s)) stretch;
+  padding: 0 calc(90px * var(--s)) calc(20px * var(--s));
+  color: #3a2412; font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 600; font-size: 1.2rem; font-variant: small-caps;
+  filter: drop-shadow(0 12px 20px rgba(0, 0, 0, 0.5));
+}
+@media (max-width: 520px) { .scroll { --s: 0.28; font-size: 1.05rem; } }
+/* Encre sur papier : plus de cartouches sombres, un filet pointillé entre les lignes. */
+.scroll .stat-row, .scroll .option { background: none; border: 0; border-bottom: 1px dashed rgba(58, 36, 18, 0.3); border-radius: 0; box-shadow: none; padding: 9px 6px; }
+.scroll .stat-row:last-child, .scroll .option:last-child { border-bottom: 0; }
+.scroll .stat-row dt, .scroll .option-label { color: #5a3a22; }
+.scroll .stat-row dd, .scroll .option-value { color: #2a1608; font-weight: 700; }
+.scroll .muted { color: #7a5a3e; }
+/* Dans le parchemin, une option tient sur deux lignes : libellé pleine largeur, puis réglage et valeur. */
+.scroll .option { grid-template-columns: 1fr 64px; row-gap: 6px; }
+.scroll .option-label { grid-column: 1 / -1; }
+.scroll .option select { color: #3a2412; background: rgba(255, 250, 235, 0.55); border: 1px solid rgba(58, 36, 18, 0.4); font-variant: normal; }
+.scroll .option input[type='range'] { accent-color: #a63a12; }
+.scroll .option-disabled { opacity: 0.6; }
 .back { align-self: flex-start; }
 .stats { margin: 0; display: flex; flex-direction: column; gap: 6px; }
 .stat-row { display: flex; justify-content: space-between; padding: 10px 14px; border-radius: 8px; background: var(--panel); border: 1px solid var(--line); }
@@ -778,8 +770,11 @@ p { margin: 0; }
   overflow: hidden;
 }
 .hud { position: fixed; top: 14px; z-index: 30; display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; border-radius: 10px; background: rgba(20, 16, 15, 0.75); border: 1px solid var(--line); backdrop-filter: blur(4px); font-size: 0.85rem; }
-.hud-left { left: 16px; }
-.hud-right { right: 16px; align-items: flex-end; }
+.hud-left { left: 16px; transition: left 350ms cubic-bezier(0.2, 0.8, 0.2, 1), right 350ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+/* Un panneau ouvert pousse le HUD de son côté pour ne pas le cacher (pièces, artefacts, Menu ; cercle, prix). */
+.table.shop-open .hud-left { left: calc(min(480px, 100vw) + 16px); }
+.table.bets-open .hud-right { right: calc(min(480px, 100vw) + 16px); }
+.hud-right { right: 16px; align-items: flex-end; transition: left 350ms cubic-bezier(0.2, 0.8, 0.2, 1), right 350ms cubic-bezier(0.2, 0.8, 0.2, 1); }
 .hud-big { font-weight: 700; font-size: 1.05rem; }
 .hud-link { background: none; border: none; padding: 0; color: var(--gold); text-decoration: underline dotted; font-size: 0.85rem; }
 .hud-tools { display: flex; gap: 6px; margin-top: 4px; }
