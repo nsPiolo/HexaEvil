@@ -31,6 +31,7 @@ import {
   type Roll,
 } from '../core/rules/race'
 import { randomSeed, seededRng, type Rng } from '../core/rules/rng'
+import type { BlockedCell } from '../core/config/schema'
 import type { ShopItem } from '../core/shop/items'
 import { applyPurchase, findItem, generateVitrine, opponentNegativesFlipped, priceAtCircle, type Inventory, type PurchaseTarget } from '../core/shop/shop'
 import { demonLevelAtRace, rankOfLevel } from './demon'
@@ -100,6 +101,9 @@ export interface UseRaceProps {
   carry: SessionCarry
   /** Nombre d'âmes en course pour ce cercle. */
   soulCount: number
+  /** Couloirs et cases bloquées du cercle (GDD §2.2). */
+  lanes: number
+  blocked: readonly BlockedCell[]
   /** Multiplicateur de vitesse des animations (option). */
   speed: number
 }
@@ -140,8 +144,9 @@ export function priceFor(item: ShopItem, raceIndex: number): number {
   return priceAtCircle(item.price, circleOf(raceIndex).circle, shop.priceGrowthPerCircle)
 }
 
-function raceOptions(inventory: Inventory): RaceOptions {
-  const o: RaceOptions = {}
+/** Options de piste : celles du cercle, plus les artefacts qui changent le plateau. */
+function raceOptions(inventory: Inventory, base: RaceOptions): RaceOptions {
+  const o: RaceOptions = { ...base }
   if (inventory.artefacts.includes('sablier')) o.betThresholdRatio = config.artefacts.sablier.betThresholdRatio
   return o
 }
@@ -151,10 +156,13 @@ export function fullCharges(inventory: Inventory): number {
   return inventory.artefacts.includes('lateBet') ? config.artefacts.lateBet.chargesPerCircle : 0
 }
 
-function initial(seed: number, carry: SessionCarry, soulCount: number): RaceUi {
+function initial(seed: number, carry: SessionCarry, base: RaceOptions): RaceUi {
   const { circle, raceInCircle } = circleOf(carry.raceIndex)
+  const race = createRace(config, raceOptions(carry.inventory, base))
+  const lanes = race.track.lanes
+  const blocked = race.track.blocked.length
   return {
-    race: createRace(config, { ...raceOptions(carry.inventory), soulCount }),
+    race,
     phase: 'prep',
     roll: null,
     combinations: [],
@@ -162,7 +170,7 @@ function initial(seed: number, carry: SessionCarry, soulCount: number): RaceUi {
     resolvingIndex: null,
     opponentRoll: null,
     lastResult: null,
-    log: [{ id: 0, turn: 1, source: 'system', text: `Cercle ${circle}, course ${raceInCircle}/${config.run.racesPerCircle} — ${soulCount} âmes, ${config.track.columns} cases, graine ${seed}. Posez vos paris initiaux.` }],
+    log: [{ id: 0, turn: 1, source: 'system', text: `Cercle ${circle}, course ${raceInCircle}/${config.run.racesPerCircle} — ${race.souls.length} âmes, ${config.track.columns} cases, ${lanes} couloir${lanes > 1 ? 's' : ''}${blocked > 0 ? `, ${blocked} case${blocked > 1 ? 's' : ''} bloquée${blocked > 1 ? 's' : ''}` : ''}, graine ${seed}. Posez vos paris initiaux.` }],
     seed,
     money: carry.money,
     bets: [],
@@ -182,9 +190,9 @@ export function carryOut(ui: RaceUi): SessionCarry {
   return { money: ui.money, inventory: ui.inventory, raceIndex: ui.raceIndex + 1, lateBetCharges: ui.lateBetCharges }
 }
 
-export function useRace({ carry, soulCount, speed }: UseRaceProps) {
+export function useRace({ carry, soulCount, lanes, blocked, speed }: UseRaceProps) {
   const [seed] = useState(randomSeed)
-  const [ui, setUi] = useState<RaceUi>(() => initial(seed, carry, soulCount))
+  const [ui, setUi] = useState<RaceUi>(() => initial(seed, carry, { soulCount, lanes, blocked }))
   const [auto, setAuto] = useState(false)
 
   const uiRef = useRef<RaceUi>(ui)
@@ -217,6 +225,8 @@ export function useRace({ carry, soulCount, speed }: UseRaceProps) {
     const notes = r.move.notes.length > 0 ? ` (${r.move.notes.join(' ; ')})` : ''
     if (r.blockedAtStart) return `${who} ${dist}${notes} : sur la ligne de départ, ne recule pas.`
     let s = `${who} ${dist}${notes} : case ${r.from} → ${r.to}.`
+    if (r.detour === 'blocked') s += ` Couloir bloqué, se décale sur le couloir ${r.toLane + 1}.`
+    if (r.detour === 'occupied') s += ` Case occupée, se décale sur le couloir ${r.toLane + 1}.`
     if (r.collision?.kind === 'jump') s += ` Percute ${r.collision.over.map(name).join(', ')} et saute devant.`
     if (r.collision?.kind === 'swap') s += ` Recule sur ${name(r.collision.with)} : échange de place (${name(r.collision.with)} passe en ${r.collision.otherTo}).`
     if (r.crossedFinish) s += ` Franchit l'arrivée !`
@@ -304,7 +314,7 @@ export function useRace({ carry, soulCount, speed }: UseRaceProps) {
       let next = pushLog({ ...u, money: u.money - price, inventory, lateBetCharges, vitrine: (u.vitrine ?? []).filter((i) => i !== item), pendingPurchase: null, tally: { ...u.tally, spent: u.tally.spent + price } }, 'shop', `${text} (${price} pièces)`)
       // Le Sablier change le plateau : on achète en préparation, personne n'a bougé, le plateau est refait tout de suite.
       if (item.kind === 'artefact' && item.id === 'sablier') {
-        const track = createTrack(config.track, raceOptions(inventory))
+        const track = createTrack(config.track, raceOptions(inventory, { lanes: u.race.track.lanes, blocked: u.race.track.blocked }))
         next = pushLog({ ...next, race: { ...next.race, track } }, 'shop', `Seuil de pari à ${Math.round(track.betThresholdRatio * 100)} % dès cette course.`)
       }
       commit(next)

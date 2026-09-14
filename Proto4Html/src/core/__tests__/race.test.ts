@@ -5,6 +5,7 @@ import rawConfig from '../../../config/race.json'
 import {
   applyMove,
   buildMoves,
+  chooseCell,
   createRace,
   endTurn,
   isPairingComplete,
@@ -194,5 +195,149 @@ describe('course complète simulée', () => {
       const inner = state.souls.filter((s) => s.position > 0 && s.position < state.track.totalCells - 1).map((s) => s.position)
       expect(new Set(inner).size).toBe(inner.length)
     }
+  })
+})
+
+/** Piste à `lanes` couloirs ; chaque âme est donnée par [colonne, couloir]. */
+function withLanes(cells: [number, number][], lanes: number, blocked: { column: number; lane: number }[] = []): RaceState {
+  const race = createRace({ ...cfg, souls: { ...cfg.souls, count: cells.length } }, { lanes, blocked })
+  return { ...race, souls: race.souls.map((s, i) => ({ ...s, position: cells[i]![0], lane: cells[i]![1] })) }
+}
+
+describe('couloirs : choix de la case (GDD §2.6)', () => {
+  const blocked = [{ column: 4, lane: 1 }]
+  it('un seul couloir : tout le monde en couloir 0, règles d’origine', () => {
+    const race = createRace(cfg)
+    expect(race.track.lanes).toBe(1)
+    expect(race.souls.every((s) => s.lane === 0)).toBe(true)
+  })
+  it('au départ, les âmes se répartissent sur les couloirs en commençant par le bas', () => {
+    const race = createRace(cfg, { soulCount: 6, lanes: 2 })
+    expect(race.souls.map((s) => s.lane)).toEqual([0, 1, 0, 1, 0, 1])
+  })
+  it('atterrit dans son couloir quand la case est vide', () => {
+    const race = withLanes([[2, 1], [5, 0]], 2)
+    const { state, result } = applyMove(race, move(0, 3))
+    expect(result.to).toBe(5)
+    expect(result.toLane).toBe(1)
+    expect(result.detour).toBeNull()
+    expect(result.collision).toBeNull()
+    expect(state.souls[0]?.lane).toBe(1)
+  })
+  it('case occupée : se décale sur une case vide de la colonne, la plus en bas', () => {
+    const race = withLanes([[2, 1], [5, 1], [0, 2]], 3)
+    const { result } = applyMove(race, move(0, 3))
+    expect(result.to).toBe(5)
+    expect(result.toLane).toBe(0)
+    expect(result.detour).toBe('occupied')
+    expect(result.collision).toBeNull()
+  })
+  it('case bloquée : se décale sur la case vide la plus en bas', () => {
+    const race = withLanes([[1, 1], [0, 0]], 2, blocked)
+    const { result } = applyMove(race, move(0, 3))
+    expect(result.to).toBe(4)
+    expect(result.toLane).toBe(0)
+    expect(result.detour).toBe('blocked')
+  })
+  it('case bloquée et colonne pleine : percute l’occupante de la case la plus en bas', () => {
+    const race = withLanes([[1, 1], [4, 0]], 2, blocked)
+    const { state, result } = applyMove(race, move(0, 3))
+    expect(result.collision).toEqual({ kind: 'jump', over: [1] })
+    expect(result.to).toBe(5)
+    // Après le saut, elle rechoisit sa case : son couloir (1) est libre en colonne 5.
+    expect(state.souls[0]?.lane).toBe(1)
+    expect(state.souls[1]?.position).toBe(4)
+  })
+  it('colonne pleine sans case bloquée : percute dans son couloir et saute devant', () => {
+    const race = withLanes([[2, 0], [5, 0], [5, 1]], 2)
+    const { state, result } = applyMove(race, move(0, 3))
+    expect(result.collision).toEqual({ kind: 'jump', over: [1] })
+    expect(state.souls[0]?.position).toBe(6)
+    expect(state.souls[0]?.lane).toBe(0)
+  })
+  it('cascade : la colonne suivante est pleine aussi', () => {
+    const race = withLanes([[2, 0], [5, 0], [5, 1], [6, 0], [6, 1]], 2)
+    const { state, result } = applyMove(race, move(0, 3))
+    expect(result.collision).toEqual({ kind: 'jump', over: [1, 3] })
+    expect(state.souls[0]?.position).toBe(7)
+  })
+  it('reculer sur une colonne avec une case vide : pas d’échange', () => {
+    const race = withLanes([[6, 0], [5, 0]], 2)
+    const { state, result } = applyMove(race, move(0, -1))
+    expect(result.collision).toBeNull()
+    expect(state.souls[0]?.position).toBe(5)
+    expect(state.souls[0]?.lane).toBe(1)
+    expect(result.detour).toBe('occupied')
+  })
+  it('reculer sur une colonne pleine : échange de place, couloirs compris', () => {
+    const race = withLanes([[6, 1], [5, 0], [5, 1]], 2)
+    const { state, result } = applyMove(race, move(0, -1))
+    expect(result.collision).toEqual({ kind: 'swap', with: 2, otherFrom: 5, otherTo: 6 })
+    expect(state.souls[0]).toMatchObject({ position: 5, lane: 1 })
+    expect(state.souls[2]).toMatchObject({ position: 6, lane: 1 })
+  })
+  it('chooseCell : plusieurs cases vides, on prend la plus en bas', () => {
+    const race = withLanes([[3, 2]], 3, [{ column: 5, lane: 2 }])
+    expect(chooseCell(race.track, race.souls, 5, 2, 0)).toEqual({ lane: 0, occupant: null, detour: 'blocked' })
+    expect(chooseCell(race.track, race.souls, 4, 2, 0)).toEqual({ lane: 2, occupant: null, detour: null })
+  })
+  it('dans une colonne, l’âme la plus en bas est devant ; plus d’ex æquo hors cases partagées', () => {
+    const race = withLanes([[10, 1], [10, 0], [12, 1], [3, 0]], 2)
+    const ranked = ranking(race)
+    expect(ranked.map((r) => [r.soul.id, r.rank])).toEqual([[2, 1], [1, 2], [0, 3], [3, 4]])
+  })
+  it('course complète au cercle 3 : jamais sur une case bloquée, une âme par case hors départ et dernière case', () => {
+    const circle = cfg.run.circles[2]!
+    expect(circle.lanes).toBe(2)
+    for (let seed = 1; seed <= 200; seed++) {
+      const rng = seededRng(seed)
+      let state = createRace(cfg, { soulCount: circle.souls, lanes: circle.lanes, blocked: circle.blocked })
+      let guard = 0
+      while (!state.finished && guard++ < 1000) {
+        const r = rollPlayerDice(cfg, state.souls.length, rng, dice)
+        for (const m of buildMoves(r, naturalCombinations(r), 'player')) state = applyMove(state, m).state
+        const pair = rollOpponentPair(cfg, state.souls.length, rng)
+        for (const m of buildMoves(pair, naturalCombinations(pair), 'opponent')) state = applyMove(state, m).state
+        state = endTurn(state)
+        for (const s of state.souls) {
+          expect(circle.blocked.some((b) => b.column === s.position && b.lane === s.lane)).toBe(false)
+          expect(s.lane).toBeLessThan(circle.lanes)
+        }
+        const inner = state.souls.filter((s) => s.position > 0 && s.position < state.track.totalCells - 1).map((s) => `${s.position}:${s.lane}`)
+        expect(new Set(inner).size).toBe(inner.length)
+      }
+      expect(state.finished).toBe(true)
+      expect(ranking(state)).toHaveLength(circle.souls)
+    }
+  })
+})
+
+describe('couloirs et cases bloquées : config', () => {
+  type Raw = { run: { circles: { souls: number; lanes: number; blocked: { column: number; lane: number }[] }[] }; track: { columns: number } }
+  const clone = (): Raw => JSON.parse(JSON.stringify(rawConfig)) as Raw
+  it('la config du proto suit le GDD : 1 couloir au cercle 1, 2 au cercle 2, 4 cases bloquées au cercle 3', () => {
+    const c = loadConfig(rawConfig).run.circles
+    expect(c[0]!.lanes).toBe(1)
+    expect(c[1]!.lanes).toBe(2)
+    expect(c[2]!.lanes).toBe(2)
+    expect(c[2]!.blocked.map((b) => b.column)).toEqual([4, 5, 8, 9])
+    for (const circle of c) expect(circle.lanes).toBe(Math.max(1, circle.souls - 4))
+  })
+  it('refuse un couloir hors piste, une colonne entièrement bloquée ou un doublon', () => {
+    const lane = clone()
+    lane.run.circles[2]!.blocked[0]!.lane = 2
+    expect(() => loadConfig(lane)).toThrow(/lane/)
+    const column = clone()
+    column.run.circles[2]!.blocked[0]!.column = column.track.columns + 1
+    expect(() => loadConfig(column)).toThrow(/column/)
+    const full = clone()
+    full.run.circles[2]!.blocked.push({ column: 4, lane: 0 })
+    expect(() => loadConfig(full)).toThrow(/entièrement bloquée/)
+    const dup = clone()
+    dup.run.circles[2]!.blocked.push({ column: 4, lane: 1 })
+    expect(() => loadConfig(dup)).toThrow(/double/)
+    const tooMany = clone()
+    tooMany.run.circles[0]!.lanes = 6
+    expect(() => loadConfig(tooMany)).toThrow(/couloirs/)
   })
 })

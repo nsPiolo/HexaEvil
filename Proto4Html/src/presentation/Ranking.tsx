@@ -29,6 +29,7 @@ export function Ranking({ race, settlement, money, continueLabel, onContinue, on
             <span className="rank-name">{soul.name}</span>
             <span className="rank-pos">
               case {soul.position}
+              {race.track.lanes > 1 && <span className="muted"> · couloir {soul.lane + 1}</span>}
               {soul.finishOrder !== null && <span className="muted"> · arrivée n°{soul.finishOrder}</span>}
             </span>
           </li>

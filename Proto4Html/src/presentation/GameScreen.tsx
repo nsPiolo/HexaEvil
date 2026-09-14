@@ -29,7 +29,7 @@ function stepOf(ui: RaceUi): Step {
 export function GameScreen({ carry, speed, onFinished, onMenu }: Props) {
   const { circle, raceInCircle } = circleOf(carry.raceIndex)
   const circleCfg = config.run.circles[circle - 1] ?? config.run.circles[config.run.circles.length - 1]!
-  const { ui, auto, setAuto, shopUnlocked, level, actions } = useRace({ carry, soulCount: circleCfg.souls, speed })
+  const { ui, auto, setAuto, shopUnlocked, level, actions } = useRace({ carry, soulCount: circleCfg.souls, lanes: circleCfg.lanes, blocked: circleCfg.blocked, speed })
   const [betsOpen, setBetsOpen] = useState(true)
   const [shopOpen, setShopOpen] = useState(false)
   const [artefactsOpen, setArtefactsOpen] = useState(false)
@@ -69,7 +69,7 @@ export function GameScreen({ carry, speed, onFinished, onMenu }: Props) {
     return entries[entries.length - 1]?.text ?? ''
   }, [ui.log])
 
-  // Paris à gauche, boutique à droite : les deux peuvent rester ouverts, on passe de l'un à l'autre librement.
+  // Paris à droite, boutique à gauche : les deux peuvent rester ouverts, on passe de l'un à l'autre librement.
   const openShop = (): void => {
     if (actions.openShop()) setShopOpen(true)
   }
@@ -109,13 +109,13 @@ export function GameScreen({ carry, speed, onFinished, onMenu }: Props) {
         ))}
       </ol>
 
-      {/* Onglet boutique (panneau venant de la droite), seulement en préparation */}
+      {/* Onglet boutique (panneau venant de la gauche), seulement en préparation */}
       {ui.phase === 'prep' && !shopOpen && (
-        <button type="button" className="tab tab-right" disabled={!shopUnlocked} onClick={openShop} title={shopUnlocked ? undefined : 'Pose d’abord un pari initial'}>
+        <button type="button" className="tab tab-left" disabled={!shopUnlocked} onClick={openShop} title={shopUnlocked ? undefined : 'Pose d’abord un pari initial'}>
           {HUD.shop}
         </button>
       )}
-      <div className={'drawer drawer-right' + (shopOpen && ui.phase === 'prep' ? ' drawer-open' : '')} aria-hidden={!shopOpen}>
+      <div className={'drawer drawer-left drawer-shop' + (shopOpen && ui.phase === 'prep' ? ' drawer-open' : '')} aria-hidden={!shopOpen}>
         {ui.vitrine && (
           <ShopPanel vitrine={ui.vitrine} money={ui.money} raceIndex={ui.raceIndex} inventory={ui.inventory} pending={ui.pendingPurchase} onBuy={(id, target) => actions.buy(id, target ?? null)} onCancel={actions.cancelPurchase} onReroll={actions.rerollVitrine} onLeave={() => { setShopOpen(false); setBetsOpen(true) }} onClose={() => setShopOpen(false)} />
         )}
@@ -146,13 +146,13 @@ export function GameScreen({ carry, speed, onFinished, onMenu }: Props) {
         </div>
       )}
 
-      {/* Onglet paris (panneau venant de la gauche) */}
+      {/* Onglet paris (panneau venant de la droite : la piste reste dégagée à gauche, dans le sens de la course) */}
       {ui.phase !== 'finished' && !betsOpen && (
-        <button type="button" className="tab tab-left" onClick={() => setBetsOpen(true)}>
+        <button type="button" className="tab tab-right" onClick={() => setBetsOpen(true)}>
           {HUD.bets} ({ui.bets.length})
         </button>
       )}
-      <div className={'drawer drawer-left' + (betsOpen && ui.phase !== 'finished' ? ' drawer-open' : '')} aria-hidden={!betsOpen}>
+      <div className={'drawer drawer-right' + (betsOpen && ui.phase !== 'finished' ? ' drawer-open' : '')} aria-hidden={!betsOpen}>
         <BetPanel race={ui.race} money={ui.money} bets={ui.bets} open={canBetNow(ui)} phase={ui.phase} level={level} lateBet={ui.inventory.artefacts.includes('lateBet') ? { charges: ui.lateBetCharges, active: ui.lateBetOpen } : null} onUseLateBet={actions.useLateBet} onPlace={actions.placeBet} baseFor={(type) => betBase(type, ui.inventory)} onStart={actions.startRace} onOpenShop={openShop} onClose={() => setBetsOpen(false)} />
       </div>
 

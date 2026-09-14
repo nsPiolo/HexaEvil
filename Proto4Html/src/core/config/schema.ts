@@ -1,6 +1,12 @@
 import type { BetTypeId } from '../rules/betTypes'
 
 /** Forme validée de `config/race.json` (GDD proto4 §9.1 : tout ce qui est chiffré vit là). */
+/** Case bloquée d'un cercle (rétrécissement, GDD §2.2). */
+export interface BlockedCell {
+  column: number
+  lane: number
+}
+
 export interface RaceConfig {
   souls: {
     /** Nombre d'âmes au départ (5 au cercle 1). */
@@ -37,7 +43,17 @@ export interface RaceConfig {
   }
   run: {
     racesPerCircle: number
-    circles: readonly { name: string; price: number; souls: number; boss: string; power: string }[]
+    circles: readonly {
+      name: string
+      price: number
+      souls: number
+      /** Couloirs de la piste (GDD §2.2). Pas encore appliqué en course. */
+      lanes: number
+      /** Cases bloquées : colonne de parcours (1 = première après le départ), couloir (0 = celui du bas). */
+      blocked: readonly BlockedCell[]
+      boss: string
+      power: string
+    }[]
   }
   artefacts: {
     lateBet: { chargesPerCircle: number }

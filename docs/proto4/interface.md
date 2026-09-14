@@ -236,3 +236,19 @@ Si le joueur n'a pas assez :
 | 7 Violence | 1000 | 8 |
 | 8 Fraude | 1250 | 9 |
 | 9 Trahison | 1500 | 10 |
+
+# Direction Artistique
+
+```
+Une peinture numérique conceptuelle à coups de pinceau larges et visibles, avec une atmosphère brumeuse et éthérée. L'éclairage est dramatique et théâtral, créant de forts contrastes chromatiques, comme du feu chaud contre de la roche bleutée froide. Le rendu est expressionniste et texturé, comme un speed painting concept art.
+```
+
+Peinture numérique (Digital Painting) / Speed painting : Le rendu imite la peinture traditionnelle avec des coups de pinceau (brushstrokes) très marqués, texturés et assumés. On sent le geste de l'artiste.
+
+Concept Art : C'est un style très utilisé dans la préproduction de films ou de jeux vidéo pour poser rapidement une ambiance, une échelle ou un univers sans s'attarder sur les micro-détails.
+
+Atmosphérique et immersif : Il y a une forte utilisation de la perspective atmosphérique (les éléments lointains sont fondus dans la brume, la fumée ou la lumière). Cela crée beaucoup de profondeur.
+
+Lumière dramatique (Chiaroscuro / Contraste) : Les éclairages sont très forts et théâtraux. Dans la première image, c'est le contraste chaud/froid (feu contre roche bleutée).
+
+Paysage épique (Epic Landscape) / Stylisé : L'échelle est gigantesque par rapport au personnage (le "Scale reference"), ce qui donne un sentiment d'immensité et d'écrasement. Les formes (roches, ruines) sont taillées à la serpe, assez brutes et géométriques.

@@ -20,7 +20,11 @@ npm run build
 ## Ce qui est implémenté
 
 - Écrans (interface.md) : logo animé 5 s (un clic abrège), menu principal
-  (Continuer grisé sans run, Nouvelle évasion, Statistiques, Option), intro en
+  (Continuer grisé sans run, Nouvelle évasion, Statistiques, Option) habillé selon
+  `docs/proto4/illus_menu.jpeg` : l'illustration en fond (`public/menu-bg.jpg`,
+  réduite à 1920 px), floutée derrière le bloc du menu, dalles de pierre bleu-gris
+  en CSS, dalle de lave pour l'action principale, titre en lettres de braise, cadre
+  blanc brossé ; intro en
   bulles avec le démon stagiaire (« Suite », espace, « Passer l'introduction »),
   statistiques et options en localStorage. Volume et Langue sont grisés (pas de
   musique, seul le français existe) ; la vitesse des animations (×0,5 à ×4) est
@@ -58,10 +62,11 @@ npm run build
   Course · Gains (étape faite en gras, étape en cours avec halo), cercle et course
   en haut à gauche, pièces et nombre d'artefacts en haut à droite (clic = popup
   des artefacts actifs), emplacement de l'adversaire en haut de la table et du
-  joueur en bas. Paris dans un panneau coulissant depuis la gauche (titre en
+  joueur en bas. Paris dans un panneau coulissant depuis la droite (le départ de
+  la piste reste visible pendant qu'on parie ; titre en
   petites capitales, sections I à IV : type par palier avec fourchette de cotes,
   âmes, mise, paris posés ; pied fixe avec l'état, « Poser le pari », « Boutique »
-  et le lancement), boutique dans un panneau depuis la droite (accessible
+  et le lancement), boutique dans un panneau depuis la gauche (accessible
   seulement en préparation, après un premier pari) ; les deux peuvent rester
   ouverts. Le panneau de paris ne se rouvre jamais tout seul après le départ de la
   course. Plus de journal : une seule ligne sous le plateau rappelle le dernier
@@ -70,21 +75,31 @@ npm run build
   voir le dernier déplacement) ; « Voir la table » la referme, l'onglet « Gains »
   à droite la rouvre, « Continuer » enchaîne.
 
-- Plateau : une seule ligne de `columns` cases, ligne d'arrivée, cases après
-  l'arrivée, zone des 60 % marquée en couleur (simple repère pour l'instant).
-  Les âmes qui partagent une case (départ, dernière case) s'empilent visuellement.
+- Plateau : `columns` colonnes × `lanes` couloirs (GDD §2.2 : 1 couloir au
+  cercle 1, un de plus à chaque âme ajoutée, `lanes` et `blocked` par cercle dans
+  `config/race.json`), ligne d'arrivée, cases après l'arrivée, zone des 60 %
+  marquée en couleur. Le couloir 1 (prioritaire) est dessiné en bas, au plus près
+  du joueur ; les cases bloquées sont hachurées (cercle 3 : colonnes 4, 5, 8, 9 sur
+  le couloir du haut). Les âmes qui partagent une case (départ, dernière case)
+  s'empilent visuellement.
 - Lancer du joueur : 2 dés Distance (`-1, 1, 2, 3`) + 3 dés Âme. Le joueur associe
   chaque dé Distance à un dé Âme **dans l'ordre de son choix** ; cet ordre est
   l'ordre de résolution, et le dé Âme restant est ignoré. Deux distances sur la
   même âme → cumulées en un seul déplacement.
-- Collisions (§2.6) : avancer sur une case occupée → saute devant (en cascade si
-  la case suivante est occupée aussi) ; reculer sur une case occupée → échange de
-  place ; pas de recul depuis la ligne de départ.
+- Couloirs (§2.6) : une âme atterrit en priorité dans son couloir ; si sa case est
+  bloquée ou occupée, dans la case vide la plus en bas de la colonne ; si la
+  colonne est pleine, collision (dans son couloir, ou le plus bas si le sien est
+  bloqué). Le journal signale les décalages (« se décale sur le couloir 1 »).
+- Collisions (§2.6) : avancer sur une colonne pleine → saute devant, en
+  rechoisissant sa case dans la colonne suivante (en cascade si elle est pleine
+  aussi) ; reculer sur une colonne pleine → échange de place ; pas de recul depuis
+  la ligne de départ.
 - Tour de l'adversaire : une ou plusieurs paires (dé Âme + dé Distance) résolues
   séparément après les combinaisons du joueur.
 - Fin de course : dès qu'une âme a franchi l'arrivée, le tour se termine quand même
-  (combinaisons restantes + adversaire), puis classement par position, ex æquo
-  départagés par ordre de franchissement.
+  (combinaisons restantes + adversaire), puis classement par colonne, puis par
+  couloir (le plus bas devant, §2.7), puis ordre de franchissement pour les âmes
+  empilées sur la dernière case.
 - Argent et paris (GDD §3) : capital de départ conservé de course en course
   (« Recommencer » le remet à zéro). Phase de paris initiaux avant la course, **au
   moins un pari obligatoire** pour lancer la course, puis paris en course
@@ -140,9 +155,13 @@ directement en course pour la toute première). Code dans
 
 ## Choix d'interprétation à valider
 
-- **Une case par colonne** pour l'instant : pas de couloirs. Les couloirs
-  multiples et les rétrécissements du GDD viendront ensuite.
-- La ligne de départ et la dernière case après l'arrivée se partagent sans collision.
+- Couloirs : au départ, les âmes se répartissent sur les couloirs en commençant par
+  le bas (âme 1 couloir 1, âme 2 couloir 2, …). Le couloir d'une âme est celui de
+  la case où elle se trouve ; il change quand elle se décale. Les cases bloquées ne
+  concernent que les colonnes de parcours (jamais le départ ni l'après-arrivée).
+- La ligne de départ et la dernière case après l'arrivée se partagent sans collision ;
+  ce sont les seuls endroits où deux âmes peuvent encore être à égalité (départagées
+  par l'ordre de franchissement sur la dernière case).
 - Les paires de l'adversaire ne se cumulent pas entre elles (chaque paire est une
   résolution).
 - Le seuil de pari est **global** : dès qu'une âme l'atteint, plus aucun pari sur

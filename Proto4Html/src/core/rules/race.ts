@@ -4,11 +4,14 @@
  * Tout est pur : un état entre, un état sort. La présentation ne fait qu'enchaîner
  * ces fonctions en y glissant des pauses pour que le testeur voie chaque geste.
  *
- * Représentation retenue pour cette étape : chaque âme a son propre couloir (visuel),
- * la « case » qui compte pour les collisions est la COLONNE. Deux âmes sur la même
- * colonne sont sur la même case. Les rétrécissements de piste viendront plus tard.
+ * Piste à couloirs (GDD §2.2, §2.6) : la position d'une âme est sa COLONNE, son
+ * couloir sert au choix de la case d'arrivée et au départage. Une colonne pleine
+ * (toutes ses cases libres occupées) provoque la collision ; sinon l'âme se décale
+ * dans la case vide la plus en bas. Le couloir 0 est celui du bas, prioritaire.
+ * Certaines cases peuvent être bloquées (rétrécissement) : on n'y atterrit jamais.
+ * Avec un seul couloir, on retrouve les règles d'origine : une case par colonne.
  */
-import type { RaceConfig } from '../config/schema'
+import type { BlockedCell, RaceConfig } from '../config/schema'
 import { plainFace, type DistanceDie, type Face } from './dice'
 import type { Rng } from './rng'
 
@@ -19,6 +22,8 @@ export interface Soul {
   name: string
   /** Colonne occupée, 0 = ligne de départ. */
   position: number
+  /** Couloir occupé, 0 = celui du bas (prioritaire). */
+  lane: number
   /** Ordre de franchissement de l'arrivée (1 = première), ou null. */
   finishOrder: number | null
 }
@@ -33,6 +38,10 @@ export interface Track {
   betThresholdRatio: number
   /** Première colonne de la zone « plus de pari ». */
   betThresholdColumn: number
+  /** Nombre de couloirs (GDD §2.2 : 1 au cercle 1, puis âmes − 4). */
+  lanes: number
+  /** Cases bloquées (rétrécissements), colonnes 1 à columns − 1. */
+  blocked: readonly BlockedCell[]
 }
 
 export interface RaceState {
@@ -74,10 +83,17 @@ export type Collision =
   | { kind: 'jump'; over: readonly SoulId[] }
   | { kind: 'swap'; with: SoulId; otherFrom: number; otherTo: number }
 
+/** Pourquoi l'âme n'a pas atterri dans son couloir : case bloquée, ou occupée alors qu'une autre était vide. */
+export type Detour = 'blocked' | 'occupied' | null
+
 export interface MoveResult {
   move: Move
   from: number
   to: number
+  fromLane: number
+  toLane: number
+  /** Décalage de couloir à l'arrivée (null : atterrit dans son couloir). */
+  detour: Detour
   /** Distance négative sur la case de départ : l'âme ne bouge pas (§2.6). */
   blockedAtStart: boolean
   collision: Collision | null
@@ -97,27 +113,40 @@ export interface RaceOptions {
   betThresholdRatio?: number
   /** Nombre d'âmes en course (dépend du cercle) ; sinon souls.count. */
   soulCount?: number
+  /** Couloirs de la piste (dépend du cercle) ; 1 par défaut. */
+  lanes?: number
+  /** Cases bloquées du cercle ; aucune par défaut. */
+  blocked?: readonly BlockedCell[]
 }
 
 export function createTrack(cfg: RaceConfig['track'], options: RaceOptions = {}): Track {
   const ratio = options.betThresholdRatio ?? cfg.betThresholdRatio
   const cellsAfterFinish = cfg.cellsAfterFinish
+  const lanes = Math.max(1, options.lanes ?? 1)
   return {
     columns: cfg.columns,
     cellsAfterFinish,
     totalCells: cfg.columns + cellsAfterFinish,
     betThresholdRatio: ratio,
     betThresholdColumn: Math.ceil(cfg.columns * ratio),
+    lanes,
+    blocked: (options.blocked ?? []).filter((b) => b.lane < lanes && b.column > 0 && b.column < cfg.columns),
   }
+}
+
+export function isBlocked(track: Track, column: number, lane: number): boolean {
+  return track.blocked.some((b) => b.column === column && b.lane === lane)
 }
 
 export function createRace(config: RaceConfig, options: RaceOptions = {}): RaceState {
   const souls: Soul[] = []
   const count = options.soulCount ?? config.souls.count
+  const track = createTrack(config.track, options)
+  // Ligne de départ commune : les âmes se répartissent sur les couloirs, du bas vers le haut.
   for (let i = 0; i < count; i++) {
-    souls.push({ id: i, name: at(config.souls.names, i, 'souls.names'), position: 0, finishOrder: null })
+    souls.push({ id: i, name: at(config.souls.names, i, 'souls.names'), position: 0, lane: i % track.lanes, finishOrder: null })
   }
-  return { track: createTrack(config.track, options), souls, turn: 1, finished: false, nextFinishOrder: 1 }
+  return { track, souls, turn: 1, finished: false, nextFinishOrder: 1 }
 }
 
 /** Lancer du joueur avec ses propres dés Distance (forgés ou spéciaux). */
@@ -214,18 +243,45 @@ export function isPairingComplete(roll: Roll, combinations: readonly Combination
   return combinations.length === roll.distance.length
 }
 
-function occupantAt(souls: readonly Soul[], position: number, except: SoulId): Soul | undefined {
-  return souls.find((s) => s.id !== except && s.position === position)
+export interface CellChoice {
+  lane: number
+  /** Âme déjà sur la case retenue : il y aura collision. */
+  occupant: Soul | null
+  detour: Detour
 }
 
-/** Applique un déplacement et ses collisions (§2.6). */
+/**
+ * Choix de la case d'arrivée dans une colonne (GDD §2.6), en priorité dans le couloir
+ * `preferredLane` :
+ * 1. sa case est vide : on y va ;
+ * 2. sa case est bloquée : une case vide de la colonne, la plus en bas ; sinon la case
+ *    la plus en bas, et collision avec son occupante ;
+ * 3. sa case est occupée : une autre case vide, la plus en bas ; sinon collision sur place.
+ */
+export function chooseCell(track: Track, souls: readonly Soul[], column: number, preferredLane: number, except: SoulId): CellChoice {
+  const occupantOf = (lane: number): Soul | null => souls.find((s) => s.id !== except && s.position === column && s.lane === lane) ?? null
+  let open: number[] = []
+  for (let l = 0; l < track.lanes; l++) if (!isBlocked(track, column, l)) open.push(l)
+  if (open.length === 0) open = Array.from({ length: track.lanes }, (_, l) => l)
+  const preferredOpen = open.includes(preferredLane)
+  if (preferredOpen && !occupantOf(preferredLane)) return { lane: preferredLane, occupant: null, detour: null }
+  const empty = open.find((l) => !occupantOf(l))
+  if (empty !== undefined) return { lane: empty, occupant: null, detour: preferredOpen ? 'occupied' : 'blocked' }
+  const lane = preferredOpen ? preferredLane : at(open, 0, 'couloir')
+  return { lane, occupant: occupantOf(lane), detour: preferredOpen ? null : 'blocked' }
+}
+
+/** Applique un déplacement, son choix de case et ses collisions (§2.6). */
 export function applyMove(state: RaceState, move: Move): { state: RaceState; result: MoveResult } {
   const { track } = state
   const maxCell = track.totalCells - 1
   const mover = at(state.souls, move.soul, 'âme')
   const from = mover.position
+  const fromLane = mover.lane
 
   let to = from
+  let toLane = fromLane
+  let detour: Detour = null
   let collision: Collision | null = null
   let blockedAtStart = false
   const souls = state.souls.map((s) => ({ ...s }))
@@ -234,29 +290,39 @@ export function applyMove(state: RaceState, move: Move): { state: RaceState; res
     blockedAtStart = true
   } else if (move.distance > 0) {
     to = Math.min(maxCell, from + move.distance)
-    // Atterrir sur une case occupée : on saute devant l'âme percutée, en cascade.
-    // La dernière case du plateau se partage (les ex æquo s'y retrouvent).
+    // Colonne pleine : on percute et on saute devant, en cascade, en rechoisissant la case
+    // à chaque colonne. La dernière case du plateau se partage (les arrivées s'y empilent).
     const over: SoulId[] = []
-    let occupant = occupantAt(souls, to, mover.id)
-    while (occupant && to < maxCell) {
-      over.push(occupant.id)
+    for (;;) {
+      const choice = chooseCell(track, souls, to, fromLane, mover.id)
+      toLane = choice.lane
+      detour = choice.detour
+      if (!choice.occupant || to >= maxCell) break
+      over.push(choice.occupant.id)
       to += 1
-      occupant = occupantAt(souls, to, mover.id)
     }
     if (over.length > 0) collision = { kind: 'jump', over }
   } else if (move.distance < 0) {
     to = Math.max(0, from + move.distance)
-    // Reculer sur une case occupée : échange de place. La ligne de départ se partage.
-    const occupant = to > 0 ? occupantAt(souls, to, mover.id) : undefined
-    if (occupant) {
-      collision = { kind: 'swap', with: occupant.id, otherFrom: occupant.position, otherTo: from }
-      at(souls, occupant.id, 'âme').position = from
+    if (to > 0) {
+      // Colonne pleine en reculant : échange de place avec l'occupante de la case retenue.
+      // La ligne de départ se partage.
+      const choice = chooseCell(track, souls, to, fromLane, mover.id)
+      toLane = choice.lane
+      detour = choice.detour
+      if (choice.occupant) {
+        collision = { kind: 'swap', with: choice.occupant.id, otherFrom: to, otherTo: from }
+        const other = at(souls, choice.occupant.id, 'âme')
+        other.position = from
+        other.lane = fromLane
+      }
     }
   }
 
   const crossedFinish = from < track.columns && to >= track.columns
   const moved = at(souls, mover.id, 'âme')
   moved.position = to
+  moved.lane = toLane
   let nextFinishOrder = state.nextFinishOrder
   if (crossedFinish) {
     moved.finishOrder = nextFinishOrder
@@ -265,7 +331,7 @@ export function applyMove(state: RaceState, move: Move): { state: RaceState; res
 
   return {
     state: { ...state, souls, nextFinishOrder },
-    result: { move, from, to, blockedAtStart, collision, crossedFinish },
+    result: { move, from, to, fromLane, toLane, detour, blockedAtStart, collision, crossedFinish },
   }
 }
 
@@ -277,14 +343,19 @@ export function endTurn(state: RaceState): RaceState {
 
 export interface Ranked {
   soul: Soul
-  /** 1 = première ; deux âmes à égalité partagent le rang. */
+  /** 1 = première ; deux âmes à égalité (même case partagée) ont le même rang. */
   rank: number
 }
 
-/** Classement définitif : position décroissante, puis ordre de franchissement de l'arrivée. */
+/**
+ * Classement définitif (§2.7) : colonne décroissante, puis couloir (le plus bas devant),
+ * puis ordre de franchissement de l'arrivée pour les âmes empilées sur la dernière case.
+ * Il ne reste d'ex æquo que sur les cases partagées (départ, dernière case).
+ */
 export function ranking(state: RaceState): Ranked[] {
   const sorted = [...state.souls].sort((a, b) => {
     if (b.position !== a.position) return b.position - a.position
+    if (a.lane !== b.lane) return a.lane - b.lane
     const fa = a.finishOrder ?? Number.POSITIVE_INFINITY
     const fb = b.finishOrder ?? Number.POSITIVE_INFINITY
     return fa - fb
@@ -292,7 +363,7 @@ export function ranking(state: RaceState): Ranked[] {
   const out: Ranked[] = []
   sorted.forEach((soul, i) => {
     const prev = out[i - 1]
-    const tied = prev !== undefined && prev.soul.position === soul.position && prev.soul.finishOrder === soul.finishOrder
+    const tied = prev !== undefined && prev.soul.position === soul.position && prev.soul.lane === soul.lane && prev.soul.finishOrder === soul.finishOrder
     out.push({ soul, rank: tied ? prev.rank : i + 1 })
   })
   return out

@@ -37,8 +37,9 @@ interface MenuProps {
 export function Menu({ canContinue, onContinue, onNewRun, onStats, onOptions }: MenuProps) {
   return (
     <div className="screen menu">
-      <h1 className="menu-title">{GAME_NAME}</h1>
-      <nav className="menu-list">
+      <div className="menu-panel">
+        <h1 className="menu-title">{GAME_NAME}</h1>
+        <nav className="menu-list">
         <button type="button" className="menu-btn" disabled={!canContinue} onClick={onContinue} title={canContinue ? undefined : 'Aucune évasion en cours'}>
           {MENU.continue}
         </button>
@@ -51,7 +52,8 @@ export function Menu({ canContinue, onContinue, onNewRun, onStats, onOptions }: 
         <button type="button" className="menu-btn" onClick={onOptions}>
           {MENU.options}
         </button>
-      </nav>
+        </nav>
+      </div>
     </div>
   )
 }

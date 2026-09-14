@@ -78,18 +78,21 @@ Chaque course utilise un circuit linéaire ressemblant à un plateau de jeu de s
 
 | Élément | Règle / fonction | Valeur indicative de POC |
 |---|---|---:|
-| Couloir | Chemin entre le départ et l'arrivée | 1 à nombre d'âme au départ |
+| Couloir | Chemin entre le départ et l'arrivée ; un couloir de plus à chaque âme ajoutée | 1 au cercle 1 (5 âmes), 2 au cercle 2 (6 âmes)… |
 | Colonne de parcours | Distance en nombre de case entre le départ et l'arrivée | 10 à 20 colonnes |
 | Case de parcours | Position et déclenchement des effets | 10 à 20 case par ligne |
 | Ligne de départ | Position initiale commune | 1 |
 | Ligne d'arrivée | Déclenche la résolution finale | 1 |
 | Cases après l'arrivée | Permettent de classer plusieurs arrivées du même tour | 2 à 4 |
+| Départage dans une colonne | Deux âmes dans la même colonne : la plus **en bas** est devant | — |
 | Zones de pari | Signalent la limite de prise de paris | seuil à 60 % du parcours |
 | Cases spéciales | Pièges, bonus ou règles de cercle | à introduire progressivement |
 
-La piste est représenté par n couloirs (où n correspond au nombre d'âme au départ).
-Chaque couloir est découpé en un nombre de cases. Les cases sont alignée entre elles formant une colonne.
-Dans certaines colonnes, les cases d'un couloir peuvent être manquante ou bloqué, forcant l'âme à se déporter sur une autre case de la colonne. Ce rétrécisement de la piste de course va provoquer des évènements stratégiques. 
+La piste est représentée par un ou plusieurs **couloirs** parallèles. Au premier cercle il n'y en a qu'un, pour 5 âmes. À partir du second cercle, chaque fois qu'une âme est ajoutée au départ (cercles 2, 4, 6, 8, 9, voir §4.1), un couloir est ajouté aussi : 6 âmes et 2 couloirs au cercle 2, 7 âmes et 3 couloirs au cercle 4, etc. Le nombre de couloirs est donc `âmes − 4`, une valeur de configuration.
+
+Chaque couloir est découpé en cases. Les cases des couloirs sont alignées entre elles et forment une **colonne** : la position d'une âme dans la course est sa colonne, son couloir ne sert qu'au départage et au choix de la case (§2.6). Les couloirs sont dessinés de haut en bas ; le couloir **du bas** est le plus proche du joueur, c'est celui qui a la priorité dans tous les arbitrages.
+
+Dans certaines colonnes, les cases d'un couloir peuvent être manquantes ou **bloquées**, forçant l'âme à se déporter sur une autre case de la colonne. Ce rétrécissement de la piste va provoquer des événements stratégiques. La ligne de départ est commune : toutes les âmes y tiennent sans collision.
 
 Le seuil de 60 % est matérialisé par des zones de couleur. Un pari supplémentaire ne peut pas cibler une âme qui a dépassé ce seuil. La course continue jusqu'à ce qu'au moins une âme franchisse l'arrivée ; le tour en cours est néanmoins résolu jusqu'au bout. Le classement final est ensuite calculé à partir des positions atteintes après cette résolution complète, y compris les cases situées au-delà de l'arrivée.
 
@@ -130,9 +133,21 @@ L'adversaire (l'ordinateur), lance 1 ou plusieurs fois (en fonction de la config
 
 ### 2.6 Recul et collisions
 
-- Une âme sur la case de départ ne peut pas reculer : une distance négative ne la déplace pas (mais elle peut être sélectionné par le dé).
-- Lorsqu'une âme avance et atterrit sur une case occupée, elle **saute devant** l'âme percutée. Elle prend la place ou la position immédiatement devant elle selon la représentation choisie par le prototype.
-- Lorsqu'une âme recule sur une case occupée, elle **échange sa place** avec l'âme percutée.
+#### Couloirs : choix de la case d'arrivée
+
+Une âme se déplace d'un nombre de **colonnes** égal à la distance. La case où elle atterrit dans la colonne d'arrivée se choisit ainsi, en priorité dans **son couloir** (celui où elle se trouve au moment de bouger) :
+
+1. La case de son couloir est **vide** : elle y va.
+2. La case de son couloir est **bloquée** (manquante ou rétrécissement) : elle va dans une autre case de la colonne, une case **vide** en priorité ; s'il n'y en a pas, la case **la plus en bas** de la colonne, et elle y percute l'âme en place (règle de collision ci-dessous).
+3. La case de son couloir est **occupée par une âme** : s'il existe une autre case vide dans la colonne, elle y va ; sinon elle **percute** l'âme en place.
+
+Quand plusieurs cases conviennent (plusieurs cases vides, par exemple), on prend toujours **la plus en bas**. Après le déplacement, le couloir de l'âme est celui de la case où elle a atterri. Une collision n'a donc lieu que lorsque la colonne d'arrivée est pleine ; au premier cercle, avec un seul couloir, chaque atterrissage sur une âme est une collision, comme avant.
+
+#### Collisions
+
+- Une âme sur la case de départ ne peut pas reculer : une distance négative ne la déplace pas (mais elle peut être sélectionnée par le dé).
+- Lorsqu'une âme avance et doit percuter une âme (colonne pleine), elle **saute devant** l'âme percutée : elle atterrit dans la colonne suivante, en appliquant à nouveau le choix de la case ci-dessus (et donc en cascade si cette colonne est pleine aussi).
+- Lorsqu'une âme recule et doit percuter une âme (colonne pleine), elle **échange sa place** avec l'âme percutée : chacune prend la case de l'autre.
 - Les effets de collision sont résolus à chaque déplacement, dans l'ordre choisi par le joueur.
 - Les effets de cartes, d'âmes ou de boss peuvent modifier ces règles ; ils doivent alors être signalés clairement avant la résolution.
 
@@ -140,7 +155,7 @@ Le système doit rester déterministe après le lancer : l'aléatoire provient p
 
 ### 2.7 Fin de course et récompense
 
-Dès qu'une âme franchit l'arrivée, les combinaisons restantes du tour sont résolues, ainsi que le tour de l'adversaire. Le classement est calculé ensuite. Les paris sont évalués contre ce classement, les gains et pertes sont appliqués, puis la boutique et les éventuelles récompenses de fin de course deviennent accessibles.
+Dès qu'une âme franchit l'arrivée, les combinaisons restantes du tour sont résolues, ainsi que le tour de l'adversaire. Le classement est calculé ensuite, par colonne atteinte (cases après l'arrivée comprises). Deux âmes dans la **même colonne** sont départagées par leur couloir : **la plus en bas est devant**. Il n'y a donc jamais d'ex æquo. Les paris sont évalués contre ce classement, les gains et pertes sont appliqués, puis la boutique et les éventuelles récompenses de fin de course deviennent accessibles.
 
 ---
 
@@ -202,6 +217,7 @@ Les valeurs numériques sont indicatives :
 | Courses par cercle | Construction de la tension économique | 3 |
 | Prix du cercle | Somme à payer à la fin du cercle | à définir par cercle, ex. 100 à 1 000 |
 | Âmes par course | Complexité croissante | 5 au cercle 1, puis augmentation de 1 aux cercle : 2,4,6,8,9 |
+| Couloirs | Un de plus à chaque âme ajoutée (§2.2) | 1 au cercle 1, 2 au cercle 2, 3 au cercle 4, 4 au cercle 6, 5 au cercle 8, 6 au cercle 9 |
 | Cases | Longueur variable du plateau | 10 à 20 au départ, puis modifications |
 
 ### 4.2 Économie et condition de fin de run
@@ -384,8 +400,8 @@ Les paramètres suivants doivent vivre dans un fichier de configuration et être
 
 - valeurs exactes des dés Distance et des dés Âme ;
 - nombre de dés Âme par cercle ;
-- nombre d'âmes en course par cercle ;
-- nombre de cases, cases après l'arrivée et seuils visuels ;
+- nombre d'âmes en course par cercle, et nombre de couloirs (âmes − 4 par défaut) ;
+- nombre de cases, cases après l'arrivée, cases bloquées et seuils visuels ;
 - prix du cercle, capital initial, gains et pertes de paris ;
 - coefficients de rentabilité des dix types de paris ;
 - fréquence, coût et contenu de la boutique ;

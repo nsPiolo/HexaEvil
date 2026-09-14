@@ -146,6 +146,16 @@ export function MapScreen({ carry, onLaunch, onMenu }: Props) {
               </dd>
             </div>
             <div>
+              <dt>{MAP.track}</dt>
+              <dd>
+                {fill(MAP.lanes, { n: info.lanes, s: info.lanes > 1 ? 's' : '' })}
+                {' · '}
+                {info.blocked.length > 0
+                  ? fill(MAP.blocked, { n: info.blocked.length, s: info.blocked.length > 1 ? 's' : '', columns: [...new Set(info.blocked.map((b) => b.column))].sort((a, b) => a - b).join(', ') })
+                  : MAP.noBlocked}
+              </dd>
+            </div>
+            <div>
               <dt>{MAP.price}</dt>
               <dd>{selected <= currentCircle ? `${info.price} pièces` : <span className="muted">{MAP.priceHidden}</span>}</dd>
             </div>

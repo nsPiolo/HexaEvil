@@ -3,7 +3,7 @@
  * Une erreur désigne toujours le champ fautif, pour qu'un réglage cassé se voie au premier écran.
  */
 import { BET_TYPE_IDS, type BetTypeId } from '../rules/betTypes'
-import type { RaceConfig } from './schema'
+import type { BlockedCell, RaceConfig } from './schema'
 
 export class ConfigError extends Error {
   constructor(field: string, detail: string) {
@@ -107,13 +107,34 @@ export function loadConfig(raw: unknown): RaceConfig {
   const racesPerCircle = int(run.racesPerCircle, 'run.racesPerCircle', 1)
   if (!Array.isArray(run.circles) || run.circles.length === 0) fail('run.circles', 'tableau non vide attendu')
   const circles = run.circles.map((c, i) => {
-    const o = obj(c, `run.circles[${i}]`)
+    const f = `run.circles[${i}]`
+    const o = obj(c, f)
+    const soulsInCircle = int(o.souls, `${f}.souls`, 2)
+    const lanes = int(o.lanes, `${f}.lanes`, 1)
+    if (lanes > soulsInCircle) fail(`${f}.lanes`, `plus de couloirs (${lanes}) que d'âmes (${soulsInCircle})`)
+    if (!Array.isArray(o.blocked)) fail(`${f}.blocked`, 'tableau attendu (vide si aucune case bloquée)')
+    const blocked: BlockedCell[] = o.blocked.map((b, k) => {
+      const cell = obj(b, `${f}.blocked[${k}]`)
+      const column = int(cell.column, `${f}.blocked[${k}].column`, 1)
+      if (column > columns) fail(`${f}.blocked[${k}].column`, `au plus track.columns (${columns})`)
+      const lane = int(cell.lane, `${f}.blocked[${k}].lane`, 0)
+      if (lane >= lanes) fail(`${f}.blocked[${k}].lane`, `au plus lanes − 1 (${lanes - 1})`)
+      return { column, lane }
+    })
+    if (new Set(blocked.map((b) => `${b.column}:${b.lane}`)).size !== blocked.length) fail(`${f}.blocked`, 'case bloquée en double')
+    const perColumn = new Map<number, number>()
+    for (const b of blocked) perColumn.set(b.column, (perColumn.get(b.column) ?? 0) + 1)
+    for (const [column, n] of perColumn) {
+      if (n >= lanes) fail(`${f}.blocked`, `colonne ${column} entièrement bloquée : il faut au moins une case libre par colonne`)
+    }
     return {
-      name: str(o.name, `run.circles[${i}].name`),
-      price: int(o.price, `run.circles[${i}].price`, 0),
-      souls: int(o.souls, `run.circles[${i}].souls`, 2),
-      boss: str(o.boss, `run.circles[${i}].boss`),
-      power: str(o.power, `run.circles[${i}].power`),
+      name: str(o.name, `${f}.name`),
+      price: int(o.price, `${f}.price`, 0),
+      souls: soulsInCircle,
+      lanes,
+      blocked,
+      boss: str(o.boss, `${f}.boss`),
+      power: str(o.power, `${f}.power`),
     }
   })
   const maxSouls = Math.max(...circles.map((c) => c.souls))
