@@ -1,6 +1,7 @@
 import { betType, type Settlement } from '../core/rules/bets'
 import { ranking, type RaceState } from '../core/rules/race'
 import { soulColor } from './souls'
+import { HUD } from './texts'
 
 interface Props {
   race: RaceState
@@ -8,14 +9,17 @@ interface Props {
   money: number
   continueLabel: string
   onContinue: () => void
+  /** Referme la modale pour regarder la table ; l'onglet « Gains » la rouvre. */
+  onClose?: () => void
 }
 
-export function Ranking({ race, settlement, money, continueLabel, onContinue }: Props) {
+export function Ranking({ race, settlement, money, continueLabel, onContinue, onClose }: Props) {
   const ranked = ranking(race)
   const net = settlement ? settlement.returned - settlement.staked : 0
   return (
-    <section className="ranking" aria-label="Classement">
-      <h2>Classement final</h2>
+    <section className="ranking" aria-label={HUD.raceResult}>
+      <h2>{HUD.raceResult}</h2>
+      <h3>Classement final</h3>
       <p className="muted">Établi après la résolution complète du tour {race.turn}.</p>
       <ol>
         {ranked.map(({ soul, rank }, i) => (
@@ -48,7 +52,14 @@ export function Ranking({ race, settlement, money, continueLabel, onContinue }: 
         </div>
       )}
       {settlement && settlement.bets.length === 0 && <p className="muted small">Aucun pari sur cette course.</p>}
-      <button type="button" className="btn btn-primary" onClick={onContinue}>{continueLabel}</button>
+      <div className="ranking-actions">
+        <button type="button" className="btn btn-primary" onClick={onContinue} autoFocus>{continueLabel}</button>
+        {onClose && (
+          <button type="button" className="btn" onClick={onClose}>
+            {HUD.seeTable}
+          </button>
+        )}
+      </div>
     </section>
   )
 }

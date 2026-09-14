@@ -42,6 +42,19 @@
       "fullRankingExact": 80,
       "winnerAndLast": 14
     },
+    "betUnlockLevel": {
+      "_comment": "Niveau du stagiaire requis pour chaque type de pari (0 = Stagiaire au départ, 1 = Assistant après le cercle 1, 2 = Tourmenteur après le 3, 3 = Contremaître après le 5, 4 = Sous-directeur après le 7 ; grades dans src/presentation/texts.ts). Les gros multiplicateurs arrivent tard : un ×80 gagné au premier cercle rendrait le reste de la partie inutile.",
+      "winner": 0,
+      "top3": 0,
+      "notTop3": 0,
+      "last": 0,
+      "duel": 0,
+      "twoInTop3": 1,
+      "podiumAnyOrder": 1,
+      "winnerAndLast": 2,
+      "podiumExact": 3,
+      "fullRankingExact": 4
+    },
     "decay": {
       "_comment": "Plus la course avance, moins un pari est risqué : sa cote baisse. progress = position de l'âme de tête / colonne du seuil 60 % (0 au départ, 1 au seuil). cote = 1 + (base − 1) × (1 − progress)^exponent, jamais sous minMultiplier. exponent 1 = linéaire ; plus grand = la cote tient bon au début et chute vite à l'approche du seuil.",
       "exponent": 1.5,

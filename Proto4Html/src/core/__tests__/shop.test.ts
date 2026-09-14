@@ -3,7 +3,7 @@ import rawConfig from '../../../config/race.json'
 import rawShop from '../../../config/shop.json'
 import { loadConfig } from '../config/load'
 import { defaultDice, plainFace } from '../rules/dice'
-import { buildMoves, createRace, createTrack, rollOpponentPair, rollPlayerDice, unusedSoulMove } from '../rules/race'
+import { buildMoves, createRace, createTrack, rollOpponentPair, rollPlayerDice, unusedSoulMoves } from '../rules/race'
 import { seededRng } from '../rules/rng'
 import { loadShopConfig } from '../shop/load'
 import { applyPurchase, defaultInventory, findItem, forgeFace, generateVitrine, opponentNegativesFlipped, priceAtCircle } from '../shop/shop'
@@ -84,11 +84,11 @@ describe('effets en course', () => {
       expect(r.faces[0]?.value).toBe(r.distance[0])
     }
   })
-  it('la Clepsydre agit au tour 1 seulement', () => {
+  it('la Clepsydre agit au tour 1 seulement : négatif en valeur absolue, positif +1', () => {
     const roll = { distance: [-1, 3], faces: [plainFace(-1), plainFace(3)], soul: [0, 1, 2] }
     const ctx = { turn: 1, clepsydre: true, bettedSouls: new Set<number>(), sealBonus: 2 }
     const t1 = buildMoves(roll, [{ soulDie: 0, distanceDie: 0 }, { soulDie: 1, distanceDie: 1 }], 'player', ctx)
-    expect(t1.map((m) => m.distance)).toEqual([0, 4])
+    expect(t1.map((m) => m.distance)).toEqual([1, 4])
     expect(t1[0]?.notes[0]).toMatch(/Clepsydre/)
     const t2 = buildMoves(roll, [{ soulDie: 0, distanceDie: 0 }, { soulDie: 1, distanceDie: 1 }], 'player', { ...ctx, turn: 2 })
     expect(t2.map((m) => m.distance)).toEqual([-1, 3])
@@ -102,18 +102,17 @@ describe('effets en course', () => {
     const offBet = buildMoves(roll, [{ soulDie: 1, distanceDie: 0 }], 'player', ctx)
     expect(offBet[0]?.distance).toBe(1)
   })
-  it('la Boussole désigne le dé Âme inutilisé', () => {
+  it('la Boussole fait avancer chaque dé Âme inutilisé', () => {
     const roll = { distance: [1, 2], faces: [plainFace(1), plainFace(2)], soul: [0, 1, 2] }
-    const m = unusedSoulMove(roll, [{ soulDie: 2, distanceDie: 0 }, { soulDie: 0, distanceDie: 1 }])
-    expect(m?.soul).toBe(1)
-    expect(m?.distance).toBe(1)
-    expect(m?.source).toBe('artefact')
-    expect(unusedSoulMove({ ...roll, soul: [0, 1] }, [{ soulDie: 0, distanceDie: 0 }, { soulDie: 1, distanceDie: 1 }])).toBeNull()
-  })
-  it('le Filet ajoute des cases après l’arrivée', () => {
-    const race = createRace(cfg, { extraCellsAfterFinish: 2 })
-    expect(race.track.cellsAfterFinish).toBe(cfg.track.cellsAfterFinish + 2)
-    expect(race.track.totalCells).toBe(cfg.track.columns + cfg.track.cellsAfterFinish + 2)
+    const m = unusedSoulMoves(roll, [{ soulDie: 2, distanceDie: 0 }, { soulDie: 0, distanceDie: 1 }])
+    expect(m).toHaveLength(1)
+    expect(m[0]?.soul).toBe(1)
+    expect(m[0]?.distance).toBe(1)
+    expect(m[0]?.source).toBe('artefact')
+    expect(unusedSoulMoves({ ...roll, soul: [0, 1] }, [{ soulDie: 0, distanceDie: 0 }, { soulDie: 1, distanceDie: 1 }])).toEqual([])
+    // Quatre dés Âme pour deux Distance (Quatrième tête de Cerbère) : deux déplacements, dans l'ordre des dés.
+    const four = unusedSoulMoves({ ...roll, soul: [0, 1, 2, 3] }, [{ soulDie: 1, distanceDie: 0 }, { soulDie: 3, distanceDie: 1 }])
+    expect(four.map((x) => x.soul)).toEqual([0, 2])
     void dice
   })
 })

@@ -7,7 +7,7 @@ est un point de départ pour la configuration du POC (GDD §9.1).
 | Fichier | Contenu | Minimum demandé | Fourni |
 |---|---|---:|---:|
 | [`personnalites.md`](personnalites.md) | Personnalités à donner aux âmes | 10 | 14 |
-| [`artefacts.md`](artefacts.md) | Passifs permanents du run | 20 | 27 |
+| [`artefacts.md`](artefacts.md) | Passifs permanents du run | 20 | 30 |
 | [`forge.md`](forge.md) | Altérations de face de dé | 10 | 14 |
 | [`des.md`](des.md) | Dés spéciaux | 4 | 9 |
 | [`cartes.md`](cartes.md) | Cartes action consommables | 50 | 60 |
@@ -61,13 +61,16 @@ vitrine de boutique devrait proposer au moins :
 Le démon stagiaire monte en grade quand son poulain progresse (GDD §5.2). Les
 listes indiquent un **rang** minimal quand il y en a un :
 
-| Rang | Obtenu | Débloque |
-|---|---|---|
-| 0 — Stagiaire | départ | cartes communes, forge de base, un dé spécial |
-| 1 — Assistant | boss du cercle 1 battu | personnalités (1 par course), artefacts communs |
-| 2 — Tourmenteur | boss du cercle 3 battu | 2 personnalités par course, dés rares, forge avancée |
-| 3 — Contremaître | boss du cercle 5 battu | 3 personnalités, artefacts rares, modification du circuit |
-| 4 — Sous-directeur | boss du cercle 7 battu | tout, y compris les objets ⚠ extrêmes |
+| Rang | Obtenu | Débloque | Paris ouverts (proto 4, `economy.betUnlockLevel`) |
+|---|---|---|---|
+| 0 — Stagiaire | départ | cartes communes, forge de base, un dé spécial | Vainqueur, Top 3, Pas dans le top 3, Dernière place, Duel |
+| 1 — Assistant | boss du cercle 1 battu | personnalités (1 par course), artefacts communs | + Deux âmes dans le top 3, Top 3 dans le désordre |
+| 2 — Tourmenteur | boss du cercle 3 battu | 2 personnalités par course, dés rares, forge avancée | + Vainqueur + dernier |
+| 3 — Contremaître | boss du cercle 5 battu | 3 personnalités, artefacts rares, modification du circuit | + Podium exact |
+| 4 — Sous-directeur | boss du cercle 7 battu | tout, y compris les objets ⚠ extrêmes | + Classement complet exact |
+
+Les paris à gros multiplicateur arrivent tard : un classement complet exact (×80)
+gagné au premier cercle rendrait toutes les courses suivantes inutiles.
 
 ## Vocabulaire commun
 

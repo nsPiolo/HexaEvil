@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { loadConfig } from '../config/load'
 import rawConfig from '../../../config/race.json'
-import { BET_TYPES, betRefusal, bettingClosed, currentMultiplier, effectiveBase, isSameBet, evaluateBet, potentialPayout, raceProgress, settleBets, slotCount, type Bet } from '../rules/bets'
+import { BET_TYPES, betRefusal, betUnlocked, bettingClosed, currentMultiplier, effectiveBase, isSameBet, evaluateBet, potentialPayout, raceProgress, settleBets, slotCount, unlockedBetTypes, type Bet } from '../rules/bets'
 import { createRace, ranking, type RaceState } from '../rules/race'
 
 const cfg = loadConfig(rawConfig)
@@ -98,6 +98,33 @@ describe('validité d’un pari', () => {
   })
 })
 
+describe('déblocage des paris par niveau du stagiaire', () => {
+  const unlock = cfg.economy.betUnlockLevel
+  it('au niveau 0, seuls les paris simples et le duel sont ouverts', () => {
+    const open = unlockedBetTypes(0, unlock).map((t) => t.id)
+    expect(open).toEqual(['winner', 'top3', 'notTop3', 'last', 'duel'])
+  })
+  it('les gros multiplicateurs arrivent avec les grades', () => {
+    expect(betUnlocked('fullRankingExact', 3, unlock)).toBe(false)
+    expect(betUnlocked('fullRankingExact', 4, unlock)).toBe(true)
+    expect(betUnlocked('podiumExact', 2, unlock)).toBe(false)
+    expect(betUnlocked('podiumExact', 3, unlock)).toBe(true)
+    expect(unlockedBetTypes(99, unlock)).toHaveLength(BET_TYPES.length)
+  })
+  it('la plus grosse cote accessible croît avec le niveau, le ×80 en dernier', () => {
+    const maxAt = (level: number): number => Math.max(...unlockedBetTypes(level, unlock).map((t) => cfg.economy.multipliers[t.id]))
+    const levels = Math.max(...Object.values(unlock))
+    for (let l = 1; l <= levels; l++) expect(maxAt(l)).toBeGreaterThanOrEqual(maxAt(l - 1))
+    expect(maxAt(0)).toBeLessThan(10)
+    expect(unlock.fullRankingExact).toBe(levels)
+  })
+  it('la config refuse un jeu sans pari au niveau 0', () => {
+    const raw = JSON.parse(JSON.stringify(rawConfig)) as { economy: { betUnlockLevel: Record<string, number> } }
+    for (const k of Object.keys(raw.economy.betUnlockLevel)) if (k !== '_comment') raw.economy.betUnlockLevel[k] = 1
+    expect(() => loadConfig(raw)).toThrow(/betUnlockLevel/)
+  })
+})
+
 describe('décote selon l’avancement', () => {
   const decay = { exponent: 1.5, minMultiplier: 1.2 }
   it('vaut la cote de base au départ et plancher au seuil', () => {
@@ -132,14 +159,23 @@ describe('règlement', () => {
     expect(s.bets[1]?.payout).toBe(0)
     expect(s.refund).toBe(0)
   })
-  it('le Livre des comptes rembourse la moitié du plus gros pari perdu', () => {
+  it('le Livre des comptes rembourse la moitié d’un pari perdu tiré au sort', () => {
+    // Les deux paris sont perdus (vainqueur = 2, dernier = 3).
     const bets: Bet[] = [
       { id: 1, type: 'winner', souls: [0], stake: 10, multiplier: 3.5, turn: 0, status: 'open', payout: 0 },
       { id: 2, type: 'last', souls: [2], stake: 20, multiplier: 2, turn: 3, status: 'open', payout: 0 },
     ]
-    const s = settleBets(bets, ranked, { refundRatio: 0.5 })
-    expect(s.refund).toBe(10)
-    expect(s.returned).toBe(10)
+    const first = settleBets(bets, ranked, { refundRatio: 0.5, pickLost: () => 0 })
+    expect(first.refund).toBe(5)
+    expect(first.returned).toBe(5)
+    const second = settleBets(bets, ranked, { refundRatio: 0.5, pickLost: (n) => n - 1 })
+    expect(second.refund).toBe(10)
+    // Le tirage ne porte que sur les perdants : avec un seul pari perdu, c'est lui.
+    const won: Bet = { id: 3, type: 'winner', souls: [2], stake: 50, multiplier: 3.5, turn: 0, status: 'open', payout: 0 }
+    const mixed = settleBets([won, bets[0]!], ranked, { refundRatio: 0.5, pickLost: () => 0 })
+    expect(mixed.refund).toBe(5)
+    // Sans pari perdu, rien à rembourser.
+    expect(settleBets([won], ranked, { refundRatio: 0.5, pickLost: () => 0 }).refund).toBe(0)
   })
   it('le Fer à cheval modifie la cote de base du Vainqueur et du Dernier seulement', () => {
     const mods = { winnerFactor: 1.5, lastFactor: 0.5 }

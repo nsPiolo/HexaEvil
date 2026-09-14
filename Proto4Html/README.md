@@ -31,6 +31,17 @@ npm run build
   dialogue annonce ce qui change (âmes en course, prix suivant) ; sinon fin de run.
   Après le 9e cercle payé : évasion. Prix et nombre d'âmes par cercle dans
   `config/race.json`, textes dans `src/presentation/texts.ts`.
+- Hiérarchie du stagiaire (GDD §5.2, boutique-README) : le démon monte en grade
+  quand le boss des cercles 1, 3, 5 et 7 est battu et le prix payé (Assistant,
+  Tourmenteur, Contremaître, Sous-directeur), puis devient le boss du neuvième
+  après le cercle 8. À chaque promotion, un dialogue propre (démon et joueur)
+  s'insère dans la transition de cercle, juste avant l'annonce du cercle suivant,
+  et le nom du démon change dans les bulles (« Démon assistant »…) comme dans le
+  HUD (« Coach : Assistant »). Le grade se déduit du cercle, rien n'est sauvegardé
+  en plus. Il conditionne les types de paris ouverts (ci-dessus). **Pas encore
+  d'effet sur la boutique** : le déblocage par rang des objets viendra avec les
+  personnalités. Grades et lignes dans `texts.ts`
+  (`DEMON_RANKS`), assemblage dans `src/presentation/demon.ts`.
 - Carte des neuf cercles entre deux courses : anneaux concentriques, le premier au
   centre, trois points par cercle reliés par une spirale (le troisième est le
   boss). Courses jouées en braise, prochaine course en or avec halo, à venir en
@@ -54,7 +65,10 @@ npm run build
   seulement en préparation, après un premier pari) ; les deux peuvent rester
   ouverts. Le panneau de paris ne se rouvre jamais tout seul après le départ de la
   course. Plus de journal : une seule ligne sous le plateau rappelle le dernier
-  événement.
+  événement. En fin de course, le classement et le bilan des paris s'affichent
+  dans une **modale** au-dessus de la table (après une courte respiration pour
+  voir le dernier déplacement) ; « Voir la table » la referme, l'onglet « Gains »
+  à droite la rouvre, « Continuer » enchaîne.
 
 - Plateau : une seule ligne de `columns` cases, ligne d'arrivée, cases après
   l'arrivée, zone des 60 % marquée en couleur (simple repère pour l'instant).
@@ -83,6 +97,15 @@ npm run build
   l'âme de tête vers le seuil 60 %), jusqu'à un plancher : un pari tardif rapporte
   moins qu'un pari initial. Exposant et plancher sont dans la config.
   Règlement sur le classement définitif uniquement, bilan affiché et journalisé.
+  **Les types de paris s'ouvrent avec le grade du stagiaire** (`economy.betUnlockLevel`
+  dans la config) : au départ les quatre paris simples et le duel ; Assistant
+  ajoute « Deux âmes dans le top 3 » et « Top 3 dans le désordre » ; Tourmenteur
+  « Vainqueur + dernier » ; Contremaître « Podium exact » ; Sous-directeur
+  « Classement complet exact ». Sans cela, un ×80 gagné au premier cercle rendrait
+  le reste de la partie inutile. Les types verrouillés restent visibles, grisés,
+  avec le grade requis ; le stagiaire annonce chaque déblocage (cotes tirées de la
+  config) dans son dialogue de promotion, et prévient dès l'intro qu'il ne prend
+  que les paris simples.
 - Boutique (GDD §6.1), dans l'ordre du cycle macro révisé : **paris initiaux
   d'abord, boutique ensuite, course enfin**. Il faut au moins un pari pour ouvrir
   la boutique, pour que le joueur ne puisse pas tout dépenser sans enjeu. Vitrine
@@ -91,7 +114,10 @@ npm run build
   [`config/shop.json`](config/shop.json), effets dans le code indexés par id.
   - 8 artefacts (5 emplacements) : Œil du parieur, Sablier de Charon, Boussole des
     Limbes, Clepsydre fêlée, Fer à cheval rouillé, Bourse percée, Livre des
-    comptes, Filet du pêcheur.
+    comptes. Règles alignées sur `docs/proto4/artefacts.md` : la Clepsydre passe
+    les négatifs en valeur absolue au tour 1, la Boussole fait avancer l'âme de
+    chaque dé Âme inutilisé, le Livre rembourse un pari perdu tiré au sort. Le
+    Filet du pêcheur a été retiré (pas d'ex æquo à départager).
   - 4 dés spéciaux qui remplacent un dé Distance : Limbes, Colère, Glace,
     Prodigalité (payant à l'usage).
   - 4 altérations de forge, une face à la fois : Limée, Dorée, Retournée (avec sa
@@ -102,6 +128,15 @@ npm run build
 - Chaque geste est animé : roulement des dés, déplacement du jeton, bulle « +3 »,
   signal de collision, journal détaillé. Vitesse ×0,5 à ×4, mode Auto pour
   enchaîner des courses.
+
+## Menu développeur
+
+Un bouton « dev » presque invisible en bas à droite (ou **Ctrl+Maj+D**, Cmd+Maj+D
+sur Mac) ouvre une popup pour fixer le solde de pièces et sauter à une course
+d'un cercle au choix (course 1, 2 ou boss). L'inventaire est conservé, la course
+en cours est abandonnée, la sauvegarde est écrasée ; on repart de la carte (ou
+directement en course pour la toute première). Code dans
+`src/presentation/DevMenu.tsx`, branché dans `App.tsx`.
 
 ## Choix d'interprétation à valider
 
@@ -134,7 +169,9 @@ src/core/shop/             catalogue (types, chargement de shop.json), vitrine, 
 src/core/rules/rng.ts      aléatoire déterministe (graine affichée à l'écran)
 src/core/__tests__         tests des règles
 src/presentation/App.tsx   routeur d'écrans et orchestration du run (cercles, prix, sauvegarde, stats)
-src/presentation/texts.ts  tous les textes (intro, boss, transitions des 9 cercles, fin), prêts à traduire
+src/presentation/texts.ts  tous les textes (intro, boss, transitions des 9 cercles, grades du démon, fin), prêts à traduire
+src/presentation/demon.ts  grade du démon selon le cercle, assemblage des dialogues de transition et de promotion
+src/presentation/DevMenu.tsx menu développeur : solde et saut à un cercle
 src/presentation/storage.ts localStorage : sauvegarde, statistiques, options
 src/presentation           React : useRace (machine à états d'une rencontre), MapScreen, GameScreen, PlaySlots, BetPanel, ShopPanel, Inventory, Board, Ranking, Dialogue, Screens
 ```

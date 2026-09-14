@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react'
 import { config } from '../core/config'
-import { BET_TYPES, TIER_LABEL, betRefusal, betType, bettingClosed, currentMultiplier, fmtMultiplier, potentialPayout, raceProgress, slotCount, type Bet, type BetTier, type BetTypeId } from '../core/rules/bets'
+import { BET_TYPES, TIER_LABEL, betRefusal, betType, betUnlocked, bettingClosed, currentMultiplier, fmtMultiplier, potentialPayout, raceProgress, slotCount, type Bet, type BetTier, type BetTypeId } from '../core/rules/bets'
 import { isInBetZone, type RaceState } from '../core/rules/race'
 import type { Phase } from './useRace'
+import { rankOfLevel } from './demon'
 import { soulColor } from './souls'
+import { BETS, fill } from './texts'
 
 interface Props {
   race: RaceState
@@ -12,6 +14,8 @@ interface Props {
   /** Peut-on poser un pari en ce moment ? */
   open: boolean
   phase: Phase
+  /** Niveau du stagiaire : les types de paris au-dessus sont affichés verrouillés. */
+  level: number
   /** Œil du parieur : null si non possédé. */
   lateBet: { charges: number; active: boolean } | null
   onUseLateBet: () => void
@@ -27,7 +31,7 @@ interface Props {
 const TIERS: readonly BetTier[] = ['simple', 'intermediate', 'advanced']
 const NUMERALS = ['I', 'II', 'III', 'IV'] as const
 
-export function BetPanel({ race, money, bets, open, phase, lateBet, onUseLateBet, onPlace, baseFor, onStart, onOpenShop, onClose }: Props) {
+export function BetPanel({ race, money, bets, open, phase, level, lateBet, onUseLateBet, onPlace, baseFor, onStart, onOpenShop, onClose }: Props) {
   const [type, setType] = useState<BetTypeId>('winner')
   const [tier, setTier] = useState<BetTier>('simple')
   const [souls, setSouls] = useState<number[]>([])
@@ -41,14 +45,18 @@ export function BetPanel({ race, money, bets, open, phase, lateBet, onUseLateBet
   const progress = raceProgress(race)
   const decay = config.economy.decay
   const multOf = (id: BetTypeId): number => currentMultiplier(baseFor(id), progress, decay)
+  const unlock = config.economy.betUnlockLevel
+  const isLocked = (id: BetTypeId): boolean => !betUnlocked(id, level, unlock)
+  const lockedBadge = (id: BetTypeId): string => fill(BETS.lockedBadge, { rank: rankOfLevel(unlock[id]).name })
   const mult = multOf(type)
   const refusal = useMemo(() => betRefusal(race, type, souls, stake, money, bets), [race, type, souls, stake, money, bets])
   const missing = Math.max(0, slots - souls.length)
   const net = potentialPayout(stake, mult) - stake
 
-  /** Fourchette de cotes d'un palier, pour l'onglet. */
+  /** Fourchette de cotes des types ouverts d'un palier, pour l'onglet ; « verrouillé » si aucun. */
   const range = (t: BetTier): string => {
-    const m = BET_TYPES.filter((b) => b.tier === t).map((b) => multOf(b.id))
+    const m = BET_TYPES.filter((b) => b.tier === t && !isLocked(b.id)).map((b) => multOf(b.id))
+    if (m.length === 0) return BETS.tierLocked
     const lo = Math.min(...m)
     const hi = Math.max(...m)
     return lo === hi ? fmtMultiplier(lo) : `${fmtMultiplier(lo)} – ${fmtMultiplier(hi)}`
@@ -56,7 +64,7 @@ export function BetPanel({ race, money, bets, open, phase, lateBet, onUseLateBet
 
   const changeTier = (t: BetTier): void => {
     setTier(t)
-    const first = BET_TYPES.find((b) => b.tier === t)
+    const first = BET_TYPES.find((b) => b.tier === t && !isLocked(b.id))
     if (first && betType(type).tier !== t) changeType(first.id)
   }
   const changeType = (id: BetTypeId): void => {
@@ -126,24 +134,27 @@ export function BetPanel({ race, money, bets, open, phase, lateBet, onUseLateBet
         </h3>
         <div className="tiers" role="tablist">
           {TIERS.map((t) => (
-            <button key={t} type="button" role="tab" aria-selected={tier === t} className={'tier' + (tier === t ? ' tier-on' : '')} disabled={!open} onClick={() => changeTier(t)}>
+            <button key={t} type="button" role="tab" aria-selected={tier === t} className={'tier' + (tier === t ? ' tier-on' : '')} disabled={!open || BET_TYPES.every((b) => b.tier !== t || isLocked(b.id))} onClick={() => changeTier(t)}>
               <span className="tier-name">{TIER_LABEL[t]}</span>
               <span className="tier-range">{range(t)}</span>
             </button>
           ))}
         </div>
         <ul className="types">
-          {BET_TYPES.filter((b) => b.tier === tier).map((b) => (
-            <li key={b.id}>
-              <button type="button" className={'type' + (type === b.id ? ' type-on' : '')} disabled={!open} onClick={() => changeType(b.id)} aria-pressed={type === b.id}>
-                <span className="type-text">
-                  <span className="type-name">{b.label}</span>
-                  <span className="type-desc">{b.description}</span>
-                </span>
-                <span className="mult-badge serif">{fmtMultiplier(multOf(b.id))}</span>
-              </button>
-            </li>
-          ))}
+          {BET_TYPES.filter((b) => b.tier === tier).map((b) => {
+            const locked = isLocked(b.id)
+            return (
+              <li key={b.id}>
+                <button type="button" className={'type' + (type === b.id ? ' type-on' : '') + (locked ? ' type-locked' : '')} disabled={!open || locked} onClick={() => changeType(b.id)} aria-pressed={type === b.id} title={locked ? fill(BETS.locked, { rank: rankOfLevel(unlock[b.id]).name }) : undefined}>
+                  <span className="type-text">
+                    <span className="type-name">{b.label}</span>
+                    <span className="type-desc">{b.description}</span>
+                  </span>
+                  {locked ? <span className="lock-badge">🔒 {lockedBadge(b.id)}</span> : <span className="mult-badge serif">{fmtMultiplier(multOf(b.id))}</span>}
+                </button>
+              </li>
+            )
+          })}
         </ul>
 
         <h3 className="bp-section">

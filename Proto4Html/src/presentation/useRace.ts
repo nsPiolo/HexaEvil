@@ -9,7 +9,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { config, shop } from '../core/config'
-import { betRefusal, betType, currentMultiplier, effectiveBase, fmtMultiplier, potentialPayout, raceProgress, settleBets, type BaseModifiers, type Bet, type BetTypeId, type Settlement } from '../core/rules/bets'
+import { betRefusal, betType, betUnlocked, currentMultiplier, effectiveBase, fmtMultiplier, potentialPayout, raceProgress, settleBets, type BaseModifiers, type Bet, type BetTypeId, type Settlement } from '../core/rules/bets'
 import { fmtFace } from '../core/rules/dice'
 import {
   applyMove,
@@ -22,7 +22,7 @@ import {
   ranking,
   rollOpponentPair,
   rollPlayerDice,
-  unusedSoulMove,
+  unusedSoulMoves,
   type Combination,
   type MoveContext,
   type MoveResult,
@@ -33,6 +33,8 @@ import {
 import { randomSeed, seededRng, type Rng } from '../core/rules/rng'
 import type { ShopItem } from '../core/shop/items'
 import { applyPurchase, findItem, generateVitrine, opponentNegativesFlipped, priceAtCircle, type Inventory, type PurchaseTarget } from '../core/shop/shop'
+import { demonLevelAtRace, rankOfLevel } from './demon'
+import { BETS, fill } from './texts'
 
 export type Phase = 'prep' | 'idle' | 'rolling' | 'pairing' | 'resolving' | 'opponent' | 'finished'
 
@@ -141,7 +143,6 @@ export function priceFor(item: ShopItem, raceIndex: number): number {
 function raceOptions(inventory: Inventory): RaceOptions {
   const o: RaceOptions = {}
   if (inventory.artefacts.includes('sablier')) o.betThresholdRatio = config.artefacts.sablier.betThresholdRatio
-  if (inventory.artefacts.includes('filet')) o.extraCellsAfterFinish = param('filet', 'extraCells', 2)
   return o
 }
 
@@ -161,7 +162,7 @@ function initial(seed: number, carry: SessionCarry, soulCount: number): RaceUi {
     resolvingIndex: null,
     opponentRoll: null,
     lastResult: null,
-    log: [{ id: 0, turn: 1, source: 'system', text: `Cercle ${circle}, course ${raceInCircle}/${config.run.racesPerCircle} — ${config.souls.count} âmes, ${config.track.columns} cases, graine ${seed}. Posez vos paris initiaux.` }],
+    log: [{ id: 0, turn: 1, source: 'system', text: `Cercle ${circle}, course ${raceInCircle}/${config.run.racesPerCircle} — ${soulCount} âmes, ${config.track.columns} cases, graine ${seed}. Posez vos paris initiaux.` }],
     seed,
     money: carry.money,
     bets: [],
@@ -224,9 +225,13 @@ export function useRace({ carry, soulCount, speed }: UseRaceProps) {
 
   // ---- Paris -------------------------------------------------------------
 
+  /** Niveau du stagiaire pendant cette course : conditionne les types de paris ouverts. */
+  const level = demonLevelAtRace(carry.raceIndex)
+
   const placeBet = useCallback((type: BetTypeId, souls: readonly number[], stake: number): string | null => {
     const u = uiRef.current
     if (!canBetNow(u)) return u.phase === 'pairing' ? 'Les dés sont lancés : plus de pari avant le prochain tour.' : 'Attendez la fin de la résolution.'
+    if (!betUnlocked(type, level, config.economy.betUnlockLevel)) return fill(BETS.locked, { rank: rankOfLevel(config.economy.betUnlockLevel[type]).name })
     const refusal = betRefusal(u.race, type, souls, stake, u.money, u.bets)
     if (refusal) return refusal
     const multiplier = currentMultiplier(betBase(type, u.inventory), raceProgress(u.race), config.economy.decay)
@@ -234,7 +239,7 @@ export function useRace({ carry, soulCount, speed }: UseRaceProps) {
     const names = souls.map((id) => u.race.souls[id]?.name ?? `#${id}`).join(betType(type).ordered ? ' > ' : ', ')
     commit(pushLog({ ...u, money: u.money - stake, bets: [...u.bets, bet] }, 'bet', `Pari ${betType(type).label} sur ${names} : mise ${stake} à ${fmtMultiplier(multiplier)}, rapporte ${potentialPayout(stake, multiplier)} si gagné.`))
     return null
-  }, [commit, pushLog])
+  }, [commit, pushLog, level])
 
   /** Œil du parieur : ouvre la fenêtre de pari après le lancer, une charge par cercle. */
   const useLateBet = useCallback(() => {
@@ -297,10 +302,10 @@ export function useRace({ carry, soulCount, speed }: UseRaceProps) {
       const price = priceFor(item, u.raceIndex)
       const lateBetCharges = item.kind === 'artefact' && item.id === 'lateBet' ? config.artefacts.lateBet.chargesPerCircle : u.lateBetCharges
       let next = pushLog({ ...u, money: u.money - price, inventory, lateBetCharges, vitrine: (u.vitrine ?? []).filter((i) => i !== item), pendingPurchase: null, tally: { ...u.tally, spent: u.tally.spent + price } }, 'shop', `${text} (${price} pièces)`)
-      // Sablier et Filet changent le plateau : on achète en préparation, personne n'a bougé, le plateau est refait tout de suite.
-      if (item.kind === 'artefact' && (item.id === 'sablier' || item.id === 'filet')) {
+      // Le Sablier change le plateau : on achète en préparation, personne n'a bougé, le plateau est refait tout de suite.
+      if (item.kind === 'artefact' && item.id === 'sablier') {
         const track = createTrack(config.track, raceOptions(inventory))
-        next = pushLog({ ...next, race: { ...next.race, track } }, 'shop', item.id === 'sablier' ? `Seuil de pari à ${Math.round(track.betThresholdRatio * 100) } % dès cette course.` : `${track.cellsAfterFinish} cases après l'arrivée dès cette course.`)
+        next = pushLog({ ...next, race: { ...next.race, track } }, 'shop', `Seuil de pari à ${Math.round(track.betThresholdRatio * 100)} % dès cette course.`)
       }
       commit(next)
       return null
@@ -418,12 +423,12 @@ export function useRace({ carry, soulCount, speed }: UseRaceProps) {
     }
     if (!(await resolveMoves(id, moves, indexOf))) return
 
-    // Boussole des Limbes : le dé Âme inutilisé fait avancer son âme de 1.
+    // Boussole des Limbes : chaque dé Âme inutilisé fait avancer son âme de 1.
     if (uiRef.current.inventory.artefacts.includes('boussole')) {
-      const extra = unusedSoulMove(roll, combos)
-      if (extra) {
+      const extra = unusedSoulMoves(roll, combos)
+      if (extra.length > 0) {
         commit({ ...uiRef.current, resolvingIndex: null })
-        if (!(await resolveMoves(id, [extra], () => null))) return
+        if (!(await resolveMoves(id, extra, () => null))) return
       }
     }
 
@@ -448,7 +453,7 @@ export function useRace({ carry, soulCount, speed }: UseRaceProps) {
     }
     let done = pushLog({ ...u, race: ended, phase: 'finished', resolvingIndex: null }, 'system', `Une âme a franchi l'arrivée : fin de course au tour ${ended.turn}.`)
     const refundRatio = u.inventory.artefacts.includes('livreDesComptes') ? param('livreDesComptes', 'refundRatio', 0.5) : 0
-    const settlement = settleBets(done.bets, ranking(ended), refundRatio > 0 ? { refundRatio } : {})
+    const settlement = settleBets(done.bets, ranking(ended), refundRatio > 0 ? { refundRatio, pickLost: (n) => rngRef.current.int(n) } : {})
     for (const b of settlement.bets) {
       const names = b.souls.map((id) => ended.souls[id]?.name ?? `#${id}`).join(betType(b.type).ordered ? ' > ' : ', ')
       done = pushLog(done, 'bet', b.status === 'won' ? `Pari ${betType(b.type).label} (${names}) gagné : +${b.payout - b.stake} net (mise ${b.stake} rendue).` : `Pari ${betType(b.type).label} (${names}) perdu : −${b.stake}.`)
@@ -481,6 +486,7 @@ export function useRace({ carry, soulCount, speed }: UseRaceProps) {
     auto,
     setAuto,
     shopUnlocked: shopUnlocked(ui),
+    level,
     actions: { openShop, startRace, buy, cancelPurchase, rerollVitrine, placeBet, useLateBet, rollDice, pickSoulDie, pickDistanceDie, resetPairing, autoPair, resolve },
   }
 }

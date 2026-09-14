@@ -54,6 +54,19 @@ export const TIER_LABEL: Readonly<Record<BetTier, string>> = {
   advanced: 'Avancés',
 }
 
+/** Niveau du stagiaire requis par type de pari (config economy.betUnlockLevel). */
+export type BetUnlockLevels = Readonly<Record<BetTypeId, number>>
+
+/** Le type est-il ouvert au niveau donné ? Les paris à gros multiplicateur arrivent avec les grades du stagiaire. */
+export function betUnlocked(type: BetTypeId, level: number, unlock: BetUnlockLevels): boolean {
+  return level >= unlock[type]
+}
+
+/** Types ouverts à un niveau, dans l'ordre du catalogue. */
+export function unlockedBetTypes(level: number, unlock: BetUnlockLevels): BetTypeDef[] {
+  return BET_TYPES.filter((t) => betUnlocked(t.id, level, unlock))
+}
+
 export function betType(id: BetTypeId): BetTypeDef {
   const def = BET_TYPES.find((t) => t.id === id)
   if (!def) throw new Error(`type de pari inconnu : ${id}`)
@@ -197,13 +210,15 @@ export interface Settlement {
   staked: number
   /** Total rendu au joueur, remboursement compris. */
   returned: number
-  /** Livre des comptes : remboursement partiel du plus gros pari perdu (0 sinon). */
+  /** Livre des comptes : remboursement partiel d'un pari perdu tiré au sort (0 sinon). */
   refund: number
 }
 
 export interface SettleOptions {
-  /** Livre des comptes : part remboursée du plus gros pari perdu. */
+  /** Livre des comptes : part remboursée d'un pari perdu tiré au sort. */
   refundRatio?: number
+  /** Tirage parmi les n paris perdus : renvoie un index dans [0, n). Le premier par défaut. */
+  pickLost?: (count: number) => number
 }
 
 /** Fer à cheval : facteurs appliqués à la cote de base selon le type. */
@@ -237,9 +252,13 @@ export function settleBets(bets: readonly Bet[], ranked: readonly Ranked[], opti
   })
   let refund = 0
   if (options.refundRatio) {
-    const biggestLost = settled.filter((b) => b.status === 'lost').reduce((m, b) => Math.max(m, b.stake), 0)
-    refund = Math.round(biggestLost * options.refundRatio)
-    returned += refund
+    const lost = settled.filter((b) => b.status === 'lost')
+    if (lost.length > 0) {
+      const pick = options.pickLost ? options.pickLost(lost.length) : 0
+      const chosen = lost[Math.min(Math.max(0, Math.floor(pick)), lost.length - 1)]!
+      refund = Math.round(chosen.stake * options.refundRatio)
+      returned += refund
+    }
   }
   return { bets: settled, staked, returned, refund }
 }

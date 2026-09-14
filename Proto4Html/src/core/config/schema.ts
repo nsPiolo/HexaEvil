@@ -28,6 +28,8 @@ export interface RaceConfig {
     startingMoney: number
     stakes: readonly number[]
     multipliers: Readonly<Record<BetTypeId, number>>
+    /** Niveau du stagiaire (index de grade, 0 au départ) à partir duquel chaque type de pari est ouvert. */
+    betUnlockLevel: Readonly<Record<BetTypeId, number>>
     decay: {
       exponent: number
       minMultiplier: number

@@ -256,7 +256,7 @@ p { margin: 0; }
 @media (max-width: 1100px) { .bottom { grid-template-columns: 1fr 1fr; } .log { grid-column: 1 / -1; } }
 @media (max-width: 720px) { .bottom { grid-template-columns: 1fr; } }
 
-.dice-panel, .log, .ranking, .bet-panel {
+.dice-panel, .log, .bet-panel {
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -532,8 +532,12 @@ p { margin: 0; }
 .face-btn-hint { border-color: var(--gold); animation: pulse 900ms ease-in-out infinite; }
 .phase-shop { border-color: var(--ember); background: #3a1d12; }
 
-/* ---- Classement ---------------------------------------------------------- */
+/* ---- Classement (dans la modale de fin de course) -------------------------- */
 
+.ranking { display: flex; flex-direction: column; gap: 12px; }
+.ranking h2 { margin: 0; }
+.ranking h3 { margin: 0; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.ranking-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .ranking ol { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
 .ranking li {
   display: grid;
@@ -790,6 +794,8 @@ p { margin: 0; }
 .type-desc { font-size: 0.85rem; color: var(--muted); }
 .mult-badge { flex: none; padding: 4px 12px; border-radius: 999px; border: 1px solid var(--gold); color: var(--gold); font-size: 1.05rem; font-weight: 700; font-variant: normal; }
 .type-on .mult-badge { border-color: var(--ember); color: var(--ember); }
+.type-locked { opacity: 0.55; background: repeating-linear-gradient(135deg, var(--panel) 0 8px, var(--panel-2) 8px 10px); }
+.lock-badge { flex: none; padding: 4px 10px; border-radius: 999px; border: 1px dashed var(--muted); color: var(--muted); font-size: 0.8rem; white-space: nowrap; }
 
 .bp-foot { border-top: 1px solid var(--line); padding: 14px 24px 18px; display: flex; flex-direction: column; gap: 12px; background: var(--bg-2); }
 .bp-status { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; min-height: 1.4em; }
@@ -804,11 +810,17 @@ p { margin: 0; }
 .bp-start:not(:disabled) { background: var(--ember); border-color: var(--ember); color: #fff; }
 .bp-start:disabled { opacity: 0.6; }
 
-.gains { display: flex; justify-content: center; }
-.gains .ranking { width: min(720px, 100%); animation: rise 400ms ease-out both; }
-
 .popup-backdrop { position: fixed; inset: 0; z-index: 60; background: rgba(0, 0, 0, 0.6); display: flex; align-items: center; justify-content: center; padding: 20px; animation: appear 200ms ease-out; }
 .popup { width: min(520px, 100%); background: var(--panel); border: 1px solid var(--gold); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 12px; animation: rise 250ms ease-out; text-align: left; }
-.popup ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; }
-.popup li { padding: 10px 12px; border-radius: 8px; background: var(--panel-2); }
-.popup li p { margin-top: 4px; }
+/* Menu développeur : bouton presque invisible en bas à droite, popup compacte */
+.dev-open { position: fixed; right: 8px; bottom: 6px; z-index: 55; background: none; border: 0; color: var(--muted); opacity: 0.25; font-size: 0.7rem; letter-spacing: 0.1em; cursor: pointer; padding: 4px 8px; }
+.dev-open:hover, .dev-open:focus-visible { opacity: 1; }
+.dev-menu { width: min(420px, 100%); }
+.dev-menu h2 { margin: 0; }
+.dev-field { display: grid; grid-template-columns: 1fr 2fr; align-items: center; gap: 12px; }
+.dev-field input, .dev-field select { width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel-2); color: var(--ink); font: inherit; }
+.popup-wide { width: min(760px, 100%); max-height: calc(100vh - 40px); overflow: auto; }
+/* Liste simple d'une popup (artefacts). Le classement et le bilan des paris ont leurs propres règles. */
+.popup > ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.popup > ul > li { padding: 10px 12px; border-radius: 8px; background: var(--panel-2); }
+.popup > ul > li p { margin-top: 4px; }

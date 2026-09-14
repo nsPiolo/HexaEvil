@@ -57,6 +57,7 @@ Dans l'ordre des bulles:
 * Joueur : "Bon ok, mais pas d'entourloupe"
 * Démon stagiaire : "Parfait, on a un pacte !"
 * Démon stagiaire : "Ici on mise sur une course d'âmes damnées, donc voilà 100 pièces pour commencer."
+* Démon stagiaire (ajout proto) : "Ah, et je n'ai le droit de prendre que les paris simples : vainqueur, top 3, dernier, un duel. Les gros tickets, c'est au-dessus de mon grade. Pour l'instant."
 
 ## Continuer
 
@@ -98,6 +99,8 @@ Un bouton permet d'afficher la boutique, qui s'affiche au dessus du champs de co
 Une fois la course lancé, on ne peut plus voir la boutique.
 
 Tu peux retirer la zone journal 
+
+Le résultat de la course (classement) et le résultat des paris s'affichent dans une modale au-dessus de la table, pas dans la zone de jeu. Un bouton « Voir la table » la referme, un onglet « Gains » la rouvre.
 
 Quand on clique sur le nombre d'artefacts, on affiche la liste des artefacts actif dans une fenêtre en popup.
 
@@ -191,6 +194,34 @@ Si le joueur n'a pas assez :
   * Écran final `Évasion` : `Neuf cercles traversés, {money} pièces en poche. Le stagiaire est devenu boss, et vous, vous êtes sorti.`
 * Échec : `À une pièce près. C'est le cercle de la Trahison, vous vous attendiez à quoi ? Bienvenue dans la glace. Bye.`
   * Écran final `Punition éternelle` : `Le prix du cercle était de {price} pièces. Il vous en manquait {missing}.`
+
+### Montées en grade du stagiaire
+
+> Grades de `boutique-README.md` (« Déblocage par la hiérarchie du stagiaire »). Le grade est acquis quand le boss du cercle indiqué est battu **et** le prix payé. Les lignes s'insèrent dans le dialogue de réussite du cercle, juste avant l'annonce du cercle suivant ; à partir de là le nom du démon change dans les bulles et le HUD affiche « Coach : {grade} ». Textes dans `texts.ts` (`DEMON_RANKS`), assemblage dans `demon.ts`. Chaque grade ouvre des types de paris (`economy.betUnlockLevel`, tableau dans `boutique-README.md`) ; les `×{…}` sont remplacés par les cotes de la config. Aucun effet sur la boutique pour l'instant.
+
+* Rang 1 — **Assistant** (après le cercle 1), bulles « Démon assistant » :
+  * Démon : `Et… j'ai une nouvelle. Charon a signé un papier : je suis assistant. Assistant ! Mon premier grade en trois siècles de stage.`
+  * Joueur : `Félicitations. Ça change quoi ?`
+  * Démon : `Pour moi, une chaise avec un dossier. Pour vous, deux tickets de plus au guichet : « Deux âmes dans le top 3 » à ×{twoInTop3}, et « Top 3 dans le désordre » à ×{podiumAnyOrder}. Un assistant a le droit de prendre des paris combinés.`
+* Rang 2 — **Tourmenteur** (après le cercle 3), bulles « Démon tourmenteur » :
+  * Démon : `Pendant que Cerbère cherchait sa balle, on m'a remis un grade : tourmenteur. Deuxième échelon.`
+  * Démon : `J'ai le droit de tourmenter, maintenant. Officiellement. Je vais commencer par mon ancien chef de service.`
+  * Joueur : `Et moi, je suis sur la liste ?`
+  * Démon : `Vous ? Vous me rapportez trop. Tant que vous gagnez, je ne tourmente que vos adversaires.`
+  * Démon : `Et j'ai un tampon de plus : le pari « Vainqueur + dernier » vous est ouvert. ×{winnerAndLast} si vous lisez les deux bouts de la course.`
+* Rang 3 — **Contremaître** (après le cercle 5), bulles « Démon contremaître » :
+  * Démon : `Phlégyas a rendu mon évaluation. Contremaître. J'ai une équipe, un bureau, une fenêtre sur la lave.`
+  * Démon : `Un contremaître, ça ne coache plus dans son coin : on me regarde. Alors ne me faites pas honte au sixième.`
+  * Joueur : `C'est vous qui parlez de honte ?`
+  * Démon : `Je parle d'image de marque. Mon nom est sur votre dossier, maintenant. En gros.`
+  * Démon : `En échange, un contremaître peut ouvrir le guichet du « Podium exact » : trois âmes, dans l'ordre, ×{podiumExact}. Le genre de ticket qui change une évasion.`
+* Rang 4 — **Sous-directeur** (après le cercle 7), bulles « Démon sous-directeur » :
+  * Démon : `Sous-directeur. Le Minotaure a insisté lui-même. Il paraît que je « fais monter les enjeux ».`
+  * Démon : `Deux échelons sous le boss du neuvième. Il n'y a jamais eu de stagiaire aussi haut. Il n'y a jamais eu de parieur aussi loin non plus.`
+  * Joueur : `On est liés, alors.`
+  * Démon : `Par un pacte, oui. Ne l'oubliez pas. Moi, je ne l'oublierai pas.`
+  * Démon : `Et le grand livre s'ouvre : le « Classement complet exact », ×{fullRankingExact}. Personne ne l'a jamais touché. Ce serait amusant que ce soit contre moi.`
+* Rang 5 — **Boss du neuvième** (après le cercle 8) : pas de lignes propres, le texte du cercle 8 (« on m'a promu. Je dirige le neuvième ») fait office de promotion ; bulles « Le stagiaire promu » au cercle 9.
 
 ### Prix et âmes par cercle (config `run.circles`)
 

@@ -89,6 +89,11 @@ export function loadConfig(raw: unknown): RaceConfig {
     multipliers[id] = m
   }
 
+  const unlockRaw = obj(economy.betUnlockLevel, 'economy.betUnlockLevel')
+  const betUnlockLevel = {} as Record<BetTypeId, number>
+  for (const id of BET_TYPE_IDS) betUnlockLevel[id] = int(unlockRaw[id], `economy.betUnlockLevel.${id}`, 0)
+  if (!BET_TYPE_IDS.some((id) => betUnlockLevel[id] === 0)) fail('economy.betUnlockLevel', 'au moins un type de pari doit être ouvert au niveau 0, sinon aucune course ne peut démarrer')
+
   const decayRaw = obj(economy.decay, 'economy.decay')
   const exponent = num(decayRaw.exponent, 'economy.decay.exponent')
   if (exponent <= 0) fail('economy.decay.exponent', 'doit être strictement positif')
@@ -131,7 +136,7 @@ export function loadConfig(raw: unknown): RaceConfig {
     track: { columns, cellsAfterFinish, betThresholdRatio },
     dice: { distanceFaces, distanceDice, soulDice },
     opponent: { rollsPerTurn },
-    economy: { startingMoney, stakes, multipliers, decay: { exponent, minMultiplier } },
+    economy: { startingMoney, stakes, multipliers, betUnlockLevel, decay: { exponent, minMultiplier } },
     run: { racesPerCircle, circles },
     artefacts: { lateBet: { chargesPerCircle }, sablier: { betThresholdRatio: sablierRatio } },
     animation: { stepMs, diceMs, pauseMs },

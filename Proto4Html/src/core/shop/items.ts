@@ -1,5 +1,5 @@
 /** Types des objets de boutique. Les données (noms, prix, textes) vivent dans config/shop.json. */
-export const ARTEFACT_IDS = ['lateBet', 'sablier', 'boussole', 'clepsydre', 'ferACheval', 'boursePercee', 'livreDesComptes', 'filet'] as const
+export const ARTEFACT_IDS = ['lateBet', 'sablier', 'boussole', 'clepsydre', 'ferACheval', 'boursePercee', 'livreDesComptes'] as const
 export type ArtefactId = (typeof ARTEFACT_IDS)[number]
 
 export const FORGE_IDS = ['limee', 'doree', 'retournee', 'sceau'] as const

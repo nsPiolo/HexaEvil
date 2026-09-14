@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { MENU, type Line } from './texts'
+import { MENU, SPEAKERS, type Line } from './texts'
 
 interface Props {
   lines: readonly Line[]
@@ -41,7 +41,7 @@ export function Dialogue({ lines, skipLabel, onDone }: Props) {
         <div className="bubbles">
           {lines.slice(0, index + 1).map((l, i) => (
             <p key={i} className={`bubble-line bubble-${l.who}` + (i === index ? ' bubble-current' : ' bubble-past')}>
-              <span className="bubble-who">{l.who === 'demon' ? 'Démon stagiaire' : 'Vous'}</span>
+              <span className="bubble-who">{l.label ?? SPEAKERS[l.who]}</span>
               {l.text}
             </p>
           ))}

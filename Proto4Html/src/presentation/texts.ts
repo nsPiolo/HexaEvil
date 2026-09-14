@@ -9,7 +9,12 @@ export type Speaker = 'demon' | 'player'
 export interface Line {
   who: Speaker
   text: string
+  /** Nom affiché au-dessus de la bulle ; absent = nom par défaut du locuteur (SPEAKERS). Le démon change de nom quand il monte en grade. */
+  label?: string
 }
+
+/** Noms par défaut des locuteurs dans les bulles. */
+export const SPEAKERS: Record<Speaker, string> = { demon: 'Démon stagiaire', player: 'Vous' }
 
 const D = (text: string): Line => ({ who: 'demon', text })
 const P = (text: string): Line => ({ who: 'player', text })
@@ -39,11 +44,77 @@ export const INTRO: readonly Line[] = [
   P("Bon, d'accord, mais pas d'entourloupe."),
   D('Parfait, on a un pacte !'),
   D("Ici on mise sur une course d'âmes damnées, donc voilà {money} pièces pour commencer."),
+  D("Ah, et je n'ai le droit de prendre que les paris simples : vainqueur, top 3, dernier, un duel. Les gros tickets, c'est au-dessus de mon grade. Pour l'instant."),
 ]
 
 /** Fin de la deuxième course : le boss du cercle arrive. */
 export const BOSS_ANNOUNCE: readonly Line[] = [
   D("Mon boss est de retour, il nous a vus jouer. Il vous propose de parier avec lui, et si vous avez {price} pièces à la fin, il veut bien vous autoriser à continuer de parier."),
+]
+
+/**
+ * Grades du démon (boutique-README.md « Déblocage par la hiérarchie du stagiaire »).
+ * Un grade est obtenu quand le boss du cercle `afterCircle` est battu et le prix payé ;
+ * ses `lines` sont dites dans le dialogue de fin de ce cercle, juste avant l'annonce du
+ * cercle suivant. `label` remplace « Démon stagiaire » dans les bulles à partir de là.
+ * Pas encore d'effet sur la boutique : le grade est narratif pour l'instant.
+ */
+export interface DemonRank {
+  name: string
+  label: string
+  afterCircle: number
+  lines: readonly Line[]
+}
+
+export const DEMON_RANKS: readonly DemonRank[] = [
+  { name: 'Stagiaire', label: 'Démon stagiaire', afterCircle: 0, lines: [] },
+  {
+    name: 'Assistant',
+    label: 'Démon assistant',
+    afterCircle: 1,
+    lines: [
+      D("Et… j'ai une nouvelle. Charon a signé un papier : je suis assistant. Assistant ! Mon premier grade en trois siècles de stage."),
+      P('Félicitations. Ça change quoi ?'),
+      D("Pour moi, une chaise avec un dossier. Pour vous, deux tickets de plus au guichet : « Deux âmes dans le top 3 » à ×{twoInTop3}, et « Top 3 dans le désordre » à ×{podiumAnyOrder}. Un assistant a le droit de prendre des paris combinés."),
+    ],
+  },
+  {
+    name: 'Tourmenteur',
+    label: 'Démon tourmenteur',
+    afterCircle: 3,
+    lines: [
+      D("Pendant que Cerbère cherchait sa balle, on m'a remis un grade : tourmenteur. Deuxième échelon."),
+      D("J'ai le droit de tourmenter, maintenant. Officiellement. Je vais commencer par mon ancien chef de service."),
+      P("Et moi, je suis sur la liste ?"),
+      D("Vous ? Vous me rapportez trop. Tant que vous gagnez, je ne tourmente que vos adversaires."),
+      D("Et j'ai un tampon de plus : le pari « Vainqueur + dernier » vous est ouvert. ×{winnerAndLast} si vous lisez les deux bouts de la course."),
+    ],
+  },
+  {
+    name: 'Contremaître',
+    label: 'Démon contremaître',
+    afterCircle: 5,
+    lines: [
+      D("Phlégyas a rendu mon évaluation. Contremaître. J'ai une équipe, un bureau, une fenêtre sur la lave."),
+      D("Un contremaître, ça ne coache plus dans son coin : on me regarde. Alors ne me faites pas honte au sixième."),
+      P("C'est vous qui parlez de honte ?"),
+      D("Je parle d'image de marque. Mon nom est sur votre dossier, maintenant. En gros."),
+      D("En échange, un contremaître peut ouvrir le guichet du « Podium exact » : trois âmes, dans l'ordre, ×{podiumExact}. Le genre de ticket qui change une évasion."),
+    ],
+  },
+  {
+    name: 'Sous-directeur',
+    label: 'Démon sous-directeur',
+    afterCircle: 7,
+    lines: [
+      D("Sous-directeur. Le Minotaure a insisté lui-même. Il paraît que je « fais monter les enjeux »."),
+      D("Deux échelons sous le boss du neuvième. Il n'y a jamais eu de stagiaire aussi haut. Il n'y a jamais eu de parieur aussi loin non plus."),
+      P("On est liés, alors."),
+      D("Par un pacte, oui. Ne l'oubliez pas. Moi, je ne l'oublierai pas."),
+      D("Et le grand livre s'ouvre : le « Classement complet exact », ×{fullRankingExact}. Personne ne l'a jamais touché. Ce serait amusant que ce soit contre moi."),
+    ],
+  },
+  { name: 'Boss du neuvième', label: 'Le stagiaire promu', afterCircle: 8, lines: [] },
 ]
 
 export interface CircleTexts {
@@ -151,6 +222,10 @@ export const HUD = {
   coins: '{n} Pièces',
   artefacts: '{n} artefact{s}',
   price: 'Prix du cercle : {price} pièces',
+  demon: 'Coach : {rank}',
+  results: 'Gains',
+  raceResult: 'Résultat de la course',
+  seeTable: 'Voir la table',
   bets: 'Paris',
   shop: 'Boutique',
   close: 'Fermer',
@@ -197,6 +272,26 @@ export const OPTIONS = {
   language: 'Langue',
   languageDisabled: 'seul le français est disponible pour l’instant',
   speed: 'Vitesse des animations',
+} as const
+
+/** Paris verrouillés par le grade du stagiaire. */
+export const BETS = {
+  locked: 'Ce pari s’ouvrira quand le stagiaire sera {rank}.',
+  lockedBadge: 'dès {rank}',
+  tierLocked: 'verrouillé',
+} as const
+
+/** Menu de développement (bouton « dev » discret, Ctrl+Maj+D). */
+export const DEV = {
+  open: 'dev',
+  title: 'Menu développeur',
+  hint: 'Fixe le solde et la course de reprise. L’inventaire est conservé, la course en cours est abandonnée, la sauvegarde est écrasée.',
+  money: 'Pièces',
+  circle: 'Cercle',
+  race: 'Course du cercle',
+  bossRace: 'boss',
+  apply: 'Appliquer',
+  cancel: 'Annuler',
 } as const
 
 /** Remplace les {clés} d'un texte. */

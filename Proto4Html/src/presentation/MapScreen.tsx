@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { config } from '../core/config'
+import { demonRankAtRace } from './demon'
 import { CIRCLES, HUD, MAP, MENU, fill } from './texts'
 import { circleOf, type SessionCarry } from './useRace'
 
@@ -65,6 +66,7 @@ export function MapScreen({ carry, onLaunch, onMenu }: Props) {
     <div className="screen map">
       <div className="hud hud-left">
         <span className="hud-big">{fill(HUD.circle, { ordinal: CIRCLES[currentCircle - 1]?.ordinal ?? currentCircle })}</span>
+        <span className="muted small">{fill(HUD.demon, { rank: demonRankAtRace(next).name })}</span>
         <span className="muted small">{MAP.subtitle}</span>
       </div>
       <div className="hud hud-right">

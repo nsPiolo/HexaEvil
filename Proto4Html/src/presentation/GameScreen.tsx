@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { config, shop } from '../core/config'
 import { BetPanel } from './BetPanel'
+import { demonRankAtRace } from './demon'
 import { Board } from './Board'
 import { Inventory } from './Inventory'
 import { Ranking } from './Ranking'
@@ -28,13 +29,15 @@ function stepOf(ui: RaceUi): Step {
 export function GameScreen({ carry, speed, onFinished, onMenu }: Props) {
   const { circle, raceInCircle } = circleOf(carry.raceIndex)
   const circleCfg = config.run.circles[circle - 1] ?? config.run.circles[config.run.circles.length - 1]!
-  const { ui, auto, setAuto, shopUnlocked, actions } = useRace({ carry, soulCount: circleCfg.souls, speed })
+  const { ui, auto, setAuto, shopUnlocked, level, actions } = useRace({ carry, soulCount: circleCfg.souls, speed })
   const [betsOpen, setBetsOpen] = useState(true)
   const [shopOpen, setShopOpen] = useState(false)
   const [artefactsOpen, setArtefactsOpen] = useState(false)
+  const [resultsOpen, setResultsOpen] = useState(false)
   const step = stepOf(ui)
   const isBoss = raceInCircle === config.run.racesPerCircle
   const ordinal = CIRCLES[circle - 1]?.ordinal ?? `${circle}e`
+  const rank = demonRankAtRace(carry.raceIndex)
 
   // La boutique disparaît dès que la course est lancée ; le panneau de paris se replie quand on ne peut plus parier.
   useEffect(() => {
@@ -49,6 +52,17 @@ export function GameScreen({ carry, speed, onFinished, onMenu }: Props) {
   useEffect(() => {
     if (ui.lateBetOpen) setBetsOpen(true)
   }, [ui.lateBetOpen])
+  // Fin de course : le classement et le bilan des paris s'ouvrent en modale, après une
+  // respiration pour laisser voir le dernier déplacement. « Voir la table » la referme,
+  // l'onglet « Gains » la rouvre.
+  useEffect(() => {
+    if (ui.phase !== 'finished') {
+      setResultsOpen(false)
+      return
+    }
+    const t = setTimeout(() => setResultsOpen(true), (config.animation.pauseMs * 2) / speed)
+    return () => clearTimeout(t)
+  }, [ui.phase, speed])
 
   const lastEvent = useMemo(() => {
     const entries = ui.log.filter((e) => e.source !== 'shop' && e.source !== 'bet')
@@ -69,6 +83,7 @@ export function GameScreen({ carry, speed, onFinished, onMenu }: Props) {
         <span className="hud-big">{fill(HUD.circle, { ordinal })}</span>
         <span>{isBoss ? fill(HUD.bossRace, { n: raceInCircle, total: config.run.racesPerCircle }) : fill(HUD.race, { n: HUD.raceOrdinals[raceInCircle - 1] ?? raceInCircle, total: config.run.racesPerCircle })}</span>
         <span className="muted small">{fill(HUD.price, { price: circleCfg.price })}</span>
+        <span className="muted small">{fill(HUD.demon, { rank: rank.name })}</span>
       </div>
       <div className="hud hud-right">
         <span className="hud-big money">{fill(HUD.coins, { n: ui.money })}</span>
@@ -114,14 +129,22 @@ export function GameScreen({ carry, speed, onFinished, onMenu }: Props) {
           <Board race={ui.race} lastResult={ui.lastResult} activeSoul={activeSoul} />
           <p className="last-event" aria-live="polite">{lastEvent}</p>
         </div>
-        {ui.phase === 'finished' ? (
-          <div className="gains">
-            <Ranking race={ui.race} settlement={ui.settlement} money={ui.money} continueLabel={HUD.nextRace} onContinue={() => onFinished(ui)} />
-          </div>
-        ) : (
-          <PlayerSlot ui={ui} onStart={actions.startRace} onRoll={() => void actions.rollDice()} onPickSoul={actions.pickSoulDie} onPickDistance={actions.pickDistanceDie} onReset={actions.resetPairing} onResolve={() => void actions.resolve()} />
-        )}
+        <PlayerSlot ui={ui} onStart={actions.startRace} onRoll={() => void actions.rollDice()} onPickSoul={actions.pickSoulDie} onPickDistance={actions.pickDistanceDie} onReset={actions.resetPairing} onResolve={() => void actions.resolve()} />
       </main>
+
+      {/* Fin de course : classement et bilan des paris en modale, onglet « Gains » pour la rouvrir */}
+      {ui.phase === 'finished' && !resultsOpen && (
+        <button type="button" className="tab tab-right" onClick={() => setResultsOpen(true)}>
+          {HUD.results}
+        </button>
+      )}
+      {ui.phase === 'finished' && resultsOpen && (
+        <div className="popup-backdrop" onClick={() => setResultsOpen(false)} role="presentation">
+          <div className="popup popup-wide" role="dialog" aria-label={HUD.raceResult} onClick={(e) => e.stopPropagation()}>
+            <Ranking race={ui.race} settlement={ui.settlement} money={ui.money} continueLabel={HUD.nextRace} onContinue={() => onFinished(ui)} onClose={() => setResultsOpen(false)} />
+          </div>
+        </div>
+      )}
 
       {/* Onglet paris (panneau venant de la gauche) */}
       {ui.phase !== 'finished' && !betsOpen && (
@@ -130,7 +153,7 @@ export function GameScreen({ carry, speed, onFinished, onMenu }: Props) {
         </button>
       )}
       <div className={'drawer drawer-left' + (betsOpen && ui.phase !== 'finished' ? ' drawer-open' : '')} aria-hidden={!betsOpen}>
-        <BetPanel race={ui.race} money={ui.money} bets={ui.bets} open={canBetNow(ui)} phase={ui.phase} lateBet={ui.inventory.artefacts.includes('lateBet') ? { charges: ui.lateBetCharges, active: ui.lateBetOpen } : null} onUseLateBet={actions.useLateBet} onPlace={actions.placeBet} baseFor={(type) => betBase(type, ui.inventory)} onStart={actions.startRace} onOpenShop={openShop} onClose={() => setBetsOpen(false)} />
+        <BetPanel race={ui.race} money={ui.money} bets={ui.bets} open={canBetNow(ui)} phase={ui.phase} level={level} lateBet={ui.inventory.artefacts.includes('lateBet') ? { charges: ui.lateBetCharges, active: ui.lateBetOpen } : null} onUseLateBet={actions.useLateBet} onPlace={actions.placeBet} baseFor={(type) => betBase(type, ui.inventory)} onStart={actions.startRace} onOpenShop={openShop} onClose={() => setBetsOpen(false)} />
       </div>
 
       {/* Popup artefacts */}

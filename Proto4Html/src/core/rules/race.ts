@@ -95,15 +95,13 @@ function at<T>(arr: readonly T[], i: number, what: string): T {
 export interface RaceOptions {
   /** Remplace track.betThresholdRatio (artefact Sablier). */
   betThresholdRatio?: number
-  /** Cases après l'arrivée en plus (artefact Filet du pêcheur). */
-  extraCellsAfterFinish?: number
   /** Nombre d'âmes en course (dépend du cercle) ; sinon souls.count. */
   soulCount?: number
 }
 
 export function createTrack(cfg: RaceConfig['track'], options: RaceOptions = {}): Track {
   const ratio = options.betThresholdRatio ?? cfg.betThresholdRatio
-  const cellsAfterFinish = cfg.cellsAfterFinish + (options.extraCellsAfterFinish ?? 0)
+  const cellsAfterFinish = cfg.cellsAfterFinish
   return {
     columns: cfg.columns,
     cellsAfterFinish,
@@ -145,7 +143,7 @@ export function rollOpponentPair(config: RaceConfig, soulCount: number, rng: Rng
 /** Contexte des modificateurs appliqués aux distances du joueur. */
 export interface MoveContext {
   turn: number
-  /** Clepsydre fêlée : au tour 1, négatif → 0, positif → +1. */
+  /** Clepsydre fêlée : au tour 1, négatif → sa valeur absolue, positif → +1. */
   clepsydre: boolean
   /** Âmes visées par un pari actif du joueur (Sceau du parieur). */
   bettedSouls: ReadonlySet<SoulId>
@@ -158,8 +156,8 @@ function effectiveDistance(face: Face, soul: SoulId, ctx: MoveContext | undefine
   if (!ctx) return d
   if (ctx.clepsydre && ctx.turn === 1) {
     if (d < 0) {
-      notes.push(`Clepsydre : ${d} → 0`)
-      d = 0
+      notes.push(`Clepsydre : ${d} → +${-d}`)
+      d = -d
     } else if (d > 0) {
       notes.push(`Clepsydre : +${d} → +${d + 1}`)
       d += 1
@@ -197,13 +195,10 @@ export function buildMoves(roll: Roll, combinations: readonly Combination[], sou
   return moves
 }
 
-/** Boussole des Limbes : l'âme du premier dé Âme inutilisé avance de 1. Null si tous les dés Âme ont servi. */
-export function unusedSoulMove(roll: Roll, combinations: readonly Combination[]): Move | null {
+/** Boussole des Limbes : l'âme du premier dés Âme inutilisés (un déplacement de +1 par dé, dans l'ordre des dés) avance de 1. Null si tous les dés Âme ont servi. */
+export function unusedSoulMoves(roll: Roll, combinations: readonly Combination[]): Move[] {
   const used = new Set(combinations.map((c) => c.soulDie))
-  const idx = roll.soul.findIndex((_, i) => !used.has(i))
-  if (idx < 0) return null
-  const soul = at(roll.soul, idx, 'dé Âme')
-  return { source: 'artefact', soul, distance: 1, parts: [{ soulDie: idx, distanceDie: -1, distance: 1 }], notes: ['Boussole des Limbes'] }
+  return roll.soul.flatMap((soul, idx) => (used.has(idx) ? [] : [{ source: 'artefact' as const, soul, distance: 1, parts: [{ soulDie: idx, distanceDie: -1, distance: 1 }], notes: ['Boussole des Limbes'] }]))
 }
 
 /**

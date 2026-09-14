@@ -7,12 +7,14 @@
 import { useCallback, useEffect, useState } from 'react'
 import { config } from '../core/config'
 import { defaultInventory } from '../core/shop/shop'
+import { bossAnnounce, circleFailure, circleSuccess } from './demon'
+import { DevMenu } from './DevMenu'
 import { Dialogue } from './Dialogue'
 import { GameScreen } from './GameScreen'
 import { MapScreen } from './MapScreen'
 import { EndScreen, Menu, OptionsScreen, Splash, StatsScreen } from './Screens'
 import { clearRun, loadOptions, loadRun, loadStats, saveOptions, saveRun, updateStats, type Options, type RunSave, type Stats } from './storage'
-import { BOSS_ANNOUNCE, CIRCLES, INTRO, MENU, fill, type Line } from './texts'
+import { DEV, INTRO, MENU, fill, type Line } from './texts'
 import { carryOut, circleOf, fullCharges, type RaceUi, type SessionCarry } from './useRace'
 
 type Screen =
@@ -36,8 +38,21 @@ export default function App() {
   const [stats, setStats] = useState<Stats>(loadStats)
   const [save, setSave] = useState<RunSave | null>(loadRun)
   const [gameKey, setGameKey] = useState(0)
+  const [devOpen, setDevOpen] = useState(false)
 
   useEffect(() => saveOptions(options), [options])
+
+  // Menu développeur : Ctrl+Maj+D (ou Cmd+Maj+D), en plus du petit bouton « dev ».
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.code === 'KeyD') {
+        e.preventDefault()
+        setDevOpen((o) => !o)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
   const toMenu = useCallback(() => setScreen({ kind: 'menu' }), [])
 
@@ -59,6 +74,23 @@ export default function App() {
     saveRun(s)
     setSave(s)
     setScreen({ kind: 'dialogue', lines: INTRO.map((l) => ({ ...l, text: fill(l.text, { money: config.economy.startingMoney }) })), then: { kind: 'game', carry, key: gameKey + 1 }, skippable: true })
+  }
+
+  /** État du run visible à l'écran, sinon la sauvegarde. */
+  const currentCarry = (): SessionCarry | null => {
+    if (screen.kind === 'map' || screen.kind === 'game') return screen.carry
+    if (screen.kind === 'dialogue' && (screen.then.kind === 'map' || screen.then.kind === 'game')) return screen.then.carry
+    return save ? { money: save.money, inventory: save.inventory, raceIndex: save.raceIndex, lateBetCharges: save.lateBetCharges } : null
+  }
+
+  /** Menu développeur : on repart au début de la course choisie, avec le solde demandé, inventaire conservé. */
+  const devApply = (c: SessionCarry): void => {
+    const carry: SessionCarry = c.inventory.dice.length > 0 ? c : { ...c, inventory: defaultInventory(config) }
+    const s = toSave(carry, circleOf(carry.raceIndex).circle)
+    saveRun(s)
+    setSave(s)
+    setDevOpen(false)
+    toMap(carry)
   }
 
   const continueRun = (): void => {
@@ -95,19 +127,18 @@ export default function App() {
       persist(carry, circle)
       const next: Screen = { kind: 'map', carry }
       if (raceInCircle === config.run.racesPerCircle - 1) {
-        setScreen({ kind: 'dialogue', lines: BOSS_ANNOUNCE.map((l) => ({ ...l, text: fill(l.text, { price: circleCfg.price }) })), then: next, skippable: false })
+        setScreen({ kind: 'dialogue', lines: bossAnnounce(circle), then: next, skippable: false })
       } else {
         toMap(carry)
       }
       return
     }
 
-    // Fin de cercle : le prix est dû.
-    const texts = CIRCLES[circle - 1] ?? CIRCLES[CIRCLES.length - 1]!
+    // Fin de cercle : le prix est dû. Le démon peut monter en grade (demon.ts) : ses lignes de promotion sont dans le dialogue.
     if (carry.money < circleCfg.price) {
       clearRun()
       setSave(null)
-      setScreen({ kind: 'dialogue', lines: texts.failure, then: { kind: 'end', end: 'gameover', price: circleCfg.price, money: carry.money }, skippable: false })
+      setScreen({ kind: 'dialogue', lines: circleFailure(circle), then: { kind: 'end', end: 'gameover', price: circleCfg.price, money: carry.money }, skippable: false })
       return
     }
     const paid: SessionCarry = { ...carry, money: carry.money - circleCfg.price, lateBetCharges: fullCharges(carry.inventory) }
@@ -117,42 +148,61 @@ export default function App() {
       clearRun()
       setSave(null)
       setStats(updateStats((s) => ({ ...s, escapes: s.escapes + 1 })))
-      setScreen({ kind: 'dialogue', lines: texts.success, then: { kind: 'end', end: 'escape', price: circleCfg.price, money: paid.money }, skippable: false })
+      setScreen({ kind: 'dialogue', lines: circleSuccess(circle), then: { kind: 'end', end: 'escape', price: circleCfg.price, money: paid.money }, skippable: false })
       return
     }
     persist(paid, circle + 1)
-    const lines = texts.success.map((l) => ({ ...l, text: fill(l.text, { souls: nextCircleCfg.souls, price: nextCircleCfg.price }) }))
-    setScreen({ kind: 'dialogue', lines, then: { kind: 'map', carry: paid }, skippable: false })
+    setScreen({ kind: 'dialogue', lines: circleSuccess(circle), then: { kind: 'map', carry: paid }, skippable: false })
   }
 
-  switch (screen.kind) {
-    case 'splash':
-      return <Splash onDone={toMenu} />
-    case 'menu':
-      return <Menu canContinue={save !== null} onContinue={continueRun} onNewRun={newRun} onStats={() => setScreen({ kind: 'stats' })} onOptions={() => setScreen({ kind: 'options' })} />
-    case 'stats':
-      return <StatsScreen stats={stats} onBack={toMenu} />
-    case 'options':
-      return <OptionsScreen options={options} onChange={setOptions} onBack={toMenu} />
-    case 'intro':
-      return null
-    case 'dialogue':
-      return (
-        <Dialogue
-          lines={screen.lines}
-          {...(screen.skippable ? { skipLabel: MENU.skipIntro } : {})}
-          onDone={() => {
-            const then = screen.then
-            if (then.kind === 'game') startGame(then.carry)
-            else setScreen(then)
-          }}
-        />
-      )
-    case 'map':
-      return <MapScreen carry={screen.carry} onLaunch={() => startGame(screen.carry)} onMenu={toMenu} />
-    case 'game':
-      return <GameScreen key={screen.key} carry={screen.carry} speed={options.speed} onFinished={onRaceFinished} onMenu={toMenu} />
-    case 'end':
-      return <EndScreen kind={screen.end} price={screen.price} money={screen.money} onBack={toMenu} />
+  const renderScreen = () => {
+    switch (screen.kind) {
+      case 'splash':
+        return <Splash onDone={toMenu} />
+      case 'menu':
+        return <Menu canContinue={save !== null} onContinue={continueRun} onNewRun={newRun} onStats={() => setScreen({ kind: 'stats' })} onOptions={() => setScreen({ kind: 'options' })} />
+      case 'stats':
+        return <StatsScreen stats={stats} onBack={toMenu} />
+      case 'options':
+        return <OptionsScreen options={options} onChange={setOptions} onBack={toMenu} />
+      case 'intro':
+        return null
+      case 'dialogue':
+        return (
+          <Dialogue
+            lines={screen.lines}
+            {...(screen.skippable ? { skipLabel: MENU.skipIntro } : {})}
+            onDone={() => {
+              const then = screen.then
+              if (then.kind === 'game') startGame(then.carry)
+              else setScreen(then)
+            }}
+          />
+        )
+      case 'map':
+        return <MapScreen carry={screen.carry} onLaunch={() => startGame(screen.carry)} onMenu={toMenu} />
+      case 'game':
+        return <GameScreen key={screen.key} carry={screen.carry} speed={options.speed} onFinished={onRaceFinished} onMenu={toMenu} />
+      case 'end':
+        return <EndScreen kind={screen.end} price={screen.price} money={screen.money} onBack={toMenu} />
+    }
   }
+
+  const dev = (
+    <>
+      {screen.kind !== 'splash' && (
+        <button type="button" className="dev-open" onClick={() => setDevOpen(true)} title="Menu développeur (Ctrl+Maj+D)">
+          {DEV.open}
+        </button>
+      )}
+      {devOpen && <DevMenu carry={currentCarry()} onApply={devApply} onClose={() => setDevOpen(false)} />}
+    </>
+  )
+
+  return (
+    <>
+      {renderScreen()}
+      {dev}
+    </>
+  )
 }
