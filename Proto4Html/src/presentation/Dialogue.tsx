@@ -31,13 +31,6 @@ export function Dialogue({ lines, skipLabel, onDone }: Props) {
   return (
     <div className="screen dialogue">
       <div className="dialogue-stage">
-        <div className="demon" aria-hidden="true">
-          <span className="demon-horns" />
-          <span className="demon-face">
-            <span className="demon-eye" />
-            <span className="demon-eye" />
-          </span>
-        </div>
         <div className="bubbles">
           {lines.slice(0, index + 1).map((l, i) => (
             <p key={i} className={`bubble-line bubble-${l.who}` + (i === index ? ' bubble-current' : ' bubble-past')}>
@@ -48,15 +41,17 @@ export function Dialogue({ lines, skipLabel, onDone }: Props) {
         </div>
       </div>
       <div className="dialogue-actions">
-        <button type="button" className="btn btn-primary" onClick={(e) => e.detail > 0 && next()} autoFocus>
-          {last ? 'Terminer' : MENU.next}
-        </button>
-        {skipLabel && !last && (
-          <button type="button" className="btn" onClick={onDone}>
-            {skipLabel}
+        <div className="dialogue-actions-inner">
+          <button type="button" className="btn-stone btn-stone-orange" onClick={(e) => e.detail > 0 && next()} autoFocus>
+            {last ? 'Terminer' : MENU.next}
           </button>
-        )}
-        <span className="muted small">espace pour avancer</span>
+          {skipLabel && !last && (
+            <button type="button" className="btn-stone" onClick={onDone}>
+              {skipLabel}
+            </button>
+          )}
+          <span className="muted small">espace pour avancer</span>
+        </div>
       </div>
     </div>
   )

@@ -22,10 +22,12 @@ dalles**. Seul le titre est une image.
 | `btn-stone-2.png` | 1096 × 376 | transparent | Dalle de pierre, variante 2 (« Statistiques ») |
 | `btn-stone-3.png` | 1096 × 376 | transparent | Dalle de pierre, variante 3 (« Option ») |
 | `btn-lava.png` | 1096 × 376 | transparent | Dalle de lave (« Commencer une nouvelle évasion ») |
-| `btn-small.png` | 800 × 563 | transparent | Petite pierre pour les boutons secondaires (« ← Retour » des écrans Statistiques et Option, « Menu » en jeu) — **rendu en place**, réduit depuis `raw/btn-small.png` |
+| `btn-small.png` | 800 × 563 | transparent | Petite pierre pour les boutons secondaires (« ← Retour », « Menu » en jeu, « Passer l'introduction ») — **rendu en place**, réduit depuis `raw/btn-small.png` |
+| `btn-small-orange.png` | 800 × 563 | transparent | Même pierre en lave, pour l'action principale des petits boutons (« Suite » / « Terminer » des dialogues) — **rendu en place**, réduit depuis `raw/btn-small-orange.png` |
 | `scroll.png` | 1400 × 1793 | transparent autour | Parchemin déroulé, fond des écrans Statistiques et Option — **rendu en place**, réduit depuis `raw/scroll.png` (1824 × 2336) |
-| `bubble-demon.png` | 1200 × 400 | transparent autour | Bande de parchemin déchiré, bulle de dialogue du démon — **à générer** |
-| `bubble-player.png` | 1200 × 400 | transparent autour | Même bande, papier gris-bleu, bulle du joueur — **à générer** |
+| `bubble-demon.png` | 1200 × 397 | transparent autour | Bande de parchemin déchiré, bulle du démon — **rendu en place**, réduit depuis `raw/` (3584 × 1184) |
+| `bubble-player.png` | 1200 × 397 | transparent autour | Même bande, papier gris-bleu, bulle du joueur — **rendu en place** |
+| `dialog-bg.jpg` | 2200 × 1118 | opaque | Fond des dialogues : le stagiaire à gauche, la salle de lave à droite — **rendu en place** (source `raw/dialog_bg.jpeg`) |
 
 Le cadre déchiré (`frame.png`) a été **retiré du menu** : le fond peint se suffit.
 Le fichier peut être supprimé de `public/menu/` (4,5 Mo copiés dans le build pour
@@ -304,11 +306,12 @@ relançant le prompt avec cette phrase à la place de la première couleur :
 ajouter une ombre portée très courte (2 à 4 px) sous le lambeau si besoin, dans
 la marge.
 
-Une fois les fichiers en place, le CSS des bulles (`.bubble-demon`,
-`.bubble-player` dans `src/index.css`) passera en `border-image` avec ces
-tranches, encre brune pour le démon et encre bleu-nuit pour le joueur, nom du
-locuteur en petites capitales, et la bulle active sera signalée par un léger
-halo doré plutôt qu'une bordure.
+En place : `.bubble-line` dans `src/index.css` pose le lambeau en `border-image`
+(tranches 13 % haut et bas, 5,5 % côtés, bords répétés, centre étiré), encre
+brune pour le démon et bleu-nuit pour le joueur, nom du locuteur en petites
+capitales, bulle active signalée par un halo doré. Le démon dessiné en CSS a
+disparu : le personnage est dans `dialog-bg.jpg`, à gauche, et les bulles
+occupent la partie droite de l'écran.
 
 ### 5. `frame.png` — cadre déchiré (retiré du menu, prompt conservé)
 
