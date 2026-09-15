@@ -486,6 +486,24 @@ export function useRace({ carry, soulCount, lanes, blocked, speed }: UseRaceProp
     commit({ ...u, combinations: next })
   }, [commit])
 
+  /** Remplace l'ordre de la file par `next` (même ensemble de combinaisons) : réordonnancement par cartes fusionnées. */
+  const setCombinations = useCallback((next: readonly Combination[]) => {
+    const u = uiRef.current
+    if (u.phase !== 'pairing' || next.length !== u.combinations.length) return
+    const key = (c: Combination): string => `${c.soulDie}:${c.distanceDie}`
+    const a = new Set(u.combinations.map(key))
+    if (!next.every((c) => a.has(key(c))) || new Set(next.map(key)).size !== next.length) return
+    commit({ ...u, combinations: [...next] })
+  }, [commit])
+
+  /** Dissocie plusieurs combinaisons d'un coup (carte fusionnée : tous ses dés reviennent). */
+  const removeCombinations = useCallback((indices: readonly number[]) => {
+    const u = uiRef.current
+    if (u.phase !== 'pairing') return
+    const drop = new Set(indices)
+    commit({ ...u, combinations: u.combinations.filter((_, i) => !drop.has(i)), selectedSoulDie: null })
+  }, [commit])
+
   /** Dissocie une combinaison de la file : ses dés redeviennent disponibles, les numéros se recalculent (spec 05/C1). */
   const removeCombination = useCallback((index: number) => {
     const u = uiRef.current
@@ -596,6 +614,6 @@ export function useRace({ carry, soulCount, lanes, blocked, speed }: UseRaceProp
     setAuto,
     shopUnlocked: shopUnlocked(ui),
     level,
-    actions: { openShop, startRace, buy, cancelPurchase, rerollVitrine, placeBet, cancelBet, useLateBet, rollDice, pickSoulDie, pickDistanceDie, pairDice, resetPairing, removeCombination, moveCombination, moveCombinationTo, autoPair, resolve },
+    actions: { openShop, startRace, buy, cancelPurchase, rerollVitrine, placeBet, cancelBet, useLateBet, rollDice, pickSoulDie, pickDistanceDie, pairDice, resetPairing, removeCombination, removeCombinations, moveCombination, moveCombinationTo, setCombinations, autoPair, resolve },
   }
 }

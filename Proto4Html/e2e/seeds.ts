@@ -41,3 +41,9 @@ export const SHOP_SEED_EXPECT = {
   die: { name: 'Dé des Limbes', price: 30, faces: ['+1', '+1', '+2', '+2'] },
   cheapest: 30,
 }
+
+/**
+ * Cercle 1, course 1 : au tour 1, les trois dés Âme désignent Virgile et les dés Distance font
+ * +2 et −1 (08-C3 : une seule carte fusionnée « Virgile +1 », prévisualisée sur la case 1).
+ */
+export const CUMUL_SEED = 22

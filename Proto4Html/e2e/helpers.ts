@@ -24,7 +24,8 @@ export async function start(page: Page, opts: StartOptions = {}): Promise<void> 
   if (opts.race !== undefined) q.set('race', String(opts.race))
   if (opts.speed !== undefined) q.set('speed', String(opts.speed))
   await page.goto(`/?${q.toString()}`)
-  await expect(playerSlot(page)).toBeVisible()
+  await expect(page.getByRole('main')).toBeVisible()
+  await expect(phaseStrip(page)).toBeVisible()
 }
 
 export const betsPanel = (page: Page): Locator => page.getByRole('region', { name: 'Paris', exact: true })

@@ -28,7 +28,7 @@ Mêmes mécanismes, plus lisibles :
 
 - **C1 (P2)** — Poignées résumées. Onglet paris : `Paris (2) · 30 ¤ misés` (somme des mises `open`) ; en course, s'il ne reste qu'à regarder : `Paris (2)`. Onglet boutique : `Boutique · {n} objets` (`ui.vitrine.length`). Libellés dans `texts.ts`.
 - **C2 (P1)** — État vide de la boutique. Supprimer `disabled` sur `tab-left` : l'onglet ouvre toujours le drawer. Si `!shopUnlocked`, `ShopPanel` affiche à la place de la vitrine un état vide : « Pose d'abord un pari, le stagiaire n'ouvre pas la caisse aux indécis. » + bouton « Aller aux paris » (ouvre le drawer paris). Dès le premier pari posé, la vitrine apparaît sans re-clic si le panneau est ouvert.
-- **C3 (P2)** — Bascule exclusive en écran étroit : sous ~1100 px de largeur de fenêtre, ouvrir un drawer ferme l'autre (les deux ouverts ne laissent plus assez de place au plateau). En large, comportement actuel conservé (les deux peuvent rester ouverts).
+- **C3 (P2)** — Bascule exclusive quand la hauteur manque (révisé par 08/C2, panneaux haut/bas) : au-delà de `layout.bothPanelsMaxLanes` couloirs ou sous `layout.bothPanelsMinHeight` px de hauteur de fenêtre (`config/race.json`), ouvrir un panneau replie l'autre. Sinon les deux peuvent rester ouverts, le plateau visible en bandeau entre les deux.
 - **C4 (P3)** — Raccourcis clavier : `P` bascule le drawer paris, `B` la boutique (seulement en phase `prep` pour `B`), ignorés quand un champ a le focus. Documentés dans le `title` des onglets.
 
 ## Critères d'acceptation
@@ -37,7 +37,7 @@ Mêmes mécanismes, plus lisibles :
 - [ ] Au tout début d'une course (aucun pari), cliquer l'onglet Boutique ouvre le drawer sur le message d'état vide ; poser un pari depuis le drawer paris fait apparaître la vitrine.
 - [ ] Remplir un ticket (type + âme + mise) sans le poser, ouvrir la boutique, revenir : la saisie est intacte.
 - [ ] Une fois la course lancée (`phase !== 'prep'`), plus aucun accès boutique (onglet absent) ; l'onglet Paris reste tant que la course n'est pas finie.
-- [ ] À moins de 1100 px de large, ouvrir la boutique replie le panneau de paris (et réciproquement) ; le plateau reste entièrement visible.
+- [ ] En fenêtre basse (1024×768) ou au cercle 6 (4 couloirs), ouvrir la boutique replie le panneau de paris (et réciproquement) ; le plateau reste entièrement visible dans tous les cas.
 
 ## Hors périmètre
 

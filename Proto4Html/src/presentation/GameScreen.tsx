@@ -9,7 +9,7 @@ import { Inventory } from './Inventory'
 import { MoneyGauge } from './MoneyGauge'
 import { Ranking } from './Ranking'
 import { ShopPanel } from './ShopPanel'
-import { OpponentSlot, PlayerSlot } from './PlaySlots'
+import { OpponentSlot, PhaseStrip, PlayerSlot } from './PlaySlots'
 import { CIRCLES, HUD, RACE, fill } from './texts'
 import { betBase, canBetNow, circleOf, itemName, previewNext, stakedOpen, useRace, type RaceUi, type SessionCarry } from './useRace'
 
@@ -29,16 +29,18 @@ function stepOf(ui: RaceUi): Step {
   return ui.bets.length === 0 ? 0 : 1
 }
 
-/** Sous cette largeur, les deux panneaux ouverts ne laissent plus assez de place au plateau : bascule exclusive (spec 02/C3). */
-const NARROW_QUERY = '(max-width: 1100px)'
-const isNarrow = (): boolean => typeof window !== 'undefined' && window.matchMedia(NARROW_QUERY).matches
-
 /** Un champ de saisie a-t-il le focus ? Les raccourcis clavier s'effacent alors. */
 function typing(): boolean {
   const el = document.activeElement
   return el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement
 }
 
+/**
+ * Disposition (spec 08/C1, C2) : une rangée haute pour le HUD (cercle · fil d'Ariane · pièces),
+ * puis la table en trois zones empilées, pleine largeur : zone haute (adversaire, ou boutique en
+ * préparation), plateau, zone basse (dés du joueur, ou panneau de paris). Les panneaux sont dans
+ * le flux : ils ne recouvrent jamais le plateau ni le HUD.
+ */
 export function GameScreen({ carry, speed, onFinished, onMenu }: Props) {
   const { circle, raceInCircle } = circleOf(carry.raceIndex)
   const circleCfg = config.run.circles[circle - 1] ?? config.run.circles[config.run.circles.length - 1]!
@@ -64,17 +66,23 @@ export function GameScreen({ carry, speed, onFinished, onMenu }: Props) {
   const racesLeft = config.run.racesPerCircle - raceInCircle
   // Parier : la phase le permet et aucune âme n'a franchi le seuil (sinon le panneau l'écrit et ferme chips et jetons).
   const betOpen = canBetNow(ui) && !bettingClosed(ui.race)
+  const prep = ui.phase === 'prep'
+  const finished = ui.phase === 'finished'
+  const shopShown = prep && shopOpen
+  const betsShown = !finished && betsOpen
 
-  // Paris à droite, boutique à gauche : en large, les deux peuvent rester ouverts ; en étroit, l'un replie l'autre.
+  // Les deux panneaux peuvent rester ouverts ensemble tant que le plateau garde sa hauteur lisible (spec 08/C2) ;
+  // sinon ouvrir l'un replie l'autre.
+  const bothAllowed = (): boolean => ui.race.track.lanes <= config.layout.bothPanelsMaxLanes && (typeof window === 'undefined' || window.innerHeight >= config.layout.bothPanelsMinHeight)
   const openBets = (): void => {
     setBetsOpen(true)
-    if (isNarrow()) setShopOpen(false)
+    if (!bothAllowed()) setShopOpen(false)
   }
   const openShop = (): void => {
-    if (ui.phase !== 'prep') return
+    if (!prep) return
     actions.openShop() // tire la vitrine si la boutique est débloquée ; sinon l'état vide s'affiche
     setShopOpen(true)
-    if (isNarrow()) setBetsOpen(false)
+    if (!bothAllowed()) setBetsOpen(false)
   }
 
   // La boutique disparaît dès que la course est lancée ; le panneau de paris se replie quand on ne peut plus parier.
@@ -96,7 +104,7 @@ export function GameScreen({ carry, speed, onFinished, onMenu }: Props) {
   }, [shopOpen, shopUnlocked, ui.vitrine, actions])
   // Fin de course : le classement et le bilan des paris s'ouvrent en modale, après une
   // respiration pour laisser voir le dernier déplacement. « Voir la table » la referme,
-  // l'onglet « Gains » la rouvre.
+  // la poignée « Gains » la rouvre.
   useEffect(() => {
     if (ui.phase !== 'finished') {
       setResultsOpen(false)
@@ -151,80 +159,85 @@ export function GameScreen({ carry, speed, onFinished, onMenu }: Props) {
 
   // Sélection d'âmes sur le plateau : panneau de paris ouvert et pari possible.
   const draftSlots = slotCount(betType(draft.type), ui.race.souls.length)
-  const selection = betsOpen && betOpen && ui.phase !== 'finished' ? { souls: draft.souls, max: draftSlots, onToggle: (id: number) => setDraft((d) => toggleDraftSoul(d, id, draftSlots)) } : null
+  const selection = betsShown && betOpen ? { souls: draft.souls, max: draftSlots, onToggle: (id: number) => setDraft((d) => toggleDraftSoul(d, id, draftSlots)) } : null
 
   const tabBets = staked > 0 && betOpen ? fill(HUD.tabBetsStaked, { n: ui.bets.length, staked }) : fill(HUD.tabBets, { n: ui.bets.length })
   const shopCount = ui.vitrine?.length ?? 0
   const tabShop = shopUnlocked && ui.vitrine ? fill(HUD.tabShop, { n: shopCount, s: shopCount > 1 ? 's' : '' }) : HUD.tabShopClosed
 
   return (
-    <div className={'table' + (betsOpen && ui.phase !== 'finished' ? ' bets-open' : '') + (shopOpen && ui.phase === 'prep' ? ' shop-open' : '')} style={{ ['--step' as string]: `${config.animation.stepMs / speed}ms`, ['--gauge-ms' as string]: `${config.animation.gaugeMs / speed}ms` }}>
-      {/* Overlays */}
-      <div className="hud hud-left">
-        <span className="hud-big">{fill(HUD.circle, { ordinal })}</span>
-        <span>{isBoss ? fill(HUD.bossRace, { n: raceInCircle, total: config.run.racesPerCircle }) : fill(HUD.race, { n: HUD.raceOrdinals[raceInCircle - 1] ?? raceInCircle, total: config.run.racesPerCircle })}</span>
-        <span className="muted small">{fill(HUD.demon, { rank: rank.name })}</span>
-      </div>
-      <div className="hud hud-right">
-        <span className="hud-big money">{fill(HUD.coins, { n: ui.money })}</span>
-        <MoneyGauge money={ui.money} price={price} staked={staked} />
-        <button type="button" className="hud-link" onClick={() => setArtefactsOpen(true)}>
-          {fill(HUD.artefacts, { n, s: n > 1 ? 's' : '' })}
-        </button>
-        <span className="hud-tools">
-          <button type="button" className={'chip' + (auto ? ' chip-on' : '')} onClick={() => setAuto(!auto)} title="Mode test : enchaîne les tours tout seul">
-            auto
-          </button>
-          <button type="button" className="btn-stone btn-stone-sm" onClick={onMenu}>
-            {HUD.menu}
-          </button>
-        </span>
-      </div>
+    <div className={'table' + (betsShown ? ' bets-open' : '') + (shopShown ? ' shop-open' : '')} style={{ ['--step' as string]: `${config.animation.stepMs / speed}ms`, ['--gauge-ms' as string]: `${config.animation.gaugeMs / speed}ms` }}>
+      {/* Rangée haute réservée au HUD (spec 08/C1) : rien ne la recouvre, quel que soit l'état des panneaux. */}
+      <header className="topbar-game" data-testid="hud-row">
+        <div className="hud hud-left" data-testid="hud-left">
+          <span className="hud-big">{fill(HUD.circle, { ordinal })}</span>
+          <span>{isBoss ? fill(HUD.bossRace, { n: raceInCircle, total: config.run.racesPerCircle }) : fill(HUD.race, { n: HUD.raceOrdinals[raceInCircle - 1] ?? raceInCircle, total: config.run.racesPerCircle })}</span>
+          <span className="muted small">{fill(HUD.demon, { rank: rank.name })}</span>
+        </div>
+        <ol className="steps" aria-label="Étapes" data-testid="steps">
+          {HUD.steps.map((label, i) => (
+            <li key={label} className={'step' + (i < step ? ' step-done' : '') + (i === step ? ' step-current' : '')} aria-current={i === step ? 'step' : undefined}>
+              {label}
+            </li>
+          ))}
+        </ol>
+        <div className="hud hud-right" data-testid="hud-right">
+          <div className="hud-money">
+            <span className="hud-big money">{fill(HUD.coins, { n: ui.money })}</span>
+            <button type="button" className="hud-link" onClick={() => setArtefactsOpen(true)}>
+              {fill(HUD.artefacts, { n, s: n > 1 ? 's' : '' })}
+            </button>
+          </div>
+          <MoneyGauge money={ui.money} price={price} staked={staked} />
+          <span className="hud-tools">
+            <button type="button" className={'chip' + (auto ? ' chip-on' : '')} onClick={() => setAuto(!auto)} title="Mode test : enchaîne les tours tout seul">
+              auto
+            </button>
+            <button type="button" className="btn-stone btn-stone-sm" onClick={onMenu}>
+              {HUD.menu}
+            </button>
+          </span>
+        </div>
+      </header>
 
-      {/* Fil d'Ariane imprimé sur la table */}
-      <ol className="steps" aria-label="Étapes">
-        {HUD.steps.map((label, i) => (
-          <li key={label} className={'step' + (i < step ? ' step-done' : '') + (i === step ? ' step-current' : '')} style={{ ['--i' as string]: i }}>
-            {label}
-          </li>
-        ))}
-      </ol>
-
-      {/* Onglet boutique (panneau venant de la gauche), seulement en préparation ; toujours cliquable (état vide sans pari) */}
-      {ui.phase === 'prep' && !shopOpen && (
-        <button type="button" className="tab tab-left" data-testid="tab-shop" onClick={openShop} title={fill(HUD.tabShortcut, { key: 'B' })}>
-          {tabShop}
-        </button>
-      )}
-      <div className={'drawer drawer-left drawer-shop' + (shopOpen && ui.phase === 'prep' ? ' drawer-open' : '')} data-testid="drawer-shop" data-state={shopOpen && ui.phase === 'prep' ? 'open' : 'closed'} aria-hidden={!shopOpen}>
-        <ShopPanel
-          vitrine={ui.vitrine ?? []}
-          unlocked={shopUnlocked}
-          money={ui.money}
-          price={price}
-          staked={staked}
-          raceIndex={ui.raceIndex}
-          inventory={ui.inventory}
-          pending={ui.pendingPurchase}
-          onBuy={(id, target) => actions.buy(id, target ?? null)}
-          onCancel={actions.cancelPurchase}
-          onReroll={actions.rerollVitrine}
-          onLeave={() => {
-            setShopOpen(false)
-            openBets()
-          }}
-          onGoToBets={() => {
-            setShopOpen(false)
-            openBets()
-          }}
-          onClose={() => setShopOpen(false)}
-        />
-        {shopUnlocked && <Inventory inventory={ui.inventory} lateBetCharges={ui.lateBetCharges} compact />}
-      </div>
-
-      {/* La table */}
+      {/* La table : zone haute · plateau · zone basse, en pleine largeur */}
       <main className="felt">
-        <OpponentSlot ui={ui} />
+        <div className={'zone zone-top' + (shopShown ? ' zone-open' : '')} data-testid="drawer-shop" data-state={shopShown ? 'open' : 'closed'}>
+          {prep && !shopShown && (
+            <button type="button" className="handle handle-top" data-testid="tab-shop" onClick={openShop} title={fill(HUD.tabShortcut, { key: 'B' })}>
+              {tabShop}
+            </button>
+          )}
+          {shopShown && (
+            <div className="panel panel-shop">
+              <ShopPanel
+                vitrine={ui.vitrine ?? []}
+                unlocked={shopUnlocked}
+                money={ui.money}
+                price={price}
+                staked={staked}
+                raceIndex={ui.raceIndex}
+                inventory={ui.inventory}
+                pending={ui.pendingPurchase}
+                onBuy={(id, target) => actions.buy(id, target ?? null)}
+                onCancel={actions.cancelPurchase}
+                onReroll={actions.rerollVitrine}
+                onLeave={() => {
+                  setShopOpen(false)
+                  openBets()
+                }}
+                onGoToBets={() => {
+                  setShopOpen(false)
+                  openBets()
+                }}
+                onClose={() => setShopOpen(false)}
+              />
+              {shopUnlocked && <Inventory inventory={ui.inventory} lateBetCharges={ui.lateBetCharges} compact />}
+            </div>
+          )}
+          {!prep && <OpponentSlot ui={ui} />}
+        </div>
+
         <div className="board-wrap">
           <Board race={ui.race} lastResult={ui.lastResult} activeSoul={activeSoul} highlightSoul={hoverSoul} onHoverSoul={setHoverSoul} preview={preview} selection={selection} bettedSouls={bettedSouls} tieColumns={tieColumns} />
           <p className="last-event" aria-live="polite">
@@ -236,68 +249,74 @@ export function GameScreen({ carry, speed, onFinished, onMenu }: Props) {
             )}
           </p>
         </div>
-        <PlayerSlot
-          ui={ui}
-          speed={speed}
-          preview={preview}
-          highlightSoul={hoverSoul}
-          onHoverSoul={setHoverSoul}
-          onStart={actions.startRace}
-          onRoll={() => void actions.rollDice()}
-          onPickSoul={actions.pickSoulDie}
-          onPickDistance={actions.pickDistanceDie}
-          onReset={actions.resetPairing}
-          onResolve={() => void actions.resolve()}
-          onRemoveCombination={actions.removeCombination}
-          onMoveCombination={actions.moveCombination}
-          onPairDice={actions.pairDice}
-          onMoveCombinationTo={actions.moveCombinationTo}
-        />
+
+        <div className={'zone zone-bottom' + (betsShown ? ' zone-open' : '')} data-testid="drawer-bets" data-state={betsShown ? 'open' : 'closed'}>
+          <PhaseStrip phase={ui.phase} />
+          {!finished && !betsShown && (
+            <button type="button" className="handle handle-bottom" data-testid="tab-bets" onClick={openBets} title={fill(HUD.tabShortcut, { key: 'P' })}>
+              {tabBets}
+            </button>
+          )}
+          {finished && !resultsOpen && (
+            <button type="button" className="handle handle-bottom handle-results" data-testid="tab-results" onClick={() => setResultsOpen(true)} title={HUD.tabResults}>
+              {HUD.results}
+            </button>
+          )}
+          {betsShown ? (
+            <div className="panel panel-bets">
+              <BetPanel
+                race={ui.race}
+                money={ui.money}
+                price={price}
+                bets={ui.bets}
+                open={betOpen}
+                phase={ui.phase}
+                level={level}
+                speed={speed}
+                roll={ui.roll}
+                lateBet={ui.inventory.artefacts.includes('lateBet') ? { charges: ui.lateBetCharges, active: ui.lateBetOpen } : null}
+                onUseLateBet={actions.useLateBet}
+                onPlace={actions.placeBet}
+                {...(prep ? { onCancel: actions.cancelBet } : {})}
+                baseFor={(type) => betBase(type, ui.inventory)}
+                draft={draft}
+                onDraftChange={setDraft}
+                highlightSoul={hoverSoul}
+                onHoverSoul={setHoverSoul}
+                onStart={actions.startRace}
+                onOpenShop={openShop}
+                onClose={() => setBetsOpen(false)}
+              />
+            </div>
+          ) : (
+            <PlayerSlot
+              ui={ui}
+              speed={speed}
+              preview={preview}
+              highlightSoul={hoverSoul}
+              onHoverSoul={setHoverSoul}
+              onStart={actions.startRace}
+              onRoll={() => void actions.rollDice()}
+              onPickSoul={actions.pickSoulDie}
+              onPickDistance={actions.pickDistanceDie}
+              onReset={actions.resetPairing}
+              onResolve={() => void actions.resolve()}
+              onPairDice={actions.pairDice}
+              onRemoveCombinations={actions.removeCombinations}
+              onSetCombinations={actions.setCombinations}
+            />
+          )}
+        </div>
       </main>
 
-      {/* Fin de course : classement et bilan des paris en modale, onglet « Gains » pour la rouvrir */}
-      {ui.phase === 'finished' && !resultsOpen && (
-        <button type="button" className="tab tab-right" data-testid="tab-results" onClick={() => setResultsOpen(true)}>
-          {HUD.results}
-        </button>
-      )}
-      {ui.phase === 'finished' && resultsOpen && (
+      {/* Fin de course : classement et bilan des paris en modale, poignée « Gains » pour la rouvrir */}
+      {finished && resultsOpen && (
         <div className="popup-backdrop" onClick={() => setResultsOpen(false)} role="presentation">
           <div className="popup popup-wide" role="dialog" aria-label={HUD.raceResult} data-testid="results-modal" onClick={(e) => e.stopPropagation()}>
             <Ranking race={ui.race} settlement={ui.settlement} money={ui.money} price={price} racesLeft={racesLeft} speed={speed} animate={!resultsSeen} continueLabel={HUD.nextRace} onContinue={() => onFinished(ui)} onClose={() => setResultsOpen(false)} />
           </div>
         </div>
       )}
-
-      {/* Onglet paris (panneau venant de la droite : la piste reste dégagée à gauche, dans le sens de la course) */}
-      {ui.phase !== 'finished' && !betsOpen && (
-        <button type="button" className="tab tab-right" data-testid="tab-bets" onClick={openBets} title={fill(HUD.tabShortcut, { key: 'P' })}>
-          {tabBets}
-        </button>
-      )}
-      <div className={'drawer drawer-right' + (betsOpen && ui.phase !== 'finished' ? ' drawer-open' : '')} data-testid="drawer-bets" data-state={betsOpen && ui.phase !== 'finished' ? 'open' : 'closed'} aria-hidden={!betsOpen}>
-        <BetPanel
-          race={ui.race}
-          money={ui.money}
-          price={price}
-          bets={ui.bets}
-          open={betOpen}
-          phase={ui.phase}
-          level={level}
-          lateBet={ui.inventory.artefacts.includes('lateBet') ? { charges: ui.lateBetCharges, active: ui.lateBetOpen } : null}
-          onUseLateBet={actions.useLateBet}
-          onPlace={actions.placeBet}
-          {...(ui.phase === 'prep' ? { onCancel: actions.cancelBet } : {})}
-          baseFor={(type) => betBase(type, ui.inventory)}
-          draft={draft}
-          onDraftChange={setDraft}
-          highlightSoul={hoverSoul}
-          onHoverSoul={setHoverSoul}
-          onStart={actions.startRace}
-          onOpenShop={openShop}
-          onClose={() => setBetsOpen(false)}
-        />
-      </div>
 
       {/* Récapitulatif du dernier tour (recommandation §4.7 : reconstituer la cause d'un état) */}
       {recapOpen && (

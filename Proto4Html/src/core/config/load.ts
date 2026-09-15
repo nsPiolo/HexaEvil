@@ -154,6 +154,11 @@ export function loadConfig(raw: unknown): RaceConfig {
   const betRevealMs = int(animation.betRevealMs, 'animation.betRevealMs', 0)
   const idlePulseMs = int(animation.idlePulseMs, 'animation.idlePulseMs', 0)
   const gaugeMs = int(animation.gaugeMs, 'animation.gaugeMs', 0)
+  const betConfirmMs = int(animation.betConfirmMs, 'animation.betConfirmMs', 0)
+
+  const layout = obj(root.layout, 'layout')
+  const bothPanelsMaxLanes = int(layout.bothPanelsMaxLanes, 'layout.bothPanelsMaxLanes', 1)
+  const bothPanelsMinHeight = int(layout.bothPanelsMinHeight, 'layout.bothPanelsMinHeight', 0)
 
   return {
     souls: { count, names },
@@ -163,6 +168,7 @@ export function loadConfig(raw: unknown): RaceConfig {
     economy: { startingMoney, stakes, multipliers, betUnlockLevel, decay: { exponent, minMultiplier } },
     run: { racesPerCircle, circles },
     artefacts: { lateBet: { chargesPerCircle }, sablier: { betThresholdRatio: sablierRatio } },
-    animation: { stepMs, diceMs, pauseMs, betRevealMs, idlePulseMs, gaugeMs },
+    animation: { stepMs, diceMs, pauseMs, betRevealMs, idlePulseMs, gaugeMs, betConfirmMs },
+    layout: { bothPanelsMaxLanes, bothPanelsMinHeight },
   }
 }

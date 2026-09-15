@@ -146,6 +146,14 @@ npm run build
   signal de collision, journal détaillé. Vitesse ×0,5 à ×4, mode Auto pour
   enchaîner des courses.
 - Passe d'ergonomie (`docs/proto4/specs/`, écrite en delta) :
+  - **Disposition** (spec 08) : rangée haute réservée au HUD (cercle · fil d'Ariane · pièces
+    et jauge), puis la table en trois zones pleine largeur : boutique en haut (en préparation,
+    à la place de la zone adverse), plateau, paris en bas (à la place des dés). Les panneaux
+    sont dans le flux, rien ne recouvre jamais le plateau ; les deux restent ouverts ensemble
+    tant que le plateau garde ~45 px par couloir (`config.layout`), sinon l'un replie l'autre.
+    Une carte de combinaison par âme (dés constitutifs en miniature), confirmation « Pari
+    posé : … » et compteur en en-tête, zone adverse fine hors de son tour, ordre d'arrivée
+    raconté seulement quand il diffère du rang.
   - **Jauge des trois usages** (`MoneyGauge`) : solde / prix du cercle, même
     composant dans le HUD, le panneau de paris, la boutique et la modale de fin de
     course ; avertissement « encore N ¤ à trouver (en n courses) » sous le prix,

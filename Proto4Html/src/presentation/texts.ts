@@ -220,6 +220,7 @@ export const HUD = {
   tabBetsStaked: 'Paris ({n}) · {staked} ¤ misés',
   tabShop: 'Boutique · {n} objet{s}',
   tabShopClosed: 'Boutique',
+  tabResults: 'Gains — revoir le classement et le bilan',
   tabShortcut: 'Raccourci clavier : {key}',
   circle: '{ordinal} Cercle',
   race: '{n} course sur {total}',
@@ -296,6 +297,10 @@ export const BETS = {
   overThreshold: 'A dépassé le seuil de pari',
   pickOnBoard: 'Cliquer pour désigner cette âme',
   unpickOnBoard: 'Cliquer pour la retirer du ticket',
+  placed: 'Pari posé : {type} · {souls} · {stake} ¤ → +{net} si gagné',
+  placedCount: 'Paris posés ({n})',
+  placedToggle: 'Afficher ou replier la liste des paris posés',
+  diceSeen: 'Dés lancés : {souls} — {dist}',
 } as const
 
 /** Jauge des trois usages : solde, misé en course, prix du cercle (spec 01/C1). */
@@ -375,6 +380,8 @@ export const RESULTS = {
   net: 'Net de la course : {net} ¤',
   refund: 'Livre des comptes : {n} ¤ remboursés',
   tieBreak: 'départage : même colonne, le couloir le plus bas devant',
+  arrivedEarlier: 'a franchi l’arrivée le {n} · doublé pendant la fin du tour',
+  arrivedLater: 'a franchi l’arrivée le {n} · a dépassé après l’arrivée',
   skip: 'Cliquer pour tout révéler',
   hidden: '?',
 } as const

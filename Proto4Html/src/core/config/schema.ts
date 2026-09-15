@@ -69,5 +69,13 @@ export interface RaceConfig {
     idlePulseMs: number
     /** Transition du remplissage de la jauge solde / prix du cercle. */
     gaugeMs: number
+    /** Durée de la confirmation « Pari posé : … » dans le pied du panneau de paris. */
+    betConfirmMs: number
+  }
+  layout: {
+    /** Au-delà de ce nombre de couloirs, les panneaux paris et boutique ne s'ouvrent plus ensemble. */
+    bothPanelsMaxLanes: number
+    /** Sous cette hauteur de fenêtre (px), idem. */
+    bothPanelsMinHeight: number
   }
 }

@@ -26,6 +26,18 @@ interface Props {
 /** Délai entre deux lignes du classement (cascade), à vitesse ×1. */
 const CASCADE_MS = 120
 
+const ordinal = (n: number): string => (n === 1 ? '1er' : `${n}e`)
+
+/**
+ * Ordre de franchissement de l'arrivée (spec 08/C6) : mentionné seulement quand il diffère du
+ * rang, et raconté — la colonne prime (GDD §2.7), une âme passée la ligne en premier peut être
+ * doublée pendant la fin du tour, et inversement.
+ */
+export function arrivalNote(rank: number, finishOrder: number | null): string | null {
+  if (finishOrder === null || finishOrder === rank) return null
+  return fill(finishOrder < rank ? RESULTS.arrivedEarlier : RESULTS.arrivedLater, { n: ordinal(finishOrder) })
+}
+
 export function Ranking({ race, settlement, money, price, racesLeft, speed, animate, continueLabel, onContinue, onClose }: Props) {
   const ranked = ranking(race)
   const bets = settlement?.bets ?? []
@@ -66,7 +78,7 @@ export function Ranking({ race, settlement, money, price, racesLeft, speed, anim
         <span className="rank-pos">
           case {soul.position}
           {race.track.lanes > 1 && <span className="muted"> · couloir {soul.lane + 1}</span>}
-          {soul.finishOrder !== null && <span className="muted"> · arrivée n°{soul.finishOrder}</span>}
+          {arrivalNote(rank, soul.finishOrder) !== null && <span className="muted rank-note"> · {arrivalNote(rank, soul.finishOrder)}</span>}
         </span>
       </li>,
     )

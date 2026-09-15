@@ -68,6 +68,14 @@ Vérifier automatiquement les **critères d'acceptation d'ergonomie** des specs 
 - **E2E-05-H** (§4.3, §4.7 des recommandations) : jeton « Âme pariée » sur les âmes pariées ; après un tour, chaque pari posé affiche « en bonne voie » ou « compromis · provisoire » ; « ↺ dernier tour » ouvre le récapitulatif du tour ; au franchissement du seuil, la tête de colonne écrit « plus de pari ».
 - **E2E-05-F** (lisibilité) : chaque événement de course produit un texte dans `last-event` (aria-live) — percussion, échange, franchissement — vérifié sur une graine qui produit une collision.
 
+### `08-corrections.spec.ts` — corrections post-test (`08-corrections-post-test.md`)
+
+- **C1** : à 1024/1280/1440/1920 px, dans chaque état des panneaux, les blocs de la rangée HUD, le fil d'Ariane et la zone haute de la table ne se recouvrent pas (bounding boxes) ; les quatre étapes sont visibles.
+- **C2** : paris ouverts (préparation et course) : les 17 colonnes et tous les jetons visibles, panneau sous le plateau ; cercle 1 : boutique + paris ouverts, plateau en bandeau entre les deux ; cercle 6 (`race=15`) : ouverture exclusive ; boutons croisés en un clic.
+- **C3** (graine `CUMUL_SEED`) : deux dés sur la même âme = une carte fusionnée avec ses dés en miniature, total prévisualisé, `×` rend tous les dés, badges d'ordre à 1.
+- **C4** : confirmation « Pari posé : … » et compteur « Paris posés (n) » visibles sans défilement à 1440×900 ; guidage du ticket suivant seulement après ; le compteur replie/rouvre la liste.
+- **C5**, **C7**, **C8**, **C9**, **C10** : contraste du slot rempli ≥ chip, pile de jetons lisible et survol de légende, contraste AA du fil d'Ariane, jauge du HUD estompée, zone adverse fine puis pleine pendant la paire adverse. **C6** est couvert par Vitest (`arrivalNote`).
+
 ### `06-gains.spec.ts` — la modale de résultats
 
 - **E2E-06-A** (06/AC1) : 3 paris posés, course jouée en auto (bouton `auto` du HUD ou enchaînement piloté) : la modale montre le classement, puis les tickets se révèlent un à un (`page.clock`), le compteur de net progresse ; un clic révèle tout ; fermer par « Voir la table » puis rouvrir par « Gains » : tout est révélé, la séquence ne rejoue pas.

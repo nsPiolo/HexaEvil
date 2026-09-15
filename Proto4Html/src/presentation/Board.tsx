@@ -119,7 +119,9 @@ export function Board({ race, lastResult, activeSoul, highlightSoul = null, onHo
         {race.souls.map((soul) => {
           const stack = occupants.get(`${soul.position}:${soul.lane}`) ?? [soul.id]
           const index = stack.indexOf(soul.id)
-          const offset = (index - (stack.length - 1) / 2) * stackGap
+          // Éventail (spec 08/C7) : survoler un jeton ou sa légende écarte la pile pour que chacun se lise.
+          const fanned = stack.length > 1 && highlightSoul !== null && stack.includes(highlightSoul)
+          const offset = (index - (stack.length - 1) / 2) * (fanned ? stackGap * 1.7 : stackGap)
           const isActive = activeSoul === soul.id || highlightSoul === soul.id || previewSoul === soul.id
           const isLast = lastResult?.move.soul === soul.id
           const { picked, canPick, why } = pickState(soul.id, soul.position)
@@ -131,6 +133,7 @@ export function Board({ race, lastResult, activeSoul, highlightSoul = null, onHo
           if (soul.finishOrder !== null) tokenClass.push('token-finished')
           if (picked) tokenClass.push('token-picked')
           if (selection && !canPick) tokenClass.push('token-unpickable')
+          if (fanned) tokenClass.push('token-fanned')
           const label = lanes > 1 ? `${soul.name} · couloir ${soul.lane + 1}` : soul.name
           const zoneNote = !selection && isInBetZone(track, soul.position) ? BETS.overThreshold : ''
           const title = selection && why ? `${label} — ${why}` : zoneNote ? `${label} — ${zoneNote}` : label
