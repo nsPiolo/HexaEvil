@@ -252,5 +252,6 @@ src/presentation/texts.ts  tous les textes (intro, boss, transitions des 9 cercl
 src/presentation/demon.ts  grade du démon selon le cercle, assemblage des dialogues de transition et de promotion
 src/presentation/DevMenu.tsx menu développeur : solde et saut à un cercle
 src/presentation/storage.ts localStorage : sauvegarde, statistiques, options
+src/presentation/HelpPanel.tsx page d'aide (bouton « Aide » du HUD) : index des sections à gauche, règles à droite ; contenu dans texts.ts (HELP)
 src/presentation           React : useRace (machine à états d'une rencontre), MapScreen, GameScreen, PlaySlots, BetPanel, ShopPanel, Inventory, Board, Ranking, Dialogue, Screens
 ```

@@ -5,12 +5,13 @@ import { ranking } from '../core/rules/race'
 import { BetPanel, EMPTY_DRAFT, toggleDraftSoul, type BetDraft } from './BetPanel'
 import { demonRankAtRace } from './demon'
 import { Board } from './Board'
+import { HelpPanel } from './HelpPanel'
 import { Inventory } from './Inventory'
 import { MoneyGauge } from './MoneyGauge'
 import { Ranking } from './Ranking'
 import { ShopPanel } from './ShopPanel'
 import { OpponentSlot, PhaseStrip, PlayerSlot } from './PlaySlots'
-import { CIRCLES, HUD, RACE, fill } from './texts'
+import { CIRCLES, HELP, HUD, RACE, fill } from './texts'
 import { betBase, canBetNow, circleOf, itemName, previewNext, stakedOpen, useRace, type RaceUi, type SessionCarry } from './useRace'
 
 interface Props {
@@ -48,6 +49,8 @@ export function GameScreen({ carry, speed, onFinished, onMenu }: Props) {
   const [betsOpen, setBetsOpen] = useState(true)
   const [shopOpen, setShopOpen] = useState(false)
   const [artefactsOpen, setArtefactsOpen] = useState(false)
+  /** Page d'aide (règles du jeu) : consultation pure, ouverte depuis le HUD. */
+  const [helpOpen, setHelpOpen] = useState(false)
   /** Récapitulatif du dernier tour (le journal a été retiré : on garde de quoi reconstituer une cause). */
   const [recapOpen, setRecapOpen] = useState(false)
   const [resultsOpen, setResultsOpen] = useState(false)
@@ -192,6 +195,9 @@ export function GameScreen({ carry, speed, onFinished, onMenu }: Props) {
           <span className="hud-tools">
             <button type="button" className={'chip' + (auto ? ' chip-on' : '')} onClick={() => setAuto(!auto)} title="Mode test : enchaîne les tours tout seul">
               auto
+            </button>
+            <button type="button" className="btn-stone btn-stone-sm" data-testid="help-open" onClick={() => setHelpOpen(true)}>
+              {HELP.open}
             </button>
             <button type="button" className="btn-stone btn-stone-sm" onClick={onMenu}>
               {HUD.menu}
@@ -340,6 +346,15 @@ export function GameScreen({ carry, speed, onFinished, onMenu }: Props) {
             <button type="button" className="btn" onClick={() => setRecapOpen(false)}>
               {HUD.close}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Page d'aide (règles du jeu) : index à gauche, section à droite */}
+      {helpOpen && (
+        <div className="popup-backdrop" onClick={() => setHelpOpen(false)} role="presentation">
+          <div className="popup popup-help" role="dialog" aria-label={HELP.title} data-testid="help-modal" onClick={(e) => e.stopPropagation()}>
+            <HelpPanel onClose={() => setHelpOpen(false)} />
           </div>
         </div>
       )}

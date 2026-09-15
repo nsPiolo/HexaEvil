@@ -398,6 +398,177 @@ export const GLOSSARY = {
   charge: 'Charge : nombre d’utilisations restantes d’un objet limité.',
 } as const
 
+/**
+ * Page d'aide (bouton « Aide » du HUD) : un index à gauche, une section à la fois
+ * à droite. Le contenu reprend docs/proto4/regles-du-jeu.md. Balisage inline
+ * accepté dans les textes : **gras** et *italique* (rendu par HelpPanel).
+ */
+export interface HelpBlock {
+  /** 'p' paragraphe · 'h' sous-titre · 'ul' puces · 'ol' étapes numérotées. */
+  kind: 'p' | 'h' | 'ul' | 'ol'
+  text?: string
+  items?: readonly string[]
+}
+export interface HelpSection {
+  id: string
+  /** Libellé dans l'index de gauche, titre de la carte de droite. */
+  title: string
+  icon: string
+  blocks: readonly HelpBlock[]
+}
+
+export const HELP = {
+  open: 'Aide',
+  title: 'Aide — Sinner’s Bet',
+  navLabel: 'Sections de l’aide',
+  close: 'Fermer',
+  intro: [
+    'Vous êtes mort. Bienvenue. Le démon stagiaire qui gère votre dossier s’ennuie ferme, alors il vous propose un pacte : pariez sur des courses d’âmes damnées, gagnez assez de pièces pour payer votre passage, et remontez les neuf cercles de l’enfer. **Lui, il coache. Vous, vous misez.**',
+    'Cette page répond à trois questions : *comment se joue une course ?*, *comment gagne-t-on de l’argent ?*, *comment sort-on d’un cercle ?*',
+    'L’aide se consulte à tout moment : elle **n’interrompt rien** de la course en cours.',
+  ],
+  sections: [
+    {
+      id: 'but',
+      title: 'Le but',
+      icon: '⛓️',
+      blocks: [
+        { kind: 'p', text: 'S’évader de l’enfer. Chaque cercle a un **prix de sortie** (200 pièces pour le premier, de plus en plus cher ensuite). Vous avez **trois courses** par cercle pour réunir la somme — la troisième se joue contre le boss du cercle.' },
+        { kind: 'p', text: 'Si vous pouvez payer à la fin, vous montez. Sinon… le stagiaire a déjà choisi votre punition éternelle.' },
+        { kind: 'p', text: 'Perdre une course n’est jamais la fin : c’est la caisse vide à la fin du cercle qui vous condamne.' },
+      ],
+    },
+    {
+      id: 'course',
+      title: 'Une course, tour par tour',
+      icon: '🎲',
+      blocks: [
+        { kind: 'p', text: 'Les âmes damnées courent sur une piste de cases. **Vous ne les contrôlez pas** — vous les poussez, discrètement. À chaque tour :' },
+        {
+          kind: 'ol',
+          items: [
+            '**Lancez les dés.** Deux dés **Distance** (de −1 à +3) et trois dés **Âme** (chacun désigne une coureuse).',
+            '**Associez.** Collez un dé Âme sur un dé Distance : ça fait une combinaison « Platon avance de +2 ». Un dé Âme restera toujours sur le carreau — à vous de choisir lequel.',
+            '**Ordonnez.** L’ordre de résolution, c’est VOTRE décision, et c’est là que tout se joue : avancer Platon avant ou après Virgile ne raconte pas la même course.',
+            '**Résolvez, puis subissez.** Vos combinaisons s’appliquent une à une… puis l’adversaire lance sa propre paire de dés. Lui ne vous demande pas votre avis.',
+          ],
+        },
+        { kind: 'p', text: 'Deux dés sur la même âme ? Les distances s’additionnent en un seul bond.' },
+      ],
+    },
+    {
+      id: 'collisions',
+      title: 'Les collisions',
+      icon: '💥',
+      blocks: [
+        { kind: 'p', text: 'Les cases sont petites et les damnés n’ont aucune politesse :' },
+        {
+          kind: 'ul',
+          items: [
+            'Une âme qui **avance** sur une case occupée la **percute** et **saute devant** elle : le percuteur gagne une case de plus. Provoquer une collision est parfois le meilleur coup du tour.',
+            'Une âme qui **recule** sur une case occupée **échange sa place** avec elle.',
+          ],
+        },
+      ],
+    },
+    {
+      id: 'couloirs',
+      title: 'Les couloirs',
+      icon: '🛤️',
+      blocks: [
+        { kind: 'p', text: 'Au premier cercle, la piste n’a qu’un couloir : chaque atterrissage sur une âme est une collision. Ensuite, à chaque âme ajoutée au départ, la piste gagne un couloir — jusqu’à six au neuvième cercle. Trois choses à retenir :' },
+        {
+          kind: 'ul',
+          items: [
+            '**Seule la colonne compte.** Les couloirs sont des files côte à côte ; votre position dans la course, c’est votre colonne, pas votre couloir. Changer de couloir ne fait ni avancer ni reculer.',
+            '**On se rabat quand c’est pris.** Une âme atterrit dans son couloir si la case est libre. Occupée ou **bloquée** (éboulis, chaînes) ? Elle se rabat sur une case libre de la même colonne — la plus **basse** d’abord. Et si toute la colonne est pleine, alors seulement, c’est la collision : saut devant en avançant, échange en reculant.',
+            '**Le bas a toujours raison.** À colonne égale en fin de course, l’âme du couloir le plus bas — le plus proche de vous — passe devant. Jamais d’ex æquo en enfer : le classement tranche tout, couloir compris.',
+          ],
+        },
+        { kind: 'p', text: 'Les cases bloquées rétrécissent la piste et créent des embouteillages : ce sont des pièges à collisions, repérez-les avant de miser.' },
+      ],
+    },
+    {
+      id: 'arrivee',
+      title: 'L’arrivée',
+      icon: '🏁',
+      blocks: [
+        { kind: 'p', text: 'Dès qu’une âme franchit la ligne, **le tour se termine quand même** — vos combinaisons restantes et la paire adverse sont jouées. Le classement n’est établi qu’après.' },
+        { kind: 'p', text: 'Une course peut donc se retourner sur la ligne : *franchir en premier ne garantit pas de finir premier.*' },
+      ],
+    },
+    {
+      id: 'paris',
+      title: 'Les paris',
+      icon: '🎫',
+      blocks: [
+        { kind: 'p', text: 'Les paris sont votre vraie arme. Avant la course, posez au moins un pari. Pendant la course, vous pouvez en rajouter… tant que l’âme visée n’a pas dépassé le **seuil de pari** (60 % du parcours). Au-delà, le guichet est fermé pour elle : trop facile, même pour un démon.' },
+        { kind: 'h', text: 'Trois familles de tickets' },
+        {
+          kind: 'ul',
+          items: [
+            '**Simples** — lisibles, petits gains : vainqueur (×3,5), top 3 (×1,5), pas dans le top 3 (×2), dernière place (×3,5).',
+            '**Combinés** — un duel (« A finit devant B »), deux âmes dans le top 3, le podium dans le désordre. Plus risqué, mieux payé.',
+            '**Gros tickets** — podium exact (×40), vainqueur ET dernier (×14), classement complet (×80). De quoi payer un cercle entier d’un coup… si vous lisez la course comme un livre ouvert.',
+          ],
+        },
+        { kind: 'p', text: 'Deux choses à savoir sur les cotes : elles **fondent** à mesure que la course avance (parier tard, c’est parier sûr, donc parier petit), et les gros tickets sont **verrouillés au début** — le stagiaire n’a pas le grade pour les encaisser. Pas encore.' },
+      ],
+    },
+    {
+      id: 'argent',
+      title: 'Votre argent a trois vies',
+      icon: '💰',
+      blocks: [
+        { kind: 'p', text: 'Chaque pièce peut devenir **une mise**, **un achat en boutique**, ou **une part du prix du cercle**. Les trois se disputent le même tas.' },
+        { kind: 'p', text: 'Dépenser, c’est s’armer ; garder, c’est survivre. La jauge en haut de l’écran vous rappelle en permanence où vous en êtes par rapport au prix de sortie.' },
+      ],
+    },
+    {
+      id: 'boutique',
+      title: 'La boutique du stagiaire',
+      icon: '🛒',
+      blocks: [
+        { kind: 'p', text: 'Entre les paris et la course, le stagiaire ouvre sa petite caisse (une fois votre premier pari posé — il ne sert pas les indécis) :' },
+        {
+          kind: 'ul',
+          items: [
+            'des **dés spéciaux** qui remplacent un dé Distance — le prudent Dé des Limbes (1, 1, 2, 2), le Dé de Glace et ses extrêmes (−1, −1, 2, 5)… ;',
+            'la **forge**, pour modifier une face de dé, une seule, mais pour toujours ;',
+            'des **artefacts**, effets permanents qui tordent les règles en votre faveur — l’Œil du parieur pour miser après avoir vu vos dés, le Sablier de Charon qui repousse le seuil de pari à 70 %…',
+          ],
+        },
+        { kind: 'p', text: 'Chaque objet annonce la couleur : **SÛR**, **AMBITIEUX** ou **DANGER** — et un objet dangereux dit toujours ce qu’il vous coûtera. En enfer, au moins, les contrats sont clairs.' },
+      ],
+    },
+    {
+      id: 'grades',
+      title: 'Les grades du stagiaire',
+      icon: '👑',
+      blocks: [
+        { kind: 'p', text: 'Plus votre poulain — vous — impressionne, plus le stagiaire grimpe dans la hiérarchie : Assistant, Tourmenteur, Contremaître, Sous-directeur… Chaque promotion **ouvre de nouveaux paris** et garnit la boutique.' },
+        { kind: 'p', text: 'Après le huitième cercle, il obtient même une belle promotion. Au neuvième — le cercle de la Trahison — devinez qui tient le guichet en face de vous.' },
+      ],
+    },
+    {
+      id: 'conseils',
+      title: 'Les trois conseils',
+      icon: '😈',
+      blocks: [
+        {
+          kind: 'ol',
+          items: [
+            '« Pariez avant de rêver : un ticket simple payé vaut mieux qu’un podium exact raté. Les gros tickets, c’est pour les courses que vous avez préparées. »',
+            '« L’ordre des combinaisons est gratuit et c’est le coup le plus fort du jeu. Regardez l’aperçu avant de résoudre — l’enfer est déterministe, profitez-en. »',
+            '« Gardez toujours de quoi payer le cercle. Je vous aime bien, mais un pacte, c’est un pacte. »',
+          ],
+        },
+        { kind: 'p', text: '*Bonne chance. Vous en aurez besoin — enfin, non : vous aurez besoin de bien lire.*' },
+      ],
+    },
+  ] as const satisfies readonly HelpSection[],
+} as const
+
 /** Menu de développement (bouton « dev » discret, Ctrl+Maj+D). */
 export const DEV = {
   open: 'dev',
