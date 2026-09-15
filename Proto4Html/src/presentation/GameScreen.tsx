@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { config, shop } from '../core/config'
 import { betType, bettingClosed, slotCount } from '../core/rules/bets'
+import { ranking } from '../core/rules/race'
 import { BetPanel, EMPTY_DRAFT, toggleDraftSoul, type BetDraft } from './BetPanel'
 import { demonRankAtRace } from './demon'
 import { Board } from './Board'
@@ -9,7 +10,7 @@ import { MoneyGauge } from './MoneyGauge'
 import { Ranking } from './Ranking'
 import { ShopPanel } from './ShopPanel'
 import { OpponentSlot, PlayerSlot } from './PlaySlots'
-import { CIRCLES, HUD, fill } from './texts'
+import { CIRCLES, HUD, RACE, fill } from './texts'
 import { betBase, canBetNow, circleOf, itemName, previewNext, stakedOpen, useRace, type RaceUi, type SessionCarry } from './useRace'
 
 interface Props {
@@ -45,6 +46,8 @@ export function GameScreen({ carry, speed, onFinished, onMenu }: Props) {
   const [betsOpen, setBetsOpen] = useState(true)
   const [shopOpen, setShopOpen] = useState(false)
   const [artefactsOpen, setArtefactsOpen] = useState(false)
+  /** Récapitulatif du dernier tour (le journal a été retiré : on garde de quoi reconstituer une cause). */
+  const [recapOpen, setRecapOpen] = useState(false)
   const [resultsOpen, setResultsOpen] = useState(false)
   /** La séquence de révélation des gains ne se joue qu'à la première ouverture de la modale. */
   const [resultsSeen, setResultsSeen] = useState(false)
@@ -128,6 +131,19 @@ export function GameScreen({ carry, speed, onFinished, onMenu }: Props) {
     const entries = ui.log.filter((e) => e.source !== 'shop' && e.source !== 'bet')
     return entries[entries.length - 1]?.text ?? ''
   }, [ui.log])
+  // Dernier tour joué : les déplacements (joueur, adversaire, artefacts) du tour le plus récent où quelqu'un a bougé.
+  const recap = useMemo(() => {
+    const moves = ui.log.filter((e) => e.source === 'player' || e.source === 'opponent' || e.source === 'artefact')
+    const last = moves[moves.length - 1]?.turn
+    return last === undefined ? { turn: null, entries: [] } : { turn: last, entries: moves.filter((e) => e.turn === last) }
+  }, [ui.log])
+  // Départage montré (05/C6) : à la fin, les colonnes où deux âmes classées à la suite se départagent par le couloir.
+  const tieColumns = useMemo(() => {
+    if (ui.phase !== 'finished') return []
+    const ranked = ranking(ui.race)
+    return ranked.filter((r, i) => i > 0 && ranked[i - 1]!.soul.position === r.soul.position && ranked[i - 1]!.soul.lane !== r.soul.lane).map((r) => r.soul.position)
+  }, [ui.phase, ui.race])
+  const bettedSouls = useMemo(() => new Set(ui.bets.filter((b) => b.status === 'open').flatMap((b) => [...b.souls])), [ui.bets])
 
   const activeSoul = ui.phase === 'resolving' || ui.phase === 'opponent' ? (ui.lastResult?.move.soul ?? null) : null
   const preview = useMemo(() => previewNext(ui), [ui])
@@ -210,8 +226,15 @@ export function GameScreen({ carry, speed, onFinished, onMenu }: Props) {
       <main className="felt">
         <OpponentSlot ui={ui} />
         <div className="board-wrap">
-          <Board race={ui.race} lastResult={ui.lastResult} activeSoul={activeSoul} highlightSoul={hoverSoul} onHoverSoul={setHoverSoul} preview={preview} selection={selection} />
-          <p className="last-event" aria-live="polite">{lastEvent}</p>
+          <Board race={ui.race} lastResult={ui.lastResult} activeSoul={activeSoul} highlightSoul={hoverSoul} onHoverSoul={setHoverSoul} preview={preview} selection={selection} bettedSouls={bettedSouls} tieColumns={tieColumns} />
+          <p className="last-event" aria-live="polite">
+            <span>{lastEvent}</span>
+            {recap.turn !== null && (
+              <button type="button" className="recap-btn" onClick={() => setRecapOpen(true)} title={RACE.recapTitle}>
+                {RACE.recap}
+              </button>
+            )}
+          </p>
         </div>
         <PlayerSlot
           ui={ui}
@@ -227,6 +250,8 @@ export function GameScreen({ carry, speed, onFinished, onMenu }: Props) {
           onResolve={() => void actions.resolve()}
           onRemoveCombination={actions.removeCombination}
           onMoveCombination={actions.moveCombination}
+          onPairDice={actions.pairDice}
+          onMoveCombinationTo={actions.moveCombinationTo}
         />
       </main>
 
@@ -273,6 +298,32 @@ export function GameScreen({ carry, speed, onFinished, onMenu }: Props) {
           onClose={() => setBetsOpen(false)}
         />
       </div>
+
+      {/* Récapitulatif du dernier tour (recommandation §4.7 : reconstituer la cause d'un état) */}
+      {recapOpen && (
+        <div className="popup-backdrop" onClick={() => setRecapOpen(false)} role="presentation">
+          <div className="popup" role="dialog" aria-label={RACE.recapTitle} onClick={(e) => e.stopPropagation()}>
+            <h2>{RACE.recapTitle}</h2>
+            {recap.turn === null ? (
+              <p className="muted">{RACE.recapEmpty}</p>
+            ) : (
+              <>
+                <p className="muted small">{fill(RACE.recapTurn, { n: recap.turn })}</p>
+                <ul>
+                  {recap.entries.map((e) => (
+                    <li key={e.id} className={`log-entry log-${e.source}`}>
+                      {e.text}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+            <button type="button" className="btn" onClick={() => setRecapOpen(false)}>
+              {HUD.close}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Popup artefacts */}
       {artefactsOpen && (

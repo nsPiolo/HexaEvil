@@ -28,7 +28,7 @@ Déjà conforme (à conserver) :
   - transformer `combos` en file de cartes interactives : chaque carte affiche `n° · {âme} {distance}` (repris de l'existant) plus deux contrôles au clavier/clic : `←`/`→` (échanger avec la voisine) et `×` (dissocier : la combinaison est retirée, ses dés redeviennent disponibles, les numéros d'ordre se recalculent) ;
   - actions correspondantes dans `useRace` : `removeCombination(index)`, `moveCombination(index, dir)` — pures sur le tableau `combinations`, aucun impact noyau ;
   - « Réinitialiser » reste (tout dissocier d'un coup) ;
-  - pas de drag & drop (contrainte : aucune dépendance) — les flèches suffisent et sont accessibles clavier.
+  - glisser-déposer **natif** du navigateur (API HTML5, aucune bibliothèque) : un dé Âme se dépose sur un dé Distance pour associer, une carte se dépose sur une autre place de la file pour réordonner ; le clic-clic et les flèches restent l'alternative (tactile, manette, clavier) ; actions `pairDice(soulDie, distanceDie)` et `moveCombinationTo(from, to)` dans `useRace`.
 - **C2 (P1)** — Prévisualisation du prochain déplacement :
   - noyau : `previewMove(race, soulId, distance): MoveResult` dans `core/rules/race.ts`, **pure** (clone l'état, réutilise la logique de déplacement existante, ne mute rien, ne touche pas au RNG). Tests Vitest : percute→saute (avec cascade), recul→échange, départ bloqué, détour de couloir, franchissement d'arrivée ;
   - présentation : en phase `pairing`, la **première combinaison de la file** est prévisualisée en continu sur le plateau ; survoler une autre carte de la file prévisualise celle-ci **seulement si elle est la première** non résolue (sinon `title` : « résolue après les précédentes ») ;
@@ -42,6 +42,8 @@ Déjà conforme (à conserver) :
 ## Critères d'acceptation
 
 - [ ] Trois combinaisons formées : `×` sur la 2e la retire, ses dés redeviennent cliquables, les numéros deviennent 1·2 ; `→` sur la 1re l'échange avec la suivante ; tout est faisable au clavier (tab + entrée).
+- [ ] Glisser un dé Âme sur un dé Distance forme la combinaison ; glisser une carte sur une autre place de la file la réordonne ; le clic-clic reste possible.
+- [ ] Deux cartes visant la même âme : la première affiche le cumul « +4 (+3 +1) », la seconde « cumulé dans la carte n°1 ».
 - [ ] File `[C +3, A −1]` avec une âme sur la case cible de C : le fantôme de C apparaît **devant** l'âme percutée (saut), avec le glyphe `↷` ; passer la combinaison `A −1` en tête change la prévisualisation.
 - [ ] La prévisualisation coïncide toujours avec le déplacement réellement joué ensuite (mêmes règles) — vérifié par les tests de `previewMove` et un test croisé preview vs move effectif.
 - [ ] `previewMove` ne modifie ni l'état de course ni la séquence RNG (deux appels successifs = même résultat ; résoudre après preview = résoudre sans preview).
@@ -52,4 +54,4 @@ Déjà conforme (à conserver) :
 
 ## Hors périmètre
 
-Drag & drop ; prévisualisation en chaîne de toute la file (interdit par la conception : une seule combinaison projetée) ; main de cartes et fenêtres EC/TA jouables (pas de cartes) ; modification du tour adverse.
+Prévisualisation en chaîne de toute la file (interdit par la conception : une seule combinaison projetée) ; main de cartes et fenêtres EC/TA jouables (pas de cartes) ; modification du tour adverse.

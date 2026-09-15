@@ -47,7 +47,7 @@ function e2eScreen(): Screen | null {
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>(() => e2eScreen() ?? { kind: 'splash' })
-  const [options, setOptions] = useState<Options>(() => (e2eMode() ? { ...loadOptions(), speed: 4 } : loadOptions()))
+  const [options, setOptions] = useState<Options>(() => (e2eMode() ? { ...loadOptions(), speed: e2eStart().speed } : loadOptions()))
   const [stats, setStats] = useState<Stats>(loadStats)
   const [save, setSave] = useState<RunSave | null>(loadRun)
   const [gameKey, setGameKey] = useState(0)

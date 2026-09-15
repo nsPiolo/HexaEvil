@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type DragEvent } from 'react'
 import { config } from '../core/config'
 import { bettingClosed } from '../core/rules/bets'
 import { isPairingComplete, type MoveResult, type RaceState } from '../core/rules/race'
@@ -6,7 +6,7 @@ import type { Phase, RaceUi } from './useRace'
 import { fmtDistance, soulColor } from './souls'
 import { FaceChip } from './Inventory'
 import { BetList } from './BetPanel'
-import { GLOSSARY, HUD, RACE } from './texts'
+import { GLOSSARY, HUD, RACE, fill } from './texts'
 
 function soulName(race: RaceState, id: number | undefined): string {
   return id === undefined ? '?' : (race.souls[id]?.name ?? `#${id}`)
@@ -55,10 +55,23 @@ interface PlayerProps {
   onResolve: () => void
   onRemoveCombination: (i: number) => void
   onMoveCombination: (i: number, dir: -1 | 1) => void
+  /** Glisser-déposer : dé Âme déposé sur un dé Distance ; carte déposée sur une autre place de la file. */
+  onPairDice: (soulDie: number, distanceDie: number) => void
+  onMoveCombinationTo: (from: number, to: number) => void
+}
+
+/** Ce qu'on est en train de glisser (glisser-déposer natif du navigateur, aucune bibliothèque). */
+type Drag = { kind: 'soul'; index: number } | { kind: 'combo'; index: number } | null
+
+const DRAG_MIME = 'application/x-sinnersbet'
+function readDrag(e: DragEvent): Drag {
+  const raw = e.dataTransfer.getData(DRAG_MIME)
+  const m = /^(soul|combo):(\d+)$/.exec(raw)
+  return m ? { kind: m[1] as 'soul' | 'combo', index: Number(m[2]) } : null
 }
 
 /** Emplacement du bas : les dés du joueur, l'association et les boutons d'action. */
-export function PlayerSlot({ ui, speed, preview, highlightSoul, onHoverSoul, onStart, onRoll, onPickSoul, onPickDistance, onReset, onResolve, onRemoveCombination, onMoveCombination }: PlayerProps) {
+export function PlayerSlot({ ui, speed, preview, highlightSoul, onHoverSoul, onStart, onRoll, onPickSoul, onPickDistance, onReset, onResolve, onRemoveCombination, onMoveCombination, onPairDice, onMoveCombinationTo }: PlayerProps) {
   const { phase, roll, race, combinations, selectedSoulDie, resolvingIndex } = ui
   const pairing = phase === 'pairing'
   const rolling = phase === 'rolling'
@@ -81,6 +94,51 @@ export function PlayerSlot({ ui, speed, preview, highlightSoul, onHoverSoul, onS
     return () => clearTimeout(t)
   }, [pairing, complete, combinations, interaction, speed])
   const touch = (): void => setInteraction((n) => n + 1)
+
+  // Glisser-déposer (recommandation §7.2) : associer = glisser un dé Âme sur un dé Distance,
+  // ordonner = glisser une carte dans la file. Le clic-clic et les flèches restent l'alternative.
+  const [drag, setDrag] = useState<Drag>(null)
+  const [over, setOver] = useState<string | null>(null)
+  const startDrag = (d: Exclude<Drag, null>) => (e: DragEvent): void => {
+    e.dataTransfer.setData(DRAG_MIME, `${d.kind}:${d.index}`)
+    e.dataTransfer.effectAllowed = 'move'
+    setDrag(d)
+    touch()
+  }
+  const endDrag = (): void => {
+    setDrag(null)
+    setOver(null)
+  }
+  const allowDrop = (accept: 'soul' | 'combo', key: string) => (e: DragEvent): void => {
+    const d = drag ?? readDrag(e)
+    if (!d || d.kind !== accept) return
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    if (over !== key) setOver(key)
+  }
+  const dropOnDist = (distanceDie: number) => (e: DragEvent): void => {
+    e.preventDefault()
+    const d = drag ?? readDrag(e)
+    if (d?.kind === 'soul') onPairDice(d.index, distanceDie)
+    endDrag()
+  }
+  const dropOnCombo = (to: number) => (e: DragEvent): void => {
+    e.preventDefault()
+    e.stopPropagation()
+    const d = drag ?? readDrag(e)
+    if (d?.kind === 'combo') onMoveCombinationTo(d.index, to)
+    endDrag()
+  }
+
+  /** Cumul (recommandation §4.2) : les cartes visant la même âme forment un seul déplacement, montré sur la première. */
+  const cumulOf = (i: number): { first: number; total: number; parts: number[] } | null => {
+    if (!roll) return null
+    const id = roll.soul[combinations[i]!.soulDie]
+    const idx = combinations.map((c, k) => (roll.soul[c.soulDie] === id ? k : -1)).filter((k) => k >= 0)
+    if (idx.length < 2) return null
+    const parts = idx.map((k) => roll.distance[combinations[k]!.distanceDie] ?? 0)
+    return { first: idx[0]!, total: parts.reduce((s, v) => s + v, 0), parts }
+  }
 
   const hint = (): string => {
     switch (phase) {
@@ -137,6 +195,10 @@ export function PlayerSlot({ ui, speed, preview, highlightSoul, onHoverSoul, onS
                     className={cls.join(' ')}
                     data-testid={`die-soul-${i}`}
                     disabled={!pairing || order >= 0}
+                    draggable={pairing && order < 0}
+                    onDragStart={startDrag({ kind: 'soul', index: i })}
+                    onDragEnd={endDrag}
+                    title={pairing && order < 0 ? RACE.dragSoul : undefined}
                     onClick={() => onPickSoul(i)}
                     onMouseEnter={() => hover(true)}
                     onMouseLeave={() => hover(false)}
@@ -163,12 +225,23 @@ export function PlayerSlot({ ui, speed, preview, highlightSoul, onHoverSoul, onS
                 if (rolling) cls.push('die-rolling')
                 if (order >= 0) cls.push('die-paired')
                 if (d !== undefined && d < 0) cls.push('die-neg')
-                if (pairing && selectedSoulDie !== null && order < 0) cls.push('die-target')
+                if (pairing && (selectedSoulDie !== null || drag?.kind === 'soul') && order < 0) cls.push('die-target')
+                if (over === `dist-${i}`) cls.push('die-drop')
                 if (phase === 'resolving' && resolvingIndex !== null && combinations[resolvingIndex]?.distanceDie === i) cls.push('die-resolving')
                 if (face?.altered) cls.push('die-forged')
                 return (
                   <span key={i} className="die-wrap">
-                    <button type="button" className={cls.join(' ')} data-testid={`die-dist-${i}`} disabled={!pairing || selectedSoulDie === null || order >= 0} onClick={() => onPickDistance(i)} title={die?.name}>
+                    <button
+                      type="button"
+                      className={cls.join(' ')}
+                      data-testid={`die-dist-${i}`}
+                      disabled={!pairing || selectedSoulDie === null || order >= 0}
+                      onClick={() => onPickDistance(i)}
+                      title={drag?.kind === 'soul' && order < 0 ? RACE.dropHere : die?.name}
+                      onDragOver={pairing && order < 0 ? allowDrop('soul', `dist-${i}`) : undefined}
+                      onDragLeave={() => over === `dist-${i}` && setOver(null)}
+                      onDrop={pairing && order < 0 ? dropOnDist(i) : undefined}
+                    >
                       {rolling || d === undefined ? '?' : fmtDistance(d)}
                       {face?.effect === 'gold' && <span className="die-effect">✦</span>}
                       {face?.effect === 'betSeal' && <span className="die-effect">♠</span>}
@@ -190,19 +263,38 @@ export function PlayerSlot({ ui, speed, preview, highlightSoul, onHoverSoul, onS
               {combinations.map((c, i) => {
                 const id = roll.soul[c.soulDie]
                 const d = roll.distance[c.distanceDie]
-                const dup = combinations.findIndex((o) => roll.soul[o.soulDie] === id) !== i
+                const cumul = cumulOf(i)
+                const dup = cumul !== null && cumul.first !== i
                 const previewed = pairing && preview !== null && i === 0
                 const cls = ['combo']
                 if (resolvingIndex === i) cls.push('combo-active')
                 if (dup) cls.push('combo-dup')
                 if (previewed) cls.push('combo-preview')
                 if (id !== undefined && highlightSoul === id) cls.push('combo-hot')
+                if (drag?.kind === 'combo' && drag.index === i) cls.push('combo-dragging')
+                if (over === `combo-${i}`) cls.push('combo-drop')
+                const title = pairing ? (i > 0 ? `${RACE.afterPrevious} ${RACE.dragCard}` : RACE.dragCard) : undefined
                 return (
-                  <li key={`${c.soulDie}-${c.distanceDie}`} className={cls.join(' ')} data-testid={`combo-${i}`} title={pairing && i > 0 ? RACE.afterPrevious : undefined} onMouseEnter={() => onHoverSoul(id ?? null)} onMouseLeave={() => onHoverSoul(null)}>
+                  <li
+                    key={`${c.soulDie}-${c.distanceDie}`}
+                    className={cls.join(' ')}
+                    data-testid={`combo-${i}`}
+                    title={title}
+                    draggable={pairing}
+                    onDragStart={startDrag({ kind: 'combo', index: i })}
+                    onDragEnd={endDrag}
+                    onDragOver={pairing ? allowDrop('combo', `combo-${i}`) : undefined}
+                    onDragLeave={() => over === `combo-${i}` && setOver(null)}
+                    onDrop={pairing ? dropOnCombo(i) : undefined}
+                    onMouseEnter={() => onHoverSoul(id ?? null)}
+                    onMouseLeave={() => onHoverSoul(null)}
+                  >
                     <span className="combo-n">{i + 1}</span>
                     <span className="combo-soul" style={{ color: id !== undefined ? soulColor(id) : undefined }}>{soulName(race, id)}</span>
-                    <span className="combo-dist">{d !== undefined ? fmtDistance(d) : '?'}</span>
-                    {dup && <span className="combo-note">cumulé avec la précédente</span>}
+                    <span className="combo-dist" title={cumul && !dup ? GLOSSARY.combinaison : undefined}>
+                      {cumul && !dup ? fill(RACE.cumul, { total: fmtDistance(cumul.total), parts: cumul.parts.map(fmtDistance).join(' ') }) : d !== undefined ? fmtDistance(d) : '?'}
+                    </span>
+                    {dup && cumul && <span className="combo-note">{fill(RACE.cumulInto, { n: cumul.first + 1 })}</span>}
                     {previewed && <span className="combo-note combo-note-preview">{RACE.previewGhost}</span>}
                     {pairing && (
                       <span className="combo-ctl">
@@ -225,7 +317,7 @@ export function PlayerSlot({ ui, speed, preview, highlightSoul, onHoverSoul, onS
         </div>
         <aside className="slot-bets" aria-label="Paris posés">
           <h3>Paris posés ({ui.bets.length})</h3>
-          <BetList race={race} bets={ui.bets} compact />
+          <BetList race={race} bets={ui.bets} compact live={phase !== 'prep'} />
         </aside>
       </div>
       <div className="actions">

@@ -1,37 +1,30 @@
 import { expect, test } from '@playwright/test'
-import { autoToResults, gauge, hud, phaseStrip, placeBet, resultsDialog, start } from './helpers'
+import { autoToResults, gauge, hud, placeBet, resultsDialog, start } from './helpers'
 import { RACE_SEED, RACE_SEED_EXPECT as E, TIE_RACE_INDEX, TIE_SEED } from './seeds'
 
 const TIE_TEXT = 'départage : même colonne, le couloir le plus bas devant'
 
 test.describe('06 · Résultats et gains', () => {
   test('E2E-06-A : les tickets se révèlent un à un avec le compteur ; un clic révèle tout ; pas de rejeu à la réouverture', async ({ page }) => {
-    // 06/AC1 — horloge pilotable : on gèle le temps à la fin de course pour lire chaque étape.
-    await start(page, { seed: RACE_SEED, clock: true })
+    // 06/AC1 — à vitesse ×1 : la modale s'ouvre 700 ms après la fin, puis un ticket toutes les 500 ms après la cascade (600 ms).
+    // On lit les états dans l'ordre (chaque assertion attend l'état suivant) : c'est la séquence qui est vérifiée.
+    await start(page, { seed: RACE_SEED, speed: 1 })
     await placeBet(page, { souls: [0], stake: 5 })
     await placeBet(page, { souls: [1], stake: 5, type: 'Top 3' })
     await placeBet(page, { souls: [2], stake: 5, type: 'Dernière place' })
     await hud(page).getByRole('button', { name: 'auto' }).click()
-    await expect(phaseStrip(page)).toHaveAttribute('data-state', 'none', { timeout: 80_000 })
-    const now = await page.evaluate(() => Date.now())
-    await page.clock.pauseAt(now + 1)
-
-    // La modale s'ouvre après la respiration ; les trois tickets sont encore face « ? ».
-    await page.clock.runFor(300)
     const dialog = resultsDialog(page)
-    await expect(dialog).toBeVisible()
+    await expect(dialog).toBeVisible({ timeout: 180_000 })
     const tickets = [0, 1, 2].map((i) => dialog.getByTestId(`bet-ticket-${i}`))
     for (const t of tickets) await expect(t).toHaveAttribute('data-state', 'hidden')
     await expect(dialog.getByText('Net de la course : +0 ¤')).toBeVisible()
     await expect(dialog.getByRole('list').last().getByText('?')).toHaveCount(3)
 
-    // Cascade du classement, puis un ticket toutes les 500 ms ÷ 4.
-    await page.clock.runFor(150 + 125)
+    // Le premier ticket se retourne, les deux autres sont encore masqués ; le compteur a bougé.
     await expect(tickets[0]!).toHaveAttribute('data-state', /^(won|lost)$/)
     await expect(tickets[1]!).toHaveAttribute('data-state', 'hidden')
-    const net1 = await dialog.locator('.settlement-net').innerText()
-    expect(net1).not.toBe('Net de la course : +0 ¤')
-    await page.clock.runFor(125)
+    await expect(tickets[2]!).toHaveAttribute('data-state', 'hidden')
+    expect(await dialog.locator('.settlement-net').innerText()).not.toBe('Net de la course : +0 ¤')
     await expect(tickets[1]!).toHaveAttribute('data-state', /^(won|lost)$/)
     await expect(tickets[2]!).toHaveAttribute('data-state', 'hidden')
 

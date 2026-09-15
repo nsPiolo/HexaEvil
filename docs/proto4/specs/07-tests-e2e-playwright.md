@@ -64,6 +64,8 @@ Vérifier automatiquement les **critères d'acceptation d'ergonomie** des specs 
 - **E2E-05-C** (05/AC5) : frise : « ordonner » actif pendant l'appariement, « adversaire » pendant la paire adverse.
 - **E2E-05-D** (05/AC6) : survoler un dé Âme allume le jeton correspondant (classe/testid) ; quitter le survol l'éteint.
 - **E2E-05-E** (05/AC7) : appariement complet + `page.clock.fastForward(5000)` : « Résoudre » porte l'état « pulse » ; cliquer un dé le retire.
+- **E2E-05-G** (05, glisser-déposer) : glisser un dé Âme sur un dé Distance forme une combinaison (dés désactivés, fantôme affiché) ; glisser une carte sur une autre réordonne la file ; le clic-clic reste possible ensuite.
+- **E2E-05-H** (§4.3, §4.7 des recommandations) : jeton « Âme pariée » sur les âmes pariées ; après un tour, chaque pari posé affiche « en bonne voie » ou « compromis · provisoire » ; « ↺ dernier tour » ouvre le récapitulatif du tour ; au franchissement du seuil, la tête de colonne écrit « plus de pari ».
 - **E2E-05-F** (lisibilité) : chaque événement de course produit un texte dans `last-event` (aria-live) — percussion, échange, franchissement — vérifié sur une graine qui produit une collision.
 
 ### `06-gains.spec.ts` — la modale de résultats

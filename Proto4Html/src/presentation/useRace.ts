@@ -468,6 +468,24 @@ export function useRace({ carry, soulCount, lanes, blocked, speed }: UseRaceProp
     if (u.phase === 'pairing') commit({ ...u, combinations: [], selectedSoulDie: null })
   }, [commit])
 
+  /** Associe directement un dé Âme et un dé Distance (glisser-déposer) : même règle que le clic-clic. */
+  const pairDice = useCallback((soulDie: number, distanceDie: number) => {
+    const u = uiRef.current
+    if (u.phase !== 'pairing' || !u.roll || u.roll.soul[soulDie] === undefined || u.roll.distance[distanceDie] === undefined) return
+    if (u.combinations.some((c) => c.soulDie === soulDie || c.distanceDie === distanceDie)) return
+    commit({ ...u, combinations: [...u.combinations, { soulDie, distanceDie }], selectedSoulDie: null })
+  }, [commit])
+
+  /** Déplace une combinaison à une autre place de la file (glisser-déposer d'une carte). */
+  const moveCombinationTo = useCallback((from: number, to: number) => {
+    const u = uiRef.current
+    if (u.phase !== 'pairing' || !u.combinations[from] || to < 0 || to >= u.combinations.length || from === to) return
+    const next = [...u.combinations]
+    const [card] = next.splice(from, 1)
+    next.splice(to, 0, card!)
+    commit({ ...u, combinations: next })
+  }, [commit])
+
   /** Dissocie une combinaison de la file : ses dés redeviennent disponibles, les numéros se recalculent (spec 05/C1). */
   const removeCombination = useCallback((index: number) => {
     const u = uiRef.current
@@ -578,6 +596,6 @@ export function useRace({ carry, soulCount, lanes, blocked, speed }: UseRaceProp
     setAuto,
     shopUnlocked: shopUnlocked(ui),
     level,
-    actions: { openShop, startRace, buy, cancelPurchase, rerollVitrine, placeBet, cancelBet, useLateBet, rollDice, pickSoulDie, pickDistanceDie, resetPairing, removeCombination, moveCombination, autoPair, resolve },
+    actions: { openShop, startRace, buy, cancelPurchase, rerollVitrine, placeBet, cancelBet, useLateBet, rollDice, pickSoulDie, pickDistanceDie, pairDice, resetPairing, removeCombination, moveCombination, moveCombinationTo, autoPair, resolve },
   }
 }

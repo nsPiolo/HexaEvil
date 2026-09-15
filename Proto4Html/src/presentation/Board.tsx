@@ -1,6 +1,7 @@
 import { isBlocked, isInBetZone, type MoveResult, type RaceState } from '../core/rules/race'
 import { fmtDistance, soulColor } from './souls'
-import { BETS, GLOSSARY, RACE, fill } from './texts'
+import { bettingClosed } from '../core/rules/bets'
+import { BETS, BET_LIVE, BOARD, GLOSSARY, RACE, fill } from './texts'
 
 /** Sélection d'âmes pour le ticket de pari, depuis le plateau (spec 03/C2). */
 export interface BoardSelection {
@@ -21,6 +22,10 @@ interface Props {
   /** Prochain déplacement prévisualisé : jeton fantôme sur la case d'arrivée (spec 05/C2). */
   preview?: MoveResult | null
   selection?: BoardSelection | null
+  /** Âmes visées par un pari ouvert : un petit marqueur à la base du jeton. */
+  bettedSouls?: ReadonlySet<number>
+  /** Colonnes à surligner brièvement (départage « même colonne, le plus bas devant »). */
+  tieColumns?: readonly number[]
 }
 
 /** Écart vertical entre deux jetons empilés sur la même case, en pixels ; taille d'un jeton. */
@@ -44,7 +49,8 @@ export function consequenceGlyphs(r: MoveResult): { glyph: string; title: string
  * EN BAS, au plus près du joueur. Les cases bloquées sont hachurées. Les âmes qui partagent
  * une case (départ, dernière case) s'empilent visuellement.
  */
-export function Board({ race, lastResult, activeSoul, highlightSoul = null, onHoverSoul, preview = null, selection = null }: Props) {
+export function Board({ race, lastResult, activeSoul, highlightSoul = null, onHoverSoul, preview = null, selection = null, bettedSouls, tieColumns = [] }: Props) {
+  const closed = bettingClosed(race)
   const { track } = race
   const cols = Array.from({ length: track.totalCells }, (_, i) => i)
   const lanes = track.lanes
@@ -73,6 +79,7 @@ export function Board({ race, lastResult, activeSoul, highlightSoul = null, onHo
     if (c === track.columns) k.push('cell-finish')
     if (c >= track.columns) k.push('cell-after')
     if (lane !== null && isBlocked(track, c, lane)) k.push('cell-blocked')
+    if (tieColumns.includes(c)) k.push('cell-tie')
     return k.join(' ')
   }
 
@@ -96,15 +103,15 @@ export function Board({ race, lastResult, activeSoul, highlightSoul = null, onHo
     <section className={'board' + (selection ? ' board-selecting' : '')} style={{ ['--cells' as string]: track.totalCells, ['--lanes' as string]: lanes }} aria-label="Plateau de course">
       <div className="cells cells-head">
         {cols.map((c) => (
-          <div key={c} className={cellClass(c, null) + ' head'} title={c === track.betThresholdColumn ? GLOSSARY.zoneDeFin : undefined}>
-            {c === 0 ? 'Départ' : c === track.betThresholdColumn ? `${Math.round(track.betThresholdRatio * 100)} %` : c === track.columns ? 'Arrivée' : c}
+          <div key={c} className={cellClass(c, null) + ' head' + (c === track.betThresholdColumn && closed ? ' head-closed' : '')} title={c === track.betThresholdColumn ? (closed ? BOARD.zoneClosedTitle : GLOSSARY.zoneDeFin) : tieColumns.includes(c) ? BOARD.tieColumn : undefined}>
+            {c === 0 ? 'Départ' : c === track.betThresholdColumn ? `${Math.round(track.betThresholdRatio * 100)} %${closed ? ` · ${BOARD.zoneClosed}` : ''}` : c === track.columns ? 'Arrivée' : c}
           </div>
         ))}
       </div>
       <div className="cells track" style={{ height: `${trackHeight}px` }}>
         {rows.map((lane) =>
           cols.map((c) => (
-            <div key={`${lane}-${c}`} className={cellClass(c, lane)} title={isBlocked(track, c, lane) ? `Case bloquée (colonne ${c}, couloir ${lane + 1})` : undefined}>
+            <div key={`${lane}-${c}`} className={cellClass(c, lane)} title={isBlocked(track, c, lane) ? `Case bloquée (colonne ${c}, couloir ${lane + 1})` : tieColumns.includes(c) ? BOARD.tieColumn : undefined}>
               {isBlocked(track, c, lane) && <span className="cell-blocked-mark" aria-hidden="true">✕</span>}
             </div>
           )),
@@ -139,6 +146,11 @@ export function Board({ race, lastResult, activeSoul, highlightSoul = null, onHo
               ) : (
                 <span className="token-body" title={title} {...hover}>
                   {soul.name.slice(0, 2)}
+                </span>
+              )}
+              {bettedSouls?.has(soul.id) && (
+                <span className="token-bet" title={BET_LIVE.betted} aria-label={BET_LIVE.betted}>
+                  ¤
                 </span>
               )}
               {isLast && lastResult && (

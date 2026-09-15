@@ -17,6 +17,7 @@ Le proto implémente déjà une grande partie des recommandations (paliers de pa
 | [`05-ecran-course.md`](05-ecran-course.md) | File de combinaisons manipulable, prévisualisation fantôme, frise de sous-phases | `PlaySlots.tsx`, `Board.tsx`, `useRace.ts`, `core/rules/race.ts` |
 | [`06-resultats-gains.md`](06-resultats-gains.md) | Révélation séquentielle des tickets, solde vs prix du cercle, départage montré | `Ranking.tsx` |
 | [`07-tests-e2e-playwright.md`](07-tests-e2e-playwright.md) | Scénarios E2E Playwright vérifiant les critères d'ergonomie et de lisibilité | nouveau dossier `e2e/`, `playwright.config.ts` |
+| [`08-corrections-post-test.md`](08-corrections-post-test.md) | Tickets priorisés issus du run joué : espace (HUD, panneaux haut/bas), fusion du cumul, feedback des paris | `GameScreen.tsx`, `BetPanel.tsx`, `PlaySlots.tsx`, `index.css` |
 
 ## Priorités
 
@@ -26,7 +27,7 @@ Le proto implémente déjà une grande partie des recommandations (paliers de pa
 
 ## Contraintes globales
 
-1. **Aucune dépendance nouvelle** : React seul, comme aujourd'hui (`package.json`). Pas de lib de drag & drop : le réordonnancement se fait au clic/clavier (voir 05).
+1. **Aucune dépendance nouvelle au runtime** : React seul, comme aujourd'hui (`package.json`). Pas de lib de drag & drop : le glisser-déposer utilise l'API native du navigateur, avec le clic/clavier en alternative (voir 05). L'outillage de test (`@playwright/test`, spec 07) est une devDependency.
 2. **Le noyau reste pur** : tout ce qui touche `src/core/**` reste sans React ni DOM, testé par Vitest (`npm test`). La prévisualisation (05/C2) est une fonction pure du noyau.
 3. **Configurable** : toute nouvelle valeur (seuil de confirmation d'achat, durée de révélation d'un ticket, délai de pulse) vit dans `config/race.json` ou `config/shop.json` avec un `_comment`, jamais en dur (GDD §9.1).
 4. **Vitesse d'animation** : toute nouvelle animation respecte l'option vitesse ×0,5 à ×4 (`options.speed`), comme `stepMs`/`pauseMs` aujourd'hui.

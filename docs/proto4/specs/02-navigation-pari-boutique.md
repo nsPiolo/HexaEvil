@@ -6,7 +6,7 @@ Rendre l'aller-retour paris ↔ boutique gratuit : poignées persistantes qui r�
 
 ![Maquette navigation](img/navigation-pari-boutique.png)
 
-> **Décision d'adaptation** : la maquette place les panneaux en haut/bas (comme `interface.md`). Le proto les a mis **à gauche (boutique) et à droite (paris)**, ce qui préserve mieux la piste horizontale — on **garde l'axe gauche/droite du proto**. Les principes de la maquette (poignées résumées, plateau visible, brouillon, état vide) s'appliquent tels quels.
+> **Décision d'adaptation — RÉVISÉE (voir `08-corrections-post-test.md`, C2)** : cette spec avait entériné l'axe gauche/droite du proto en supposant qu'il préservait la piste horizontale. Le test en conditions réelles a montré l'inverse (les panneaux latéraux masquent la fin de piste et l'arrivée) : la décision est annulée au profit de la disposition d'`interface.md` et des maquettes — **paris en panneau bas, boutique en panneau haut**, pleine largeur. Les principes de cette spec (poignées résumées, plateau visible, brouillon, état vide) s'appliquent tels quels à la nouvelle disposition ; C3 (bascule exclusive) est remplacé par la règle de C2 de la spec 08 (exclusivité dès que la hauteur restante du plateau passe sous ~45 px par couloir).
 
 ## État actuel (`GameScreen.tsx`)
 

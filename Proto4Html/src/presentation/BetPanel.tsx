@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react'
 import { config } from '../core/config'
-import { BET_TYPES, TIER_LABEL, betRefusal, betType, betUnlocked, bettingClosed, currentMultiplier, fmtMultiplier, potentialPayout, raceProgress, slotCount, type Bet, type BetTier, type BetTypeId } from '../core/rules/bets'
-import { isInBetZone, type RaceState } from '../core/rules/race'
+import { BET_TYPES, TIER_LABEL, betRefusal, betType, betUnlocked, bettingClosed, currentMultiplier, evaluateBet, fmtMultiplier, potentialPayout, raceProgress, slotCount, type Bet, type BetTier, type BetTypeId } from '../core/rules/bets'
+import { isInBetZone, ranking, type RaceState } from '../core/rules/race'
 import type { Phase } from './useRace'
 import { LockBadge, lockTitle } from './LockBadge'
 import { MoneyGauge } from './MoneyGauge'
 import { soulColor } from './souls'
-import { BETS, fill } from './texts'
+import { BETS, BET_LIVE, fill } from './texts'
 
 /** Brouillon de ticket : type choisi et âmes désignées. Partagé avec le plateau (spec 03/C2). */
 export interface BetDraft {
@@ -283,13 +283,16 @@ export function BetPanel({ race, money, price, bets, open, phase, level, lateBet
 }
 
 /** Liste des paris posés, avec leur état. Utilisée dans le panneau de paris et sur la table. */
-export function BetList({ race, bets, compact, onCancel }: { race: RaceState; bets: readonly Bet[]; compact?: boolean; onCancel?: (id: number) => string | null }) {
+export function BetList({ race, bets, compact, live, onCancel }: { race: RaceState; bets: readonly Bet[]; compact?: boolean; /** En course : état provisoire de chaque pari ouvert d'après les positions actuelles. */ live?: boolean; onCancel?: (id: number) => string | null }) {
   const soulName = (id: number): string => race.souls[id]?.name ?? `#${id}`
   if (bets.length === 0) return <p className="muted small">Aucun pari pour cette course.</p>
+  const provisional = live && race.souls.some((s) => s.position > 0) ? ranking(race) : null
   return (
     <ul className={'bets' + (compact ? ' bets-compact' : '') + (onCancel ? ' bets-cancellable' : '')}>
-      {bets.map((b) => (
-        <li key={b.id} className={`bet bet-${b.status}`}>
+      {bets.map((b) => {
+        const onTrack = provisional && b.status === 'open' ? evaluateBet(b, provisional) : null
+        return (
+        <li key={b.id} className={`bet bet-${b.status}` + (onTrack === null ? '' : onTrack ? ' bet-on-track' : ' bet-at-risk')} data-live={onTrack === null ? undefined : onTrack ? 'on-track' : 'at-risk'}>
           <span className="bet-type">{betType(b.type).label}</span>
           <span className="bet-targets">
             {b.souls.map((id, i) => (
@@ -304,7 +307,12 @@ export function BetList({ race, bets, compact, onCancel }: { race: RaceState; be
             {b.turn > 0 && !compact && <span className="muted"> · tour {b.turn}</span>}
           </span>
           <span className="bet-status">
-            {b.status === 'open' && (compact ? `+${potentialPayout(b.stake, b.multiplier) - b.stake} si gagné` : 'en cours')}
+            {b.status === 'open' && onTrack === null && (compact ? `+${potentialPayout(b.stake, b.multiplier) - b.stake} si gagné` : 'en cours')}
+            {b.status === 'open' && onTrack !== null && (
+              <span className="bet-live" title={BET_LIVE.title}>
+                {onTrack ? BET_LIVE.onTrack : BET_LIVE.atRisk} <span className="muted">· {BET_LIVE.provisional}</span>
+              </span>
+            )}
             {b.status === 'won' && `gagné +${b.payout - b.stake}`}
             {b.status === 'lost' && `perdu −${b.stake}`}
           </span>
@@ -314,7 +322,8 @@ export function BetList({ race, bets, compact, onCancel }: { race: RaceState; be
             </button>
           )}
         </li>
-      ))}
+        )
+      })}
     </ul>
   )
 }

@@ -5,7 +5,8 @@
  *   si bien que dés, vitrine et course sont entièrement déterministes (mulberry32).
  * - `?e2e=1` : démarrage direct d'un nouveau run sur l'écran de jeu (pas de splash, pas
  *   d'intro), vitesse ×4, sauvegarde effacée. Avec lui seulement : `?money=NNN` fixe le
- *   solde de départ et `?race=N` l'index de la première course (0 = cercle 1, course 1).
+ *   solde de départ, `?race=N` l'index de la première course (0 = cercle 1, course 1) et
+ *   `?speed=N` la vitesse des animations (1 à 4, défaut 4).
  */
 
 function params(): URLSearchParams | null {
@@ -38,7 +39,8 @@ export function e2eMode(): boolean {
 }
 
 /** Réglages de départ du mode e2e : solde et index de course, s'ils sont donnés. */
-export function e2eStart(): { money: number | null; raceIndex: number | null } {
-  if (!e2eMode()) return { money: null, raceIndex: null }
-  return { money: intParam('money'), raceIndex: intParam('race') }
+export function e2eStart(): { money: number | null; raceIndex: number | null; speed: number } {
+  if (!e2eMode()) return { money: null, raceIndex: null, speed: 1 }
+  const speed = intParam('speed')
+  return { money: intParam('money'), raceIndex: intParam('race'), speed: speed === null ? 4 : Math.min(4, Math.max(1, speed)) }
 }

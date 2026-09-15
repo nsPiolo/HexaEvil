@@ -342,6 +342,31 @@ export const RACE = {
   afterPrevious: 'Résolue après les précédentes : seule la première est prévisualisée.',
   previewTitle: 'Prochain déplacement : {name} {dist} → case {to}',
   previewGhost: 'Prévisualisation',
+  dragSoul: 'Glisser sur un dé Distance pour associer (ou cliquer, puis cliquer un dé Distance)',
+  dropHere: 'Déposer le dé Âme ici',
+  dragCard: 'Glisser pour changer l’ordre de résolution',
+  cumul: '{total} ({parts})',
+  cumulInto: 'cumulé dans la carte n°{n}',
+  recap: '↺ dernier tour',
+  recapTitle: 'Revoir le dernier tour',
+  recapEmpty: 'Rien à revoir : personne n’a encore bougé.',
+  recapTurn: 'Tour {n}',
+} as const
+
+/** État vivant d'un pari pendant la course (provisoire : le classement n'est définitif qu'à la fin). */
+export const BET_LIVE = {
+  onTrack: 'en bonne voie',
+  atRisk: 'compromis',
+  provisional: 'provisoire',
+  title: 'D’après les positions actuelles ; seul le classement final compte.',
+  betted: 'Âme pariée',
+} as const
+
+/** Plateau. */
+export const BOARD = {
+  zoneClosed: 'plus de pari',
+  zoneClosedTitle: 'Une âme a franchi le seuil : plus aucun pari sur cette course.',
+  tieColumn: 'Même colonne : le couloir le plus bas devant.',
 } as const
 
 /** Modale de fin de course (spec 06). */

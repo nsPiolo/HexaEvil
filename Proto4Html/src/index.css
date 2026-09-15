@@ -170,6 +170,14 @@ p { margin: 0; }
   justify-content: center;
 }
 .cell-blocked-mark { color: #7a3a24; font-size: 0.9rem; font-weight: 700; }
+/* Seuil franchi : la tête de colonne l'écrit. Départage : la colonne entière s'allume brièvement. */
+.head-closed { color: var(--bad) !important; }
+.cell-tie { animation: tie-flash 1.2s ease-out both; }
+@keyframes tie-flash {
+  0% { background: rgba(224, 168, 60, 0.55); border-color: var(--gold); }
+  60% { background: rgba(224, 168, 60, 0.35); border-color: var(--gold); }
+  100% { background: rgba(224, 168, 60, 0.12); border-color: #4a331b; }
+}
 
 .legend {
   margin: 10px 0 0;
@@ -240,6 +248,8 @@ p { margin: 0; }
 .board-selecting .token-btn:not(:disabled):hover .token-body, .token-btn:focus-visible .token-body { transform: scale(1.15); box-shadow: 0 0 0 3px var(--ink), 0 0 14px var(--soul); }
 .token-picked .token-body { box-shadow: 0 0 0 3px var(--ember), 0 0 0 5px var(--ink), 0 0 16px var(--ember) !important; }
 .token-unpickable .token-body { opacity: 0.45; }
+/* Marqueur de pari à la base du jeton (recommandation §4.3). */
+.token-bet { position: absolute; bottom: -4px; right: calc(50% - 20px); width: 15px; height: 15px; border-radius: 50%; background: var(--gold); color: var(--bg); font-size: 0.6rem; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 1px solid var(--bg); z-index: 3; pointer-events: auto; }
 .token-unpickable.token-picked .token-body { opacity: 1; }
 .legend-btn { display: flex; align-items: center; gap: 6px; background: none; border: 0; padding: 0; font: inherit; font-weight: 600; }
 .legend-btn:disabled { opacity: 0.45; cursor: not-allowed; }
@@ -422,6 +432,13 @@ p { margin: 0; }
   50% { box-shadow: 0 0 0 8px rgba(212, 84, 30, 0); }
 }
 .die-hot { box-shadow: 0 0 0 3px var(--ink), 0 0 14px var(--soul, var(--gold)); opacity: 1 !important; }
+/* Glisser-déposer natif : dé Âme saisissable, dé Distance cible, carte de la file déplaçable. */
+.die-soul[draggable='true'] { cursor: grab; }
+.die-soul[draggable='true']:active { cursor: grabbing; }
+.die-drop { border-color: var(--ink) !important; box-shadow: 0 0 0 3px var(--gold), 0 0 18px var(--gold); transform: translateY(-2px) scale(1.05); }
+.combos-queue li[draggable='true'] { cursor: grab; }
+.combo-dragging { opacity: 0.4; }
+.combo-drop { border-color: var(--gold) !important; box-shadow: inset 0 3px 0 var(--gold); }
 .chip-hot { border-color: var(--ink) !important; }
 .combo-active { background: #1f2a36; box-shadow: inset 3px 0 0 var(--human); }
 .combo-soul { font-weight: 600; }
@@ -536,6 +553,12 @@ p { margin: 0; }
 .bet-won .bet-status { color: var(--good); font-weight: 700; }
 .bet-lost { border-left-color: var(--bad); opacity: 0.8; }
 .bet-lost .bet-status { color: var(--bad); font-weight: 700; }
+/* État vivant d'un pari en course (provisoire) : couleur doublée du texte « en bonne voie » / « compromis ». */
+.bet-on-track { border-left-color: var(--good); }
+.bet-on-track .bet-live { color: var(--good); font-weight: 700; }
+.bet-at-risk { border-left-color: var(--bad); }
+.bet-at-risk .bet-live { color: var(--bad); font-weight: 700; }
+.bet-live .muted { font-weight: 400; font-size: 0.75em; }
 
 .settlement { display: flex; flex-direction: column; gap: 6px; border-top: 1px dashed var(--line); padding-top: 10px; }
 .settlement-net { font-weight: 700; font-size: 1.05rem; font-variant-numeric: tabular-nums; }
@@ -934,7 +957,10 @@ p { margin: 0; }
 }
 .board-wrap { perspective: 1200px; }
 .board-wrap .board { transform: rotateX(6deg); transform-origin: 50% 100%; }
-.last-event { min-height: 1.3em; margin: 6px 0 0; text-align: center; color: var(--muted); font-size: 0.85rem; }
+.last-event { min-height: 1.3em; margin: 6px 0 0; text-align: center; color: var(--muted); font-size: 0.85rem; display: flex; justify-content: center; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.recap-btn { background: none; border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; color: var(--muted); font-size: 0.75rem; }
+.recap-btn:hover { border-color: var(--gold); color: var(--gold); }
+.popup .log-entry { list-style: none; }
 
 .slot { border-radius: 14px; padding: 12px 16px; background: rgba(20, 16, 15, 0.55); border: 1px solid rgba(255, 255, 255, 0.06); display: flex; flex-direction: column; gap: 8px; }
 .slot-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }

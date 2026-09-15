@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { cellOf, pairNaturally, phaseStrip, placeBet, playTurn, playerSlot, resolveTurn, rollDice, start, startRace, token } from './helpers'
+import { board, cellOf, pairNaturally, phaseStrip, placeBet, playTurn, playerSlot, resolveTurn, rollDice, start, startRace, token } from './helpers'
 import { RACE_SEED, RACE_SEED_EXPECT as E } from './seeds'
 
 /** Pari minimal, course lancée, dés lancés : on est en appariement. */
@@ -75,9 +75,11 @@ test.describe('05 · Écran Course (association, file, prévisualisation)', () =
     await expect(phaseStrip(page).getByText('ordonner')).toHaveAttribute('aria-current', 'step')
     await pairNaturally(page)
     await playerSlot(page).getByRole('button', { name: 'Résoudre', exact: true }).click()
-    await expect(phaseStrip(page)).toHaveAttribute('data-state', 'résoudre')
-    await expect(phaseStrip(page)).toHaveAttribute('data-state', 'adversaire', { timeout: 20_000 })
-    await expect(phaseStrip(page)).toHaveAttribute('data-state', 'lancer', { timeout: 20_000 })
+    // États transitoires (quelques centaines de ms à ×4) : on sonde toutes les 50 ms.
+    const state = () => phaseStrip(page).getAttribute('data-state')
+    await expect.poll(state, { intervals: [50], timeout: 10_000 }).toBe('résoudre')
+    await expect.poll(state, { intervals: [50], timeout: 20_000 }).toBe('adversaire')
+    await expect.poll(state, { intervals: [50], timeout: 20_000 }).toBe('lancer')
   })
 
   test('E2E-05-D : survoler un dé Âme allume le jeton correspondant, quitter l’éteint', async ({ page }) => {
@@ -117,8 +119,64 @@ test.describe('05 · Écran Course (association, file, prévisualisation)', () =
     for (let t = 1; t < E.collisionTurn; t++) await playTurn(page)
     await rollDice(page)
     await pairNaturally(page)
-    await playerSlot(page).getByRole('button', { name: 'Résoudre', exact: true }).click()
-    await expect(page.locator('.last-event'), `Graine ${RACE_SEED} : aucune collision racontée au tour ${E.collisionTurn} — re-chercher la graine (e2e/seeds.ts).`).toContainText(/Percute .+ et saute devant|échange de place/, { timeout: 15_000 })
-    await expect(phaseStrip(page)).toHaveAttribute('data-state', /^(lancer|none)$/, { timeout: 30_000 })
+    await resolveTurn(page)
+    // Chaque déplacement passe dans la ligne d'événement (aria-live), trop vite pour être lu à ×4 : le récapitulatif du tour garde tous les libellés.
+    await page.getByRole('button', { name: '↺ dernier tour' }).click()
+    const recap = page.getByRole('dialog', { name: 'Revoir le dernier tour' })
+    await expect(recap.getByText(`Tour ${E.collisionTurn}`)).toBeVisible()
+    await expect(recap.getByRole('listitem').filter({ hasText: /Percute .+ et saute devant|échange de place/ }), `Graine ${RACE_SEED} : aucune collision racontée au tour ${E.collisionTurn} — re-chercher la graine (e2e/seeds.ts).`).toHaveCount(1)
+    await expect(page.locator('.last-event')).toContainText(/./)
+  })
+
+  test('E2E-05-G : glisser un dé Âme sur un dé Distance associe ; glisser une carte réordonne la file', async ({ page }) => {
+    // recommandation §7.2 (associer et ordonner sont le même geste) — glisser-déposer natif, sans bibliothèque.
+    await toPairing(page)
+    const slot = playerSlot(page)
+    const soul0 = page.getByTestId('die-soul-0')
+    await expect(soul0).toHaveAttribute('draggable', 'true')
+    await expect(soul0).toHaveAttribute('title', /Glisser sur un dé Distance/)
+    await soul0.dragTo(page.getByTestId('die-dist-1'))
+    await expect(slot.getByTestId(/^combo-\d+$/)).toHaveCount(1)
+    await expect(soul0).toBeDisabled()
+    await expect(page.getByTestId('die-dist-1')).toBeDisabled()
+    await expect(page.getByTestId('ghost-token')).toBeVisible()
+    await page.getByTestId('die-soul-1').dragTo(page.getByTestId('die-dist-0'))
+    await expect(slot.getByTestId(/^combo-\d+$/)).toHaveCount(2)
+    const names = async () => Promise.all([0, 1].map((i) => slot.getByTestId(`combo-${i}`).locator('.combo-soul').innerText()))
+    const before = await names()
+    await expect(slot.getByTestId('combo-1')).toHaveAttribute('draggable', 'true')
+    await slot.getByTestId('combo-1').dragTo(slot.getByTestId('combo-0'))
+    expect(await names()).toEqual([before[1], before[0]])
+    // Le glisser-déposer laisse le clic-clic intact : dissocier puis ré-associer au clic.
+    await slot.getByTestId('combo-0').getByRole('button', { name: 'Dissocier' }).click()
+    await expect(slot.getByTestId(/^combo-\d+$/)).toHaveCount(1)
+    await page.getByTestId(/^die-soul-\d+$/).locator(':scope:not(:disabled)').first().click()
+    await page.getByTestId(/^die-dist-\d+$/).locator(':scope:not(:disabled)').first().click()
+    await expect(slot.getByTestId(/^combo-\d+$/)).toHaveCount(2)
+    await expect(slot.getByRole('button', { name: 'Résoudre', exact: true })).toBeEnabled()
+  })
+
+  test('E2E-05-H : les paris posés vivent pendant la course, le seuil franchi s’écrit, le dernier tour se revoit', async ({ page }) => {
+    // recommandations §4.3 (rappel des paris, zone de fin) et §4.7 (récapitulatif du dernier tour)
+    await start(page, { seed: RACE_SEED })
+    await placeBet(page, { souls: [0], stake: 5 })
+    await expect(token(page, 0).getByLabel('Âme pariée')).toBeVisible()
+    await expect(token(page, 1).getByLabel('Âme pariée')).toHaveCount(0)
+    await startRace(page)
+    await expect(page.getByRole('button', { name: '↺ dernier tour' })).toHaveCount(0)
+    await playTurn(page)
+    const live = playerSlot(page).getByRole('complementary', { name: 'Paris posés' }).getByRole('listitem').first()
+    await expect(live.locator('.bet-live')).toHaveText(/^(en bonne voie|compromis) · provisoire$/)
+    await expect(live).toHaveAttribute('data-live', /^(on-track|at-risk)$/)
+    await page.getByRole('button', { name: '↺ dernier tour' }).click()
+    const recap = page.getByRole('dialog', { name: 'Revoir le dernier tour' })
+    await expect(recap).toBeVisible()
+    await expect(recap.getByText('Tour 1')).toBeVisible()
+    await expect(recap.getByRole('listitem')).toHaveCount(5) // lancer + 2 déplacements du joueur, lancer + déplacement adverses
+    await expect(recap.getByText(/^Lancer : Distance/)).toBeVisible()
+    await expect(recap.getByText(/^L'adversaire lance/)).toBeVisible()
+    await recap.getByRole('button', { name: 'Fermer' }).click()
+    for (let t = 2; t <= E.zoneTurn; t++) await playTurn(page)
+    await expect(board(page).getByText(/60 % · plus de pari/)).toBeVisible()
   })
 })

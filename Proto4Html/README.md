@@ -164,7 +164,12 @@ npm run build
     étiquette d'impact, vitrine triée du plus sûr au plus dangereux ; achat ≥
     `confirmThreshold` ou marqué DANGER en deux clics (« Confirmer N ¤ ») ;
     remplacement de dé avec comparaison faces actuelles → nouvelles faces.
-  - **Course** : file de combinaisons manipulable (← → ×, clavier compris),
+  - **Course** : file de combinaisons manipulable au glisser-déposer natif (dé Âme
+    déposé sur un dé Distance, carte déposée dans la file) comme au clic (← → ×,
+    clavier compris), carte de cumul « +4 (+3 +1) » quand deux dés visent la même âme,
+    paris posés à l'état vivant pendant la course (« en bonne voie / compromis ·
+    provisoire ») et marqués sur les jetons, tête de colonne « plus de pari » une fois
+    le seuil franchi, récapitulatif « ↺ dernier tour », colonne surlignée au départage,
     prévisualisation du prochain déplacement par un jeton fantôme avec ses glyphes
     (`previewMove`, pur, testé contre le déplacement réel), frise de sous-phases,
     survol d'un dé Âme qui allume le jeton, « Résoudre » qui pulse après
@@ -185,7 +190,7 @@ Chromium déjà présent (`PLAYWRIGHT_BROWSERS_PATH`, cache Playwright, ou Chrom
 via `channel`) : aucun téléchargement n'est exigé. Deux paramètres d'URL n'existent que
 pour ces tests (`src/presentation/urlParams.ts`) : `?seed=NNN` fixe la graine (course N
 → seed + N, tout devient déterministe) et `?e2e=1` démarre un run directement sur la
-table à vitesse ×4 (avec `&money=` et `&race=` pour le solde et la course de départ).
+table à vitesse ×4 (avec `&money=`, `&race=` et `&speed=` pour le solde, la course de départ et la vitesse).
 Les graines de référence sont figées et documentées dans `e2e/seeds.ts`.
 
 ## Menu développeur

@@ -9,6 +9,8 @@ export interface StartOptions {
   seed?: number
   money?: number
   race?: number
+  /** Vitesse des animations (1 à 4 ; 4 par défaut en mode e2e). */
+  speed?: number
   /** Installe l'horloge pilotable (`page.clock`) avant de charger la page. */
   clock?: boolean
 }
@@ -20,6 +22,7 @@ export async function start(page: Page, opts: StartOptions = {}): Promise<void> 
   if (opts.seed !== undefined) q.set('seed', String(opts.seed))
   if (opts.money !== undefined) q.set('money', String(opts.money))
   if (opts.race !== undefined) q.set('race', String(opts.race))
+  if (opts.speed !== undefined) q.set('speed', String(opts.speed))
   await page.goto(`/?${q.toString()}`)
   await expect(playerSlot(page)).toBeVisible()
 }
