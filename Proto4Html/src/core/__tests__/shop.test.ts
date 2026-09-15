@@ -6,6 +6,7 @@ import { defaultDice, plainFace } from '../rules/dice'
 import { buildMoves, createRace, createTrack, rollOpponentPair, rollPlayerDice, unusedSoulMoves } from '../rules/race'
 import { seededRng } from '../rules/rng'
 import { loadShopConfig } from '../shop/load'
+import { riskOf, sortByRisk } from '../shop/items'
 import { applyPurchase, defaultInventory, findItem, forgeFace, generateVitrine, opponentNegativesFlipped, priceAtCircle } from '../shop/shop'
 
 const cfg = loadConfig(rawConfig)
@@ -22,6 +23,40 @@ describe('catalogue', () => {
     expect(priceAtCircle(50, 1, 0.25)).toBe(50)
     expect(priceAtCircle(50, 2, 0.25)).toBe(65)
     expect(priceAtCircle(80, 5, 0.25)).toBe(160)
+  })
+})
+
+describe('impact et contrepartie (spec 04/C1)', () => {
+  it('charge impact et warning, avec des défauts déduits de la rareté', () => {
+    const raw = JSON.parse(JSON.stringify(rawShop))
+    for (const it of raw.items) {
+      delete it.impact
+      delete it.warning
+    }
+    const loaded = loadShopConfig(raw)
+    expect(loaded.items.every((i) => i.warning === null)).toBe(true)
+    expect(loaded.items.find((i) => i.id === 'boussole')?.impact).toBe('faible')
+    expect(loaded.items.find((i) => i.id === 'glace')?.impact).toBe('moyen')
+    raw.items[0].rarity = 'legendary'
+    expect(loadShopConfig(raw).items[0]?.impact).toBe('fort')
+    // Le fichier livré : la Prodigalité annonce sa contrepartie.
+    const prodigalite = findItem(shop, 'prodigalite')
+    expect(prodigalite.impact).toBe('fort')
+    expect(prodigalite.warning).toMatch(/3 ¤/)
+    expect(shop.confirmThreshold).toBe(60)
+  })
+  it('refuse un impact hors échelle', () => {
+    const raw = JSON.parse(JSON.stringify(rawShop))
+    raw.items[0].impact = 'colossal'
+    expect(() => loadShopConfig(raw)).toThrow(/impact/)
+  })
+  it('classe sûr < ambitieux < danger et trie la vitrine dans cet ordre', () => {
+    expect(riskOf({ impact: 'faible', warning: null })).toBe('safe')
+    expect(riskOf({ impact: 'moyen', warning: null })).toBe('safe')
+    expect(riskOf({ impact: 'fort', warning: null })).toBe('bold')
+    expect(riskOf({ impact: 'faible', warning: 'coûte' })).toBe('danger')
+    const sorted = sortByRisk([findItem(shop, 'prodigalite'), findItem(shop, 'lateBet'), findItem(shop, 'limee')])
+    expect(sorted.map((i) => i.id)).toEqual(['limee', 'lateBet', 'prodigalite'])
   })
 })
 

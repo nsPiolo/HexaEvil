@@ -63,5 +63,11 @@ export interface RaceConfig {
     stepMs: number
     diceMs: number
     pauseMs: number
+    /** Intervalle entre deux tickets révélés dans la modale de fin de course. */
+    betRevealMs: number
+    /** Inactivité avant que « Résoudre » pulse, appariement complet. */
+    idlePulseMs: number
+    /** Transition du remplissage de la jauge solde / prix du cercle. */
+    gaugeMs: number
   }
 }

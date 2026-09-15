@@ -335,6 +335,17 @@ export function applyMove(state: RaceState, move: Move): { state: RaceState; res
   }
 }
 
+/**
+ * Prévisualisation d'un déplacement : exactement les règles d'`applyMove` (case d'arrivée,
+ * détour de couloir, percute/saute, recul/échange, ligne de départ, arrivée), sans rien
+ * modifier ni toucher au hasard. `applyMove` étant pur, on renvoie simplement son résultat
+ * et on jette l'état produit : deux appels successifs donnent le même résultat, et résoudre
+ * ensuite donne ce qui a été montré.
+ */
+export function previewMove(state: RaceState, soul: SoulId, distance: number): MoveResult {
+  return applyMove(state, { source: 'player', soul, distance, parts: [], notes: [] }).result
+}
+
 /** Clôture le tour : la course est finie dès qu'une âme a franchi l'arrivée (§2.7). */
 export function endTurn(state: RaceState): RaceState {
   const finished = state.souls.some((s) => s.position >= state.track.columns)

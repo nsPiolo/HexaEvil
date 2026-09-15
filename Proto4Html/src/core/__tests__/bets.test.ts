@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { loadConfig } from '../config/load'
 import rawConfig from '../../../config/race.json'
-import { BET_TYPES, betRefusal, betUnlocked, bettingClosed, currentMultiplier, effectiveBase, isSameBet, evaluateBet, potentialPayout, raceProgress, settleBets, slotCount, unlockedBetTypes, type Bet } from '../rules/bets'
+import { BET_TYPES, betRefusal, betUnlocked, bettingClosed, cancelBet, currentMultiplier, effectiveBase, isSameBet, evaluateBet, potentialPayout, raceProgress, settleBets, slotCount, unlockedBetTypes, type Bet } from '../rules/bets'
 import { createRace, ranking, type RaceState } from '../rules/race'
 
 const cfg = loadConfig(rawConfig)
@@ -188,5 +188,29 @@ describe('règlement', () => {
     const raw = JSON.parse(JSON.stringify(rawConfig))
     raw.economy.multipliers.winner = 1
     expect(() => loadConfig(raw)).toThrow(/multipliers\.winner/)
+  })
+})
+
+describe('retrait d’un pari en préparation (cancelBet)', () => {
+  const bets: Bet[] = [
+    { id: 1, type: 'winner', souls: [2], stake: 10, multiplier: 3.5, turn: 0, status: 'open', payout: 0 },
+    { id: 2, type: 'duel', souls: [0, 1], stake: 20, multiplier: 1.8, turn: 0, status: 'open', payout: 0 },
+  ]
+  it('rembourse exactement la mise et supprime le pari', () => {
+    const r = cancelBet(bets, 2, true)
+    expect(typeof r).toBe('object')
+    if (typeof r === 'string') throw new Error(r)
+    expect(r.refund).toBe(20)
+    expect(r.bets.map((b) => b.id)).toEqual([1])
+    // Le tableau d'origine n'est pas touché.
+    expect(bets).toHaveLength(2)
+  })
+  it('refuse dès que la course est lancée', () => {
+    expect(cancelBet(bets, 1, false)).toMatch(/lancée/)
+  })
+  it('refuse un pari inconnu ou déjà réglé', () => {
+    expect(cancelBet(bets, 99, true)).toMatch(/introuvable/)
+    const settled: Bet[] = [{ ...bets[0]!, status: 'won', payout: 35 }]
+    expect(cancelBet(settled, 1, true)).toMatch(/réglé/)
   })
 })

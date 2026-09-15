@@ -204,9 +204,11 @@ p { margin: 0; }
   align-items: center;
   justify-content: center;
   transition: left var(--step) cubic-bezier(0.3, 0.9, 0.35, 1.05), top var(--step) ease-in-out, transform var(--step) ease-in-out;
-  pointer-events: auto;
+  /* L'enveloppe couvre toute la case et les jetons empilés se recouvrent : seuls le corps et sa bulle prennent les clics. */
+  pointer-events: none;
   z-index: 1;
 }
+.token-body, .token-btn, .bubble { pointer-events: auto; }
 .token-body {
   width: 32px;
   height: 32px;
@@ -230,6 +232,31 @@ p { margin: 0; }
 .token-swapped .token-body { animation: swapped var(--step) ease-in-out; }
 .token-jumped .token-body { animation: jumped 500ms ease-in-out; }
 .token-finished .token-body { box-shadow: 0 0 0 2px var(--good), 0 2px 6px rgba(0, 0, 0, 0.5); }
+
+/* Sélection d'âmes sur le plateau pour le ticket de pari (spec 03/C2) : le jeton devient un vrai bouton. */
+.token-btn { background: none; border: 0; padding: 0; border-radius: 50%; display: flex; }
+.token-btn:disabled { cursor: not-allowed; }
+.board-selecting .token-btn:not(:disabled) .token-body { cursor: pointer; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5), 0 0 0 2px rgba(240, 230, 223, 0.35); }
+.board-selecting .token-btn:not(:disabled):hover .token-body, .token-btn:focus-visible .token-body { transform: scale(1.15); box-shadow: 0 0 0 3px var(--ink), 0 0 14px var(--soul); }
+.token-picked .token-body { box-shadow: 0 0 0 3px var(--ember), 0 0 0 5px var(--ink), 0 0 16px var(--ember) !important; }
+.token-unpickable .token-body { opacity: 0.45; }
+.token-unpickable.token-picked .token-body { opacity: 1; }
+.legend-btn { display: flex; align-items: center; gap: 6px; background: none; border: 0; padding: 0; font: inherit; font-weight: 600; }
+.legend-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.legend-picked { border-color: var(--ember); background: #2c1a12; }
+
+/* Prévisualisation du prochain déplacement (spec 05/C2) : jeton fantôme sur la case d'arrivée calculée. */
+.token-ghost { z-index: 4; pointer-events: none; transition: none; }
+.token-ghost .token-body {
+  background: transparent; color: var(--soul); border: 2px dashed var(--soul); opacity: 0.85;
+  box-shadow: 0 0 12px var(--soul); animation: ghost 1.4s ease-in-out infinite;
+}
+.token-ghost-2 .token-body { opacity: 0.5; animation: none; border-style: dotted; }
+.bubble-ghost { animation: none; opacity: 0.95; background: var(--bg); color: var(--soul); border: 1px dashed var(--soul); }
+@keyframes ghost {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 0.95; }
+}
 
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
@@ -354,7 +381,8 @@ p { margin: 0; }
 
 .combos {
   margin: 0;
-  padding: 0 0 0 22px;
+  padding: 0;
+  list-style: none;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -362,12 +390,39 @@ p { margin: 0; }
 .combos li {
   display: flex;
   gap: 10px;
-  align-items: baseline;
+  align-items: center;
   padding: 4px 8px;
   border-radius: 6px;
-  transition: background 200ms;
+  border: 1px solid transparent;
+  transition: background 200ms, border-color 200ms;
   animation: slide-in 200ms ease-out;
 }
+.combo-n { min-width: 1.4em; height: 1.4em; border-radius: 50%; background: var(--ink); color: var(--bg); font-size: 0.7rem; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+/* File manipulable (spec 05/C1) : chaque carte porte ses commandes ← → × ; la première est prévisualisée. */
+.combos-queue li { background: rgba(20, 16, 15, 0.5); border-color: rgba(255, 255, 255, 0.08); }
+.combo-preview { border-color: var(--gold) !important; box-shadow: inset 3px 0 0 var(--gold); }
+.combo-hot { background: var(--panel-2) !important; border-color: var(--ink) !important; }
+.combo-note-preview { color: var(--gold); }
+.combo-ctl { margin-left: auto; display: inline-flex; gap: 3px; }
+.combo-btn { width: 26px; height: 26px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel-2); font-size: 0.85rem; line-height: 1; display: inline-flex; align-items: center; justify-content: center; transition: border-color 120ms, background 120ms; }
+.combo-btn:hover:not(:disabled) { border-color: var(--ink); }
+.combo-btn:disabled { opacity: 0.3; }
+.combo-btn-x:hover:not(:disabled) { border-color: var(--bad); color: var(--bad); }
+
+/* Frise de sous-phases (spec 05/C3) : préparer · lancer · ordonner · résoudre · adversaire. */
+.subphases { list-style: none; margin: 0; padding: 0; display: flex; gap: 6px; flex-wrap: wrap; }
+.subphase { padding: 2px 10px; border-radius: 999px; border: 1px solid var(--line); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); transition: color 200ms, border-color 200ms, background 200ms; }
+.subphase-done { color: var(--ink); border-color: rgba(240, 230, 223, 0.3); }
+.subphase-on { color: var(--gold); border-color: var(--gold); background: #2f2216; font-weight: 700; }
+
+/* Bouton qui pulse après inactivité, appariement complet (spec 05/C5). */
+.btn-pulse { animation: btn-pulse 1.4s ease-in-out infinite; }
+@keyframes btn-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(212, 84, 30, 0.7); }
+  50% { box-shadow: 0 0 0 8px rgba(212, 84, 30, 0); }
+}
+.die-hot { box-shadow: 0 0 0 3px var(--ink), 0 0 14px var(--soul, var(--gold)); opacity: 1 !important; }
+.chip-hot { border-color: var(--ink) !important; }
 .combo-active { background: #1f2a36; box-shadow: inset 3px 0 0 var(--human); }
 .combo-soul { font-weight: 600; }
 .combo-dist { font-variant-numeric: tabular-nums; font-weight: 700; }
@@ -483,7 +538,25 @@ p { margin: 0; }
 .bet-lost .bet-status { color: var(--bad); font-weight: 700; }
 
 .settlement { display: flex; flex-direction: column; gap: 6px; border-top: 1px dashed var(--line); padding-top: 10px; }
-.settlement-net { font-weight: 700; font-size: 1.05rem; }
+.settlement-net { font-weight: 700; font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+/* Révélation séquentielle des tickets (spec 06/C1) : face « ? » avant, couleur et net après. */
+.settlement .bet-hidden { border-left-color: var(--line); opacity: 0.5; animation: none; }
+.settlement .bet-hidden .bet-status { color: var(--muted); font-weight: 700; }
+.settlement .bet-revealed { animation: reveal 350ms ease-out both; }
+@keyframes reveal {
+  from { opacity: 0.4; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
+}
+.ranking-gauge { border-top: 1px dashed var(--line); padding-top: 10px; }
+.ranking li.rank-tie { display: block; padding: 0 12px 0 56px; background: none; font-size: 0.75rem; color: var(--muted); font-style: italic; }
+/* Retrait d'un pari en préparation (spec 03/C3). */
+.bets-cancellable .bet { grid-template-columns: auto 1fr auto auto auto; }
+.bet-cancel { padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); background: none; color: var(--muted); font-size: 0.75rem; transition: border-color 120ms, color 120ms; }
+.bet-cancel:hover { border-color: var(--bad); color: var(--bad); }
+/* Ticket prêt (spec 03/C1) : gain potentiel en accent, solde après mise en secondaire. */
+.bp-ticket { display: flex; flex-direction: column; gap: 2px; min-height: 1.4em; }
+.bp-ticket-gain { font-size: 1.15rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.bp-ticket-after { font-size: 0.9rem; font-variant-numeric: tabular-nums; }
 .good { color: var(--good); }
 .bad { color: var(--bad); }
 .phase-betting { border-color: var(--gold); background: #2f2216; }
@@ -546,6 +619,24 @@ p { margin: 0; }
 .shop-price { font-weight: 700; color: var(--gold); font-variant-numeric: tabular-nums; }
 .shop-price-over { color: var(--bad); }
 .shop-faces-preview { display: flex; gap: 4px; }
+/* Triade sûr / ambitieux / dangereux (spec 04/C2) : bandeau de tête, texte + couleur. */
+.shop-item { position: relative; padding-top: 30px; }
+.shop-risk { position: absolute; top: 0; left: 0; right: 0; padding: 3px 12px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; border-radius: 0 0 6px 6px; }
+.shop-risk.risk-safe { background: rgba(78, 168, 106, 0.2); color: var(--good); }
+.shop-risk.risk-bold { background: rgba(224, 168, 60, 0.2); color: var(--gold); }
+.shop-risk.risk-danger { background: rgba(208, 69, 60, 0.22); color: #ff7b72; }
+.shop-item.risk-danger { border-color: rgba(208, 69, 60, 0.5); }
+.shop-warning { color: #ff7b72 !important; font-weight: 600; }
+.shop-meta { display: flex; flex-direction: column; gap: 2px; }
+.shop-impact { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.btn-confirm { background: var(--gold) !important; border-color: var(--gold) !important; color: var(--bg) !important; animation: btn-pulse 1s ease-in-out infinite; }
+/* État vide de la boutique sans pari (spec 02/C2). */
+.shop-empty { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding: 24px; margin: 0 16px; border-radius: 10px; border: 1px dashed var(--line); background: var(--panel-2); color: var(--muted); font-style: italic; }
+.shop-empty-vitrine { grid-column: 1 / -1; font-style: italic; }
+/* Comparaison avant → après pour le remplacement d'un dé (spec 04/C5). */
+.shop-compare { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.shop-arrow { color: var(--gold); font-weight: 700; }
+.shop-faces-new .face { border-color: var(--human); }
 .shop-target { display: flex; flex-direction: column; gap: 10px; padding: 12px; border-radius: 10px; background: var(--panel-2); border: 1px dashed var(--gold); }
 .shop-dice { display: flex; flex-direction: column; gap: 8px; }
 .shop-die { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
@@ -796,6 +887,26 @@ p { margin: 0; }
 .table.bets-open .hud-right { right: calc(min(480px, 100vw) + 16px); }
 .hud-right { right: 16px; align-items: flex-end; transition: left 350ms cubic-bezier(0.2, 0.8, 0.2, 1), right 350ms cubic-bezier(0.2, 0.8, 0.2, 1); }
 .hud-big { font-weight: 700; font-size: 1.05rem; }
+
+/* Jauge des trois usages (spec 01) : même composant dans le HUD, les panneaux et la modale. */
+.gauge { display: flex; flex-direction: column; gap: 2px; min-width: 200px; font-size: 0.75rem; }
+.gauge-row { display: flex; align-items: center; gap: 8px; }
+.gauge-bar { position: relative; flex: 1; height: 8px; border-radius: 999px; background: #2a2320; border: 1px solid var(--line); overflow: visible; }
+.gauge-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #b8842a, var(--gold)); transition: width var(--gauge-ms, 300ms) ease-out, background 200ms; }
+.gauge-sep { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--ink); transform: translateX(-1px); transition: left var(--gauge-ms, 300ms) ease-out; }
+.gauge-values { font-variant-numeric: tabular-nums; font-weight: 700; white-space: nowrap; }
+.gauge-money { color: var(--gold); }
+.gauge-slash, .gauge-price { color: var(--muted); font-weight: 600; }
+.gauge-legend { display: flex; justify-content: space-between; gap: 8px; color: var(--muted); }
+.gauge-detail { color: var(--ink); font-weight: 600; text-align: center; }
+.gauge-warn .gauge-bar { background: rgba(208, 69, 60, 0.18); border-color: rgba(208, 69, 60, 0.45); }
+.gauge-warn .gauge-fill { background: linear-gradient(90deg, #a8641e, #e0872c); }
+.gauge-warn .gauge-money { color: #e0872c; }
+.gauge-warn .gauge-detail { color: #ff9a8a; }
+.hud-right .gauge { align-items: stretch; margin: 2px 0 4px; }
+.bp-money { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.bp-money .gauge { min-width: 240px; }
+.bp-head > div:first-child { min-width: 0; }
 .hud-link { background: none; border: none; padding: 0; color: var(--gold); text-decoration: underline dotted; font-size: 0.85rem; }
 .hud-tools { display: flex; gap: 6px; margin-top: 4px; }
 

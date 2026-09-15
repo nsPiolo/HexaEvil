@@ -161,6 +161,25 @@ export function betRefusal(
   return null
 }
 
+export interface Cancellation {
+  bets: Bet[]
+  /** Mise rendue intégralement au joueur. */
+  refund: number
+}
+
+/**
+ * Retrait d'un pari : la mise est rendue en entier et le pari disparaît. Permis seulement
+ * tant que la course n'a pas commencé (`beforeStart`, la préparation côté écran) : dès que
+ * les dés roulent, l'engagement fait partie du jeu. Renvoie la raison du refus sinon.
+ */
+export function cancelBet(bets: readonly Bet[], id: number, beforeStart: boolean): Cancellation | string {
+  if (!beforeStart) return 'La course est lancée : un pari posé ne se retire plus.'
+  const bet = bets.find((b) => b.id === id)
+  if (!bet) return 'Pari introuvable.'
+  if (bet.status !== 'open') return 'Ce pari est déjà réglé.'
+  return { bets: bets.filter((b) => b.id !== id), refund: bet.stake }
+}
+
 function rankOf(ranked: readonly Ranked[], id: SoulId): number {
   const r = ranked.find((x) => x.soul.id === id)
   if (!r) throw new Error(`âme ${id} absente du classement`)

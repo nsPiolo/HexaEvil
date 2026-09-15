@@ -151,6 +151,9 @@ export function loadConfig(raw: unknown): RaceConfig {
   const stepMs = int(animation.stepMs, 'animation.stepMs', 0)
   const diceMs = int(animation.diceMs, 'animation.diceMs', 0)
   const pauseMs = int(animation.pauseMs, 'animation.pauseMs', 0)
+  const betRevealMs = int(animation.betRevealMs, 'animation.betRevealMs', 0)
+  const idlePulseMs = int(animation.idlePulseMs, 'animation.idlePulseMs', 0)
+  const gaugeMs = int(animation.gaugeMs, 'animation.gaugeMs', 0)
 
   return {
     souls: { count, names },
@@ -160,6 +163,6 @@ export function loadConfig(raw: unknown): RaceConfig {
     economy: { startingMoney, stakes, multipliers, betUnlockLevel, decay: { exponent, minMultiplier } },
     run: { racesPerCircle, circles },
     artefacts: { lateBet: { chargesPerCircle }, sablier: { betThresholdRatio: sablierRatio } },
-    animation: { stepMs, diceMs, pauseMs },
+    animation: { stepMs, diceMs, pauseMs, betRevealMs, idlePulseMs, gaugeMs },
   }
 }

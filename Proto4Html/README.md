@@ -145,6 +145,48 @@ npm run build
 - Chaque geste est animé : roulement des dés, déplacement du jeton, bulle « +3 »,
   signal de collision, journal détaillé. Vitesse ×0,5 à ×4, mode Auto pour
   enchaîner des courses.
+- Passe d'ergonomie (`docs/proto4/specs/`, écrite en delta) :
+  - **Jauge des trois usages** (`MoneyGauge`) : solde / prix du cercle, même
+    composant dans le HUD, le panneau de paris, la boutique et la modale de fin de
+    course ; avertissement « encore N ¤ à trouver (en n courses) » sous le prix,
+    marge de jeu au-delà d'un séparateur sinon. Jamais bloquante.
+  - **Paris** : gain potentiel et solde après mise affichés quand le ticket est
+    prêt ; les âmes se choisissent aussi en cliquant les jetons ou la légende du
+    plateau (survol croisé chip ↔ jeton) ; un pari se retire en préparation
+    (« Retirer », remboursement intégral, `cancelBet` dans le noyau). Le motif
+    « verrouillé » (cadenas + grade) est un composant `LockBadge`.
+  - **Navigation** : poignées repliées résumées (« Paris (2) · 30 ¤ misés »,
+    « Boutique · 4 objets »), boutique toujours cliquable en préparation avec un
+    état vide narratif sans pari, bascule exclusive sous 1100 px, raccourcis
+    clavier P et B.
+  - **Boutique** : chaque objet porte `impact` et éventuellement `warning` dans
+    `shop.json` ; bandeau SÛR / AMBITIEUX / DANGER ⚠ (contrepartie en rouge),
+    étiquette d'impact, vitrine triée du plus sûr au plus dangereux ; achat ≥
+    `confirmThreshold` ou marqué DANGER en deux clics (« Confirmer N ¤ ») ;
+    remplacement de dé avec comparaison faces actuelles → nouvelles faces.
+  - **Course** : file de combinaisons manipulable (← → ×, clavier compris),
+    prévisualisation du prochain déplacement par un jeton fantôme avec ses glyphes
+    (`previewMove`, pur, testé contre le déplacement réel), frise de sous-phases,
+    survol d'un dé Âme qui allume le jeton, « Résoudre » qui pulse après
+    `idlePulseMs` d'inactivité.
+  - **Fin de course** : tickets révélés un à un (`betRevealMs`, clic = tout
+    révéler, pas de rejeu à la réouverture) avec compteur de net, départage énoncé
+    entre deux âmes de la même colonne, jauge avec les courses restantes.
+
+## Tests de bout en bout (Playwright)
+
+`npm run test:e2e` (ou `test:e2e:ui`) joue les scénarios de `e2e/` dans Chromium :
+un fichier par spec d'ergonomie (`docs/proto4/specs/01` à `06`), chaque test cite en
+commentaire le critère d'acceptation qu'il vérifie (`NN/ACk`). Ils vérifient ce que le
+joueur voit, lit et manipule — sélection par rôle et libellé, assertions textuelles,
+aucun `waitForTimeout` — et non les règles de course (Vitest). `playwright.config.ts`
+lance `npm run dev` sur le port 5183 (ou réutilise un serveur existant) et se sert du
+Chromium déjà présent (`PLAYWRIGHT_BROWSERS_PATH`, cache Playwright, ou Chrome installé
+via `channel`) : aucun téléchargement n'est exigé. Deux paramètres d'URL n'existent que
+pour ces tests (`src/presentation/urlParams.ts`) : `?seed=NNN` fixe la graine (course N
+→ seed + N, tout devient déterministe) et `?e2e=1` démarre un run directement sur la
+table à vitesse ×4 (avec `&money=` et `&race=` pour le solde et la course de départ).
+Les graines de référence sont figées et documentées dans `e2e/seeds.ts`.
 
 ## Menu développeur
 
@@ -174,8 +216,11 @@ directement en course pour la toute première). Code dans
 
 Tout ce qui est chiffré vit dans [`config/race.json`](config/race.json) : nombre
 d'âmes et noms, longueur du plateau, faces des dés, nombre de dés, paires de
-l'adversaire, durées d'animation. Une valeur invalide est signalée au chargement
-avec le nom du champ fautif.
+l'adversaire, durées d'animation (dont `betRevealMs`, `idlePulseMs`, `gaugeMs`,
+toutes divisées par la vitesse choisie). Côté boutique,
+[`config/shop.json`](config/shop.json) porte `confirmThreshold` et
+`confirmResetMs`, et chaque objet ses champs `impact` et `warning`. Une valeur
+invalide est signalée au chargement avec le nom du champ fautif.
 
 ## Arborescence
 

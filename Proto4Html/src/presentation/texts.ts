@@ -215,6 +215,12 @@ export const ENDINGS = {
 
 export const HUD = {
   steps: ['Pari', 'Boutique', 'Course', 'Gains'] as const,
+  /** Poignées repliées : elles résument leur contenu (spec 02/C1). */
+  tabBets: 'Paris ({n})',
+  tabBetsStaked: 'Paris ({n}) · {staked} ¤ misés',
+  tabShop: 'Boutique · {n} objet{s}',
+  tabShopClosed: 'Boutique',
+  tabShortcut: 'Raccourci clavier : {key}',
   circle: '{ordinal} Cercle',
   race: '{n} course sur {total}',
   bossRace: 'Course du boss ({n} sur {total})',
@@ -278,11 +284,86 @@ export const OPTIONS = {
   speed: 'Vitesse des animations',
 } as const
 
-/** Paris verrouillés par le grade du stagiaire. */
+/** Paris verrouillés par le grade du stagiaire ; ticket de guichet (spec 03). */
 export const BETS = {
   locked: 'Ce pari s’ouvrira quand le stagiaire sera {rank}.',
   lockedBadge: 'dès {rank}',
   tierLocked: 'verrouillé',
+  gain: 'Gain potentiel : +{net} ¤ (×{mult})',
+  after: 'Solde après mise : {n} ¤',
+  cancel: 'Retirer',
+  cancelTitle: 'Rembourse la mise ({stake} ¤). Possible tant que la course n’est pas lancée.',
+  overThreshold: 'A dépassé le seuil de pari',
+  pickOnBoard: 'Cliquer pour désigner cette âme',
+  unpickOnBoard: 'Cliquer pour la retirer du ticket',
+} as const
+
+/** Jauge des trois usages : solde, misé en course, prix du cercle (spec 01/C1). */
+export const GAUGE = {
+  label: 'Solde et prix du cercle',
+  balance: 'solde',
+  price: 'prix du cercle',
+  missing: 'encore {missing} ¤ à trouver',
+  missingIn: 'encore {missing} ¤ à trouver en {n} course{s}',
+  covered: 'prix du cercle couvert',
+  margin: 'marge de jeu : +{n} ¤',
+  tooltip: 'Solde {money} · misé en course {staked} · prix du cercle {price}',
+} as const
+
+/** Boutique : état vide, triade de risque, confirmation (specs 02/C2 et 04). */
+export const SHOP = {
+  emptyState: 'Pose d’abord un pari, le stagiaire n’ouvre pas la caisse aux indécis.',
+  goToBets: 'Aller aux paris',
+  emptyVitrine: 'Rien en rayon aujourd’hui. Le stagiaire hausse les épaules.',
+  risk: { safe: 'Sûr', bold: 'Ambitieux', danger: 'Danger ⚠' } as const,
+  riskTitle: {
+    safe: 'Sans contrepartie, impact au plus moyen.',
+    bold: 'Impact fort ou extrême : change la façon de jouer le cercle.',
+    danger: 'Cet objet a une contrepartie : lis-la avant d’acheter.',
+  } as const,
+  impact: 'Impact : {impact}',
+  impactLabel: { faible: 'faible', moyen: 'moyen', fort: 'fort', extreme: 'extrême' } as const,
+  buy: 'Acheter',
+  confirm: 'Confirmer {price} ¤',
+  confirmTitle: 'Achat important : un second clic confirme.',
+  compare: 'faces actuelles → nouvelles faces',
+  replace: 'Remplacer ce dé',
+} as const
+
+/** Écran de course : frise de sous-phases, file de combinaisons, prévisualisation (spec 05). */
+export const RACE = {
+  phases: ['préparer', 'lancer', 'ordonner', 'résoudre', 'adversaire'] as const,
+  phasesLabel: 'Étapes du tour',
+  queue: 'File de combinaisons',
+  remove: 'Dissocier',
+  removeTitle: 'Dissocier : les deux dés redeviennent disponibles',
+  moveUp: 'Résoudre plus tôt',
+  moveDown: 'Résoudre plus tard',
+  afterPrevious: 'Résolue après les précédentes : seule la première est prévisualisée.',
+  previewTitle: 'Prochain déplacement : {name} {dist} → case {to}',
+  previewGhost: 'Prévisualisation',
+} as const
+
+/** Modale de fin de course (spec 06). */
+export const RESULTS = {
+  subtitle: 'Établi après la résolution complète du tour {turn}, paire adverse comprise.',
+  net: 'Net de la course : {net} ¤',
+  refund: 'Livre des comptes : {n} ¤ remboursés',
+  tieBreak: 'départage : même colonne, le couloir le plus bas devant',
+  skip: 'Cliquer pour tout révéler',
+  hidden: '?',
+} as const
+
+/** Glossaire : les termes canon reçoivent une explication au survol (spec 01/C4). */
+export const GLOSSARY = {
+  percuter: 'Percuter : atterrir en avançant sur une case occupée → saut devant.',
+  echanger: 'Échanger : atterrir en reculant sur une case occupée → échange de place.',
+  detour: 'Détour : la case visée est bloquée ou occupée, l’âme se décale sur un autre couloir.',
+  departBloque: 'Ligne de départ : on ne recule pas plus loin, l’âme reste en place.',
+  arrivee: 'Arrivée franchie : la course s’arrête à la fin du tour.',
+  zoneDeFin: 'Zone de fin : cases à partir du seuil, où l’on ne parie plus.',
+  combinaison: 'Combinaison : un dé Âme associé à un dé Distance, résolue dans l’ordre choisi.',
+  charge: 'Charge : nombre d’utilisations restantes d’un objet limité.',
 } as const
 
 /** Menu de développement (bouton « dev » discret, Ctrl+Maj+D). */

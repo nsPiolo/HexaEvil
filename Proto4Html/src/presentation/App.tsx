@@ -16,6 +16,7 @@ import { EndScreen, Menu, OptionsScreen, Splash, StatsScreen } from './Screens'
 import { clearRun, loadOptions, loadRun, loadStats, saveOptions, saveRun, updateStats, type Options, type RunSave, type Stats } from './storage'
 import { DEV, INTRO, MENU, fill, type Line } from './texts'
 import { carryOut, circleOf, fullCharges, type RaceUi, type SessionCarry } from './useRace'
+import { e2eMode, e2eStart } from './urlParams'
 
 type Screen =
   | { kind: 'splash' }
@@ -32,9 +33,21 @@ function toSave(carry: SessionCarry, bestCircle: number): RunSave {
   return { ...carry, bestCircle, savedAt: Date.now() }
 }
 
+/**
+ * Mode e2e (`?e2e=1`, spec 07/T2) : nouveau run lancé directement sur l'écran de jeu, sans
+ * splash ni intro, sauvegarde effacée, vitesse ×4. `?money=` et `?race=` règlent le départ.
+ */
+function e2eScreen(): Screen | null {
+  if (!e2eMode()) return null
+  const { money, raceIndex } = e2eStart()
+  clearRun()
+  const carry: SessionCarry = { money: money ?? config.economy.startingMoney, inventory: defaultInventory(config), raceIndex: raceIndex ?? 0, lateBetCharges: 0 }
+  return { kind: 'game', carry, key: 1 }
+}
+
 export default function App() {
-  const [screen, setScreen] = useState<Screen>({ kind: 'splash' })
-  const [options, setOptions] = useState<Options>(loadOptions)
+  const [screen, setScreen] = useState<Screen>(() => e2eScreen() ?? { kind: 'splash' })
+  const [options, setOptions] = useState<Options>(() => (e2eMode() ? { ...loadOptions(), speed: 4 } : loadOptions()))
   const [stats, setStats] = useState<Stats>(loadStats)
   const [save, setSave] = useState<RunSave | null>(loadRun)
   const [gameKey, setGameKey] = useState(0)

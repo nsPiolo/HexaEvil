@@ -10,6 +10,7 @@ import {
   endTurn,
   isPairingComplete,
   naturalCombinations,
+  previewMove,
   ranking,
   rollOpponentPair,
   rollPlayerDice,
@@ -339,5 +340,62 @@ describe('couloirs et cases bloquées : config', () => {
     const tooMany = clone()
     tooMany.run.circles[0]!.lanes = 6
     expect(() => loadConfig(tooMany)).toThrow(/couloirs/)
+  })
+})
+
+describe('prévisualisation du prochain déplacement (previewMove)', () => {
+  it('percute et saute devant, en cascade', () => {
+    const race = withPositions([2, 5, 6])
+    const p = previewMove(race, 0, 3)
+    expect(p.to).toBe(7)
+    expect(p.collision).toEqual({ kind: 'jump', over: [1, 2] })
+    expect(p.crossedFinish).toBe(false)
+  })
+  it('recule et échange', () => {
+    const p = previewMove(withPositions([6, 5]), 0, -1)
+    expect(p.to).toBe(5)
+    expect(p.collision).toEqual({ kind: 'swap', with: 1, otherFrom: 5, otherTo: 6 })
+  })
+  it('ne recule pas depuis la ligne de départ', () => {
+    const p = previewMove(withPositions([0, 0]), 0, -1)
+    expect(p.blockedAtStart).toBe(true)
+    expect(p.to).toBe(0)
+  })
+  it('signale le détour de couloir', () => {
+    const p = previewMove(withLanes([[1, 1], [0, 0]], 2, [{ column: 4, lane: 1 }]), 0, 3)
+    expect(p.to).toBe(4)
+    expect(p.toLane).toBe(0)
+    expect(p.detour).toBe('blocked')
+  })
+  it("annonce le franchissement de l'arrivée", () => {
+    const p = previewMove(withPositions([cfg.track.columns - 1, 0]), 0, 2)
+    expect(p.crossedFinish).toBe(true)
+  })
+  it("ne modifie pas l'état : deux appels donnent le même résultat, l'état est intact", () => {
+    const race = withPositions([2, 5, 6])
+    const snapshot = JSON.stringify(race)
+    const a = previewMove(race, 0, 3)
+    const b = previewMove(race, 0, 3)
+    expect(a).toEqual(b)
+    expect(JSON.stringify(race)).toBe(snapshot)
+  })
+  it('coïncide toujours avec le déplacement réellement joué, sans consommer de hasard', () => {
+    for (let seed = 1; seed <= 100; seed++) {
+      const rng = seededRng(seed)
+      const witness = seededRng(seed)
+      let state = createRace(cfg, { soulCount: 6, lanes: 2, blocked: cfg.run.circles[2]!.blocked })
+      let guard = 0
+      while (!state.finished && guard++ < 1000) {
+        const r = rollPlayerDice(cfg, state.souls.length, rng, dice)
+        expect(r).toEqual(rollPlayerDice(cfg, state.souls.length, witness, dice))
+        for (const m of buildMoves(r, naturalCombinations(r), 'player')) {
+          const preview = previewMove(state, m.soul, m.distance)
+          const { state: next, result } = applyMove(state, m)
+          expect({ ...preview, move: null }).toEqual({ ...result, move: null })
+          state = next
+        }
+        state = endTurn(state)
+      }
+    }
   })
 })

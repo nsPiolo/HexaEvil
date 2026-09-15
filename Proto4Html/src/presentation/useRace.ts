@@ -9,8 +9,8 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { config, shop } from '../core/config'
-import { betRefusal, betType, betUnlocked, currentMultiplier, effectiveBase, fmtMultiplier, potentialPayout, raceProgress, settleBets, type BaseModifiers, type Bet, type BetTypeId, type Settlement } from '../core/rules/bets'
-import { fmtFace } from '../core/rules/dice'
+import { betRefusal, betType, betUnlocked, cancelBet as cancelBetRule, currentMultiplier, effectiveBase, fmtMultiplier, potentialPayout, raceProgress, settleBets, type BaseModifiers, type Bet, type BetTypeId, type Settlement } from '../core/rules/bets'
+import { fmtFace, type DistanceDie } from '../core/rules/dice'
 import {
   applyMove,
   buildMoves,
@@ -19,6 +19,7 @@ import {
   endTurn,
   isPairingComplete,
   naturalCombinations,
+  previewMove,
   ranking,
   rollOpponentPair,
   rollPlayerDice,
@@ -35,6 +36,7 @@ import type { BlockedCell } from '../core/config/schema'
 import type { ShopItem } from '../core/shop/items'
 import { applyPurchase, findItem, generateVitrine, opponentNegativesFlipped, priceAtCircle, type Inventory, type PurchaseTarget } from '../core/shop/shop'
 import { demonLevelAtRace, rankOfLevel } from './demon'
+import { seedForRace } from './urlParams'
 import { BETS, fill } from './texts'
 
 export type Phase = 'prep' | 'idle' | 'rolling' | 'pairing' | 'resolving' | 'opponent' | 'finished'
@@ -156,6 +158,65 @@ export function fullCharges(inventory: Inventory): number {
   return inventory.artefacts.includes('lateBet') ? config.artefacts.lateBet.chargesPerCircle : 0
 }
 
+/** Somme des mises des paris encore ouverts : ce qui est « misé en course » dans la jauge. */
+export function stakedOpen(bets: readonly Bet[]): number {
+  return bets.filter((b) => b.status === 'open').reduce((s, b) => s + b.stake, 0)
+}
+
+/** Contexte des modificateurs du joueur (Clepsydre, Sceau), identique en résolution et en prévisualisation. */
+function moveContext(u: Pick<RaceUi, 'race' | 'inventory' | 'bets'>): MoveContext {
+  return {
+    turn: u.race.turn,
+    clepsydre: u.inventory.artefacts.includes('clepsydre'),
+    bettedSouls: new Set(u.bets.filter((b) => b.status === 'open').flatMap((b) => [...b.souls])),
+    sealBonus: SEAL_BONUS,
+  }
+}
+
+export interface ProdigalityCharge {
+  die: DistanceDie
+  distanceDie: number
+  paid: boolean
+}
+
+/**
+ * Dé de Prodigalité : chaque association d'un dé à coût prélève son prix, dans l'ordre de la
+ * file ; sans argent, la face vaut 0. Pur : renvoie le lancer corrigé et la liste des
+ * prélèvements, pour que la résolution et la prévisualisation racontent la même histoire.
+ */
+export function applyProdigality(roll: Roll, combinations: readonly Combination[], dice: readonly DistanceDie[], money: number): { roll: Roll; charges: ProdigalityCharge[] } {
+  let out = roll
+  let cash = money
+  const charges: ProdigalityCharge[] = []
+  for (const c of combinations) {
+    const die = dice[c.distanceDie]
+    if (!die || die.costPerUse <= 0) continue
+    if (cash >= die.costPerUse) {
+      cash -= die.costPerUse
+      charges.push({ die, distanceDie: c.distanceDie, paid: true })
+    } else {
+      out = { ...out, faces: out.faces.map((f, i) => (i === c.distanceDie ? { ...f, value: 0 } : f)), distance: out.distance.map((d, i) => (i === c.distanceDie ? 0 : d)) }
+      charges.push({ die, distanceDie: c.distanceDie, paid: false })
+    }
+  }
+  return { roll: out, charges }
+}
+
+/**
+ * Prévisualisation du prochain déplacement (spec 05/C2) : en appariement, le premier
+ * déplacement de la file — cumul compris si deux combinaisons visent la même âme — passé
+ * par les mêmes règles que `resolve` (Prodigalité, Clepsydre, Sceau, puis `previewMove`).
+ * Null hors appariement ou file vide. Ne touche ni l'état ni le hasard.
+ */
+export function previewNext(u: RaceUi): MoveResult | null {
+  if (u.phase !== 'pairing' || !u.roll || u.combinations.length === 0) return null
+  const { roll } = applyProdigality(u.roll, u.combinations, u.inventory.dice, u.money)
+  const first = buildMoves(roll, u.combinations, 'player', moveContext(u))[0]
+  if (!first) return null
+  const result = previewMove(u.race, first.soul, first.distance)
+  return { ...result, move: first }
+}
+
 function initial(seed: number, carry: SessionCarry, base: RaceOptions): RaceUi {
   const { circle, raceInCircle } = circleOf(carry.raceIndex)
   const race = createRace(config, raceOptions(carry.inventory, base))
@@ -191,7 +252,8 @@ export function carryOut(ui: RaceUi): SessionCarry {
 }
 
 export function useRace({ carry, soulCount, lanes, blocked, speed }: UseRaceProps) {
-  const [seed] = useState(randomSeed)
+  // Graine au hasard, sauf `?seed=NNN` dans l'URL (tests e2e) : course, dés et vitrine deviennent déterministes.
+  const [seed] = useState(() => seedForRace(carry.raceIndex) ?? randomSeed())
   const [ui, setUi] = useState<RaceUi>(() => initial(seed, carry, { soulCount, lanes, blocked }))
   const [auto, setAuto] = useState(false)
 
@@ -250,6 +312,17 @@ export function useRace({ carry, soulCount, lanes, blocked, speed }: UseRaceProp
     commit(pushLog({ ...u, money: u.money - stake, bets: [...u.bets, bet] }, 'bet', `Pari ${betType(type).label} sur ${names} : mise ${stake} à ${fmtMultiplier(multiplier)}, rapporte ${potentialPayout(stake, multiplier)} si gagné.`))
     return null
   }, [commit, pushLog, level])
+
+  /** Retrait d'un pari en préparation (spec 03/C3) : mise rendue en entier, pari supprimé. */
+  const cancelBet = useCallback((id: number): string | null => {
+    const u = uiRef.current
+    const r = cancelBetRule(u.bets, id, u.phase === 'prep')
+    if (typeof r === 'string') return r
+    const bet = u.bets.find((b) => b.id === id)
+    const label = bet ? betType(bet.type).label : '?'
+    commit(pushLog({ ...u, money: u.money + r.refund, bets: r.bets }, 'bet', `Pari ${label} retiré : ${r.refund} pièces rendues.`))
+    return null
+  }, [commit, pushLog])
 
   /** Œil du parieur : ouvre la fenêtre de pari après le lancer, une charge par cercle. */
   const useLateBet = useCallback(() => {
@@ -395,6 +468,25 @@ export function useRace({ carry, soulCount, lanes, blocked, speed }: UseRaceProp
     if (u.phase === 'pairing') commit({ ...u, combinations: [], selectedSoulDie: null })
   }, [commit])
 
+  /** Dissocie une combinaison de la file : ses dés redeviennent disponibles, les numéros se recalculent (spec 05/C1). */
+  const removeCombination = useCallback((index: number) => {
+    const u = uiRef.current
+    if (u.phase !== 'pairing' || !u.combinations[index]) return
+    commit({ ...u, combinations: u.combinations.filter((_, i) => i !== index), selectedSoulDie: null })
+  }, [commit])
+
+  /** Échange une combinaison avec sa voisine (dir −1 = plus tôt, +1 = plus tard) : l'ordre de résolution est une décision. */
+  const moveCombination = useCallback((index: number, dir: -1 | 1) => {
+    const u = uiRef.current
+    const j = index + dir
+    if (u.phase !== 'pairing' || !u.combinations[index] || !u.combinations[j]) return
+    const next = [...u.combinations]
+    const a = next[index]!
+    next[index] = next[j]!
+    next[j] = a
+    commit({ ...u, combinations: next })
+  }, [commit])
+
   const autoPair = useCallback(() => {
     const u = uiRef.current
     if (u.phase === 'pairing' && u.roll) commit({ ...u, combinations: naturalCombinations(u.roll), selectedSoulDie: null })
@@ -406,26 +498,15 @@ export function useRace({ carry, soulCount, lanes, blocked, speed }: UseRaceProp
     if (s.phase !== 'pairing' || !s.roll || !isPairingComplete(s.roll, s.combinations)) return
     let cur = commit({ ...s, phase: 'resolving', selectedSoulDie: null, lateBetOpen: false })
 
-    // Dé de Prodigalité : chaque association coûte ; sans argent, la face vaut 0.
-    let roll: Roll = cur.roll as Roll
-    for (const c of cur.combinations) {
-      const die = cur.inventory.dice[c.distanceDie]
-      if (!die || die.costPerUse <= 0) continue
-      if (cur.money >= die.costPerUse) {
-        cur = commit(pushLog({ ...cur, money: cur.money - die.costPerUse }, 'artefact', `${die.name} : −${die.costPerUse} pièces pour cette association.`))
-      } else {
-        roll = { ...roll, faces: roll.faces.map((f, i) => (i === c.distanceDie ? { ...f, value: 0 } : f)), distance: roll.distance.map((d, i) => (i === c.distanceDie ? 0 : d)) }
-        cur = commit(pushLog({ ...cur, roll }, 'artefact', `${die.name} : pas assez d'argent, la face vaut 0.`))
-      }
+    // Dé de Prodigalité : chaque association coûte ; sans argent, la face vaut 0. Même calcul que la prévisualisation.
+    const { roll, charges } = applyProdigality(cur.roll as Roll, cur.combinations, cur.inventory.dice, cur.money)
+    for (const ch of charges) {
+      cur = ch.paid
+        ? commit(pushLog({ ...cur, money: cur.money - ch.die.costPerUse }, 'artefact', `${ch.die.name} : −${ch.die.costPerUse} pièces pour cette association.`))
+        : commit(pushLog({ ...cur, roll }, 'artefact', `${ch.die.name} : pas assez d'argent, la face vaut 0.`))
     }
 
-    const ctx: MoveContext = {
-      turn: cur.race.turn,
-      clepsydre: cur.inventory.artefacts.includes('clepsydre'),
-      bettedSouls: new Set(cur.bets.filter((b) => b.status === 'open').flatMap((b) => [...b.souls])),
-      sealBonus: SEAL_BONUS,
-    }
-    const moves = buildMoves(roll, cur.combinations, 'player', ctx)
+    const moves = buildMoves(roll, cur.combinations, 'player', moveContext(cur))
     const combos = cur.combinations
     const indexOf = (i: number): number | null => {
       const first = moves[i]?.parts[0]
@@ -497,6 +578,6 @@ export function useRace({ carry, soulCount, lanes, blocked, speed }: UseRaceProp
     setAuto,
     shopUnlocked: shopUnlocked(ui),
     level,
-    actions: { openShop, startRace, buy, cancelPurchase, rerollVitrine, placeBet, useLateBet, rollDice, pickSoulDie, pickDistanceDie, resetPairing, autoPair, resolve },
+    actions: { openShop, startRace, buy, cancelPurchase, rerollVitrine, placeBet, cancelBet, useLateBet, rollDice, pickSoulDie, pickDistanceDie, resetPairing, removeCombination, moveCombination, autoPair, resolve },
   }
 }

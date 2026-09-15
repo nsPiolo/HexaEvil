@@ -1,5 +1,5 @@
 import { ConfigError } from '../config/load'
-import { isArtefactId, isForgeId, type Rarity, type ShopConfig, type ShopItem } from './items'
+import { IMPACTS, IMPACT_OF_RARITY, isArtefactId, isForgeId, type Impact, type Rarity, type ShopConfig, type ShopItem } from './items'
 
 function fail(field: string, detail: string): never {
   throw new ConfigError(field, detail)
@@ -40,12 +40,17 @@ function item(raw: unknown, field: string): ShopItem {
   const kind = str(o.kind, `${field}.kind`)
   const rarity = str(o.rarity, `${field}.rarity`)
   if (!RARITIES.includes(rarity as Rarity)) fail(`${field}.rarity`, `parmi ${RARITIES.join(', ')}`)
+  const impact = o.impact === undefined ? IMPACT_OF_RARITY[rarity as Rarity] : str(o.impact, `${field}.impact`)
+  if (!IMPACTS.includes(impact as Impact)) fail(`${field}.impact`, `parmi ${IMPACTS.join(', ')}`)
+  const warning = o.warning === undefined || o.warning === null ? null : str(o.warning, `${field}.warning`)
   const base = {
     name: str(o.name, `${field}.name`),
     description: str(o.description, `${field}.description`),
     rarity: rarity as Rarity,
     price: int(o.price, `${field}.price`, 0),
     params: params(o.params, `${field}.params`),
+    impact: impact as Impact,
+    warning,
   }
   switch (kind) {
     case 'artefact':
@@ -76,6 +81,8 @@ export function loadShopConfig(raw: unknown): ShopConfig {
   const w = obj(root.rarityWeights, 'shop.rarityWeights')
   const rarityWeights = {} as Record<Rarity, number>
   for (const r of RARITIES) rarityWeights[r] = num(w[r], `shop.rarityWeights.${r}`)
+  const confirmThreshold = root.confirmThreshold === undefined ? 60 : int(root.confirmThreshold, 'shop.confirmThreshold', 0)
+  const confirmResetMs = root.confirmResetMs === undefined ? 3000 : int(root.confirmResetMs, 'shop.confirmResetMs', 0)
   if (!Array.isArray(root.items) || root.items.length < slots) fail('shop.items', `au moins ${slots} objets attendus (shop.slots)`)
   const items = root.items.map((it, i) => item(it, `shop.items[${i}]`))
   const ids = new Set<string>()
@@ -83,5 +90,5 @@ export function loadShopConfig(raw: unknown): ShopConfig {
     if (ids.has(it.id)) fail('shop.items', `id « ${it.id} » en double`)
     ids.add(it.id)
   }
-  return { slots, rerollCost, priceGrowthPerCircle, artefactSlots, rarityWeights, items }
+  return { slots, rerollCost, priceGrowthPerCircle, artefactSlots, rarityWeights, confirmThreshold, confirmResetMs, items }
 }

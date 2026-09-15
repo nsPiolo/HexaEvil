@@ -2,7 +2,7 @@
 
 > Public : agent Claude Code travaillant dans `Proto4Html/`.
 > Objet : intégrer dans le prototype existant (fonctionnel) les écrans conçus lors de la passe d'ergonomie.
-> Références amont : `../docs/proto4/ergonomie-ecrans.md` (recommandations complètes), maquettes Miro (captures dans `./img/`), `../docs/proto4/GDD.md`, `../docs/proto4/interface.md`.
+> Références amont : `../ergonomie-ecrans.md` (recommandations complètes), maquettes Miro (captures dans `./img/`), `../GDD.md`, `../interface.md`.
 
 ## Comment lire ces specs
 
@@ -16,11 +16,12 @@ Le proto implémente déjà une grande partie des recommandations (paliers de pa
 | [`04-ecran-boutique.md`](04-ecran-boutique.md) | Étiquettes d'impact, triade sûr/ambitieux/dangereux, confirmation proportionnelle | `ShopPanel.tsx`, `core/shop/*`, `config/shop.json` |
 | [`05-ecran-course.md`](05-ecran-course.md) | File de combinaisons manipulable, prévisualisation fantôme, frise de sous-phases | `PlaySlots.tsx`, `Board.tsx`, `useRace.ts`, `core/rules/race.ts` |
 | [`06-resultats-gains.md`](06-resultats-gains.md) | Révélation séquentielle des tickets, solde vs prix du cercle, départage montré | `Ranking.tsx` |
+| [`07-tests-e2e-playwright.md`](07-tests-e2e-playwright.md) | Scénarios E2E Playwright vérifiant les critères d'ergonomie et de lisibilité | nouveau dossier `e2e/`, `playwright.config.ts` |
 
 ## Priorités
 
 - **P1** (cœur de la passe d'ergonomie) : jauge des trois usages (01/C1), prévisualisation du prochain déplacement (05/C2), file de combinaisons manipulable (05/C1), révélation séquentielle des gains (06/C1), état vide de la boutique (02/C2).
-- **P2** : le reste, dans l'ordre des fichiers.
+- **P2** : le reste, dans l'ordre des fichiers. Les tests E2E (07) s'écrivent au fil des changements qu'ils couvrent, pas à la fin.
 - **P3** : marqué explicitement, à ne faire que si le coût est faible.
 
 ## Contraintes globales
@@ -29,7 +30,7 @@ Le proto implémente déjà une grande partie des recommandations (paliers de pa
 2. **Le noyau reste pur** : tout ce qui touche `src/core/**` reste sans React ni DOM, testé par Vitest (`npm test`). La prévisualisation (05/C2) est une fonction pure du noyau.
 3. **Configurable** : toute nouvelle valeur (seuil de confirmation d'achat, durée de révélation d'un ticket, délai de pulse) vit dans `config/race.json` ou `config/shop.json` avec un `_comment`, jamais en dur (GDD §9.1).
 4. **Vitesse d'animation** : toute nouvelle animation respecte l'option vitesse ×0,5 à ×4 (`options.speed`), comme `stepMs`/`pauseMs` aujourd'hui.
-5. **Textes** : tout libellé nouveau passe par `src/presentation/texts.ts`, en français, en réutilisant le vocabulaire canon (percuter, échanger, zone de fin, combinaison — cf. `../docs/proto4/boutique-README.md` § Vocabulaire commun).
+5. **Textes** : tout libellé nouveau passe par `src/presentation/texts.ts`, en français, en réutilisant le vocabulaire canon (percuter, échanger, zone de fin, combinaison — cf. `../boutique-README.md` § Vocabulaire commun).
 6. **Accessibilité** : ne jamais coder une information uniquement par la couleur (doubler d'un texte ou d'une forme) ; conserver les `aria-label` existants ; les nouveaux boutons sont de vrais `<button>` accessibles au clavier.
 7. **Définition of done par changement** : `npm run typecheck` et `npm test` passent ; le changement est visible en jeu au cercle 1 sans menu dev ; les critères d'acceptation du fichier sont vérifiés à la main.
 
