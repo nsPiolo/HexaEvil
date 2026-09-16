@@ -23,7 +23,9 @@ test.describe('04 · Écran Boutique (la vitrine à trois tentations)', () => {
     const danger = article(shop, E.danger.name)
     await expect(danger.locator('.shop-risk')).toHaveText(/danger/i)
     await expect(danger.getByText(E.danger.warning)).toBeVisible()
-    await expect(danger.getByText(`Impact : ${E.danger.impact}`)).toBeVisible()
+    // La ligne « Impact : … » a été retirée des tuiles (elle doublait le bandeau de risque et
+    // le texte de contrepartie). Le champ `impact` reste dans le catalogue et sert au calcul
+    // du risque, c'est lui qui est vérifié par le bandeau ci-dessus.
     await expect(article(shop, E.die.name).locator('.shop-risk')).toHaveText(/sûr/i)
   })
 

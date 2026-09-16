@@ -191,9 +191,8 @@ export function ShopPanel({ vitrine, unlocked, money, price, staked, raceIndex, 
                   </p>
                 )}
                 <footer>
-                  <span className="shop-meta">
-                    <span className={'shop-price' + (money < itemPrice ? ' shop-price-over' : '')}>{itemPrice} pièces</span>
-                    <span className="shop-impact">{fill(SHOP.impact, { impact: SHOP.impactLabel[item.impact] })}</span>
+                  <span className={'shop-price' + (money < itemPrice ? ' shop-price-over' : '')}>
+                    <span className="shop-price-n">{itemPrice}</span> pièces
                   </span>
                   <button
                     type="button"

@@ -6,13 +6,18 @@
 
 :root {
   color-scheme: dark;
-  --bg: #14100f;
-  --bg-2: #1d1715;
-  --panel: #241c1a;
-  --panel-2: #2e2421;
-  --ink: #f0e6df;
-  --muted: #a08f86;
-  --line: #3a2d29;
+  /*
+   * Surfaces en ardoise froide, accents laissés chauds. Le brun d'origine se battait avec la
+   * pierre bleutée de la dalle et du décor ; seuls l'ambre, la braise et le rouge gardent
+   * leur chaleur, parce qu'ils portent un sens (cote, adversaire, danger).
+   */
+  --bg: #101419;
+  --bg-2: #171c22;
+  --panel: #1e242b;
+  --panel-2: #28303a;
+  --ink: #e9edf1;
+  --muted: #98a3ad;
+  --line: #333d47;
   --ember: #d4541e;
   --ember-soft: #8a3411;
   --gold: #e0a83c;
@@ -28,7 +33,7 @@
 
 body {
   margin: 0;
-  background: radial-gradient(ellipse at top, #241a17 0%, var(--bg) 60%);
+  background: radial-gradient(ellipse at top, #1c232b 0%, var(--bg) 60%);
   color: var(--ink);
   min-height: 100vh;
 }
@@ -102,7 +107,7 @@ p { margin: 0; }
   border: 0; border-radius: 0; background: url('/menu/btn-small.png') top / 100% 200% no-repeat;
   height: 52px; aspect-ratio: 3456 / 1216; padding: 0 20px 7px;
   display: inline-flex; align-items: center; justify-content: center;
-  color: #f4f1ea; font-weight: 700; font-size: 0.95rem; white-space: nowrap;
+  color: #eff2f5; font-weight: 700; font-size: 0.95rem; white-space: nowrap;
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.75), 0 0 8px rgba(0, 0, 0, 0.5);
   filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.45));
   transition: transform 120ms, opacity 150ms;
@@ -151,14 +156,14 @@ p { margin: 0; }
   white-space: nowrap;
   overflow: visible;
 }
-.cell-start { background: #2a2320; }
+.cell-start { background: #242b33; }
 .cell-betzone { background: #2f2216; border-color: #4a331b; }
 .cell-betzone.head { color: var(--gold); font-weight: 600; }
 .cell-finish { border-left: 3px solid var(--ember); }
 .cell-finish.head { color: var(--ember); font-weight: 600; }
 .cell-after {
   background:
-    repeating-linear-gradient(45deg, #1d1715 0 6px, #262019 6px 12px);
+    repeating-linear-gradient(45deg, #171c22 0 6px, #1f262e 6px 12px);
 }
 .cell-start.head { color: var(--ink); }
 /* Rétrécissement : case bloquée, on n'y atterrit jamais. */
@@ -222,7 +227,7 @@ p { margin: 0; }
   height: 32px;
   border-radius: 50%;
   background: var(--soul);
-  color: #14100f;
+  color: #101419;
   font-weight: 700;
   font-size: 0.8rem;
   display: flex;
@@ -352,7 +357,7 @@ p { margin: 0; }
   transition: transform 150ms, border-color 150ms, box-shadow 150ms, opacity 150ms;
 }
 .die-small { width: 56px; height: 44px; font-size: 0.85rem; }
-.die-soul { background: var(--soul, var(--panel-2)); color: #14100f; border-color: transparent; }
+.die-soul { background: var(--soul, var(--panel-2)); color: #101419; border-color: transparent; }
 .die-dist { font-size: 1.3rem; font-variant-numeric: tabular-nums; }
 .die-neg { color: var(--bad); }
 .die:disabled { opacity: 0.6; }
@@ -423,10 +428,32 @@ p { margin: 0; }
 .combo-btn-x:hover:not(:disabled) { border-color: var(--bad); color: var(--bad); }
 
 /* Frise de sous-phases (spec 05/C3) : préparer · lancer · ordonner · résoudre · adversaire. */
-.subphases { list-style: none; margin: 0; padding: 0; display: flex; gap: 6px; flex-wrap: wrap; }
-.subphase { padding: 2px 10px; border-radius: 999px; border: 1px solid var(--line); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); transition: color 200ms, border-color 200ms, background 200ms; }
-.subphase-done { color: var(--ink); border-color: rgba(240, 230, 223, 0.3); }
-.subphase-on { color: var(--gold); border-color: var(--gold); background: #2f2216; font-weight: 700; }
+/*
+ * Frise des sous-phases : un ressaut de pierre posé sur la dalle. Les étapes ne sont plus
+ * que du texte gravé — cinq cartouches alignés se disputaient l'attention avec le plateau ;
+ * seule l'étape en cours garde un cartouche, cerclé d'or. Le cadre reste toujours dessiné,
+ * en transparent sur les autres étapes, et le padding ne change pas d'un état à l'autre :
+ * sinon la frise se décalerait à chaque avancée de phase.
+ */
+.subphases {
+  list-style: none; margin: 0; padding: 5px 16px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center;
+  border-radius: 10px;
+  /* Une gorge taillée, pas un ressaut : ombre portée *vers l'intérieur* sous l'arête haute,
+     lumière rattrapée sur la lèvre basse, et aucune ombre extérieure — un creux n'en jette
+     pas. Le dégradé suit, sombre en haut et clair en bas, l'inverse d'une bosse. */
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.15) 50%, rgba(255, 255, 255, 0.05) 100%);
+}
+.subphase {
+  padding: 3px 14px; border: 1px solid transparent; border-radius: 999px;
+  font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.16em;
+  color: #9aa3ad; text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
+  transition: color 200ms, border-color 200ms, background 200ms;
+}
+.subphase-done { color: #c6ced6; }
+.subphase-on {
+  color: #f2d99d; font-weight: 700; border-color: rgba(224, 168, 60, 0.65);
+  background: rgba(47, 34, 22, 0.5); box-shadow: inset 0 0 10px rgba(224, 168, 60, 0.12);
+}
 
 /* Bouton qui pulse après inactivité, appariement complet (spec 05/C5). */
 .btn-pulse { animation: btn-pulse 1.4s ease-in-out infinite; }
@@ -732,7 +759,7 @@ p { margin: 0; }
 .menu-btn {
   position: relative; width: 100%; aspect-ratio: 548 / 94; padding: 0 30px 6px;
   border: 0; background: url('/menu/btn-stone-1.png') top / 100% 200% no-repeat;
-  color: #f4f1ea; font-size: 1.12rem; font-weight: 700; letter-spacing: 0.01em;
+  color: #eff2f5; font-size: 1.12rem; font-weight: 700; letter-spacing: 0.01em;
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.75), 0 0 10px rgba(0, 0, 0, 0.5);
   transition: transform 120ms, opacity 150ms;
 }
@@ -838,7 +865,7 @@ p { margin: 0; }
 .bubble-player .bubble-who { color: #eaf2fb; }
 @keyframes bubble-in { from { opacity: 0; transform: translateY(12px) scale(0.96); } to { opacity: 1; transform: none; } }
 .dialogue-actions-inner { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; padding: 0 12px; }
-.dialogue-actions .muted { color: #d9cfc4; padding: 4px 12px; border-radius: 999px; background: rgba(10, 14, 20, 0.55); }
+.dialogue-actions .muted { color: #ced5dc; padding: 4px 12px; border-radius: 999px; background: rgba(10, 14, 20, 0.55); }
 
 /* ---- Fin ---- */
 .end { gap: 16px; opacity: 0; transition: opacity 900ms; }
@@ -856,7 +883,7 @@ p { margin: 0; }
 .ring-line { fill: none; stroke: var(--line); stroke-width: 1; transition: stroke 200ms; }
 .ring-hit { fill: none; stroke: transparent; pointer-events: stroke; cursor: pointer; }
 .ring-label { fill: var(--muted); font-size: 11px; font-weight: 700; pointer-events: none; }
-.ring-done .ring-line { stroke: #4a3a2a; }
+.ring-done .ring-line { stroke: #3e4752; }
 .ring-current .ring-line { stroke: var(--gold); stroke-width: 1.5; }
 .ring-selected .ring-line { stroke: var(--ink); stroke-dasharray: 3 3; }
 .ring-selected .ring-label { fill: var(--ink); }
@@ -887,9 +914,17 @@ p { margin: 0; }
   position: relative;
   min-height: 100vh;
   padding: 10px 20px 32px;
+  /*
+   * Décor du cercle (docs/proto4/prompts-cercles.md). `--circle-bg` est posé par
+   * GameScreen d'après le cercle en cours ; le dégradé au-dessus assombrit l'image pour
+   * que le HUD reste lisible par-dessus. `fixed` cale l'image sur la fenêtre et non sur la
+   * hauteur du document, qui double quand un panneau s'ouvre.
+   */
   background:
-    radial-gradient(ellipse at 50% 110%, #2a3f30 0%, transparent 55%),
-    linear-gradient(180deg, #120d0b 0%, #1a110e 40%, #2c1a12 100%);
+    linear-gradient(180deg, rgba(10, 8, 7, 0.6) 0%, rgba(10, 8, 7, 0.32) 35%, rgba(10, 8, 7, 0.78) 100%),
+    var(--circle-bg, none) center 45% / cover no-repeat,
+    linear-gradient(180deg, #0e1216 0%, #141a20 40%, #1e2630 100%);
+  background-attachment: fixed, fixed, scroll;
 }
 
 /* ---- Rangée haute réservée au HUD (spec 08/C1) : cercle · fil d'Ariane · pièces. Rien ne la recouvre. ---- */
@@ -913,7 +948,7 @@ p { margin: 0; }
 /* Jauge des trois usages (spec 01) : même composant dans le HUD, les panneaux et la modale. */
 .gauge { display: flex; flex-direction: column; gap: 2px; min-width: 200px; font-size: 0.75rem; transition: opacity 250ms; }
 .gauge-row { display: flex; align-items: center; gap: 8px; }
-.gauge-bar { position: relative; flex: 1; height: 8px; border-radius: 999px; background: #2a2320; border: 1px solid var(--line); overflow: visible; }
+.gauge-bar { position: relative; flex: 1; height: 8px; border-radius: 999px; background: #242b33; border: 1px solid var(--line); overflow: visible; }
 .gauge-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #b8842a, var(--gold)); transition: width var(--gauge-ms, 300ms) ease-out, background 200ms; }
 .gauge-sep { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--ink); transform: translateX(-1px); transition: left var(--gauge-ms, 300ms) ease-out; }
 .gauge-values { font-variant-numeric: tabular-nums; font-weight: 700; white-space: nowrap; }
@@ -937,22 +972,33 @@ p { margin: 0; }
   position: relative; list-style: none; margin: 0; padding: 0;
   display: flex; justify-content: center; align-items: center; gap: 40px; min-width: 0;
 }
-.steps::before { content: ''; position: absolute; left: 4%; right: 4%; top: 50%; height: 1px; background: #5a4a42; transform: translateY(-1px); }
+.steps::before { content: ''; position: absolute; left: 4%; right: 4%; top: 50%; height: 1px; background: #4c5661; transform: translateY(-1px); }
 .step {
   position: relative; padding: 4px 12px; border-radius: 999px; background: var(--bg);
-  color: #c9bcb2; text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.75rem; white-space: nowrap;
+  color: #c2cad2; text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.75rem; white-space: nowrap;
   transition: color 250ms, text-shadow 250ms;
 }
 .step-done { color: var(--ink); font-weight: 700; }
 .step-current { color: #ffd479; font-weight: 700; text-shadow: 0 0 6px var(--gold), 0 0 16px var(--gold), 0 0 30px rgba(224, 168, 60, 0.8); }
 
 /* ---- La table : zone haute · plateau · zone basse, pleine largeur (spec 08/C2) ---- */
+/*
+ * La dalle de pierre. Sa hauteur varie du simple au double selon qu'un panneau est ouvert,
+ * d'où les neuf tranches ; `fill` peint aussi la surface intérieure. La dalle n'a pas de
+ * cadre mouluré : la tranche ne couvre que l'arête éclatée (18 px d'irrégularité) et son
+ * ombre de bord, qui s'éteint en une cinquantaine de pixels — d'où `48` dans frame.webp
+ * (1600 × 1042), dessiné à 16 px pour que la bordure reste un liseré.
+ * `drop-shadow` plutôt que `box-shadow` pour que l'ombre suive la silhouette taillée et non
+ * un rectangle.
+ */
 .felt {
   max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px;
-  padding: 12px 16px 14px; border-radius: 24px;
-  background: radial-gradient(ellipse at 50% 30%, #1d4a36 0%, #16382b 55%, #0d2119 100%);
-  box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.5), 0 0 0 10px #4a2a1c, 0 20px 60px rgba(0, 0, 0, 0.6);
+  padding: 10px 12px 12px;
+  border: 16px solid transparent;
+  border-image: url('/table/frame.webp') 48 fill stretch;
+  filter: drop-shadow(0 16px 36px rgba(0, 0, 0, 0.65));
 }
+@media (max-width: 760px) { .felt { border-width: 10px; padding: 8px 8px 10px; } }
 .zone { display: flex; flex-direction: column; gap: 8px; }
 .board-wrap .board { transform: rotateX(6deg); transform-origin: 50% 100%; }
 .last-event { min-height: 1.3em; margin: 6px 0 0; text-align: center; color: var(--muted); font-size: 0.85rem; display: flex; justify-content: center; align-items: baseline; gap: 12px; flex-wrap: wrap; }
@@ -974,6 +1020,109 @@ p { margin: 0; }
 .panel .bet-panel { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 14px; background: var(--bg); padding: 0; gap: 0; overflow: hidden; }
 .panel .shop { border: 1px solid var(--line); border-radius: 14px; background: var(--bg); }
 .panel .inventory { margin: 0; }
+
+/*
+ * Le guichet : le panneau de paris prend le décor du cercle en fond. Le dégradé le garde
+ * sombre à gauche et au centre, là où se lisent les trois colonnes ; l'image ne respire que
+ * sur la droite, derrière le bouton de lancement.
+ */
+.panel-bets .bet-panel {
+  border-color: rgba(255, 255, 255, 0.1);
+  background:
+    linear-gradient(90deg, rgba(9, 12, 15, 0.95) 0%, rgba(9, 12, 15, 0.93) 55%, rgba(9, 12, 15, 0.82) 80%, rgba(9, 12, 15, 0.62) 100%),
+    var(--circle-bet-bg, none) center right / cover no-repeat,
+    var(--bg);
+}
+
+/*
+ * La boutique sur parchemin. Les neuf tranches valent 95 px dans shop.webp (2000 × 821),
+ * soit la déchirure plus la lisière brûlée. `stretch` et non `round` : `border-image-repeat`
+ * s'applique aussi à la zone centrale, et le carrelage y laissait une couture verticale en
+ * plein milieu du papier. La déchirure mesure 40 px d'amplitude sur 2000, son étirement ne
+ * se voit pas.
+ *
+ * Le papier est clair : on redéfinit les variables d'encre pour tout le sous-arbre plutôt
+ * que de reprendre chaque règle de `.shop-*` une par une. Les cartes, elles, remettent des
+ * variables sombres (voir plus bas) — c'est ce double jeu qui évite les `!important`.
+ */
+.panel-shop {
+  --ink: #2e2318;
+  --muted: #6d5a45;
+  --line: #b6a184;
+  --panel: rgba(255, 252, 244, 0.42);
+  --panel-2: rgba(122, 96, 62, 0.14);
+  --gold: #8a6420;
+  --ember: #a35f46;
+  --bad: #a33a2e;
+  --bg-2: rgba(255, 252, 244, 0.6);
+  color: var(--ink);
+  border: 34px solid transparent;
+  border-image: url('/table/shop.webp') 95 fill stretch;
+}
+.panel-shop .shop, .panel-shop .bp-head { border: 0; background: none; }
+.panel-shop .bp-head { border-bottom: 1px solid rgba(110, 88, 60, 0.35); }
+.panel-shop .shop-empty { border-color: rgba(110, 88, 60, 0.45); }
+.panel-shop .bp-close { background: rgba(255, 252, 244, 0.6); border-color: rgba(110, 88, 60, 0.45); }
+.panel-shop .gauge-bar { background: rgba(122, 96, 62, 0.2); }
+.panel-shop .gauge-sep { background: #4a3b28; }
+
+/*
+ * Les cartes : de l'ardoise froide posée sur le papier chaud. Le contraste s'inverse par
+ * rapport au reste du panneau, donc chaque carte redéfinit ses propres variables — tout ce
+ * qu'elle contient (pastilles de faces, prix, avertissements) suit sans règle dédiée.
+ */
+.panel-shop .shop-item, .panel-shop .shop-target {
+  --ink: #f2e8dd;
+  --muted: #98a3ad;
+  --line: rgba(255, 255, 255, 0.13);
+  --panel: #323b45;
+  --panel-2: #262e37;
+  /* `.face` se peint en `--bg-2` : dans une carte on le veut froid, pas dans le noir chaud
+     du thème. Sur le papier (bloc `.panel-shop`), c'est un jeton clair. */
+  --bg-2: #1c232a;
+  --gold: #dcb878;
+  --bad: #e0736a;
+  --human: #7fb3dd;
+  --good: #6fb98a;
+  color: var(--ink);
+  border: 1px solid rgba(12, 17, 22, 0.6);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(52, 61, 71, 0.93) 0%, rgba(42, 50, 59, 0.93) 45%, rgba(37, 44, 53, 0.93) 100%);
+  box-shadow: 0 6px 14px rgba(72, 54, 32, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+/* Le liseré de couleur par type disparaît : la bande de risque occupe déjà le haut, et le
+   type est écrit en toutes lettres juste en dessous. */
+.panel-shop .shop-item { padding: 34px 13px 13px; gap: 7px; border-top-width: 1px; border-top-color: rgba(12, 17, 22, 0.6); }
+.panel-shop .shop-item h3 { font-size: 1rem; }
+/* Le prix est l'information qu'on compare d'une carte à l'autre : le nombre porte, l'unité
+   reste discrète. */
+.panel-shop .shop-price { display: flex; align-items: baseline; gap: 5px; font-size: 0.75rem; font-weight: 400; color: var(--muted); }
+.panel-shop .shop-price-n { font-size: 1.45rem; font-weight: 700; line-height: 1; color: var(--gold); }
+.panel-shop .shop-price-over .shop-price-n { color: var(--bad); }
+.panel-shop .shop-item.risk-danger { border-color: #7a3833; }
+.panel-shop .shop-target { padding: 13px; }
+/* Pleine largeur : `auto-fit` (et non `auto-fill`) laisse les quelques cartes de la vitrine
+   occuper toute la largeur du parchemin au lieu de se tasser à gauche. */
+.panel-shop .vitrine { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; }
+
+/* Bande de risque : pleine largeur, arrondie avec le haut de la carte. */
+.panel-shop .shop-risk { border-radius: 11px 11px 0 0; padding: 5px 13px; font-size: 0.66rem; }
+.panel-shop .shop-risk.risk-safe { background: #35433a; color: #9cc4a8; }
+.panel-shop .shop-risk.risk-bold { background: #453a26; color: #dcb878; }
+.panel-shop .shop-risk.risk-danger { background: #5e2b28; color: #f0b0a8; }
+
+/*
+ * Boutons : terre cuite éteinte pour l'action, ardoise pour le reste — les tons vifs du
+ * thème (`--ember` à #d4541e) crevaient l'œil sur le papier. `.btn` d'abord, `.btn-primary`
+ * ensuite : le bouton principal porte les deux classes.
+ */
+.panel-shop .btn { border-color: rgba(18, 25, 32, 0.5); background: #2c343d; color: #ebe0d3; }
+.panel-shop .btn:hover:not(:disabled) { background: #39424c; border-color: rgba(18, 25, 32, 0.75); }
+.panel-shop .btn-primary { background: #a35f46; border-color: #8d4d36; color: #fdf4ea; }
+.panel-shop .btn-primary:hover:not(:disabled) { background: #b56d51; border-color: #9a563d; }
+/* `.btn-confirm` peint son texte en `var(--bg)` : sur le parchemin il faut le redire, sinon
+   la confirmation d'achat s'écrit dans la couleur de fond du thème sombre. */
+.panel-shop .btn-confirm { background: #c9922f !important; border-color: #c9922f !important; color: #241a0a !important; }
 
 /* Emplacements de la table */
 .slot { border-radius: 14px; padding: 12px 16px; background: rgba(20, 16, 15, 0.55); border: 1px solid rgba(255, 255, 255, 0.06); display: flex; flex-direction: column; gap: 8px; }
@@ -1019,13 +1168,40 @@ p { margin: 0; }
 .bp-count { margin-left: auto; font-weight: 400; color: var(--muted); font-variant-numeric: tabular-nums; }
 .bp-placed { border-top: 1px dashed var(--line); padding: 8px 20px 10px; }
 
-.tiers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.tier { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 7px 6px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); transition: border-color 150ms, background 150ms; }
-.tier:hover:not(:disabled) { border-color: var(--muted); }
-.tier-on { border-color: var(--gold); background: #2f2216; }
-.tier-name { font-size: 0.95rem; }
-.tier-range { font-size: 0.72rem; color: var(--gold); opacity: 0.85; }
-.tier:disabled { opacity: 0.5; }
+/*
+ * Le choix du registre (Simples · Combinés · Avancés) est une dalle de pierre gravée, alors
+ * que les paris eux-mêmes restent des cartouches plats et sombres : les deux rangées ne se
+ * ressemblaient pas assez pour qu'on voie qu'elles ne jouent pas le même rôle.
+ *
+ * Deux fichiers plutôt qu'un sprite à deux rangées (convention du menu) : `border-image`
+ * garde les coins chanfreinés nets quelle que soit la largeur de la colonne, là où un
+ * `background-size` étiré les aplatirait. `46` = chanfrein (~34 px) plus le biseau, mesuré
+ * sur tier.webp (1000 × 369). La pierre est claire : l'encre passe en sombre, avec le
+ * rehaut blanc d'une gravure en creux.
+ */
+.tiers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.tier {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+  padding: 5px 8px; border: 10px solid transparent;
+  border-image: url('/table/tier.webp') 46 fill stretch;
+  background: none; border-radius: 0;
+  transition: filter 150ms, transform 120ms;
+}
+.tier:hover:not(:disabled), .tier:focus-visible { border-image-source: url('/table/tier-on.webp'); transform: translateY(-1px); }
+/* Survol et sélection partagent la dalle claire : c'est le halo doré qui dit « celui-ci est
+   choisi », et il suit la silhouette chanfreinée, ce qu'un contour rectangulaire ne ferait pas. */
+.tier-on, .tier-on:hover:not(:disabled) {
+  border-image-source: url('/table/tier-on.webp');
+  filter: drop-shadow(0 0 7px rgba(224, 168, 60, 0.6));
+  transform: none;
+}
+/* Encres mesurées sur les deux dalles au 98e centile de luminance (le cas défavorable
+   réaliste, un coup de brosse clair sous le texte) : 4,6:1 pour le libellé et 4,5:1 pour la
+   cote sur la dalle au repos, donc AA. Le rehaut blanc d'un pixel donne la gravure en creux. */
+.tier-name { font-size: 0.95rem; font-weight: 600; color: #0a0e12; text-shadow: 0 1px 0 rgba(255, 255, 255, 0.2); }
+.tier-range { font-size: 0.74rem; font-weight: 600; color: #150f04; }
+.tier-on .tier-range { color: #2e220c; }
+.tier:disabled { opacity: 0.45; filter: grayscale(0.5); }
 
 .types { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr; gap: 6px; }
 @media (min-width: 1200px) { .types { grid-template-columns: 1fr 1fr; } }
