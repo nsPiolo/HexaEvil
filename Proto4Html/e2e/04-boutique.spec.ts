@@ -1,11 +1,11 @@
 import { expect, test, type Page } from '@playwright/test'
-import { hudMoney, placeBet, shopPanel, start } from './helpers'
+import { hudMoney, openShop, placeBet, shopPanel, start } from './helpers'
 import { SHOP_SEED, SHOP_SEED_EXPECT as E, START_MONEY } from './seeds'
 
 /** Pose un pari de 5 sur Homère et ouvre la boutique : la vitrine de la graine apparaît. */
-async function openShop(page: Page) {
+async function openShopWithBet(page: Page) {
   await placeBet(page, { souls: [0], stake: 5 })
-  await page.getByTestId('tab-shop').click()
+  await openShop(page)
   const shop = shopPanel(page)
   await expect(shop.getByRole('article')).toHaveCount(4)
   return shop
@@ -17,7 +17,7 @@ test.describe('04 · Écran Boutique (la vitrine à trois tentations)', () => {
   test('E2E-04-A : bandeau DANGER avec contrepartie en texte, vitrine triée du plus sûr au plus dangereux', async ({ page }) => {
     // 04/AC1
     await start(page, { seed: SHOP_SEED })
-    const shop = await openShop(page)
+    const shop = await openShopWithBet(page)
     const banners = await shop.locator('.shop-risk').allInnerTexts()
     expect(banners.map((b) => b.trim().toLowerCase()), `Graine ${SHOP_SEED} : vitrine inattendue — re-chercher la graine (e2e/seeds.ts).`).toEqual(E.order.map((b) => b.toLowerCase()))
     const danger = article(shop, E.danger.name)
@@ -32,7 +32,7 @@ test.describe('04 · Écran Boutique (la vitrine à trois tentations)', () => {
   test('E2E-04-B : achat ≥ seuil en deux clics, « Confirmer 80 ¤ » entre les deux, retour à « Acheter » après 3 s', async ({ page }) => {
     // 04/AC3
     await start(page, { seed: SHOP_SEED, clock: true })
-    const shop = await openShop(page)
+    const shop = await openShopWithBet(page)
     // Un objet sous le seuil s'achète en un clic (le dé demande ensuite sa cible ; on annule).
     await article(shop, E.die.name).getByRole('button', { name: 'Acheter' }).click()
     await expect(shop.getByText(`${E.die.name} — quel dé remplacer ?`)).toBeVisible()
@@ -57,7 +57,7 @@ test.describe('04 · Écran Boutique (la vitrine à trois tentations)', () => {
   test('E2E-04-C : remplacement de dé — faces actuelles → nouvelles faces pour chaque option', async ({ page }) => {
     // 04/AC4
     await start(page, { seed: SHOP_SEED })
-    const shop = await openShop(page)
+    const shop = await openShopWithBet(page)
     await article(shop, E.die.name).getByRole('button', { name: 'Acheter' }).click()
     await expect(shop.getByText('faces actuelles → nouvelles faces')).toBeVisible()
     const options = shop.locator('.shop-die')
@@ -76,7 +76,7 @@ test.describe('04 · Écran Boutique (la vitrine à trois tentations)', () => {
   test('E2E-04-D : un objet trop cher reste entièrement lisible, seul l’achat est désactivé', async ({ page }) => {
     // 04/AC5 — rien d'apporté : l'avance de 20 moins la mise de 5 laisse 15, tout est trop cher (le moins cher est à 30).
     await start(page, { seed: SHOP_SEED, money: 0 })
-    const shop = await openShop(page)
+    const shop = await openShopWithBet(page)
     for (const art of await shop.getByRole('article').all()) {
       await expect(art.getByRole('heading')).toBeVisible()
       await expect(art.getByRole('button', { name: 'Acheter' })).toBeDisabled()

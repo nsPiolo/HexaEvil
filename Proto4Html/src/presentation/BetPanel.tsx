@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type DragEvent } from 'react'
+import { useMemo, useState, type DragEvent } from 'react'
 import { config } from '../core/config'
 import { BET_TYPES, TIER_LABEL, betRefusal, betType, betUnlocked, bettingClosed, currentMultiplier, evaluateBet, fmtMultiplier, potentialPayout, raceProgress, slotCount, type Bet, type BetTier, type BetTypeId } from '../core/rules/bets'
 import { isInBetZone, ranking, type RaceState, type Roll } from '../core/rules/race'
@@ -34,8 +34,6 @@ interface Props {
   phase: Phase
   /** Niveau du stagiaire : les types de paris au-dessus sont affichés verrouillés. */
   level: number
-  /** Vitesse des animations : la confirmation « Pari posé » est mise à l'échelle. */
-  speed: number
   /** Dés lancés (Œil du parieur) : rappelés en tête, puisque le panneau recouvre la zone des dés. */
   roll?: Roll | null
   /** Œil du parieur : null si non possédé. */
@@ -75,7 +73,7 @@ function readStake(e: DragEvent): number | null {
   return /^\d+$/.test(raw) ? Number(raw) : null
 }
 
-export function BetPanel({ race, money, price, bets, open, phase, level, speed, roll = null, lateBet, onUseLateBet, onPlace, onCancel, baseFor, draft, onDraftChange, highlightSoul, onHoverSoul, onStart, onOpenShop, onClose }: Props) {
+export function BetPanel({ race, money, price, bets, open, phase, level, roll = null, lateBet, onUseLateBet, onPlace, onCancel, baseFor, draft, onDraftChange, highlightSoul, onHoverSoul, onStart, onOpenShop, onClose }: Props) {
   const [localDraft, setLocalDraft] = useState<BetDraft>(EMPTY_DRAFT)
   const d = draft ?? localDraft
   const setDraft = onDraftChange ?? setLocalDraft
@@ -83,16 +81,8 @@ export function BetPanel({ race, money, price, bets, open, phase, level, speed, 
   const [tier, setTier] = useState<BetTier>('simple')
   const [stake, setStake] = useState<number>(config.economy.stakes[0] ?? 5)
   const [error, setError] = useState<string | null>(null)
-  /** Confirmation transitoire après une pose (spec 08/C4). */
-  const [placed, setPlaced] = useState<string | null>(null)
   /** Liste des paris posés : accordéon au-dessus du pied, ouvert par défaut (spec 08/C4). */
   const [listOpen, setListOpen] = useState(true)
-
-  useEffect(() => {
-    if (placed === null) return
-    const t = setTimeout(() => setPlaced(null), config.animation.betConfirmMs / speed)
-    return () => clearTimeout(t)
-  }, [placed, speed])
 
   const prep = phase === 'prep'
   const closed = bettingClosed(race)
@@ -136,10 +126,7 @@ export function BetPanel({ race, money, price, bets, open, phase, level, speed, 
   const place = (): void => {
     const err = onPlace(type, souls, stake)
     setError(err)
-    if (!err) {
-      setPlaced(fill(BETS.placed, { type: def.label, souls: souls.map(soulName).join(def.ordered ? ' › ' : ', '), stake, net }))
-      setDraft({ ...d, souls: [] })
-    }
+    if (!err) setDraft({ ...d, souls: [] })
   }
 
   // Mise : glisser un jeton dans le logement, ou le cliquer (même alternative que l'appariement des dés).
@@ -172,22 +159,18 @@ export function BetPanel({ race, money, price, bets, open, phase, level, speed, 
     endStakeDrag()
   }
 
-  // Ligne d'état du pied : ce qu'il manque, ou le refus, ou le ticket prêt (gain + solde après mise).
+  // Sous-titre de l'en-tête hors préparation : pourquoi les paris sont fermés.
   let status: string
-  let statusKind = ''
   if (error) {
     status = error
-    statusKind = 'bad'
   } else if (!open) {
     status = race.finished ? 'Course terminée : les paris sont réglés.' : closed ? `Une âme a dépassé le seuil de ${Math.round(race.track.betThresholdRatio * 100)} % : plus de pari.` : phase === 'pairing' ? 'Les dés sont lancés : les paris reprennent au prochain tour.' : 'Paris suspendus pendant la résolution.'
   } else if (missing > 0) {
     status = `Choisis encore ${missing} âme${missing > 1 ? 's' : ''} — dans le panneau ou en cliquant les jetons du plateau.`
   } else if (refusal) {
     status = refusal
-    statusKind = 'bad'
   } else {
     status = `${def.label} · mise ${stake} à ${fmtMultiplier(mult)}.`
-    statusKind = 'good'
   }
 
   return (
@@ -367,15 +350,6 @@ export function BetPanel({ race, money, price, bets, open, phase, level, speed, 
       </section>
 
       <footer className="bp-foot">
-        {placed ? (
-          <div className="bp-status bp-placed-msg good" role="status" data-testid="bet-placed">
-            <span>✓ {placed}</span>
-          </div>
-        ) : (
-          <div className={'bp-status ' + statusKind}>
-            <span>{status}</span>
-          </div>
-        )}
         <div className="bp-actions">
           <button type="button" className="btn btn-primary bp-place" disabled={!open || refusal !== null} onClick={place}>
             {/* Le parchemin est un décor : il déborde du bouton et ne doit rien dire aux lecteurs d'écran. */}
@@ -383,7 +357,7 @@ export function BetPanel({ race, money, price, bets, open, phase, level, speed, 
             <span className="bp-place-label">Poser le pari</span>
           </button>
           {prep && onOpenShop && (
-            <button type="button" className="btn btn-gold bp-shop" onClick={onOpenShop} title={bets.length === 0 ? 'La boutique n’ouvre sa caisse qu’après un premier pari' : undefined}>
+            <button type="button" className="btn btn-gold bp-shop" disabled={bets.length === 0} onClick={onOpenShop} title={bets.length === 0 ? 'La boutique n’ouvre sa caisse qu’après un premier pari' : undefined}>
               <span className="bp-shop-art" aria-hidden="true" />
               <span className="bp-shop-label">Boutique</span>
             </button>

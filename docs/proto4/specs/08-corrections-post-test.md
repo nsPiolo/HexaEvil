@@ -55,12 +55,15 @@ Règle de lecture commune : ces tickets **précisent** les specs 01–06, ils ne
 
 **Constat (capture 06).** Après « Poser le pari », seuls le solde et la jauge bougent. La section « Paris posés » est sous la ligne de flottaison du panneau (à 900 px de haut, les sections I–III et le pied occupent tout), et le pied affiche aussitôt « Choisis encore 1 âme » pour le ticket suivant — ce qui se lit comme un échec de la pose.
 
-**Cible.** Trois retouches conjointes : (1) une **confirmation transitoire** dans le pied — « Pari posé : Vainqueur pur · Homère · 20 ¤ → +50 si gagné » pendant ~2 s (mise à l'échelle vitesse) avant de revenir au guidage du ticket suivant ; (2) le compteur « Paris posés (n) » remonte en **en-tête de panneau**, toujours visible, et s'incrémente avec une micro-animation ; (3) la liste des paris posés devient un accordéon repliable placé au-dessus du pied plutôt qu'en fond de scroll.
+**Cible.** Trois retouches conjointes : (1) ~~une **confirmation transitoire** dans le pied — « Pari posé : Vainqueur pur · Homère · 20 ¤ → +50 si gagné » pendant ~2 s (mise à l'échelle vitesse) avant de revenir au guidage du ticket suivant~~ ; (2) le compteur « Paris posés (n) » remonte en **en-tête de panneau**, toujours visible, et s'incrémente avec une micro-animation ; (3) la liste des paris posés devient un accordéon repliable placé au-dessus du pied plutôt qu'en fond de scroll.
+
+**Retouche (1) annulée.** La ligne d'état du pied (`.bp-status`) a été retirée : le pied est réduit à sa rangée de boutons, que les objets peints débordent. La confirmation transitoire vivait dedans, elle disparaît avec — et le guidage « Choisis encore N âme(s) », et le rappel du refus, qui n'ont plus d'emplacement. **Ce qui atteste la pose est désormais (2) et (3) seuls** : le compteur d'en-tête qui saute, et la ligne qui s'ajoute à la liste juste au-dessus du pied. Le constat d'origine — « le pied affiche aussitôt *Choisis encore 1 âme*, ce qui se lit comme un échec » — est traité autrement : ce message n'existe plus.
+*À rouvrir si les tests joueurs montrent que la pose ne se voit plus assez.* Le porte-à-faux : un refus (mise trop grosse, seuil dépassé) n'est plus écrit nulle part dans le panneau en préparation ; seul le bouton désactivé le signale.
 
 **Critères.**
-- [ ] À 1440×900, après une pose, une trace visible du pari existe sans scroller (confirmation + compteur).
-- [ ] Le message « Choisis encore N âme(s) » n'apparaît qu'après la confirmation transitoire.
-- [ ] Le compteur d'en-tête ouvre/replie la liste des paris posés.
+- [x] À 1440×900, après une pose, une trace visible du pari existe sans scroller (compteur d'en-tête + ligne de liste).
+- [ ] ~~Le message « Choisis encore N âme(s) » n'apparaît qu'après la confirmation transitoire.~~ Sans objet : le message a été supprimé.
+- [x] Le compteur d'en-tête ouvre/replie la liste des paris posés.
 
 ---
 

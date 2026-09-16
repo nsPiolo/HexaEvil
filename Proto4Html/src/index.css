@@ -737,7 +737,7 @@ p { margin: 0; }
 .bet-targets { font-weight: 600; }
 .bet-stake { color: var(--muted); font-variant-numeric: tabular-nums; }
 .bet-status { font-variant-numeric: tabular-nums; color: var(--muted); }
-.bet-open { border-left-color: var(--gold); }
+.bet-open { border-left-color: var(--gold); margin: 0 10%; }
 .bet-won { border-left-color: var(--good); }
 .bet-won .bet-status { color: var(--good); font-weight: 700; }
 .bet-lost { border-left-color: var(--bad); opacity: 0.8; }
@@ -766,7 +766,9 @@ p { margin: 0; }
 .bet-cancel { padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); background: none; color: var(--muted); font-size: 0.75rem; transition: border-color 120ms, color 120ms; }
 .bet-cancel:hover { border-color: var(--bad); color: var(--bad); }
 /* Ticket prêt (spec 03/C1) : gain potentiel en accent, solde après mise en secondaire. */
-.bp-ticket { display: flex; flex-direction: column; gap: 2px; min-height: 1.4em; margin-top: 6px; padding: 8px 10px; border-radius: 8px; background: rgba(78, 168, 106, 0.08); border: 1px solid rgba(78, 168, 106, 0.3); }
+/* Le flou d'arrière-plan détache les deux lignes du décor peint du cercle, qui passe
+   derrière la colonne : sans lui, les branches et les braises traversaient les chiffres. */
+.bp-ticket { display: flex; flex-direction: column; gap: 2px; min-height: 1.4em; margin-top: 6px; padding: 8px 10px; border-radius: 8px; background: rgba(78, 168, 106, 0.08); border: 1px solid rgba(78, 168, 106, 0.3); backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px); }
 .bp-ticket-gain { font-size: 1.15rem; font-weight: 700; font-variant-numeric: tabular-nums; }
 .bp-ticket-after { font-size: 0.9rem; font-variant-numeric: tabular-nums; }
 .good { color: var(--good); }
@@ -1405,12 +1407,9 @@ p { margin: 0; }
 .type-locked { opacity: 0.55; background: repeating-linear-gradient(135deg, var(--panel) 0 8px, var(--panel-2) 8px 10px); }
 .lock-badge { flex: none; align-self: flex-start; padding: 4px 10px; border-radius: 999px; border: 1px dashed var(--muted); color: var(--muted); font-size: 0.8rem; white-space: nowrap; }
 
-.bp-foot { border-top: 1px solid var(--line); border-radius: 0 0 14px 14px; padding: 10px 20px 14px; display: flex; flex-direction: column; gap: 54px; background: var(--bg-2); }
-.bp-status { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; min-height: 1.4em; }
-.bp-status.bad { color: var(--bad); }
-.bp-status.good { color: var(--ink); }
-.bp-placed-msg { color: var(--good) !important; font-weight: 700; animation: slide-in 250ms ease-out; }
-.bp-gain { font-size: 1.3rem; font-variant: normal; }
+/* Pied réduit à sa rangée de boutons : plus de ligne d'état au-dessus, donc plus de `gap`
+   à réserver pour empêcher le parchemin de la recouvrir. */
+.bp-foot { border-top: 1px solid var(--line); border-radius: 0 0 14px 14px; padding: 10px 20px 14px; display: flex; flex-direction: column; background: var(--bg-2); }
 .bp-actions { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(140px, 0.6fr) minmax(220px, 1.2fr); gap: 12px; align-items: center; }
 /* En une colonne, les boutons se suivent : il faut écarter les lignes, sinon le rabat du
    parchemin retombe sur « Boutique ». */
@@ -1453,9 +1452,10 @@ p { margin: 0; }
 }
 .bp-place:hover:not(:disabled) .bp-place-art { filter: drop-shadow(0 9px 13px rgba(0, 0, 0, 0.6)) brightness(1.06); }
 .bp-place:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
-/* Désactivé : tout le bouton s'éteint d'un coup, dalle et papier ensemble. À 0,4 (le défaut
-   de `.btn`) le dessin disparaissait dans le fond du guichet ; 0,6 le garde lisible. */
-.bp-place:disabled { opacity: 0.6; }
+/* Désactivé : le bouton se désature au lieu de devenir translucide. L'alpha le laissait voir
+   au travers, le fond du guichet remontait dans le papier et le dessin se brouillait ; la
+   désaturation garde le parchemin opaque et lisible, simplement éteint. */
+.bp-place:disabled { opacity: 1; filter: grayscale(1) brightness(0.62); }
 .btn-gold { border-color: var(--gold); color: var(--gold); background: none; }
 /*
  * Coffre et corne : même patron que le parchemin — un enfant en absolu, décoratif, qui
@@ -1471,6 +1471,10 @@ p { margin: 0; }
   pointer-events: none;
 }
 .bp-shop-label { position: relative; padding-right: 54px; }
+/* Désactivée tant qu'aucun pari n'est posé — le stagiaire n'ouvre pas la caisse aux indécis,
+   l'état vide de la boutique le disait déjà mais après coup. Même traitement que le
+   parchemin : on désature au lieu de rendre translucide, le coffre reste lisible. */
+.bp-shop:disabled { opacity: 1; filter: grayscale(1) brightness(0.62); }
 /* La corne sort du panneau par la droite et par le bas : elle ferme la barre comme le
    parchemin l'ouvre. */
 .bp-start-art {
@@ -1499,7 +1503,9 @@ p { margin: 0; }
 }
 .bp-start:not(:disabled) .bp-start-glow { opacity: 0.75; }
 .bp-start:hover:not(:disabled) .bp-start-glow { opacity: 1; }
-.bp-start:disabled .bp-start-art { opacity: 0.55; filter: grayscale(0.6) brightness(0.8); }
+/* Même extinction que le parchemin et le coffre : les trois boutons de la rangée doivent
+   griser ensemble, sinon la corne restée en bronze passe pour un bouton encore actif. */
+.bp-start:disabled .bp-start-art { opacity: 1; filter: grayscale(1) brightness(0.62); }
 
 .btn-gold:hover:not(:disabled) { background: #2f2216; }
 .bp-start { width: 100%; padding: 10px 14px; font-weight: 700; font-size: 1rem; background: #3a2a12; border-color: #4a3a1a; color: #c9b07a; }

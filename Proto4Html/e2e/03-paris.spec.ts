@@ -16,9 +16,9 @@ test.describe('03 · Écran Paris (le ticket de guichet)', () => {
     await panel.getByRole('button', { name: '10', exact: true }).click()
     await expect(panel.getByText('Gain potentiel : +25 ¤ (×3.5)')).toBeVisible()
     await expect(panel.getByText('Solde après mise : 90 ¤')).toBeVisible()
-    // Changer de type vide les âmes ; on redésigne et la cote suit.
+    // Changer de type vide les âmes : le ticket disparaît, on redésigne et la cote suit.
     await panel.getByRole('button', { name: /^Top 3/ }).click()
-    await expect(panel.getByText(/Choisis encore 1 âme/)).toBeVisible()
+    await expect(panel.getByText(/^Gain potentiel/)).toHaveCount(0)
     await tokenButton(page, 1).click()
     await expect(panel.getByText('Gain potentiel : +5 ¤ (×1.5)')).toBeVisible()
     await expect(panel.getByText('Solde après mise : 90 ¤')).toBeVisible()

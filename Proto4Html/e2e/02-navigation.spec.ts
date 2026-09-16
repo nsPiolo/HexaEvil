@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { autoToResults, betsPanel, board, phaseStrip, placeBet, rollDice, shopPanel, slot, start, startRace, tokenButton } from './helpers'
+import { autoToResults, betsPanel, board, openShop, phaseStrip, placeBet, rollDice, shopPanel, slot, start, startRace, tokenButton } from './helpers'
 import { RACE_SEED, SHOP_SEED } from './seeds'
 
 const EMPTY_STATE = 'Pose d’abord un pari, le stagiaire n’ouvre pas la caisse aux indécis.'
@@ -14,21 +14,18 @@ test.describe('02 · Navigation Pari ↔ Boutique', () => {
     await expect(page.getByTestId('tab-bets')).toHaveText('Paris (2) · 30 ¤ misés')
   })
 
-  test('E2E-02-B : sans pari, la boutique s’ouvre sur l’état vide ; le premier pari fait apparaître la vitrine', async ({ page }) => {
-    // 02/AC2
+  test('E2E-02-B : sans pari, la boutique reste fermée à clé ; le premier pari l’ouvre sur sa vitrine', async ({ page }) => {
+    // 02/AC2 — révisé : l'état vide du panneau n'est plus atteignable, c'est le bouton qui
+    // refuse l'entrée. Le stagiaire n'ouvre toujours pas la caisse aux indécis, il le dit
+    // simplement avant d'ouvrir la porte plutôt qu'après.
     await start(page, { seed: SHOP_SEED })
-    await page.getByTestId('tab-shop').click()
-    const shop = shopPanel(page)
-    await expect(shop).toBeVisible()
-    await expect(shop.getByText(EMPTY_STATE)).toBeVisible()
-    await expect(shop.getByRole('button', { name: 'Aller aux paris' })).toBeVisible()
-    await expect(shop.getByRole('article')).toHaveCount(0)
-    // La boutique occupe l'écran seule : pour parier il faut en sortir, c'est ce que propose
-    // son propre bouton. Le pari posé, la vitrine est là au retour.
-    await shop.getByRole('button', { name: 'Aller aux paris' }).click()
-    await expect(page.getByTestId('drawer-bets')).toHaveAttribute('data-state', 'open')
+    const shopBtn = betsPanel(page).getByRole('button', { name: 'Boutique' })
+    await expect(shopBtn).toBeDisabled()
+    await expect(shopBtn).toHaveAttribute('title', /premier pari/)
     await placeBet(page, { souls: [4], stake: 5, chips: true })
-    await betsPanel(page).getByRole('button', { name: 'Boutique' }).click()
+    await expect(shopBtn).toBeEnabled()
+    await openShop(page)
+    const shop = shopPanel(page)
     await expect(shop.getByRole('article')).toHaveCount(4)
     await expect(shop.getByText(EMPTY_STATE)).toHaveCount(0)
   })
@@ -37,6 +34,9 @@ test.describe('02 · Navigation Pari ↔ Boutique', () => {
     // 02/AC3
     await start(page, { seed: RACE_SEED })
     const panel = betsPanel(page)
+    // La boutique n'ouvre qu'après un premier pari posé : c'est lui qui déverrouille le bouton.
+    // Le brouillon dont on teste la survie est le suivant, monté par-dessus.
+    await placeBet(page, { souls: [4], stake: 5 })
     await panel.getByRole('tab', { name: /^Combinés/ }).click()
     await panel.getByRole('button', { name: /^Duel/ }).click()
     await tokenButton(page, 0).click()
@@ -44,7 +44,7 @@ test.describe('02 · Navigation Pari ↔ Boutique', () => {
     await panel.getByRole('button', { name: '20', exact: true }).click()
     await expect(panel.getByText('Solde après mise : 80 ¤')).toBeVisible()
 
-    await page.getByTestId('tab-shop').click()
+    await openShop(page)
     await expect(shopPanel(page)).toBeVisible()
     // La boutique masque les paris : sa croix doit les rouvrir, sinon l'écran resterait vide.
     await shopPanel(page).getByRole('button', { name: 'Fermer' }).click()
@@ -57,13 +57,14 @@ test.describe('02 · Navigation Pari ↔ Boutique', () => {
     await expect(panel.getByText('Solde après mise : 80 ¤')).toBeVisible()
   })
 
-  test('E2E-02-D : course lancée, plus d’onglet Boutique ; l’onglet Paris reste jusqu’à la fin', async ({ page }) => {
-    // 02/AC4
+  test('E2E-02-D : course lancée, plus d’accès à la boutique ; l’onglet Paris reste jusqu’à la fin', async ({ page }) => {
+    // 02/AC4 — l'unique porte de la boutique est le bouton du pied du panneau de paris,
+    // la poignée au-dessus de la piste a été retirée.
     await start(page, { seed: RACE_SEED })
-    await expect(page.getByTestId('tab-shop')).toBeVisible()
+    await expect(betsPanel(page).getByRole('button', { name: 'Boutique' })).toBeVisible()
     await placeBet(page, { souls: [0], stake: 5 })
     await startRace(page)
-    await expect(page.getByTestId('tab-shop')).toHaveCount(0)
+    await expect(betsPanel(page).getByRole('button', { name: 'Boutique' })).toHaveCount(0)
     // Avant le lancer on peut encore parier : la poignée résume les mises ; dès les dés lancés, elle ne compte plus que les paris.
     await expect(page.getByTestId('tab-bets')).toHaveText('Paris (1) · 5 ¤ misés')
     await rollDice(page)
@@ -78,12 +79,15 @@ test.describe('02 · Navigation Pari ↔ Boutique', () => {
     await page.setViewportSize({ width: 1024, height: 768 })
     await start(page, { seed: RACE_SEED })
     await expect(page.getByTestId('drawer-bets')).toHaveAttribute('data-state', 'open')
-    await page.getByTestId('tab-shop').click()
+    await placeBet(page, { souls: [0], stake: 5 })  // sans pari posé, la boutique reste fermée
+    await openShop(page)
     await expect(page.getByTestId('drawer-shop')).toHaveAttribute('data-state', 'open')
     // Ouverture exclusive : la boutique est seule à l'écran, plateau et paris sont démontés.
     await expect(page.getByTestId('drawer-bets')).toHaveCount(0)
     await expect(board(page)).toHaveCount(0)
-    await shopPanel(page).getByRole('button', { name: 'Aller aux paris' }).click()
+    // « Aller aux paris » appartenait à l'état vide, devenu injoignable : la vitrine étant
+    // toujours garnie quand on entre, c'est « Retour aux paris » qui referme.
+    await shopPanel(page).getByRole('button', { name: 'Retour aux paris' }).click()
     await expect(page.getByTestId('drawer-bets')).toHaveAttribute('data-state', 'open')
     await expect(page.getByTestId('drawer-shop')).toHaveAttribute('data-state', 'closed')
     const box = await board(page).boundingBox()

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { autoToResults, betsPanel, gauge, gaugeValues, hud, hudMoney, placeBet, shopPanel, start } from './helpers'
+import { autoToResults, betsPanel, gauge, gaugeValues, hud, hudMoney, openShop, placeBet, shopPanel, start } from './helpers'
 import { ALLOWANCE, RACE_SEED, SHOP_SEED, SHOP_SEED_EXPECT, START_MONEY } from './seeds'
 
 test.describe('01 · Jauge des trois usages', () => {
@@ -17,8 +17,9 @@ test.describe('01 · Jauge des trois usages', () => {
     // Panneau de paris (ouvert au départ) : mêmes valeurs.
     expect(await gaugeValues(gauge(betsPanel(page)))).toBe(await gaugeValues(hudGauge))
 
-    // Boutique (état vide sans pari, mais la jauge est là) : mêmes valeurs.
-    await page.getByTestId('tab-shop').click()
+    // Boutique (elle n'ouvre qu'après un premier pari) : mêmes valeurs, mises à jour de la mise.
+    await placeBet(page, { souls: [0], stake: 5 })
+    await openShop(page)
     await expect(shopPanel(page)).toBeVisible()
     expect(await gaugeValues(gauge(shopPanel(page)))).toBe(await gaugeValues(hudGauge))
 
@@ -49,7 +50,7 @@ test.describe('01 · Jauge des trois usages', () => {
     await expect(panel.getByRole('button', { name: 'Poser le pari' })).toBeEnabled()
     await panel.getByRole('button', { name: 'Poser le pari' }).click()
     await expect(hudMoney(page)).toHaveText('67 Pièces')
-    await page.getByTestId('tab-shop').click()
+    await openShop(page)
     const shop = shopPanel(page)
     // À 67 pièces : le dé à 30 s'achète, l'objet à 80 non — solde réellement insuffisant.
     await expect(shop.getByRole('article').filter({ hasText: SHOP_SEED_EXPECT.die.name }).getByRole('button', { name: 'Acheter' })).toBeEnabled()

@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
-import { betsPanel, board, hud, hudMoney, pairNaturally, placeBet, rollDice, shopPanel, slot, start, startRace, token, tokenButton } from './helpers'
+import { betsPanel, board, hud, hudMoney, openShop, pairNaturally, placeBet, rollDice, shopPanel, slot, start, startRace, token, tokenButton } from './helpers'
 import { CUMUL_SEED, RACE_SEED, SHOP_SEED, START_MONEY } from './seeds'
 
 type Box = { x: number; y: number; width: number; height: number }
@@ -40,7 +40,8 @@ test.describe('08 · Corrections post-test', () => {
       await page.setViewportSize({ width, height })
       await start(page, { seed: RACE_SEED })
       await expectHudClear(page, width) // paris ouverts
-      await page.getByTestId('tab-shop').click()
+      await placeBet(page, { souls: [0], stake: 5 })  // déverrouille la boutique
+      await openShop(page)
       await expect(page.getByTestId('drawer-shop')).toHaveAttribute('data-state', 'open')
       await expectHudClear(page, width) // boutique seule à l'écran
       // La boutique masque le reste : on en sort par sa croix, qui ramène aux paris.
@@ -86,7 +87,7 @@ test.describe('08 · Corrections post-test', () => {
     await placeBet(page, { souls: [0], stake: 5 })
     const track = await boxOf(board(page))
     expect(track.height).toBeGreaterThan(150)
-    await page.getByTestId('tab-shop').click()
+    await openShop(page)
     await expect(page.getByTestId('drawer-shop')).toHaveAttribute('data-state', 'open')
     await expect(board(page)).toHaveCount(0)
     await expect(page.getByTestId('drawer-bets')).toHaveCount(0)
@@ -105,7 +106,8 @@ test.describe('08 · Corrections post-test', () => {
     await start(page, { seed: RACE_SEED, race: 15 })
     await expect(board(page).locator('.legend li')).toHaveCount(8)
     await expect(page.getByTestId('drawer-bets')).toHaveAttribute('data-state', 'open')
-    await page.getByTestId('tab-shop').click()
+    await placeBet(page, { souls: [0], stake: 5 })  // déverrouille la boutique
+    await openShop(page)
     await expect(page.getByTestId('drawer-shop')).toHaveAttribute('data-state', 'open')
     await expect(page.getByTestId('drawer-bets')).toHaveCount(0)
     await shopPanel(page).getByRole('button', { name: 'Fermer' }).click()
@@ -143,24 +145,19 @@ test.describe('08 · Corrections post-test', () => {
     await expect(ghost).toHaveCount(0)
   })
 
-  test('C4 · poser un pari se voit : confirmation dans le pied, compteur en en-tête, liste repliable', async ({ page }) => {
+  test('C4 · poser un pari se voit : compteur en en-tête et liste repliable, sans défilement', async ({ page }) => {
     // 08/C4 — à 1440×900, sans défilement.
     await start(page, { seed: RACE_SEED })
     const panel = betsPanel(page)
     const counter = page.getByTestId('bets-count')
     await expect(counter).toHaveText('Paris posés (0)')
     await placeBet(page, { souls: [1], stake: 20 })
-    const placed = page.getByTestId('bet-placed')
-    await expect(placed).toHaveText('✓ Pari posé : Vainqueur pur · Virgile · 20 ¤ → +50 si gagné')
+    // La confirmation « ✓ Pari posé » du pied a été retirée avec la ligne d'état : ce qui
+    // atteste la pose est désormais le compteur de l'en-tête et la ligne qui s'ajoute à la
+    // liste, tous deux visibles sans défilement.
     await expect(counter).toHaveText('Paris posés (1)')
-    for (const l of [placed, counter]) {
-      const b = await boxOf(l)
-      expect(b.y + b.height, 'visible sans défilement').toBeLessThanOrEqual(900)
-    }
-    // Le guidage du ticket suivant n'apparaît qu'après la confirmation (2 s ÷ 4).
-    await expect(panel.getByText(/Choisis encore 1 âme/)).toHaveCount(0)
-    await expect(panel.getByText(/Choisis encore 1 âme/)).toBeVisible()
-    await expect(placed).toHaveCount(0)
+    const b = await boxOf(counter)
+    expect(b.y + b.height, 'visible sans défilement').toBeLessThanOrEqual(900)
     // Le compteur replie et rouvre la liste des paris posés.
     const list = panel.locator('#bp-placed')
     await expect(list).toBeVisible()

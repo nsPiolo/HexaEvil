@@ -25,9 +25,9 @@ type Step = 0 | 1 | 2 | 3
 
 /**
  * Dossier d'images de chaque cercle dans `public/circles/` (voir docs/proto4/prompts-cercles.md).
- * Seul le premier est peint ; les autres retombent dessus tant que leur décor n'existe pas.
+ * Les cercles sans décor retombent sur celui des Limbes.
  */
-const CIRCLE_ART: Readonly<Record<number, string>> = { 1: '01-limbes' }
+const CIRCLE_ART: Readonly<Record<number, string>> = { 1: '01-limbes', 2: '02-luxure', 3: '03-gourmandise' }
 const circleArt = (circle: number): string => CIRCLE_ART[circle] ?? CIRCLE_ART[1]!
 
 /** Fil d'Ariane imprimé sur la table : Pari · Boutique · Course · Gains. */
@@ -173,8 +173,6 @@ export function GameScreen({ carry, speed, onFinished, onMenu }: Props) {
   const selection = betsShown && betOpen ? { souls: draft.souls, max: draftSlots, onToggle: (id: number) => setDraft((d) => toggleDraftSoul(d, id, draftSlots)) } : null
 
   const tabBets = staked > 0 && betOpen ? fill(HUD.tabBetsStaked, { n: ui.bets.length, staked }) : fill(HUD.tabBets, { n: ui.bets.length })
-  const shopCount = ui.vitrine?.length ?? 0
-  const tabShop = shopUnlocked && ui.vitrine ? fill(HUD.tabShop, { n: shopCount, s: shopCount > 1 ? 's' : '' }) : HUD.tabShopClosed
 
   return (
     <div className={'table' + (betsShown ? ' bets-open' : '') + (shopShown ? ' shop-open' : '')} style={{ ['--step' as string]: `${config.animation.stepMs / speed}ms`, ['--gauge-ms' as string]: `${config.animation.gaugeMs / speed}ms`, ['--dice-ms' as string]: `${config.animation.diceMs / speed}ms`, ['--circle-bg' as string]: `url('/circles/${circleArt(circle)}/bg.jpg')`, ['--circle-bet-bg' as string]: `url('/circles/${circleArt(circle)}/bet-bg.jpg')` }}>
@@ -217,11 +215,8 @@ export function GameScreen({ carry, speed, onFinished, onMenu }: Props) {
       {/* La table : zone haute · plateau · zone basse, en pleine largeur */}
       <main className="felt">
         <div className={'zone zone-top' + (shopShown ? ' zone-open' : '')} data-testid="drawer-shop" data-state={shopShown ? 'open' : 'closed'}>
-          {prep && !shopShown && (
-            <button type="button" className="handle handle-top" data-testid="tab-shop" onClick={openShop} title={fill(HUD.tabShortcut, { key: 'B' })}>
-              {tabShop}
-            </button>
-          )}
+          {/* Plus de poignée « Boutique » au-dessus de la piste : on y entre par le bouton du
+              pied du panneau de paris, et par le raccourci B. Une porte, pas deux. */}
           {shopShown && (
             <div className="panel panel-shop">
               {/* Les trois sorties ramènent aux paris. Depuis que la boutique masque le reste,
@@ -288,7 +283,6 @@ export function GameScreen({ carry, speed, onFinished, onMenu }: Props) {
                 open={betOpen}
                 phase={ui.phase}
                 level={level}
-                speed={speed}
                 roll={ui.roll}
                 lateBet={ui.inventory.artefacts.includes('lateBet') ? { charges: ui.lateBetCharges, active: ui.lateBetOpen } : null}
                 onUseLateBet={actions.useLateBet}

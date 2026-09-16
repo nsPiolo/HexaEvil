@@ -77,6 +77,15 @@ export async function placeBet(page: Page, { souls, stake, tier, type, chips }: 
 }
 
 /** Lance la course depuis le panneau de paris. */
+/**
+ * Ouvre la boutique. Depuis le retrait de la poignée au-dessus de la piste, l'unique porte
+ * est le bouton du pied du panneau de paris — qui doit donc être ouvert.
+ */
+export async function openShop(page: Page): Promise<void> {
+  await betsPanel(page).getByRole('button', { name: 'Boutique' }).click()
+  await expect(page.getByTestId('drawer-shop')).toHaveAttribute('data-state', 'open')
+}
+
 export async function startRace(page: Page): Promise<void> {
   await betsPanel(page).getByRole('button', { name: 'Lancer la course', exact: true }).click()
   await expect(phaseStrip(page)).toHaveAttribute('data-state', 'lancer')
