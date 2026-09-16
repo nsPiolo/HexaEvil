@@ -211,8 +211,12 @@ export function PlayerSlot({ ui, speed, preview, highlightSoul, onHoverSoul, onS
       <section className="slot slot-player slot-player-prep" aria-label="Joueur">
         <p className="hint">{hint()}</p>
         <div className="actions">
-          <button type="button" className="btn btn-primary" disabled={ui.bets.length === 0} onClick={onStart} title={ui.bets.length === 0 ? 'Il faut au moins un pari initial' : undefined}>
-            {HUD.toRace}
+          {/* Même bouton que dans le pied du panneau de paris (`.bp-start`) : corne, halo et
+              états sont partagés, replié ou déplié le lancement a la même tête. */}
+          <button type="button" className="btn bp-start" disabled={ui.bets.length === 0} onClick={onStart} title={ui.bets.length === 0 ? 'Il faut au moins un pari initial' : undefined}>
+            <span className="bp-start-glow" aria-hidden="true" />
+            <span className="bp-start-art" aria-hidden="true" />
+            <span className="bp-start-label">{HUD.toRace}</span>
           </button>
         </div>
       </section>

@@ -17,13 +17,15 @@ export function soulColor(id: number): string {
  */
 const SOUL_DICE: ReadonlySet<string> = new Set(['e0a83c', '6fa8d8', '4ea86a', 'd0453c', 'b07cd8', 'e07a9c', '5cc8c0', 'c9a27a'])
 
-/** Variables CSS d'un dé Âme : teinte du jeton, face et mode de fusion. */
+/**
+ * Variables CSS d'un dé Âme : `--soul` (reprise par le halo de survol) et la face peinte si
+ * l'âme en a une. Sans fichier, le dé reste celui d'os — toutes les couleurs de SOUL_COLORS
+ * en ont un, donc le cas ne se présente que si l'on ajoute une âme sans son image.
+ */
 export function soulDieStyle(id: number): Record<string, string> {
   const color = soulColor(id)
   const hex = color.slice(1)
-  return SOUL_DICE.has(hex)
-    ? { '--soul': color, '--soul-die': `url('/table/dice/${hex}.webp')`, '--soul-blend': 'normal' }
-    : { '--soul': color, '--soul-die': `linear-gradient(${color}, ${color})`, '--soul-blend': 'color' }
+  return { '--soul': color, '--soul-die': SOUL_DICE.has(hex) ? `url('/table/dice/${hex}.webp')` : 'none' }
 }
 
 /**

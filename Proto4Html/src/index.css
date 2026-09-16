@@ -6,6 +6,14 @@
 
 :root {
   color-scheme: dark;
+  /* Les décors de la barre d'actions débordent volontairement de leur bouton ; le halo de
+     la corne passe la fenêtre d'une soixantaine de pixels et ouvrait une barre de
+     défilement horizontale sur du vide. La coupe est au bord de l'écran, jamais au bord
+     d'un cadre, donc aucune couture n'est visible.
+     Deux règles, et les deux sont nécessaires. Celle-ci coupe la propagation de l'overflow
+     de `body` vers la fenêtre : sans elle, le `clip` posé sur `body` remonterait à la
+     fenêtre au lieu de s'appliquer à la boîte de `body`. */
+  overflow-x: hidden;
   /*
    * Surfaces en ardoise froide, accents laissés chauds. Le brun d'origine se battait avec la
    * pierre bleutée de la dalle et du décor ; seuls l'ambre, la braise et le rouge gardent
@@ -33,6 +41,13 @@
 
 body {
   margin: 0;
+  /* Et celle-ci fait le vrai travail : `clip` **retire** le halo de la zone de débordement
+     défilable, au lieu de se contenter de cacher la barre de défilement. `hidden` seul sur
+     la racine ne suffisait pas — il bloque le défilement à la souris mais laisse le
+     défilement programmatique, et le `scrollIntoView` d'un clic décalait toute la page de
+     73 px vers la droite (le HUD passait en x négatif, cf. e2e 08/C1). La coupe tombe au
+     bord de la fenêtre, jamais au bord d'un cadre : aucune couture visible. */
+  overflow-x: clip;
   background: radial-gradient(ellipse at top, #1c232b 0%, var(--bg) 60%);
   color: var(--ink);
   min-height: 100vh;
@@ -372,14 +387,17 @@ p { margin: 0; }
 .die-small { width: 58px; font-size: 0.78rem; }
 .die-soul { font-size: 0.8rem; }
 .die-small.die-soul { font-size: 0.66rem; }
-/* Face dédiée quand l'âme en a une, sinon le dé d'os teinté : `--soul-die` porte l'une ou
-   l'autre et `--soul-blend` dit comment la poser (voir `soulDieStyle` dans souls.ts). */
+/*
+ * Deux couches : la face peinte de l'âme par-dessus le dé d'os, qui ne sert que de repli si
+ * le fichier manque. Pas de couche de teinture à la couleur de l'âme — un aplat déborde de
+ * la silhouette du dé et le cerne d'un liseré ; et la masquer sur le dé d'os rognait le
+ * badge d'ordre, qui déborde volontairement du coin.
+ */
 .die-soul {
   background-image: var(--soul-die, none), url('/table/dice/white.webp');
-  background-size: 100% 100%, 100% 100%;
-  background-position: center, center;
-  background-repeat: no-repeat, no-repeat;
-  background-blend-mode: var(--soul-blend, normal);
+  background-size: 100% 100%;
+  background-position: center;
+  background-repeat: no-repeat;
   color: #0d1116;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.28);
 }
@@ -1172,7 +1190,9 @@ p { margin: 0; }
 .handle::before { content: '▴'; font-size: 0.8rem; opacity: 0.8; }
 .handle-top::before { content: '▾'; }
 .panel { display: flex; flex-direction: column; gap: 10px; animation: rise 250ms ease-out; }
-.panel .bet-panel { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 14px; background: var(--bg); padding: 0; gap: 0; overflow: hidden; }
+/* Pas d'`overflow: hidden` : le parchemin du bouton de pari doit sortir du panneau par le
+   bas. Les coins arrondis sont donc redits sur le pied, seul enfant qui peint jusqu'au bord. */
+.panel .bet-panel { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 14px; background: var(--bg); padding: 0; gap: 0; }
 .panel .shop { border: 1px solid var(--line); border-radius: 14px; background: var(--bg); }
 .panel .inventory { margin: 0; }
 
@@ -1184,7 +1204,7 @@ p { margin: 0; }
 .panel-bets .bet-panel {
   border-color: rgba(255, 255, 255, 0.1);
   background:
-    linear-gradient(90deg, rgba(9, 12, 15, 0.95) 0%, rgba(9, 12, 15, 0.93) 55%, rgba(9, 12, 15, 0.82) 80%, rgba(9, 12, 15, 0.62) 100%),
+    linear-gradient(90deg, rgba(9, 12, 15, 0.20) 0%, rgba(9, 12, 15, 0.4) 55%, rgba(9, 12, 15, 0.6) 80%, rgba(9, 12, 15, 0.8) 100%),
     var(--circle-bet-bg, none) center right / cover no-repeat,
     var(--bg);
 }
@@ -1385,16 +1405,102 @@ p { margin: 0; }
 .type-locked { opacity: 0.55; background: repeating-linear-gradient(135deg, var(--panel) 0 8px, var(--panel-2) 8px 10px); }
 .lock-badge { flex: none; align-self: flex-start; padding: 4px 10px; border-radius: 999px; border: 1px dashed var(--muted); color: var(--muted); font-size: 0.8rem; white-space: nowrap; }
 
-.bp-foot { border-top: 1px solid var(--line); padding: 10px 20px 14px; display: flex; flex-direction: column; gap: 10px; background: var(--bg-2); }
+.bp-foot { border-top: 1px solid var(--line); border-radius: 0 0 14px 14px; padding: 10px 20px 14px; display: flex; flex-direction: column; gap: 54px; background: var(--bg-2); }
 .bp-status { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; min-height: 1.4em; }
 .bp-status.bad { color: var(--bad); }
 .bp-status.good { color: var(--ink); }
 .bp-placed-msg { color: var(--good) !important; font-weight: 700; animation: slide-in 250ms ease-out; }
 .bp-gain { font-size: 1.3rem; font-variant: normal; }
-.bp-actions { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(140px, 0.6fr) minmax(220px, 1.2fr); gap: 12px; }
-@media (max-width: 980px) { .bp-actions { grid-template-columns: 1fr; } }
+.bp-actions { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(140px, 0.6fr) minmax(220px, 1.2fr); gap: 12px; align-items: center; }
+/* En une colonne, les boutons se suivent : il faut écarter les lignes, sinon le rabat du
+   parchemin retombe sur « Boutique ». */
+@media (max-width: 980px) { .bp-actions { grid-template-columns: 1fr; row-gap: 60px; } }
 .bp-actions .btn { padding: 10px 14px; font-weight: 700; font-size: 1rem; }
+/*
+ * Le parchemin scellé du guichet (public/table/bar/bet.png, réduit depuis
+ * docs/proto4/raw/barre/). Le bouton reste un bouton — sa classe, sa place dans la grille,
+ * sa boîte de clic et sa dalle de braise, qu'on voit dépasser de part et d'autre du papier.
+ * Le parchemin est un enfant en absolu qui déborde du cadre, et le panneau ne rogne plus.
+ */
+/* Braise éteinte plutôt que `--ember` : la dalle ne se voit que de part et d'autre du
+   papier, et à pleine braise cette lisière devenait une barre orange plus bavarde que le
+   parchemin lui-même. */
+.bp-place, .bp-place:hover:not(:disabled) { position: relative; background: var(--ember-soft); border-color: var(--ember-soft); }
+/*
+ * Tendu sur la largeur du bouton, pas dimensionné par sa hauteur : c'est ce qui donne la
+ * bande longue de la maquette. Le rapport de l'image (1200 × 336) est conservé, donc la
+ * hauteur suit la largeur. Le `-27%` au lieu du `-50%` qui centrerait remonte le rouleau
+ * sur la dalle et rejette le rabat vers le bas, où il sort du panneau : c'est ce décentrage
+ * qui fait tenir le libellé sur le rouleau sans le décaler lui-même.
+ * Le plafond de 520 px tient le débordement sous 980 px, où le bouton devient très large.
+ */
+.bp-place-art {
+  position: absolute; left: 50%; top: 50%;
+  width: min(100% + 21px, 520px); aspect-ratio: 1200 / 336; transform: translate(-51%, -27%);
+  background: url('/table/bar/bet.png') center / 100% 100% no-repeat;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.6));
+  pointer-events: none;
+}
+/*
+ * Le libellé passe devant le papier et se décale vers la droite pour tomber après le sceau
+ * (qui finit à 35 % de la largeur de l'image). Verticalement il ne bouge presque pas : le
+ * `-27%` du papier a déjà amené le rouleau à sa hauteur.
+ */
+.bp-place-label {
+  position: relative; display: inline-block; white-space: nowrap;
+  transform: translate(12%, -1px);
+  font-size: 1.1rem; color: #2a1c0c; text-shadow: 0 1px 0 rgba(255, 249, 235, 0.55);
+}
+.bp-place:hover:not(:disabled) .bp-place-art { filter: drop-shadow(0 9px 13px rgba(0, 0, 0, 0.6)) brightness(1.06); }
+.bp-place:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+/* Désactivé : tout le bouton s'éteint d'un coup, dalle et papier ensemble. À 0,4 (le défaut
+   de `.btn`) le dessin disparaissait dans le fond du guichet ; 0,6 le garde lisible. */
+.bp-place:disabled { opacity: 0.6; }
 .btn-gold { border-color: var(--gold); color: var(--gold); background: none; }
+/*
+ * Coffre et corne : même patron que le parchemin — un enfant en absolu, décoratif, qui
+ * déborde du bouton. Ils ne sont pas tendus sur la largeur (ce sont des objets, pas des
+ * bandes) : une largeur fixe les dimensionne, ils s'ancrent au bord droit de leur bouton
+ * et le libellé s'écarte d'autant. Positions calées à l'œil, pas calculées.
+ */
+.bp-shop, .bp-start { position: relative; }
+.bp-shop-art {
+  position: absolute; right: 0; bottom: -26px; width: 117px; aspect-ratio: 174 / 168;
+  background: url('/table/bar/chest.png') center bottom / contain no-repeat;
+  filter: drop-shadow(0 4px 7px rgba(0, 0, 0, 0.55));
+  pointer-events: none;
+}
+.bp-shop-label { position: relative; padding-right: 54px; }
+/* La corne sort du panneau par la droite et par le bas : elle ferme la barre comme le
+   parchemin l'ouvre. */
+.bp-start-art {
+  position: absolute; right: -30px; bottom: -58px; width: 264px; aspect-ratio: 246 / 152;
+  background: url('/table/bar/horn.png') center bottom / contain no-repeat;
+  filter: drop-shadow(0 4px 7px rgba(0, 0, 0, 0.55));
+  pointer-events: none;
+}
+.bp-start-label { position: relative; padding-right: 86px; }
+/*
+ * Le halo de braise se loge derrière le pavillon de la corne et ne s'allume que quand la
+ * course peut partir : la corne sonne, c'est le seul signal de la barre. Centré sur le
+ * bouton il ne faisait qu'une tache orange au milieu d'un bouton déjà orange.
+ *
+ * L'alpha du PNG est la luminance du rendu (le noir du fond est devenu transparent), et
+ * surtout pas un `mix-blend-mode: screen` sur l'image d'origine : le survol pose un
+ * `transform` sur le bouton (`.btn:hover`), ce qui isole un contexte d'empilement, et le
+ * halo n'a alors plus que du transparent comme fond hors de la boîte du bouton — `screen`
+ * sur du noir rend le noir, et le carré réapparaissait.
+ */
+.bp-start-glow {
+  position: absolute; right: -143px; bottom: -94px; width: 295px; height: 295px; opacity: 0;
+  background: url('/table/bar/glow.png') center / contain no-repeat;
+  pointer-events: none;
+  transition: opacity 250ms;
+}
+.bp-start:not(:disabled) .bp-start-glow { opacity: 0.75; }
+.bp-start:hover:not(:disabled) .bp-start-glow { opacity: 1; }
+.bp-start:disabled .bp-start-art { opacity: 0.55; filter: grayscale(0.6) brightness(0.8); }
+
 .btn-gold:hover:not(:disabled) { background: #2f2216; }
 .bp-start { width: 100%; padding: 10px 14px; font-weight: 700; font-size: 1rem; background: #3a2a12; border-color: #4a3a1a; color: #c9b07a; }
 .bp-start:not(:disabled) { background: var(--ember); border-color: var(--ember); color: #fff; }

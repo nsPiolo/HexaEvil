@@ -375,17 +375,24 @@ export function BetPanel({ race, money, price, bets, open, phase, level, speed, 
           </div>
         )}
         <div className="bp-actions">
-          <button type="button" className="btn btn-primary" disabled={!open || refusal !== null} onClick={place}>
-            Poser le pari
+          <button type="button" className="btn btn-primary bp-place" disabled={!open || refusal !== null} onClick={place}>
+            {/* Le parchemin est un décor : il déborde du bouton et ne doit rien dire aux lecteurs d'écran. */}
+            <span className="bp-place-art" aria-hidden="true" />
+            <span className="bp-place-label">Poser le pari</span>
           </button>
           {prep && onOpenShop && (
-            <button type="button" className="btn btn-gold" onClick={onOpenShop} title={bets.length === 0 ? 'La boutique n’ouvre sa caisse qu’après un premier pari' : undefined}>
-              Boutique
+            <button type="button" className="btn btn-gold bp-shop" onClick={onOpenShop} title={bets.length === 0 ? 'La boutique n’ouvre sa caisse qu’après un premier pari' : undefined}>
+              <span className="bp-shop-art" aria-hidden="true" />
+              <span className="bp-shop-label">Boutique</span>
             </button>
           )}
           {prep && onStart && (
             <button type="button" className="btn bp-start" disabled={bets.length === 0} onClick={onStart}>
-              {bets.length === 0 ? 'Lancer la course — pose d’abord un pari' : 'Lancer la course'}
+              <span className="bp-start-glow" aria-hidden="true" />
+              <span className="bp-start-art" aria-hidden="true" />
+              <span className="bp-start-label">
+                {bets.length === 0 ? 'Lancer la course — pose d’abord un pari' : 'Lancer la course'}
+              </span>
             </button>
           )}
         </div>
