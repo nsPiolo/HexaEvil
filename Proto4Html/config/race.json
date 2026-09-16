@@ -94,11 +94,5 @@
     "idlePulseMs": 5000,
     "gaugeMs": 300,
     "betConfirmMs": 2000
-  },
-
-  "layout": {
-    "_comment": "Panneaux paris (bas) et boutique (haut) en pleine largeur (spec 08/C2). Les deux peuvent rester ouverts ensemble tant que le plateau garde ~45 px par couloir : au-delà de bothPanelsMaxLanes couloirs, ou sous bothPanelsMinHeight px de hauteur de fenêtre, ouvrir l'un replie l'autre.",
-    "bothPanelsMaxLanes": 3,
-    "bothPanelsMinHeight": 800
   }
 }

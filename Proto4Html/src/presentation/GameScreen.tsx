@@ -81,18 +81,19 @@ export function GameScreen({ carry, speed, onFinished, onMenu }: Props) {
   const shopShown = prep && shopOpen
   const betsShown = !finished && betsOpen
 
-  // Les deux panneaux peuvent rester ouverts ensemble tant que le plateau garde sa hauteur lisible (spec 08/C2) ;
-  // sinon ouvrir l'un replie l'autre.
-  const bothAllowed = (): boolean => ui.race.track.lanes <= config.layout.bothPanelsMaxLanes && (typeof window === 'undefined' || window.innerHeight >= config.layout.bothPanelsMinHeight)
+  // Ouverture exclusive : la boutique prend l'écran seule, piste et paris masqués, pour que
+  // l'achat soit un moment à part. Elle remplace la cohabitation des deux panneaux que
+  // prévoyait 08/C2 — le plateau en bandeau entre les deux donnait trois choses à lire.
+  // On sort de la boutique par ses propres boutons (Fermer, Aller aux paris).
   const openBets = (): void => {
     setBetsOpen(true)
-    if (!bothAllowed()) setShopOpen(false)
+    setShopOpen(false)
   }
   const openShop = (): void => {
     if (!prep) return
     actions.openShop() // tire la vitrine si la boutique est débloquée ; sinon l'état vide s'affiche
     setShopOpen(true)
-    if (!bothAllowed()) setBetsOpen(false)
+    setBetsOpen(false)
   }
 
   // La boutique disparaît dès que la course est lancée ; le panneau de paris se replie quand on ne peut plus parier.
@@ -223,6 +224,9 @@ export function GameScreen({ carry, speed, onFinished, onMenu }: Props) {
           )}
           {shopShown && (
             <div className="panel panel-shop">
+              {/* Les trois sorties ramènent aux paris. Depuis que la boutique masque le reste,
+                  la croix ne peut plus se contenter de la refermer : elle laisserait l'écran
+                  sans aucun panneau. */}
               <ShopPanel
                 vitrine={ui.vitrine ?? []}
                 unlocked={shopUnlocked}
@@ -235,15 +239,9 @@ export function GameScreen({ carry, speed, onFinished, onMenu }: Props) {
                 onBuy={(id, target) => actions.buy(id, target ?? null)}
                 onCancel={actions.cancelPurchase}
                 onReroll={actions.rerollVitrine}
-                onLeave={() => {
-                  setShopOpen(false)
-                  openBets()
-                }}
-                onGoToBets={() => {
-                  setShopOpen(false)
-                  openBets()
-                }}
-                onClose={() => setShopOpen(false)}
+                onLeave={openBets}
+                onGoToBets={openBets}
+                onClose={openBets}
               />
               {shopUnlocked && <Inventory inventory={ui.inventory} lateBetCharges={ui.lateBetCharges} compact />}
             </div>
@@ -251,6 +249,9 @@ export function GameScreen({ carry, speed, onFinished, onMenu }: Props) {
           {!prep && <OpponentSlot ui={ui} />}
         </div>
 
+        {/* Boutique ouverte : ni piste ni paris. Démontés plutôt que masqués en CSS — un
+            `display: none` laisse les boutons dans l'ordre de tabulation. */}
+        {!shopShown && (
         <div className="board-wrap">
           <Board race={ui.race} lastResult={ui.lastResult} activeSoul={activeSoul} highlightSoul={hoverSoul} onHoverSoul={setHoverSoul} preview={preview} selection={selection} bettedSouls={bettedSouls} tieColumns={tieColumns} />
           <p className="last-event" aria-live="polite">
@@ -262,7 +263,9 @@ export function GameScreen({ carry, speed, onFinished, onMenu }: Props) {
             )}
           </p>
         </div>
+        )}
 
+        {!shopShown && (
         <div className={'zone zone-bottom' + (betsShown ? ' zone-open' : '')} data-testid="drawer-bets" data-state={betsShown ? 'open' : 'closed'}>
           <PhaseStrip phase={ui.phase} />
           {!finished && !betsShown && (
@@ -320,6 +323,7 @@ export function GameScreen({ carry, speed, onFinished, onMenu }: Props) {
             />
           )}
         </div>
+        )}
       </main>
 
       {/* Fin de course : classement et bilan des paris en modale, poignée « Gains » pour la rouvrir */}

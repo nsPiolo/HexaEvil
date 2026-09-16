@@ -304,6 +304,14 @@ export function BetPanel({ race, money, price, bets, open, phase, level, speed, 
               )
             })}
           </div>
+          {/* Le gain potentiel se range sous la liste des âmes : la colonne a la place libre,
+              alors que sous la mise il allongeait le panneau dès que le pari devenait complet. */}
+          {ready && (
+            <div className="bp-ticket" aria-live="polite">
+              <span className="bp-ticket-gain good">{fill(BETS.gain, { net, mult: fmtMultiplier(mult).slice(1) })}</span>
+              <span className="bp-ticket-after muted">{fill(BETS.after, { n: money - stake })}</span>
+            </div>
+          )}
         </div>
 
         <div className="bp-col">
@@ -350,12 +358,6 @@ export function BetPanel({ race, money, price, bets, open, phase, level, speed, 
               })}
             </div>
           </div>
-          {ready && (
-            <div className="bp-ticket" aria-live="polite">
-              <span className="bp-ticket-gain good">{fill(BETS.gain, { net, mult: fmtMultiplier(mult).slice(1) })}</span>
-              <span className="bp-ticket-after muted">{fill(BETS.after, { n: money - stake })}</span>
-            </div>
-          )}
         </div>
       </div>
 

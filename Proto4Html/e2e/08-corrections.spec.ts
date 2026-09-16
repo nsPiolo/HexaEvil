@@ -39,17 +39,15 @@ test.describe('08 · Corrections post-test', () => {
       // 08/C1
       await page.setViewportSize({ width, height })
       await start(page, { seed: RACE_SEED })
-      const state = (id: string) => page.getByTestId(id).getAttribute('data-state')
       await expectHudClear(page, width) // paris ouverts
       await page.getByTestId('tab-shop').click()
       await expect(page.getByTestId('drawer-shop')).toHaveAttribute('data-state', 'open')
-      await expectHudClear(page, width) // boutique ouverte (et paris avec, si la fenêtre le permet : les deux ouverts)
-      if ((await state('drawer-bets')) === 'closed') {
-        await page.getByTestId('tab-bets').click() // en fenêtre basse, replie la boutique : paris seuls
-        await expectHudClear(page, width)
-      }
-      if ((await state('drawer-shop')) === 'open') await shopPanel(page).getByRole('button', { name: 'Fermer' }).click()
-      if ((await state('drawer-bets')) === 'open') await betsPanel(page).getByRole('button', { name: 'Fermer' }).click()
+      await expectHudClear(page, width) // boutique seule à l'écran
+      // La boutique masque le reste : on en sort par sa croix, qui ramène aux paris.
+      await shopPanel(page).getByRole('button', { name: 'Fermer' }).click()
+      await expect(page.getByTestId('drawer-bets')).toHaveAttribute('data-state', 'open')
+      await expectHudClear(page, width) // paris seuls
+      await betsPanel(page).getByRole('button', { name: 'Fermer' }).click()
       await expect(page.getByTestId('drawer-bets')).toHaveAttribute('data-state', 'closed')
       await expect(page.getByTestId('drawer-shop')).toHaveAttribute('data-state', 'closed')
       await expectHudClear(page, width) // aucun
@@ -81,35 +79,36 @@ test.describe('08 · Corrections post-test', () => {
     await expect(heads.last()).toBeVisible()
   })
 
-  test('C2 · au cercle 1, boutique et paris ouverts ensemble laissent le plateau en bandeau entre les deux', async ({ page }) => {
-    // 08/C2
+  test('C2 · la boutique s’ouvre seule : ni piste ni paris derrière, et les boutons croisés font l’aller-retour', async ({ page }) => {
+    // 08/C2 — révisé : la cohabitation des deux panneaux a été remplacée par l'ouverture
+    // exclusive, pour que l'achat soit un moment à part et non une troisième chose à lire.
     await start(page, { seed: SHOP_SEED })
     await placeBet(page, { souls: [0], stake: 5 })
+    const track = await boxOf(board(page))
+    expect(track.height).toBeGreaterThan(150)
     await page.getByTestId('tab-shop').click()
     await expect(page.getByTestId('drawer-shop')).toHaveAttribute('data-state', 'open')
-    await expect(page.getByTestId('drawer-bets')).toHaveAttribute('data-state', 'open')
-    const shop = await boxOf(shopPanel(page))
-    const track = await boxOf(board(page))
-    const bets = await boxOf(betsPanel(page))
-    expect(shop.y + shop.height).toBeLessThanOrEqual(track.y + 1)
-    expect(track.y + track.height).toBeLessThanOrEqual(bets.y + 1)
-    expect(track.height).toBeGreaterThan(150)
-    // Les boutons croisés basculent en un clic.
+    await expect(board(page)).toHaveCount(0)
+    await expect(page.getByTestId('drawer-bets')).toHaveCount(0)
+    // Les boutons croisés basculent en un clic, dans les deux sens.
     await shopPanel(page).getByRole('button', { name: 'Retour aux paris' }).click()
     await expect(page.getByTestId('drawer-shop')).toHaveAttribute('data-state', 'closed')
+    await expect(board(page)).toHaveCount(1)
     await betsPanel(page).getByRole('button', { name: 'Boutique' }).click()
     await expect(page.getByTestId('drawer-shop')).toHaveAttribute('data-state', 'open')
+    await expect(board(page)).toHaveCount(0)
   })
 
-  test('C2 · au cercle 6 (4 couloirs), ouvrir le second panneau replie le premier', async ({ page }) => {
-    // 08/C2 — course d'index 15 = cercle 6, course 1.
+  test('C2 · au cercle 6 (4 couloirs), la boutique masque aussi tout le reste', async ({ page }) => {
+    // 08/C2 — course d'index 15 = cercle 6, course 1. La règle ne dépend plus du nombre de
+    // couloirs ni de la hauteur de fenêtre : l'ouverture est exclusive partout.
     await start(page, { seed: RACE_SEED, race: 15 })
     await expect(board(page).locator('.legend li')).toHaveCount(8)
     await expect(page.getByTestId('drawer-bets')).toHaveAttribute('data-state', 'open')
     await page.getByTestId('tab-shop').click()
     await expect(page.getByTestId('drawer-shop')).toHaveAttribute('data-state', 'open')
-    await expect(page.getByTestId('drawer-bets')).toHaveAttribute('data-state', 'closed')
-    await page.getByTestId('tab-bets').click()
+    await expect(page.getByTestId('drawer-bets')).toHaveCount(0)
+    await shopPanel(page).getByRole('button', { name: 'Fermer' }).click()
     await expect(page.getByTestId('drawer-bets')).toHaveAttribute('data-state', 'open')
     await expect(page.getByTestId('drawer-shop')).toHaveAttribute('data-state', 'closed')
   })

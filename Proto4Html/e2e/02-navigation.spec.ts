@@ -23,8 +23,12 @@ test.describe('02 · Navigation Pari ↔ Boutique', () => {
     await expect(shop.getByText(EMPTY_STATE)).toBeVisible()
     await expect(shop.getByRole('button', { name: 'Aller aux paris' })).toBeVisible()
     await expect(shop.getByRole('article')).toHaveCount(0)
-    // Le tiroir boutique recouvre le bord du plateau en écran large : on désigne l'âme par sa chip.
+    // La boutique occupe l'écran seule : pour parier il faut en sortir, c'est ce que propose
+    // son propre bouton. Le pari posé, la vitrine est là au retour.
+    await shop.getByRole('button', { name: 'Aller aux paris' }).click()
+    await expect(page.getByTestId('drawer-bets')).toHaveAttribute('data-state', 'open')
     await placeBet(page, { souls: [4], stake: 5, chips: true })
+    await betsPanel(page).getByRole('button', { name: 'Boutique' }).click()
     await expect(shop.getByRole('article')).toHaveCount(4)
     await expect(shop.getByText(EMPTY_STATE)).toHaveCount(0)
   })
@@ -42,8 +46,10 @@ test.describe('02 · Navigation Pari ↔ Boutique', () => {
 
     await page.getByTestId('tab-shop').click()
     await expect(shopPanel(page)).toBeVisible()
+    // La boutique masque les paris : sa croix doit les rouvrir, sinon l'écran resterait vide.
     await shopPanel(page).getByRole('button', { name: 'Fermer' }).click()
     await expect(page.getByTestId('drawer-shop')).toHaveAttribute('data-state', 'closed')
+    await expect(page.getByTestId('drawer-bets')).toHaveAttribute('data-state', 'open')
 
     await expect(panel.getByRole('button', { name: /^Duel/ })).toHaveAttribute('aria-pressed', 'true')
     await expect(slot(page, 'devant')).toContainText('Homère')
@@ -67,14 +73,16 @@ test.describe('02 · Navigation Pari ↔ Boutique', () => {
     await expect(page.getByTestId('tab-bets')).toHaveCount(0)
   })
 
-  test('E2E-02-E : en écran étroit, un panneau replie l’autre et le plateau reste dans la fenêtre', async ({ page }) => {
+  test('E2E-02-E : la boutique ouverte masque piste et paris ; au retour le plateau est dans la fenêtre', async ({ page }) => {
     // 02/AC5
     await page.setViewportSize({ width: 1024, height: 768 })
     await start(page, { seed: RACE_SEED })
     await expect(page.getByTestId('drawer-bets')).toHaveAttribute('data-state', 'open')
     await page.getByTestId('tab-shop').click()
     await expect(page.getByTestId('drawer-shop')).toHaveAttribute('data-state', 'open')
-    await expect(page.getByTestId('drawer-bets')).toHaveAttribute('data-state', 'closed')
+    // Ouverture exclusive : la boutique est seule à l'écran, plateau et paris sont démontés.
+    await expect(page.getByTestId('drawer-bets')).toHaveCount(0)
+    await expect(board(page)).toHaveCount(0)
     await shopPanel(page).getByRole('button', { name: 'Aller aux paris' }).click()
     await expect(page.getByTestId('drawer-bets')).toHaveAttribute('data-state', 'open')
     await expect(page.getByTestId('drawer-shop')).toHaveAttribute('data-state', 'closed')

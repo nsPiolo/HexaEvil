@@ -21,7 +21,7 @@ Déjà conforme à la cible (à conserver tel quel) :
 
 ## Changements
 
-- **C1 (P1)** — Bloc « ticket » dans le pied : quand le pari est prêt (`missing === 0 && !refusal`), la ligne d'état affiche sur deux lignes : `Gain potentiel : +{net} ¤ (×{mult})` (accent visuel, classe `good`) et `Solde après mise : {money - stake} ¤` (texte secondaire). Quand il n'est pas prêt, comportement actuel conservé.
+- **C1 (P1)** — Bloc « ticket » : quand le pari est prêt (`missing === 0 && !refusal`), deux lignes s'affichent : `Gain potentiel : +{net} ¤ (×{mult})` (accent visuel, classe `good`) et `Solde après mise : {money - stake} ¤` (texte secondaire). Quand il n'est pas prêt, comportement actuel conservé. **Emplacement révisé** : le bloc est passé du pied à la colonne II « Âme », sous la liste des chips — la colonne a la place libre, alors que sous la mise (colonne III) il rallongeait le panneau à chaque fois que le pari devenait complet.
 - **C2 (P1)** — Sélection d'âmes sur le plateau. Quand le panneau de paris est ouvert et qu'il manque des âmes au ticket (`missing > 0`, phase où `open` est vrai) :
   - les jetons du plateau (`Board`, `.token`) et les entrées de légende deviennent cliquables : clic = `toggleSoul(id)` (mêmes règles que les chips : max `slots`, refus au-delà du seuil) ;
   - les jetons sélectionnés portent un anneau de la couleur du pari ; les jetons hors zone de pari sont marqués non sélectionnables (opacité + `title` « A dépassé le seuil de pari ») ;
