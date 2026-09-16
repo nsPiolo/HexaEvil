@@ -338,15 +338,24 @@ p { margin: 0; }
 .hint { min-height: 1.4em; color: var(--gold); }
 
 .dice-group { display: flex; flex-direction: column; gap: 6px; }
-.dice-row { display: flex; gap: 12px; align-items: center; min-height: 56px; flex-wrap: wrap; }
+.dice-row { display: flex; gap: 14px; align-items: center; min-height: 72px; flex-wrap: wrap; }
 
+/*
+ * Les dés sont des faces de céramique peintes (`public/table/dice/`). La bordure reste
+ * déclarée mais transparente : elle ne sert plus qu'aux états (cible, sélection) qui la
+ * recolorent. Le dé d'os est la face par défaut — c'est aussi celle des dés Distance et
+ * celle qu'on voit pendant le lancer, quand la valeur n'est pas encore connue.
+ */
 .die {
   position: relative;
-  width: 64px;
-  height: 56px;
-  border-radius: 10px;
-  border: 2px solid var(--line);
-  background: var(--panel-2);
+  /* Boîte carrée : les fichiers sont exportés sur une toile carrée (le dé peint y garde ses
+     proportions, centré), donc `100% 100%` ne déforme rien. */
+  width: 72px;
+  aspect-ratio: 1;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  background: url('/table/dice/white.webp') center / 100% 100% no-repeat;
+  color: #0d1116;
   font-weight: 700;
   font-size: 0.95rem;
   display: flex;
@@ -354,20 +363,50 @@ p { margin: 0; }
   justify-content: center;
   padding: 0 4px;
   white-space: nowrap;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.25);
+  /* L'inclinaison est posée par le composant (`dieTilt`) et doit survivre à tous les états :
+     chaque règle qui touche `transform` la reprend. */
+  transform: rotate(var(--die-tilt, 0deg));
   transition: transform 150ms, border-color 150ms, box-shadow 150ms, opacity 150ms;
 }
-.die-small { width: 56px; height: 44px; font-size: 0.85rem; }
-.die-soul { background: var(--soul, var(--panel-2)); color: #101419; border-color: transparent; }
-.die-dist { font-size: 1.3rem; font-variant-numeric: tabular-nums; }
-.die-neg { color: var(--bad); }
+.die-small { width: 58px; font-size: 0.78rem; }
+.die-soul { font-size: 0.8rem; }
+.die-small.die-soul { font-size: 0.66rem; }
+/* Face dédiée quand l'âme en a une, sinon le dé d'os teinté : `--soul-die` porte l'une ou
+   l'autre et `--soul-blend` dit comment la poser (voir `soulDieStyle` dans souls.ts). */
+.die-soul {
+  background-image: var(--soul-die, none), url('/table/dice/white.webp');
+  background-size: 100% 100%, 100% 100%;
+  background-position: center, center;
+  background-repeat: no-repeat, no-repeat;
+  background-blend-mode: var(--soul-blend, normal);
+  color: #0d1116;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.28);
+}
+.die-dist { font-size: 1.5rem; font-variant-numeric: tabular-nums; }
+.die-small.die-dist { font-size: 1.15rem; }
+/* `--bad` (#d0453c) tombe à 1,6:1 sur le dé d'os : le recul se peint en brique sombre. */
+.die-neg { color: #6e1710; }
 .die:disabled { opacity: 0.6; }
-.die:not(:disabled):hover { transform: translateY(-2px); border-color: var(--ink); }
-.die-selected { box-shadow: 0 0 0 3px var(--ink), 0 0 16px var(--gold); transform: translateY(-2px); }
+.die:not(:disabled):hover { transform: translateY(-2px) rotate(var(--die-tilt, 0deg)); border-color: var(--ink); }
+.die-selected { box-shadow: 0 0 0 3px var(--ink), 0 0 16px var(--gold); transform: translateY(-2px) rotate(var(--die-tilt, 0deg)); }
 .die-target { border-color: var(--gold); animation: pulse 900ms ease-in-out infinite; }
 .die-paired { opacity: 0.9; }
 .die-unused { opacity: 0.3 !important; filter: grayscale(0.6); }
 .die-resolving { box-shadow: 0 0 0 3px var(--human), 0 0 16px var(--human); opacity: 1 !important; }
-.die-rolling { animation: roll 250ms ease-in-out infinite; color: var(--muted); background: var(--panel-2); }
+/* Pendant le lancer, le dé tourne sur lui-même dans le plan de la page, autour de son
+   centre, comme une aiguille d'horloge — deux tours par cycle — en plus du rebond. La face
+   reste celle d'os, la valeur n'étant révélée qu'à la fin. */
+.die-rolling {
+  /* Même durée que le lancer (`--dice-ms`, posé par GameScreen d'après diceMs et l'option de
+     vitesse) : le dé fait exactement deux tours et retombe sur son inclinaison au moment où
+     la valeur se révèle, à ×0,5 comme à ×4. */
+  animation: dice-tumble var(--dice-ms, 600ms) linear infinite;
+  color: transparent;
+  text-shadow: none;
+  background-image: url('/table/dice/white.webp');
+  background-blend-mode: normal;
+}
 .die-order {
   position: absolute;
   top: -8px;
@@ -384,9 +423,29 @@ p { margin: 0; }
   border: 2px solid var(--panel);
   animation: pop 200ms ease-out;
 }
-@keyframes roll {
-  0%, 100% { transform: rotate(-6deg) translateY(0); }
-  50% { transform: rotate(6deg) translateY(-3px); }
+/* Décalages négatifs pour que les dés ne culbutent pas au même instant : cinq dés en phase
+   lisent comme une animation, désynchronisés ils lisent comme un lancer. */
+.die-rolling:nth-child(2) { animation-delay: -130ms; }
+.die-rolling:nth-child(3) { animation-delay: -260ms; }
+.die-rolling:nth-child(4) { animation-delay: -390ms; }
+.die-rolling:nth-child(5) { animation-delay: -190ms; }
+.die-rolling:nth-child(6) { animation-delay: -320ms; }
+
+/* La rotation part de l'inclinaison au repos et y revient après deux tours pleins : la
+   boucle est continue et le dé ne saute pas au raccord. */
+@keyframes dice-tumble {
+  0% { transform: translateY(0) rotate(calc(var(--die-tilt, 0deg) + 0deg)); }
+  25% { transform: translateY(-9px) rotate(calc(var(--die-tilt, 0deg) + 180deg)); }
+  50% { transform: translateY(0) rotate(calc(var(--die-tilt, 0deg) + 360deg)); }
+  75% { transform: translateY(-6px) rotate(calc(var(--die-tilt, 0deg) + 540deg)); }
+  100% { transform: translateY(0) rotate(calc(var(--die-tilt, 0deg) + 720deg)); }
+}
+/* Mouvement réduit : le dé se contente de respirer, sans culbute ni rotation. */
+@media (prefers-reduced-motion: reduce) {
+  @keyframes dice-tumble {
+    0%, 100% { transform: rotate(var(--die-tilt, 0deg)); opacity: 1; }
+    50% { transform: rotate(var(--die-tilt, 0deg)); opacity: 0.55; }
+  }
 }
 @keyframes pulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(224, 168, 60, 0.6); }
@@ -528,7 +587,28 @@ p { margin: 0; }
   font-weight: 600; font-size: 0.95rem; line-height: 1.2;
   transition: background 150ms, border-color 150ms, transform 150ms;
 }
-.bet-slot-name { color: inherit; }
+/*
+ * Emplacement vide : le vortex tourne dans le trou que l'âme viendra combler. Réservé à
+ * l'état vide — dès qu'une âme est posée, `.bet-slot-filled` reprend le fond plat et la
+ * couleur de l'âme, qui est l'information à lire.
+ * Le voile radial ramène le centre au noir : l'image y est déjà sombre, mais ses bords sont
+ * clairs et le tiret par-dessus s'y perdait.
+ */
+.bet-slot:not(.bet-slot-filled) {
+  /* Le tiret se met au centre, dans l'œil du vortex ; une fois l'âme posée, la pastille et
+     le nom repassent à gauche, alignés sur les chips. */
+  justify-content: center;
+  background:
+    radial-gradient(ellipse at center, rgba(8, 11, 15, 0.5) 0%, rgba(8, 11, 15, 0.2) 50%, rgba(8, 11, 15, 0.72) 100%),
+    url('/table/vortex.jpg') center / cover no-repeat;
+  color: #d3dbe4;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+}
+.bet-slot:not(.bet-slot-filled) .bet-slot-tag { background: var(--panel); }
+
+/* `inline-block` + `min-height` : l'emplacement vide n'a plus de texte, mais garde la
+   hauteur d'une ligne, donc la même pastille que lorsqu'il est rempli. */
+.bet-slot-name { color: inherit; display: inline-block; min-height: 1.2em; }
 .bet-slot-filled { border-style: solid; border-color: var(--soul); color: var(--ink); background: var(--panel-2); box-shadow: 0 0 0 1px var(--soul); animation: pop 200ms ease-out; }
 .bet-slot-filled:hover:not(:disabled) { border-color: var(--bad); box-shadow: 0 0 0 1px var(--bad); }
 .bet-slot-tag { position: absolute; top: -8px; left: 10px; font-size: 0.65rem; padding: 0 5px; border-radius: 999px; background: var(--panel); color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
@@ -1206,17 +1286,28 @@ p { margin: 0; }
 .types { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr; gap: 6px; }
 @media (min-width: 1200px) { .types { grid-template-columns: 1fr 1fr; } }
 .types li { min-width: 0; }
-.type { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; text-align: left; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); transition: border-color 150ms, background 150ms, transform 120ms; }
-.type:hover:not(:disabled) { border-color: var(--muted); transform: translateY(-1px); }
-.type-on { border-color: var(--ember); background: #2c1a12; }
+/*
+ * Cartes de pari sans bordure : le fond suffit à les détacher du panneau, et six filets
+ * empilés faisaient grille. La sélection se dit donc par le fond plus un filet de braise à
+ * gauche — le même signal que la file de combinaisons (`.combo-preview`).
+ * `align-items: flex-start` : la cote appartient à l'intitulé du pari, elle se cale sur sa
+ * ligne et ne flotte plus au milieu d'une description de hauteur variable.
+ */
+.type { width: 100%; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; text-align: left; padding: 9px 13px; border-radius: 10px; border: 0; background: var(--panel); transition: background 150ms, box-shadow 150ms, transform 120ms; }
+.type:hover:not(:disabled) { background: var(--panel-2); transform: translateY(-1px); }
+.type:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
+.type-on { background: #2c1a12; box-shadow: inset 3px 0 0 var(--ember); }
+.type-on:hover:not(:disabled) { background: #34201a; }
 .type:disabled { opacity: 0.5; }
 .type-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .type-name { font-weight: 700; font-size: 0.95rem; }
 .type-desc { font-size: 0.8rem; color: var(--muted); }
-.mult-badge { flex: none; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--gold); color: var(--gold); font-size: 1rem; font-weight: 700; font-variant: normal; }
+/* Largeur fixe et chiffres à chasse constante : ×2 et ×3.5 occupent la même pastille, donc
+   les cotes forment une colonne franche d'une carte à l'autre au lieu de se décaler. */
+.mult-badge { flex: none; align-self: flex-start; margin-top: 1px; min-width: 3.5em; padding: 3px 0; text-align: center; border-radius: 999px; border: 1px solid var(--gold); color: var(--gold); font-size: 0.95rem; font-weight: 700; font-variant: normal; font-variant-numeric: tabular-nums; }
 .type-on .mult-badge { border-color: var(--ember); color: var(--ember); }
 .type-locked { opacity: 0.55; background: repeating-linear-gradient(135deg, var(--panel) 0 8px, var(--panel-2) 8px 10px); }
-.lock-badge { flex: none; padding: 4px 10px; border-radius: 999px; border: 1px dashed var(--muted); color: var(--muted); font-size: 0.8rem; white-space: nowrap; }
+.lock-badge { flex: none; align-self: flex-start; padding: 4px 10px; border-radius: 999px; border: 1px dashed var(--muted); color: var(--muted); font-size: 0.8rem; white-space: nowrap; }
 
 .bp-foot { border-top: 1px solid var(--line); padding: 10px 20px 14px; display: flex; flex-direction: column; gap: 10px; background: var(--bg-2); }
 .bp-status { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; min-height: 1.4em; }

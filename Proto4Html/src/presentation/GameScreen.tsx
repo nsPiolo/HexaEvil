@@ -176,7 +176,7 @@ export function GameScreen({ carry, speed, onFinished, onMenu }: Props) {
   const tabShop = shopUnlocked && ui.vitrine ? fill(HUD.tabShop, { n: shopCount, s: shopCount > 1 ? 's' : '' }) : HUD.tabShopClosed
 
   return (
-    <div className={'table' + (betsShown ? ' bets-open' : '') + (shopShown ? ' shop-open' : '')} style={{ ['--step' as string]: `${config.animation.stepMs / speed}ms`, ['--gauge-ms' as string]: `${config.animation.gaugeMs / speed}ms`, ['--circle-bg' as string]: `url('/circles/${circleArt(circle)}/bg.jpg')`, ['--circle-bet-bg' as string]: `url('/circles/${circleArt(circle)}/bet-bg.jpg')` }}>
+    <div className={'table' + (betsShown ? ' bets-open' : '') + (shopShown ? ' shop-open' : '')} style={{ ['--step' as string]: `${config.animation.stepMs / speed}ms`, ['--gauge-ms' as string]: `${config.animation.gaugeMs / speed}ms`, ['--dice-ms' as string]: `${config.animation.diceMs / speed}ms`, ['--circle-bg' as string]: `url('/circles/${circleArt(circle)}/bg.jpg')`, ['--circle-bet-bg' as string]: `url('/circles/${circleArt(circle)}/bet-bg.jpg')` }}>
       {/* Rangée haute réservée au HUD (spec 08/C1) : rien ne la recouvre, quel que soit l'état des panneaux. */}
       <header className="topbar-game" data-testid="hud-row">
         <div className="hud hud-left" data-testid="hud-left">

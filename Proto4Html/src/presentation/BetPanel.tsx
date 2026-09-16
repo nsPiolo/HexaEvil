@@ -226,10 +226,11 @@ export function BetPanel({ race, money, price, bets, open, phase, level, speed, 
               const id = souls[i]
               const label = def.slots?.[i] ?? (def.ordered ? `${i + 1}` : null)
               return (
-                <button key={i} type="button" className={'bet-slot' + (id !== undefined ? ' bet-slot-filled' : '')} style={id !== undefined ? { ['--soul' as string]: soulColor(id) } : undefined} onClick={() => id !== undefined && toggleSoul(id)} disabled={id === undefined || !open} title={id !== undefined ? 'Retirer' : ''}>
+                <button key={i} type="button" className={'bet-slot' + (id !== undefined ? ' bet-slot-filled' : '')} style={id !== undefined ? { ['--soul' as string]: soulColor(id) } : undefined} onClick={() => id !== undefined && toggleSoul(id)} disabled={id === undefined || !open} title={id !== undefined ? 'Retirer' : ''} aria-label={id === undefined ? BETS.emptySlot : undefined}>
                   {label && <span className="bet-slot-tag">{label}</span>}
                   {id !== undefined && <span className="lane-dot" style={{ background: soulColor(id) }} />}
-                  <span className="bet-slot-name">{id !== undefined ? soulName(id) : '—'}</span>
+                  {/* Vide, l'emplacement ne montre que le vortex ; le span reste pour tenir la hauteur. */}
+                  <span className="bet-slot-name">{id !== undefined ? soulName(id) : ''}</span>
                 </button>
               )
             })}

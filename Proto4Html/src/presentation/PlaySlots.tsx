@@ -3,7 +3,7 @@ import { config } from '../core/config'
 import { bettingClosed } from '../core/rules/bets'
 import { isPairingComplete, type Combination, type MoveResult, type RaceState } from '../core/rules/race'
 import type { Phase, RaceUi } from './useRace'
-import { fmtDistance, soulColor } from './souls'
+import { dieTilt, fmtDistance, soulColor, soulDieStyle } from './souls'
 import { FaceChip } from './Inventory'
 import { BetList } from './BetPanel'
 import { GLOSSARY, HUD, RACE } from './texts'
@@ -25,14 +25,14 @@ export function OpponentSlot({ ui }: { ui: RaceUi }) {
       <div className="dice-row">
         {phase === 'opponent' && !opponentRoll && (
           <>
-            <span className="die die-soul die-rolling die-small">?</span>
-            <span className="die die-dist die-rolling die-small">?</span>
+            <span className="die die-soul die-rolling die-small" style={{ ['--die-tilt' as string]: dieTilt(7) }}>?</span>
+            <span className="die die-dist die-rolling die-small" style={{ ['--die-tilt' as string]: dieTilt(53) }}>?</span>
           </>
         )}
         {opponentRoll && (
           <>
-            <span className="die die-soul die-small" style={{ ['--soul' as string]: soulColor(opponentRoll.soul[0] ?? 0) }}>{soulName(race, opponentRoll.soul[0])}</span>
-            <span className={'die die-dist die-small' + ((opponentRoll.distance[0] ?? 0) < 0 ? ' die-neg' : '')}>{fmtDistance(opponentRoll.distance[0] ?? 0)}</span>
+            <span className="die die-soul die-small" style={{ ...soulDieStyle(opponentRoll.soul[0] ?? 0), ['--die-tilt' as string]: dieTilt(7) }}>{soulName(race, opponentRoll.soul[0])}</span>
+            <span className={'die die-dist die-small' + ((opponentRoll.distance[0] ?? 0) < 0 ? ' die-neg' : '')} style={{ ['--die-tilt' as string]: dieTilt(53) }}>{fmtDistance(opponentRoll.distance[0] ?? 0)}</span>
           </>
         )}
         {thin && <span className="slot-empty slot-empty-thin" />}
@@ -254,7 +254,7 @@ export function PlayerSlot({ ui, speed, preview, highlightSoul, onHoverSoul, onS
                     onMouseLeave={() => hover(false)}
                     onFocus={() => hover(true)}
                     onBlur={() => hover(false)}
-                    style={id !== undefined && !rolling ? { ['--soul' as string]: soulColor(id) } : undefined}
+                    style={{ ...(id !== undefined && !rolling ? soulDieStyle(id) : {}), ['--die-tilt' as string]: dieTilt(i) }}
                   >
                     {rolling || id === undefined ? '?' : soulName(race, id)}
                     {order >= 0 && <span className="die-order">{order + 1}</span>}
@@ -285,6 +285,7 @@ export function PlayerSlot({ ui, speed, preview, highlightSoul, onHoverSoul, onS
                       type="button"
                       className={cls.join(' ')}
                       data-testid={`die-dist-${i}`}
+                      style={{ ['--die-tilt' as string]: dieTilt(i + 50) }}
                       disabled={!pairing || selectedSoulDie === null || order >= 0}
                       onClick={() => onPickDistance(i)}
                       title={drag?.kind === 'soul' && order < 0 ? RACE.dropHere : die?.name}

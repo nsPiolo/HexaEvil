@@ -287,6 +287,7 @@ export const OPTIONS = {
 
 /** Paris verrouillés par le grade du stagiaire ; ticket de guichet (spec 03). */
 export const BETS = {
+  emptySlot: "Emplacement d'âme vide",
   locked: 'Ce pari s’ouvrira quand le stagiaire sera {rank}.',
   lockedBadge: 'dès {rank}',
   tierLocked: 'verrouillé',
