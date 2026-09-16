@@ -105,4 +105,41 @@ test.describe('03 · Écran Paris (le ticket de guichet)', () => {
     // Le palier entièrement verrouillé l'écrit aussi.
     await expect(panel.getByRole('tab', { name: /^Avancés/ })).toContainText('verrouillé')
   })
+
+  test('E2E-03-F : la mise se pose au clic comme au glisser-déposer, et le jeton trop cher est refusé', async ({ page }) => {
+    // 03/AC1 · la zone de mise (jetons peints, logement de pierre)
+    await start(page, { seed: RACE_SEED, money: 5 })
+    const panel = betsPanel(page)
+    const socket = panel.getByTestId('stake-socket')
+    // Mise de départ : le premier palier est dans le logement, sa place sur le rebord est vide.
+    await expect(socket).toContainText('5')
+    await expect(panel.getByRole('button', { name: '5', exact: true })).toHaveAttribute('aria-pressed', 'true')
+    // Solde 25 (5 + l'avance de 20) : 50 est hors de portée, donc ni cliquable ni déplaçable.
+    const tooRich = panel.getByRole('button', { name: '50', exact: true })
+    await expect(tooRich).toBeDisabled()
+    await expect(tooRich).toHaveAttribute('title', 'Solde insuffisant (25 ¤)')
+    // Au clic.
+    await panel.getByRole('button', { name: '20', exact: true }).click()
+    await expect(socket).toContainText('20')
+    await expect(panel.getByRole('button', { name: '20', exact: true })).toHaveAttribute('aria-pressed', 'true')
+    // Au glisser-déposer : le jeton 10 tombe dans le logement et remplace le 20.
+    await panel.getByRole('button', { name: '10', exact: true }).dragTo(socket)
+    await expect(socket).toContainText('10')
+    await tokenButton(page, 1).click()
+    await expect(panel.getByText('Solde après mise : 15 ¤')).toBeVisible()
+    // Seule la mise maximum prend feu : le reste du temps le logement reste froid.
+    await expect(socket.locator('.stake-flames')).toHaveCount(0)
+  })
+
+  test('E2E-03-G : seule la mise maximum enflamme le logement', async ({ page }) => {
+    // 03/AC1 · le feu dit « tu joues gros », pas « tu as choisi »
+    await start(page, { seed: RACE_SEED, money: 200 })
+    const panel = betsPanel(page)
+    const flames = panel.getByTestId('stake-socket').locator('.stake-flames')
+    await expect(flames).toHaveCount(0)
+    await panel.getByRole('button', { name: '50', exact: true }).click()
+    await expect(flames).toBeVisible()
+    await panel.getByRole('button', { name: '20', exact: true }).click()
+    await expect(flames).toHaveCount(0)
+  })
 })

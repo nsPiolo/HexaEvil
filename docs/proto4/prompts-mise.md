@@ -202,10 +202,39 @@ les jetons par-dessus : **aucun jeton dans l'image**.
 > drop shadow, no glow, no pure white in the stone. 2400 × 840 pixels,
 > horizontal, the ledge filling the full width.
 
+## Intégration (faite)
+
+Sources retenues dans [`raw/mises/`](raw/mises), exportées en webp 2× vers
+`Proto4Html/public/table/chips/` (272 Ko au total) :
+
+| Source | Asset | Taille |
+|---|---|---:|
+| `chip-1..4.png` (2048²) | `chip-1..4.webp` | 256 × 256 |
+| `flammes.png` | `flames.webp` | 384 × 384 |
+| `socket.png` (2048 × 4096) | `socket.webp` | 256 × 512, sprite 2 rangées |
+| `tray.png` | `tray.webp` | 1200 × 418 |
+
+Les rendus sont revenus **déjà détourés** (canal alpha), flammes comprises : le
+détour par le fond noir et `mix-blend-mode: screen` prévu au §5 n'a pas servi,
+les flammes sont simplement posées sur le jeton (`z-index`), et elles ne s'allument
+que sous la **mise maximum** : le logement suffit à dire « choisi », le feu dit
+« tu joues gros ». Les deux règles sont tenues par `E2E-03-F` et `E2E-03-G`.
+
+Deux directions cohabitent : `chip-1` et `chip-2` sont des oboles (§3), `chip-3`
+et `chip-4` des jetons gravés à encoches (§1). Ça se lit comme une montée en
+valeur (monnaie usée → jeton d'apparat) ; pour uniformiser, reprendre le rendu
+qui plaît et demander les autres en édition — « same token, same shape, same
+lighting, only change the colour to … ».
+
+Le code : `.stake-zone` dans `src/index.css`, la colonne « III — Mise » de
+`BetPanel.tsx` (glisser-déposer natif, comme l'appariement des dés dans
+`PlaySlots.tsx`), test `E2E-03-F` dans `e2e/03-paris.spec.ts`.
+
 ## Ce qui reste en CSS, donc à ne pas générer
 
 - Le **chiffre** de la mise (texte HTML sur le médaillon).
-- L'**état sélectionné** : `chip-flames.png` + `filter: drop-shadow(0 0 10px var(--ember))`.
+- L'**état sélectionné** : le jeton passe dans le logement, sa place sur le rebord reste creuse.
+- La **mise maximum** : `flames.webp` par-dessus le jeton, qui suit ses agrandissements au survol.
 - Le **drag** : `transform: scale(1.08) rotate(-4deg)` + ombre portée, retour animé si drop hors zone.
 - Le **survol de la cible** : bascule vers la rangée basse de `socket.png`.
 - L'état **désactivé** (mise > argent disponible) : désaturation + opacité.

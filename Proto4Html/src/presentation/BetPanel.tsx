@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type DragEvent } from 'react'
 import { config } from '../core/config'
 import { BET_TYPES, TIER_LABEL, betRefusal, betType, betUnlocked, bettingClosed, currentMultiplier, evaluateBet, fmtMultiplier, potentialPayout, raceProgress, slotCount, type Bet, type BetTier, type BetTypeId } from '../core/rules/bets'
 import { isInBetZone, ranking, type RaceState, type Roll } from '../core/rules/race'
@@ -60,6 +60,20 @@ interface Props {
 
 const TIERS: readonly BetTier[] = ['simple', 'intermediate', 'advanced']
 const NUMERALS = ['I', 'II', 'III'] as const
+
+/**
+ * Jetons peints (`public/table/chips/`), un par palier de mise. `economy.stakes` est libre :
+ * au-delà de quatre mises, les visuels se répètent — la valeur reste portée par le chiffre.
+ */
+const CHIP_ART = ['/table/chips/chip-1.webp', '/table/chips/chip-2.webp', '/table/chips/chip-3.webp', '/table/chips/chip-4.webp'] as const
+const chipArt = (v: number): string => CHIP_ART[Math.max(0, config.economy.stakes.indexOf(v)) % CHIP_ART.length] as string
+/** La mise la plus forte, la seule qui prenne feu dans le logement. */
+const HOTTEST_STAKE = Math.max(...config.economy.stakes)
+const STAKE_MIME = 'application/x-sinnersbet-stake'
+function readStake(e: DragEvent): number | null {
+  const raw = e.dataTransfer.getData(STAKE_MIME)
+  return /^\d+$/.test(raw) ? Number(raw) : null
+}
 
 export function BetPanel({ race, money, price, bets, open, phase, level, speed, roll = null, lateBet, onUseLateBet, onPlace, onCancel, baseFor, draft, onDraftChange, highlightSoul, onHoverSoul, onStart, onOpenShop, onClose }: Props) {
   const [localDraft, setLocalDraft] = useState<BetDraft>(EMPTY_DRAFT)
@@ -126,6 +140,36 @@ export function BetPanel({ race, money, price, bets, open, phase, level, speed, 
       setPlaced(fill(BETS.placed, { type: def.label, souls: souls.map(soulName).join(def.ordered ? ' › ' : ', '), stake, net }))
       setDraft({ ...d, souls: [] })
     }
+  }
+
+  // Mise : glisser un jeton dans le logement, ou le cliquer (même alternative que l'appariement des dés).
+  const [dragStake, setDragStake] = useState<number | null>(null)
+  const [overSocket, setOverSocket] = useState(false)
+  const chooseStake = (v: number): void => {
+    setStake(v)
+    setError(null)
+  }
+  const startStakeDrag = (v: number) => (e: DragEvent): void => {
+    e.dataTransfer.setData(STAKE_MIME, String(v))
+    e.dataTransfer.effectAllowed = 'move'
+    setDragStake(v)
+  }
+  const endStakeDrag = (): void => {
+    setDragStake(null)
+    setOverSocket(false)
+  }
+  const allowStakeDrop = (e: DragEvent): void => {
+    const v = dragStake ?? readStake(e)
+    if (v === null || v > money) return
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    if (!overSocket) setOverSocket(true)
+  }
+  const dropStake = (e: DragEvent): void => {
+    e.preventDefault()
+    const v = dragStake ?? readStake(e)
+    if (v !== null && v <= money) chooseStake(v)
+    endStakeDrag()
   }
 
   // Ligne d'état du pied : ce qu'il manque, ou le refus, ou le ticket prêt (gain + solde après mise).
@@ -266,12 +310,45 @@ export function BetPanel({ race, money, price, bets, open, phase, level, speed, 
           <h3 className="bp-section">
             <span className="numeral">{NUMERALS[2]}</span> Mise
           </h3>
-          <div className="bet-stakes">
-            {config.economy.stakes.map((v) => (
-              <button key={v} type="button" className={'chip' + (stake === v ? ' chip-on' : '')} disabled={!open || v > money} onClick={() => setStake(v)}>
-                {v}
-              </button>
-            ))}
+          <div className="stake-zone">
+            {/* Le logement : cible du dépôt, et socle du jeton en cours. Le chiffre reste du texte. */}
+            <div
+              className={'stake-socket' + (dragStake !== null ? ' stake-socket-armed' : '') + (overSocket ? ' stake-socket-over' : '')}
+              data-testid="stake-socket"
+              onDragOver={open ? allowStakeDrop : undefined}
+              onDragLeave={() => overSocket && setOverSocket(false)}
+              onDrop={open ? dropStake : undefined}
+            >
+              {/* Les flammes ne saluent que le tapis maximum : le feu dit « tu joues gros », pas « tu as choisi ». */}
+              {stake === HOTTEST_STAKE && <span className="stake-flames" aria-hidden="true" />}
+              <span key={stake} className="stake-chip stake-chip-active" style={{ backgroundImage: `url(${chipArt(stake)})` }} aria-hidden="true">
+                {stake}
+              </span>
+            </div>
+            <div className="stake-tray" role="group" aria-label={BETS.trayLabel}>
+              {config.economy.stakes.map((v) => {
+                const chosen = v === stake
+                const tooRich = v > money
+                return (
+                  <button
+                    key={v}
+                    type="button"
+                    className={'stake-chip' + (chosen ? ' stake-chip-gone' : '') + (dragStake === v ? ' stake-chip-dragging' : '')}
+                    style={chosen ? undefined : { backgroundImage: `url(${chipArt(v)})` }}
+                    draggable={open && !tooRich && !chosen}
+                    onDragStart={startStakeDrag(v)}
+                    onDragEnd={endStakeDrag}
+                    disabled={!open || tooRich}
+                    aria-pressed={chosen}
+                    aria-label={chosen ? String(v) : undefined}
+                    title={tooRich ? fill(BETS.tooRich, { n: money }) : chosen ? BETS.chipChosen : BETS.chipHint}
+                    onClick={() => chooseStake(v)}
+                  >
+                    {chosen ? null : v}
+                  </button>
+                )
+              })}
+            </div>
           </div>
           {ready && (
             <div className="bp-ticket" aria-live="polite">

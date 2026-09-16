@@ -302,6 +302,10 @@ export const BETS = {
   placedCount: 'Paris posés ({n})',
   placedToggle: 'Afficher ou replier la liste des paris posés',
   diceSeen: 'Dés lancés : {souls} — {dist}',
+  trayLabel: 'Jetons de mise',
+  chipHint: 'Glissez ce jeton dans le logement, ou cliquez-le',
+  chipChosen: 'Jeton posé : c’est la mise en cours',
+  tooRich: 'Solde insuffisant ({n} ¤)',
 } as const
 
 /** Jauge des trois usages : solde, misé en course, prix du cercle (spec 01/C1). */
