@@ -1050,18 +1050,49 @@ p { margin: 0; }
 .end-escape h1 { color: var(--gold); text-shadow: 0 0 24px rgba(224, 168, 60, 0.5); }
 .end p { max-width: 520px; color: var(--muted); }
 
-/* ---- Carte des neuf cercles ---- */
-.map { justify-content: center; padding-top: 80px; background: radial-gradient(ellipse at 50% 50%, #2a1a14 0%, var(--bg) 70%); }
-.map-body { display: grid; grid-template-columns: minmax(320px, 640px) minmax(260px, 360px); gap: 32px; align-items: center; width: min(1100px, 100%); }
-@media (max-width: 900px) { .map-body { grid-template-columns: 1fr; } }
-.map-svg { width: 100%; height: auto; overflow: visible; }
-.ring-line { fill: none; stroke: var(--line); stroke-width: 1; transition: stroke 200ms; }
+/* ---- Carte des neuf cercles ----
+   Le décor (public/map/bg.jpg) porte les deux emplacements : une pierre ronde à gauche pour la
+   spirale, un bloc rectangulaire à droite pour le texte. Pour que les deux restent alignés sur
+   leur pierre quelle que soit la fenêtre, la scène garde le format exact de l'image et tout s'y
+   place en pourcentage. Repères mesurés sur l'illustration (2752 × 1536) :
+   pierre ronde  centre 38,35 % / 56,4 %, rayon 13,8 % de la largeur ;
+   bloc de texte 55,6 % → 71,2 % en largeur, 43 % → 75,5 % en hauteur. */
+.map { position: relative; justify-content: center; padding: 0; gap: 0; overflow: hidden; background: #0b1420; } /* couleur mesurée sur les bords sombres de bg.jpg */
+/* La scène garde le format de l'image : selon la fenêtre il reste des bandes sur les côtés (ou
+   en haut et en bas). On les comble avec la même illustration, recadrée plein écran, floutée et
+   assombrie — le prolongement se lit comme une profondeur de champ, pas comme une seconde image.
+   `scale` déborde du cadre pour que le flou ne laisse pas de bord clair. */
+.map::before {
+  content: ''; position: absolute; inset: 0; z-index: 0;
+  background: url('/map/bg.jpg') center / cover no-repeat;
+  filter: blur(24px) brightness(0.45) saturate(0.8);
+  transform: scale(1.12);
+}
+.map-stage {
+  z-index: 1;
+  position: relative;
+  width: min(100vw, calc(100vh * 2752 / 1536));
+  height: min(100vh, calc(100vw * 1536 / 2752));
+  background: url('/map/bg.jpg') center / 100% 100% no-repeat;
+  /* Les textes posés sur la pierre se mesurent en % de la scène (cqh), pas en px : ils suivent
+     l'image au lieu de déborder du bloc peint quand la fenêtre rétrécit. */
+  container-type: size;
+}
+.map .hud { position: absolute; top: 3%; font-size: clamp(0.7rem, 1.7cqh, 0.95rem); }
+.map .hud-left { left: 2.5%; }
+.map .hud-right { right: 2.5%; }
+.map .hud-big { font-size: 1.25em; }
+/* Le carré du dessin est celui de l'anneau extérieur + PAD (MapScreen.tsx) : posé sur la pierre
+   ronde, le dernier cercle suit son trait peint. Carré : 30 % de large = 53,75 % de haut. */
+.map-svg { position: absolute; left: 24.1%; top: 30.85%; width: 28.5%; height: 51.05%; overflow: visible; }
+.ring-line { fill: none; stroke: rgba(226, 236, 248, 0.3); stroke-width: 1; transition: stroke 200ms; }
 .ring-hit { fill: none; stroke: transparent; pointer-events: stroke; cursor: pointer; }
-.ring-label { fill: var(--muted); font-size: 11px; font-weight: 700; pointer-events: none; }
-.ring-done .ring-line { stroke: #3e4752; }
+/* Le chiffre est posé sur la pierre peinte : contour sombre (paint-order) plutôt qu'une ombre, net à toute échelle. */
+.ring-label { fill: #dce7f4; font-size: 11px; font-weight: 700; pointer-events: none; paint-order: stroke; stroke: rgba(6, 12, 20, 0.85); stroke-width: 3px; stroke-linejoin: round; }
+.ring-done .ring-line { stroke: rgba(226, 236, 248, 0.16); }
 .ring-current .ring-line { stroke: var(--gold); stroke-width: 1.5; }
 .ring-selected .ring-line { stroke: var(--ink); stroke-dasharray: 3 3; }
-.ring-selected .ring-label { fill: var(--ink); }
+.ring-selected .ring-label { fill: #fff; }
 .spiral { fill: none; stroke: var(--ember-soft); stroke-width: 2; stroke-linecap: round; opacity: 0.8; pointer-events: none; }
 .race-dot .dot { fill: var(--panel-2); stroke: var(--line); stroke-width: 2; transition: fill 200ms, stroke 200ms; }
 .race-done .dot { fill: var(--ember); stroke: var(--ember); }
@@ -1074,11 +1105,44 @@ p { margin: 0; }
 .race-locked .dot-boss { fill: var(--muted); }
 @keyframes halo { 0%, 100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.35); opacity: 0.3; } }
 .race-next .dot-halo { transform-box: fill-box; transform-origin: center; }
-.map-info { display: flex; flex-direction: column; gap: 12px; padding: 20px; border-radius: 14px; background: var(--panel); border: 1px solid var(--line); text-align: left; }
-.map-info h2 { font-size: 1.2rem; }
-.map-dl { margin: 0; display: flex; flex-direction: column; gap: 10px; }
-.map-dl dt { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
-.map-dl dd { margin: 2px 0 0; }
+/* Le bloc bleu peint sert de panneau : ni cadre ni fond ajoutés, juste une ombre portée sur le
+   texte pour qu'il tienne au-dessus de la coulée de lave du bas du rocher. */
+.map-info {
+  position: absolute; left: 55.6%; top: 43%; width: 15.6%; height: 32.5%;
+  display: flex; flex-direction: column; gap: 0.55em;
+  text-align: left; font-size: clamp(0.62rem, 1.35cqh, 0.95rem);
+  text-shadow: 0 1px 3px rgba(4, 8, 14, 0.85);
+}
+.map-info h2 { margin: 0; font-size: 1.45em; line-height: 1.15; }
+.map-info .small { font-size: 0.88em; }
+.map-info .muted { color: #b9c6d6; }
+.map-dl { margin: 0; display: flex; flex-direction: column; gap: 0.5em; }
+.map-dl dt { font-size: 0.68em; text-transform: uppercase; letter-spacing: 0.08em; color: #9fb0c4; }
+.map-dl dd { margin: 0.1em 0 0; font-size: 0.95em; line-height: 1.25; }
+.map-info .btn-primary { margin-top: auto; padding: 0.6em 0.9em; font-size: 0.95em; }
+.map-info .tag { padding: 0 0.5em; font-size: 0.8em; }
+
+/* Écran étroit ou portrait : la scène au format 16/9 deviendrait une bande minuscule. On
+   revient à l'empilement d'avant, l'illustration passant en fond plein cadre. */
+@media (max-width: 860px), (max-aspect-ratio: 1 / 1) {
+  .map { padding: 0; }
+  .map-stage {
+    width: 100%; height: auto; min-height: 100vh; container-type: normal;
+    /* Plein cadre et voilé : hors de son format, l'illustration ne sert plus de gabarit, juste
+       de décor — le voile rend la spirale et le texte lisibles sur n'importe quel recadrage. */
+    background-image: linear-gradient(rgba(8, 14, 22, 0.66), rgba(8, 14, 22, 0.8)), url('/map/bg.jpg');
+    background-size: cover; background-position: center;
+    display: flex; flex-direction: column; align-items: center; gap: 20px; padding: 24px 16px 32px;
+  }
+  .map .hud { position: static; font-size: 0.85rem; }
+  .map .hud-big { font-size: 1.05rem; }
+  .map-svg { position: static; width: min(100%, 420px); height: auto; }
+  .map-info {
+    position: static; width: min(100%, 420px); height: auto; gap: 12px;
+    font-size: 0.85rem; padding: 16px; border-radius: 14px;
+    background: rgba(10, 16, 26, 0.72); border: 1px solid var(--line);
+  }
+}
 .tag { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 999px; background: var(--panel-2); border: 1px solid var(--line); color: var(--muted); font-size: 0.7rem; vertical-align: middle; }
 
 /* =====================================================================

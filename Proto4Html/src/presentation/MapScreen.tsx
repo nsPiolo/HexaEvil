@@ -10,10 +10,18 @@ interface Props {
   onMenu: () => void
 }
 
-const SIZE = 640
-const CENTER = SIZE / 2
 const R0 = 26
 const STEP = 30
+/**
+ * Rayon de l'anneau extérieur, et boîte du dessin calée dessus : la `viewBox` vaut exactement
+ * les anneaux plus une marge pour le trait et le halo. La pierre ronde peinte dans le décor
+ * (public/map/bg.jpg) reçoit donc la spirale au pixel près, quel que soit le format de la fenêtre
+ * — le placement en pourcentage est dans `.map-svg` (index.css).
+ */
+const R_MAX = R0 + STEP * config.run.circles.length
+const PAD = 10
+const SIZE = (R_MAX + PAD) * 2
+const CENTER = SIZE / 2
 
 /** Spirale continue : un tour par cercle, le premier cercle au centre. t = numéro de course fractionnaire. */
 function spiral(t: number): { x: number; y: number } {
@@ -64,19 +72,21 @@ export function MapScreen({ carry, onLaunch, onMenu }: Props) {
 
   return (
     <div className="screen map">
-      <div className="hud hud-left">
-        <span className="hud-big">{fill(HUD.circle, { ordinal: CIRCLES[currentCircle - 1]?.ordinal ?? currentCircle })}</span>
-        <span className="muted small">{fill(HUD.demon, { rank: demonRankAtRace(next).name })}</span>
-        <span className="muted small">{MAP.subtitle}</span>
-      </div>
-      <div className="hud hud-right">
-        <span className="hud-big money">{fill(HUD.coins, { n: carry.money })}</span>
-        <button type="button" className="btn-stone btn-stone-sm" onClick={onMenu}>
-          {HUD.menu}
-        </button>
-      </div>
+      {/* La scène garde le format de l'illustration : les deux repères peints (pierre ronde, bloc
+          rectangulaire) restent alignés avec la spirale et le panneau à toutes les tailles. */}
+      <div className="map-stage">
+        <div className="hud hud-left">
+          <span className="hud-big">{fill(HUD.circle, { ordinal: CIRCLES[currentCircle - 1]?.ordinal ?? currentCircle })}</span>
+          <span className="muted small">{fill(HUD.demon, { rank: demonRankAtRace(next).name })}</span>
+          <span className="muted small">{MAP.subtitle}</span>
+        </div>
+        <div className="hud hud-right">
+          <span className="hud-big money">{fill(HUD.coins, { n: carry.money })}</span>
+          <button type="button" className="btn-stone btn-stone-sm" onClick={onMenu}>
+            {HUD.menu}
+          </button>
+        </div>
 
-      <div className="map-body">
         <svg className="map-svg" viewBox={`0 0 ${SIZE} ${SIZE}`} role="img" aria-label={MAP.title}>
           {/* Anneaux : un par cercle, le premier au centre */}
           {config.run.circles.map((c, k) => {
