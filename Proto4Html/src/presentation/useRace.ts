@@ -11,6 +11,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { config, shop } from '../core/config'
 import { betRefusal, betType, betUnlocked, cancelBet as cancelBetRule, currentMultiplier, effectiveBase, fmtMultiplier, potentialPayout, raceProgress, settleBets, type BaseModifiers, type Bet, type BetTypeId, type Settlement } from '../core/rules/bets'
 import { fmtFace, type DistanceDie } from '../core/rules/dice'
+import { raceAllowance } from '../core/rules/allowance'
 import {
   applyMove,
   buildMoves,
@@ -222,6 +223,10 @@ function initial(seed: number, carry: SessionCarry, base: RaceOptions): RaceUi {
   const race = createRace(config, raceOptions(carry.inventory, base))
   const lanes = race.track.lanes
   const blocked = race.track.blocked.length
+  // Avance de course : versée avant les paris initiaux, racontée dans le journal (visible sous le plateau).
+  const allowance = raceAllowance(config.economy.raceAllowance, carry.inventory, shop)
+  const log: LogEntry[] = [{ id: 0, turn: 1, source: 'system', text: `Cercle ${circle}, course ${raceInCircle}/${config.run.racesPerCircle} — ${race.souls.length} âmes, ${config.track.columns} cases, ${lanes} couloir${lanes > 1 ? 's' : ''}${blocked > 0 ? `, ${blocked} case${blocked > 1 ? 's' : ''} bloquée${blocked > 1 ? 's' : ''}` : ''}, graine ${seed}. Posez vos paris initiaux.` }]
+  if (allowance.total > 0) log.push({ id: 1, turn: 1, source: 'system', text: `Le stagiaire vous avance ${allowance.total} pièces pour cette course${allowance.bonus > 0 ? ` (dont ${allowance.bonus} grâce à la ${itemName('tirelire')})` : ''}.` })
   return {
     race,
     phase: 'prep',
@@ -231,9 +236,9 @@ function initial(seed: number, carry: SessionCarry, base: RaceOptions): RaceUi {
     resolvingIndex: null,
     opponentRoll: null,
     lastResult: null,
-    log: [{ id: 0, turn: 1, source: 'system', text: `Cercle ${circle}, course ${raceInCircle}/${config.run.racesPerCircle} — ${race.souls.length} âmes, ${config.track.columns} cases, ${lanes} couloir${lanes > 1 ? 's' : ''}${blocked > 0 ? `, ${blocked} case${blocked > 1 ? 's' : ''} bloquée${blocked > 1 ? 's' : ''}` : ''}, graine ${seed}. Posez vos paris initiaux.` }],
+    log,
     seed,
-    money: carry.money,
+    money: carry.money + allowance.total,
     bets: [],
     settlement: null,
     inventory: carry.inventory,
@@ -266,7 +271,7 @@ export function useRace({ carry, soulCount, lanes, blocked, speed }: UseRaceProp
 
   const rngRef = useRef<Rng>(seededRng(seed))
   const runId = useRef(0)
-  const logId = useRef(1)
+  const logId = useRef(2)
   const betId = useRef(1)
   const speedRef = useRef<number>(speed)
   speedRef.current = speed

@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { autoToResults, betsPanel, gauge, gaugeValues, hud, hudMoney, placeBet, shopPanel, start } from './helpers'
-import { RACE_SEED, SHOP_SEED } from './seeds'
+import { ALLOWANCE, RACE_SEED, SHOP_SEED, SHOP_SEED_EXPECT, START_MONEY } from './seeds'
 
 test.describe('01 · Jauge des trois usages', () => {
   test('E2E-01-A : la même jauge aux quatre endroits (HUD, paris, boutique, résultats)', async ({ page }) => {
@@ -8,7 +8,9 @@ test.describe('01 · Jauge des trois usages', () => {
     await start(page, { seed: RACE_SEED })
     const hudGauge = gauge(hud(page))
     await expect(hudGauge).toBeVisible()
-    await expect(hudGauge).toContainText('100 / 200')
+    await expect(hudGauge).toContainText(`${START_MONEY} / 200`)
+    // L'avance du stagiaire est versée avant les paris et racontée sous le plateau.
+    await expect(page.locator('.last-event')).toContainText(`Le stagiaire vous avance ${ALLOWANCE} pièces`)
     await expect(hudGauge).toContainText('solde')
     await expect(hudGauge).toContainText('prix du cercle')
 
@@ -26,8 +28,8 @@ test.describe('01 · Jauge des trois usages', () => {
   })
 
   test('E2E-01-B : à 87/200, « encore 113 ¤ à trouver » ; une mise de 20 fait passer à 67', async ({ page }) => {
-    // 01/AC2
-    await start(page, { seed: RACE_SEED, money: 87 })
+    // 01/AC2 — 67 apportés + 20 d'avance = 87 à la table.
+    await start(page, { seed: RACE_SEED, money: 87 - ALLOWANCE })
     const g = gauge(hud(page))
     await expect(g).toContainText('87 / 200')
     await expect(g).toContainText('encore 113 ¤ à trouver')
@@ -40,7 +42,7 @@ test.describe('01 · Jauge des trois usages', () => {
 
   test('E2E-01-C : l’avertissement ne bloque rien, miser et acheter restent possibles', async ({ page }) => {
     // 01/AC4
-    await start(page, { seed: SHOP_SEED, money: 87 })
+    await start(page, { seed: SHOP_SEED, money: 87 - ALLOWANCE })
     const panel = betsPanel(page)
     await page.getByTestId('token-1').getByRole('button').click()
     await panel.getByRole('button', { name: '20', exact: true }).click()
@@ -49,8 +51,8 @@ test.describe('01 · Jauge des trois usages', () => {
     await expect(hudMoney(page)).toHaveText('67 Pièces')
     await page.getByTestId('tab-shop').click()
     const shop = shopPanel(page)
-    // À 67 pièces : le Dé des Limbes (30) s'achète, l'Œil du parieur (80) non — solde réellement insuffisant.
-    await expect(shop.getByRole('article').filter({ hasText: 'Dé des Limbes' }).getByRole('button', { name: 'Acheter' })).toBeEnabled()
-    await expect(shop.getByRole('article').filter({ hasText: 'Œil du parieur' }).getByRole('button', { name: 'Acheter' })).toBeDisabled()
+    // À 67 pièces : le dé à 30 s'achète, l'objet à 80 non — solde réellement insuffisant.
+    await expect(shop.getByRole('article').filter({ hasText: SHOP_SEED_EXPECT.die.name }).getByRole('button', { name: 'Acheter' })).toBeEnabled()
+    await expect(shop.getByRole('article').filter({ hasText: SHOP_SEED_EXPECT.confirm.name }).getByRole('button', { name: 'Acheter' })).toBeDisabled()
   })
 })

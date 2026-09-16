@@ -140,20 +140,25 @@ export function Board({ race, lastResult, activeSoul, highlightSoul = null, onHo
           // L'enveloppe `.token` couvre toute la case (les jetons empilés se recouvrent) : elle laisse
           // passer les clics, c'est le corps du jeton qui porte le survol, le titre et le bouton.
           const hover = { onMouseEnter: () => onHoverSoul?.(soul.id), onMouseLeave: () => onHoverSoul?.(null) }
+          // Marqueur de pari (recommandation §4.3), accroché au corps du jeton — pas à l'enveloppe, qui couvre toute la case.
+          const betMark = bettedSouls?.has(soul.id) ? (
+            <span className="token-bet" title={BET_LIVE.betted} aria-label={BET_LIVE.betted}>
+              ¤
+            </span>
+          ) : null
           return (
             <div key={soul.id} className={tokenClass.join(' ')} data-testid={`token-${soul.id}`} data-soul={soul.name} data-cell={soul.position} data-state={picked ? 'picked' : isActive ? 'active' : 'idle'} style={{ ...cellStyle(soul.position, soul.lane, offset), ['--soul' as string]: soulColor(soul.id) }}>
               {selection ? (
                 <button type="button" className="token-btn" disabled={!canPick} onClick={() => selection.onToggle(soul.id)} aria-pressed={picked} title={title} {...hover} onFocus={() => onHoverSoul?.(soul.id)} onBlur={() => onHoverSoul?.(null)}>
-                  <span className="token-body">{soul.name.slice(0, 2)}</span>
+                  <span className="token-body">
+                    {soul.name.slice(0, 2)}
+                    {betMark}
+                  </span>
                 </button>
               ) : (
                 <span className="token-body" title={title} {...hover}>
                   {soul.name.slice(0, 2)}
-                </span>
-              )}
-              {bettedSouls?.has(soul.id) && (
-                <span className="token-bet" title={BET_LIVE.betted} aria-label={BET_LIVE.betted}>
-                  ¤
+                  {betMark}
                 </span>
               )}
               {isLast && lastResult && (

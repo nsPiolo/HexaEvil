@@ -43,7 +43,7 @@ export const INTRO: readonly Line[] = [
   D("Non !? Je comprends que vous ne soyez pas d'humeur, mais je m'ennuie ferme ici. Je vous prête un peu d'argent et vous pourrez conserver vos gains."),
   P("Bon, d'accord, mais pas d'entourloupe."),
   D('Parfait, on a un pacte !'),
-  D("Ici on mise sur une course d'âmes damnées, donc voilà {money} pièces pour commencer."),
+  D("Ici on mise sur une course d'âmes damnées, donc voilà {money} pièces pour commencer. Et avant chaque course, je vous avancerai {allowance} pièces de plus : il faut bien que le guichet tourne."),
   D("Ah, et je n'ai le droit de prendre que les paris simples : vainqueur, top 3, dernier, un duel. Les gros tickets, c'est au-dessus de mon grade. Pour l'instant."),
 ]
 

@@ -251,7 +251,8 @@ p { margin: 0; }
 .token-fanned .token-body { box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(240, 230, 223, 0.35); }
 .token-unpickable .token-body { opacity: 0.45; }
 /* Marqueur de pari à la base du jeton (recommandation §4.3). */
-.token-bet { position: absolute; bottom: -4px; right: calc(50% - 20px); width: 15px; height: 15px; border-radius: 50%; background: var(--gold); color: var(--bg); font-size: 0.6rem; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 1px solid var(--bg); z-index: 3; pointer-events: auto; }
+.token-body { position: relative; }
+.token-bet { position: absolute; bottom: -3px; right: -6px; width: 14px; height: 14px; border-radius: 50%; background: var(--gold); color: var(--bg); font-size: 0.6rem; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 1px solid var(--bg); z-index: 3; pointer-events: none; }
 .token-unpickable.token-picked .token-body { opacity: 1; }
 .legend-btn { display: flex; align-items: center; gap: 6px; background: none; border: 0; padding: 0; font: inherit; font-weight: 600; }
 .legend-btn:disabled { opacity: 0.45; cursor: not-allowed; }

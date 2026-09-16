@@ -14,11 +14,15 @@
  *   associés désignent deux âmes différentes ;
  * - tour 2 : le joueur provoque une collision (05-F) ;
  * - après le tour 4 : une âme est dans la zone de fin, la course continue (03-C) ;
- * - course en 7 tours ; le pari auto « Vainqueur pur · Homère » est gagné : 100 − 5 + 18 = 113
- *   pièces, donc « encore 87 ¤ à trouver en 2 courses » (06-B).
+ * - course en 7 tours ; le pari auto « Vainqueur pur · Homère » est gagné : 80 + 20 d'avance − 5 + 18
+ *   = 113 pièces, donc « encore 87 ¤ à trouver en 2 courses » (06-B).
  */
 export const RACE_SEED = 97
 export const RACE_SEED_EXPECT = { firstMove: { soul: 'Socrate', to: 2 }, collisionTurn: 2, zoneTurn: 4, finalMoney: 113, missing: 87 }
+
+/** Avance versée par le stagiaire au début de chaque course (`economy.raceAllowance`) : 80 de capital + 20 → 100 à la table. */
+export const ALLOWANCE = 20
+export const START_MONEY = 80 + ALLOWANCE
 
 /**
  * Cercle 2, course 1 (`race=3`, graine effective 34) : deux couloirs ; au classement final,
@@ -30,13 +34,14 @@ export const TIE_RACE_INDEX = 3
 
 /**
  * Vitrine du cercle 1, inventaire de départ (la vitrine est tirée à la première ouverture de la
- * boutique, avant tout lancer) : Dé des Limbes 30 (sûr), Clepsydre fêlée 40 (sûr), Œil du
- * parieur 80 (ambitieux, ≥ seuil de confirmation), Dé de Prodigalité 80 (danger ⚠).
+ * boutique, avant tout lancer) : Tirelire du stagiaire 45 (sûr), Dé des Limbes 30 (sûr), Œil du
+ * parieur 80 (ambitieux, ≥ seuil de confirmation), Dé de la Colère 55 (danger ⚠). Tous les prix
+ * dépassent 15 : à 0 pièce apportée (20 d'avance − 5 de mise), tout est trop cher (04-D).
  */
-export const SHOP_SEED = 6
+export const SHOP_SEED = 171
 export const SHOP_SEED_EXPECT = {
   order: ['Sûr', 'Sûr', 'Ambitieux', 'Danger ⚠'],
-  danger: { name: 'Dé de Prodigalité', warning: 'chaque association coûte 3 ¤' },
+  danger: { name: 'Dé de la Colère', warning: 'une face à −2 : un recul de deux cases est possible', impact: 'moyen' },
   confirm: { name: 'Œil du parieur', price: 80 },
   die: { name: 'Dé des Limbes', price: 30, faces: ['+1', '+1', '+2', '+2'] },
   cheapest: 30,

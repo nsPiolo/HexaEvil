@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import { betsPanel, board, hud, hudMoney, pairNaturally, placeBet, rollDice, shopPanel, slot, start, startRace, token, tokenButton } from './helpers'
-import { CUMUL_SEED, RACE_SEED, SHOP_SEED } from './seeds'
+import { CUMUL_SEED, RACE_SEED, SHOP_SEED, START_MONEY } from './seeds'
 
 type Box = { x: number; y: number; width: number; height: number }
 const overlap = (a: Box, b: Box): boolean => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height
@@ -225,7 +225,7 @@ test.describe('08 · Corrections post-test', () => {
     const g = hud(page).getByTestId('money-gauge')
     const opacity = () => g.evaluate((el) => parseFloat(getComputedStyle(el).opacity))
     await expect.poll(opacity).toBeLessThan(0.6)
-    await expect(g).toContainText('100 / 200')
+    await expect(g).toContainText(`${START_MONEY} / 200`)
     await betsPanel(page).getByRole('button', { name: 'Fermer' }).click()
     await expect.poll(opacity).toBe(1)
   })

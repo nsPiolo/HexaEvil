@@ -86,7 +86,7 @@ export default function App() {
     const s = toSave(carry, 1)
     saveRun(s)
     setSave(s)
-    setScreen({ kind: 'dialogue', lines: INTRO.map((l) => ({ ...l, text: fill(l.text, { money: config.economy.startingMoney }) })), then: { kind: 'game', carry, key: gameKey + 1 }, skippable: true })
+    setScreen({ kind: 'dialogue', lines: INTRO.map((l) => ({ ...l, text: fill(l.text, { money: config.economy.startingMoney, allowance: config.economy.raceAllowance }) })), then: { kind: 'game', carry, key: gameKey + 1 }, skippable: true })
   }
 
   /** État du run visible à l'écran, sinon la sauvegarde. */

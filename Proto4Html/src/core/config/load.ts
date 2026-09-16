@@ -79,6 +79,7 @@ export function loadConfig(raw: unknown): RaceConfig {
 
   const economy = obj(root.economy, 'economy')
   const startingMoney = int(economy.startingMoney, 'economy.startingMoney', 0)
+  const raceAllowance = int(economy.raceAllowance, 'economy.raceAllowance', 0)
   const stakes = intArray(economy.stakes, 'economy.stakes')
   if (stakes.some((v) => v <= 0)) fail('economy.stakes', 'mises strictement positives attendues')
   const mults = obj(economy.multipliers, 'economy.multipliers')
@@ -165,7 +166,7 @@ export function loadConfig(raw: unknown): RaceConfig {
     track: { columns, cellsAfterFinish, betThresholdRatio },
     dice: { distanceFaces, distanceDice, soulDice },
     opponent: { rollsPerTurn },
-    economy: { startingMoney, stakes, multipliers, betUnlockLevel, decay: { exponent, minMultiplier } },
+    economy: { startingMoney, raceAllowance, stakes, multipliers, betUnlockLevel, decay: { exponent, minMultiplier } },
     run: { racesPerCircle, circles },
     artefacts: { lateBet: { chargesPerCircle }, sablier: { betThresholdRatio: sablierRatio } },
     animation: { stepMs, diceMs, pauseMs, betRevealMs, idlePulseMs, gaugeMs, betConfirmMs },

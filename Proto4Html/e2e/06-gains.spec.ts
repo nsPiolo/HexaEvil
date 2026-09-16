@@ -50,7 +50,7 @@ test.describe('06 · Résultats et gains', () => {
   })
 
   test('E2E-06-B : la jauge de la modale dit exactement ce qui manque et en combien de courses', async ({ page }) => {
-    // 06/AC3 — pari auto « Vainqueur pur · Homère » gagné : 113 pièces après la 1re course du cercle.
+    // 06/AC3 — 80 + 20 d'avance, pari auto « Vainqueur pur · Homère » gagné : 113 pièces après la 1re course du cercle.
     await start(page, { seed: RACE_SEED })
     const dialog = await autoToResults(page)
     const g = gauge(dialog)

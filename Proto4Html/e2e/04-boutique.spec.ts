@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { hudMoney, placeBet, shopPanel, start } from './helpers'
-import { SHOP_SEED, SHOP_SEED_EXPECT as E } from './seeds'
+import { SHOP_SEED, SHOP_SEED_EXPECT as E, START_MONEY } from './seeds'
 
 /** Pose un pari de 5 sur Homère et ouvre la boutique : la vitrine de la graine apparaît. */
 async function openShop(page: Page) {
@@ -23,7 +23,7 @@ test.describe('04 · Écran Boutique (la vitrine à trois tentations)', () => {
     const danger = article(shop, E.danger.name)
     await expect(danger.locator('.shop-risk')).toHaveText(/danger/i)
     await expect(danger.getByText(E.danger.warning)).toBeVisible()
-    await expect(danger.getByText(/Impact : fort/)).toBeVisible()
+    await expect(danger.getByText(`Impact : ${E.danger.impact}`)).toBeVisible()
     await expect(article(shop, E.die.name).locator('.shop-risk')).toHaveText(/sûr/i)
   })
 
@@ -39,7 +39,7 @@ test.describe('04 · Écran Boutique (la vitrine à trois tentations)', () => {
     await expect(btn).toHaveText('Acheter')
     await btn.click()
     await expect(btn).toHaveText(`Confirmer ${E.confirm.price} ¤`)
-    await expect(hudMoney(page)).toHaveText('95 Pièces')
+    await expect(hudMoney(page)).toHaveText(`${START_MONEY - 5} Pièces`)
     // Sans second clic, le bouton retombe après le délai de confirmation.
     await page.clock.fastForward(3000)
     await expect(btn).toHaveText('Acheter')
@@ -47,7 +47,7 @@ test.describe('04 · Écran Boutique (la vitrine à trois tentations)', () => {
     await btn.click()
     await expect(btn).toHaveText(`Confirmer ${E.confirm.price} ¤`)
     await btn.click()
-    await expect(hudMoney(page)).toHaveText(`${95 - E.confirm.price} Pièces`)
+    await expect(hudMoney(page)).toHaveText(`${START_MONEY - 5 - E.confirm.price} Pièces`)
     await expect(article(shop, E.confirm.name)).toHaveCount(0)
     await expect(page.getByRole('region', { name: 'Inventaire' })).toContainText(E.confirm.name)
   })
@@ -67,13 +67,13 @@ test.describe('04 · Écran Boutique (la vitrine à trois tentations)', () => {
       await expect(opt.getByRole('button', { name: 'Remplacer ce dé' })).toBeEnabled()
     }
     await options.first().getByRole('button', { name: 'Remplacer ce dé' }).click()
-    await expect(hudMoney(page)).toHaveText(`${95 - E.die.price} Pièces`)
+    await expect(hudMoney(page)).toHaveText(`${START_MONEY - 5 - E.die.price} Pièces`)
     await expect(page.getByRole('region', { name: 'Inventaire' })).toContainText(E.die.name)
   })
 
   test('E2E-04-D : un objet trop cher reste entièrement lisible, seul l’achat est désactivé', async ({ page }) => {
-    // 04/AC5 — 10 pièces : la mise de 5 laisse 5, tout est trop cher.
-    await start(page, { seed: SHOP_SEED, money: 10 })
+    // 04/AC5 — rien d'apporté : l'avance de 20 moins la mise de 5 laisse 15, tout est trop cher (le moins cher est à 30).
+    await start(page, { seed: SHOP_SEED, money: 0 })
     const shop = await openShop(page)
     for (const art of await shop.getByRole('article').all()) {
       await expect(art.getByRole('heading')).toBeVisible()

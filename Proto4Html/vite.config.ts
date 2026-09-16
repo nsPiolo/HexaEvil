@@ -6,6 +6,7 @@ export default defineConfig({
   // Sous Playwright (webServer), on n'ouvre pas d'onglet dans le navigateur de la machine.
   server: { port: 5183, open: !process.env.PLAYWRIGHT && !process.env.CI },
   test: {
-    exclude: ['**/node_modules/**', '**/dist/**'],
+    // Les scénarios Playwright (e2e/) ont leur propre lanceur.
+    exclude: ['**/node_modules/**', '**/dist/**', 'e2e/**'],
   },
 })

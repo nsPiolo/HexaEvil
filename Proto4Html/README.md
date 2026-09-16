@@ -123,6 +123,11 @@ npm run build
   avec le grade requis ; le stagiaire annonce chaque déblocage (cotes tirées de la
   config) dans son dialogue de promotion, et prévient dès l'intro qu'il ne prend
   que les paris simples.
+- Avance de course : au début de chaque course, avant les paris initiaux, le stagiaire verse
+  automatiquement `economy.raceAllowance` pièces (20) au joueur ; la ligne de journal le dit
+  sous le plateau, et l'intro l'annonce. Le capital de départ (`startingMoney`) est de 80,
+  si bien que la première course commence à 100. L'artefact **Tirelire du stagiaire** (commun, 45) augmente cette avance de
+  son paramètre `bonus` (10) pour le reste du run. Règle pure dans `src/core/rules/allowance.ts`.
 - Boutique (GDD §6.1), dans l'ordre du cycle macro révisé : **paris initiaux
   d'abord, boutique ensuite, course enfin**. Il faut au moins un pari pour ouvrir
   la boutique, pour que le joueur ne puisse pas tout dépenser sans enjeu. Vitrine
@@ -131,7 +136,7 @@ npm run build
   [`config/shop.json`](config/shop.json), effets dans le code indexés par id.
   - 8 artefacts (5 emplacements) : Œil du parieur, Sablier de Charon, Boussole des
     Limbes, Clepsydre fêlée, Fer à cheval rouillé, Bourse percée, Livre des
-    comptes. Règles alignées sur `docs/proto4/artefacts.md` : la Clepsydre passe
+    comptes, Tirelire du stagiaire. Règles alignées sur `docs/proto4/artefacts.md` : la Clepsydre passe
     les négatifs en valeur absolue au tour 1, la Boussole fait avancer l'âme de
     chaque dé Âme inutilisé, le Livre rembourse un pari perdu tiré au sort. Le
     Filet du pêcheur a été retiré (pas d'ex æquo à départager).

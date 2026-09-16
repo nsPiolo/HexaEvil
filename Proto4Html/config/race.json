@@ -27,8 +27,9 @@
   },
 
   "economy": {
-    "_comment": "startingMoney = capital au début de la session (conservé de course en course). stakes = mises proposées. multipliers = ce que rapporte une mise gagnante (mise × multiplicateur, la mise est débitée au moment du pari). Cotes équitables à 5 âmes, pour comparaison : vainqueur 5, top 3 1,67, pas top 3 2,5, dernier 5, top 3 désordre 10, deux dans le top 3 3,33, duel 2, podium exact 60, classement complet 120, vainqueur + dernier 20.",
-    "startingMoney": 100,
+    "_comment": "startingMoney = capital au début de la session (conservé de course en course) ; avec l'avance, la première course commence à 100. raceAllowance = avance versée automatiquement par le stagiaire au début de chaque course (l'artefact Tirelire du stagiaire l'augmente de son paramètre `bonus`, config/shop.json). stakes = mises proposées. multipliers = ce que rapporte une mise gagnante (mise × multiplicateur, la mise est débitée au moment du pari). Cotes équitables à 5 âmes, pour comparaison : vainqueur 5, top 3 1,67, pas top 3 2,5, dernier 5, top 3 désordre 10, deux dans le top 3 3,33, duel 2, podium exact 60, classement complet 120, vainqueur + dernier 20.",
+    "startingMoney": 80,
+    "raceAllowance": 20,
     "stakes": [5, 10, 20, 50],
     "multipliers": {
       "winner": 3.5,

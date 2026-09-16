@@ -32,6 +32,8 @@ export interface RaceConfig {
   }
   economy: {
     startingMoney: number
+    /** Avance versée au joueur au début de chaque course (avant les paris initiaux). */
+    raceAllowance: number
     stakes: readonly number[]
     multipliers: Readonly<Record<BetTypeId, number>>
     /** Niveau du stagiaire (index de grade, 0 au départ) à partir duquel chaque type de pari est ouvert. */

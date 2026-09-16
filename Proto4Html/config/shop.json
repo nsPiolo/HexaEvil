@@ -34,6 +34,10 @@
       "name": "Livre des comptes",
       "description": "Une fois par course, un de vos paris perdus, tiré au sort, est remboursé à 50 %.",
       "params": { "refundRatio": 0.5 } },
+    { "id": "tirelire", "kind": "artefact", "rarity": "common", "price": 45, "impact": "moyen",
+      "name": "Tirelire du stagiaire",
+      "description": "L'avance que le stagiaire vous verse avant chaque course augmente de 10 pièces, pour le reste du run.",
+      "params": { "bonus": 10 } },
 
     { "id": "limbes", "kind": "die", "rarity": "common", "price": 30, "impact": "moyen",
       "name": "Dé des Limbes",
