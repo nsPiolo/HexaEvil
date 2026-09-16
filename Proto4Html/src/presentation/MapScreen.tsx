@@ -12,6 +12,8 @@ interface Props {
 
 const R0 = 26
 const STEP = 30
+/** Jeu laissé entre deux couronnes voisines, pour qu'elles se lisent sans trait de contour. */
+const GAP = 5
 /**
  * Rayon de l'anneau extérieur, et boîte du dessin calée dessus : la `viewBox` vaut exactement
  * les anneaux plus une marge pour le trait et le halo. La pierre ronde peinte dans le décor
@@ -37,20 +39,23 @@ function jitter(i: number): number {
 }
 
 /**
- * Position d'une course : 3 points par tour, posés sur la spirale. Chaque point flotte dans
- * son tiers de tour (entre 0,15 et 0,85), d'où un léger chaos d'un cercle à l'autre tout en
- * gardant l'ordre des courses le long du trait.
+ * Paramètre de spirale d'une course : 3 points par tour. Chaque point flotte dans son tiers de
+ * tour (entre 0,15 et 0,85), d'où un léger chaos d'un cercle à l'autre tout en gardant l'ordre
+ * des courses le long du trait.
  */
-function point(raceIndex: number): { x: number; y: number } {
-  return spiral((raceIndex + 0.15 + 0.7 * jitter(raceIndex)) / config.run.racesPerCircle)
+function tOf(raceIndex: number): number {
+  return (raceIndex + 0.15 + 0.7 * jitter(raceIndex)) / config.run.racesPerCircle
 }
 
-/** Tracé lisse de la spirale du premier au dernier point. */
-function spiralPath(total: number): string {
-  const per = config.run.racesPerCircle
-  const t0 = (0.15 + 0.7 * jitter(0)) / per
-  const t1 = (total - 1 + 0.15 + 0.7 * jitter(total - 1)) / per
-  const steps = total * 10
+function point(raceIndex: number): { x: number; y: number } {
+  return spiral(tOf(raceIndex))
+}
+
+/** Tracé lisse de la spirale d'une course à une autre, bornes comprises. */
+function spiralPath(fromRace: number, toRace: number): string {
+  const t0 = tOf(fromRace)
+  const t1 = tOf(toRace)
+  const steps = Math.max(1, (toRace - fromRace) * 10)
   const parts: string[] = []
   for (let i = 0; i <= steps; i++) {
     const p = spiral(t0 + ((t1 - t0) * i) / steps)
@@ -68,7 +73,7 @@ export function MapScreen({ carry, onLaunch, onMenu }: Props) {
   const per = config.run.racesPerCircle
   const info = config.run.circles[selected - 1]!
   const texts = CIRCLES[selected - 1]
-  const path = spiralPath(total)
+  const path = spiralPath(0, total - 1)
 
   return (
     <div className="screen map">
@@ -90,7 +95,6 @@ export function MapScreen({ carry, onLaunch, onMenu }: Props) {
         <svg className="map-svg" viewBox={`0 0 ${SIZE} ${SIZE}`} role="img" aria-label={MAP.title}>
           {/* Anneaux : un par cercle, le premier au centre */}
           {config.run.circles.map((c, k) => {
-            const rOuter = R0 + STEP * (k + 1)
             const rMid = R0 + STEP * (k + 0.5)
             const n = k + 1
             const cls = ['ring']
@@ -99,17 +103,21 @@ export function MapScreen({ carry, onLaunch, onMenu }: Props) {
             if (n === selected) cls.push('ring-selected')
             return (
               <g key={c.name} className={cls.join(' ')} onClick={() => setSelected(n)}>
-                {/* Zone de clic en couronne (trait épais transparent), pas en disque : sinon l'anneau extérieur masque les autres. */}
+                {/* L'aplat de la couronne : un trait épais de la largeur d'un anneau, moins le
+                    jeu qui sépare deux couronnes voisines. La couleur dit l'état du cercle. */}
+                <circle cx={CENTER} cy={CENTER} r={rMid} className="ring-band" style={{ strokeWidth: STEP - GAP }} />
+                {/* Zone de clic sur toute la couronne, jeu compris : pas de trou entre deux anneaux. */}
                 <circle cx={CENTER} cy={CENTER} r={rMid} className="ring-hit" style={{ strokeWidth: STEP }} />
-                <circle cx={CENTER} cy={CENTER} r={rOuter} className="ring-line" />
-                <text x={CENTER + 4} y={CENTER - rMid + 4} className="ring-label">
+                <text x={CENTER} y={CENTER - rMid + 4} className="ring-label" textAnchor="middle">
                   {n}
                 </text>
               </g>
             )
           })}
-          {/* Le trait en spirale qui relie les courses */}
+          {/* Le trait en spirale qui relie les courses : le tracé complet en fil fin, puis le
+              chemin déjà parcouru repassé par-dessus en trait épais. */}
           <path d={path} className="spiral" />
+          {next > 0 && <path d={spiralPath(0, Math.min(next, total) - 1)} className="spiral spiral-done" />}
           {/* Les points : une course chacun, le troisième de chaque cercle est le boss */}
           {Array.from({ length: total }, (_, i) => {
             const p = point(i)

@@ -1085,17 +1085,28 @@ p { margin: 0; }
 /* Le carré du dessin est celui de l'anneau extérieur + PAD (MapScreen.tsx) : posé sur la pierre
    ronde, le dernier cercle suit son trait peint. Carré : 30 % de large = 53,75 % de haut. */
 .map-svg { position: absolute; left: 24.1%; top: 30.85%; width: 28.5%; height: 51.05%; overflow: visible; }
-.ring-line { fill: none; stroke: rgba(226, 236, 248, 0.3); stroke-width: 1; transition: stroke 200ms; }
+/* Chaque anneau est un aplat dans sa couronne, pas un trait sur son contour : `--band` donne la
+   teinte de l'état (à venir / traversé / en cours) et `--a` son opacité, que la sélection et le
+   survol ne font que monter. Les règles à deux classes et le survol passent donc en dernier. */
+.ring { --band: 226, 236, 248; --a: 0.07; }
+.ring-band { fill: none; stroke: rgba(var(--band), var(--a)); transition: stroke 200ms; pointer-events: none; }
 .ring-hit { fill: none; stroke: transparent; pointer-events: stroke; cursor: pointer; }
 /* Le chiffre est posé sur la pierre peinte : contour sombre (paint-order) plutôt qu'une ombre, net à toute échelle. */
 .ring-label { fill: #dce7f4; font-size: 11px; font-weight: 700; pointer-events: none; paint-order: stroke; stroke: rgba(6, 12, 20, 0.85); stroke-width: 3px; stroke-linejoin: round; }
-.ring-done .ring-line { stroke: rgba(226, 236, 248, 0.16); }
-.ring-current .ring-line { stroke: var(--gold); stroke-width: 1.5; }
-.ring-selected .ring-line { stroke: var(--ink); stroke-dasharray: 3 3; }
+.ring-done { --band: 212, 84, 30; --a: 0.1; } /* discret : c'est le trait de la spirale qui porte le parcours */
+.ring-current { --band: 224, 168, 60; --a: 0.3; }
+.ring-selected { --a: 0.18; }
+.ring-done.ring-selected { --a: 0.24; }
+.ring-current.ring-selected { --a: 0.42; }
+.ring:hover { --a: 0.26; }
+.ring-done:hover { --a: 0.32; }
+.ring-current:hover { --a: 0.5; }
 .ring-selected .ring-label { fill: #fff; }
-.spiral { fill: none; stroke: var(--ember-soft); stroke-width: 2; stroke-linecap: round; opacity: 0.8; pointer-events: none; }
+/* La spirale complète en fil fin ; le chemin déjà parcouru repassé par-dessus, épais et vif. */
+.spiral { fill: none; stroke: rgba(226, 236, 248, 0.3); stroke-width: 1.5; stroke-linecap: round; pointer-events: none; }
+.spiral-done { stroke: var(--ember); stroke-width: 4.5; opacity: 0.92; }
 .race-dot .dot { fill: var(--panel-2); stroke: var(--line); stroke-width: 2; transition: fill 200ms, stroke 200ms; }
-.race-done .dot { fill: var(--ember); stroke: var(--ember); }
+.race-done .dot { fill: #ff8b4d; stroke: rgba(10, 14, 20, 0.5); }
 .race-next { cursor: pointer; }
 .race-next .dot { fill: var(--gold); stroke: var(--ink); }
 .race-next .dot-halo { fill: rgba(224, 168, 60, 0.25); animation: halo 1.4s ease-in-out infinite; }
