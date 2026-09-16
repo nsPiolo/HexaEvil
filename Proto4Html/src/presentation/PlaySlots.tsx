@@ -380,7 +380,12 @@ export function PlayerSlot({ ui, speed, preview, highlightSoul, onHoverSoul, onS
         </aside>
       </div>
       <div className="actions">
-        {phase === 'idle' && <button type="button" className="btn btn-primary" onClick={onRoll}>Lancer les dés</button>}
+        {phase === 'idle' && (
+          <button type="button" className="btn btn-primary bp-roll" onClick={onRoll}>
+            <span className="bp-roll-art" aria-hidden="true" />
+            <span className="bp-roll-label">Lancer les dés</span>
+          </button>
+        )}
         {pairing && (
           <>
             <button type="button" className={'btn btn-primary' + (pulse ? ' btn-pulse' : '')} data-state={pulse ? 'pulse' : 'idle'} disabled={!complete} onClick={onResolve}>Résoudre</button>

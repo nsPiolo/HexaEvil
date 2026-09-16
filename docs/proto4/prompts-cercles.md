@@ -322,20 +322,21 @@ commune, les tailles, les découpages et les contraintes de lisibilité restent
 identiques. Un dossier par cercle,
 `Proto4Html/public/circles/<NN>-<nom>/{bg.jpg,frame.png,shop.png,bet-bg.jpg}` :
 
-Trois cercles sont peints. Le tableau `CIRCLE_ART` de `GameScreen.tsx` fait la
-correspondance numéro → dossier ; les cercles absents retombent sur les Limbes.
+**Les quinze décors sont en place.** La liste `CIRCLE_ART` de `GameScreen.tsx`
+fait la correspondance numéro → dossier, et `circleArt()` borne au dernier : du
+quinzième cercle à l'infini, c'est le Paradis qui rejoue.
 
-| # | Cercle | Matière du décor et de la dalle | Lumière | Décor |
+| # | Cercle | Matière du décor et de la dalle | Lumière | État |
 |---|---|---|---|---|
 | 1 | Limbes | bibliothèque-cathédrale, pierre bleu-gris, livres | torches ambrées, crépuscule gris | **en place** (`01-limbes`) |
 | 2 | [Luxure](prompts-cercle-02-luxure.md) | falaises battues par les vents, voiles arrachés | éclairs pourpres, ciel noir | **en place** (`02-luxure`) |
 | 3 | [Gourmandise](prompts-cercle-03-gourmandise.md) | fosse de boue grasse, pierre suintante, os rongés | jaune malade, pluie froide | **en place** (`03-gourmandise`) |
-| 4 | Avarice | salle au trésor effondrée, dalles d'or terni, poids | or froid, contre-jour |
-| 5 | Colère | marais du Styx, pierre noire immergée, roseaux | rouge sourd sous la brume |
-| 6 | Hérésie | nécropole de tombeaux ouverts, pierre fendue | braise blanche dans les sarcophages |
-| 7 | Violence | désert de sable brûlant, fleuve de sang au loin | pluie de feu, orange saturé |
-| 8 | Fraude | fosses concentriques de pierre, ponts, machineries | vert-de-gris, lanternes basses |
-| 9 | Trahison | lac gelé du Cocyte, glace bleue, silhouettes prises | bleu glacial, aucune chaleur |
+| 4 | [Avarice](prompts-cercle-04-avarice.md) | salle au trésor effondrée, dalles d'or terni, poids | or froid, contre-jour | **en place** (`04-avarice`) |
+| 5 | [Colère](prompts-cercle-05-colere.md) | marais du Styx, pierre noire immergée, roseaux | rouge sourd sous la brume | **en place** (`05-colere`) |
+| 6 | [Hérésie](prompts-cercle-06-heresie.md) | nécropole de tombeaux ouverts, pierre fendue | braise blanche dans les sarcophages | **en place** (`06-heresie`) |
+| 7 | [Violence](prompts-cercle-07-violence.md) | désert de sable brûlant, fleuve de sang au loin | pluie de feu, orange saturé | **en place** (`07-violence`) |
+| 8 | [Fraude](prompts-cercle-08-fraude.md) | fosses concentriques de pierre, ponts, machineries | vert-de-gris, lanternes basses | **en place** (`08-fraude`) |
+| 9 | [Trahison](prompts-cercle-09-trahison.md) | lac gelé du Cocyte, glace bleue, silhouettes prises | bleu glacial, aucune chaleur | **en place** (`09-trahison`) |
 
 ### Cercles 10 et suivants : le mode démon
 
@@ -346,12 +347,12 @@ Dante, mais gardent la DA commune, les formats et les règles de lisibilité.
 
 | # | Cercle | Matière du décor | Lumière | Le piège propre au cercle |
 |---|---|---|---|---|
-| 10 | [Fonds marins](prompts-cercle-10-fonds-marins.md) | cathédrale engloutie, sable noir, algues | rais verts lointains | la dalle bleu-gris se noie dans l'eau |
-| 11 | [Falaise](prompts-cercle-11-falaise.md) | basalte noir, éboulis, chaînes pendantes | ambre sourd au pied de la paroi | roche sur roche : la table devient du décor |
-| 12 | [Ville](prompts-cercle-12-ville.md) | rues à balcons de fer, foule, suie | lanternes basses | la foule sature tout, et une ville s'écrit |
-| 13 | [Montagne](prompts-cercle-13-montagne.md) | séracs bleus, neige de nuit, cordes gelées | lueur froide sans lune | premier décor clair : le fil d'Ariane |
-| 14 | [Ciel](prompts-cercle-14-ciel.md) | murs de cumulonimbus, pont rompu | éclairs muets et lointains | un ciel n'a pas de tiers extérieurs |
-| 15 | [Paradis](prompts-cercle-15-paradis.md) | gradins de nuage clair, marbre pâle | anneaux d'or sur indigo | il sert **à tous les cercles suivants** |
+| 10 | [Fonds marins](prompts-cercle-10-fonds-marins.md) | cathédrale engloutie, sable noir, algues | rais verts lointains | la dalle bleu-gris se noie dans l'eau — **en place** (`10-fonds-marins`) |
+| 11 | [Falaise](prompts-cercle-11-falaise.md) | basalte noir, éboulis, chaînes pendantes | ambre sourd au pied de la paroi | roche sur roche : la table devient du décor — **en place** (`11-falaise`) |
+| 12 | [Ville](prompts-cercle-12-ville.md) | rues à balcons de fer, foule, suie | lanternes basses | la foule sature tout, et une ville s'écrit — **en place** (`12-ville`) |
+| 13 | [Montagne](prompts-cercle-13-montagne.md) | séracs bleus, neige de nuit, cordes gelées | lueur froide sans lune | premier décor clair : le fil d'Ariane — **en place** (`13-montagne`) |
+| 14 | [Ciel](prompts-cercle-14-ciel.md) | murs de cumulonimbus, pont rompu | éclairs muets et lointains | un ciel n'a pas de tiers extérieurs — **en place** (`14-ciel`) |
+| 15 | [Paradis](prompts-cercle-15-paradis.md) | gradins de nuage clair, marbre pâle | anneaux d'or sur indigo | il sert **à tous les cercles suivants** — **en place** (`15-paradis`) |
 
 Le quinzième décor est réutilisé du cercle 15 à l'infini : c'est le seul dont la
 répétition se voie, d'où sa règle propre (rien qui se passe, de la matière et
@@ -378,20 +379,38 @@ cercles pour l'instant, dans `public/table/`.
 
 ### Décors en place
 
+Les sources vivent dans `docs/proto4/raw/cercleN/`, converties en JPEG qualité 82
+progressif comme le veut l'étape 2 ci-dessus, **sans redimensionner** : la
+définition du dossier `public/` est celle de la source.
+
 | Dossier | `bg.jpg` | `bet-bg.jpg` |
 |---|---:|---:|
 | `01-limbes` | 2752 × 1536 | 2800 × 925 |
 | `02-luxure` | **1376 × 768** | 1792 × 592 |
 | `03-gourmandise` | 2752 × 1536 | 1792 × 592 |
+| `04-avarice` | **1376 × 768** | 1792 × 592 |
+| `05-colere` | **1376 × 768** | 1792 × 592 |
+| `06-heresie` | **1376 × 768** | 1792 × 592 |
+| `07-violence` | **1376 × 768** | 1792 × 592 |
+| `08-fraude` | **1376 × 768** | 1792 × 592 |
+| `09-trahison` | **1376 × 768** | 1792 × 592 |
+| `10-fonds-marins` | 2752 × 1536 | 1792 × 592 |
+| `11-falaise` | 2752 × 1536 | 3584 × 1184 |
+| `12-ville` | **1376 × 768** | 3584 × 1184 |
+| `13-montagne` | **1376 × 768** | 1792 × 592 |
+| `14-ciel` | 2752 × 1536 | 1792 × 592 |
+| `15-paradis` | **1376 × 768** | 1792 × 592 |
 
-Les sources vivent dans `docs/proto4/raw/cercleN/`, converties en JPEG qualité 82
-progressif comme le veut l'étape 2 ci-dessus, **sans redimensionner**.
+⚠️ **Dix `bg.jpg` sur quinze sont à demi-définition** — 1376 de large au lieu des
+2752 de référence, ceux en gras. Posés en `cover` sur une fenêtre de 1440 en
+écran Retina, ils sont agrandis d'environ deux fois. Ça passe parce que ces
+décors sont sombres, flous de nature et recouverts aux trois quarts par les
+panneaux, mais c'est le lot à regénérer en 2752 × 1536 le jour où ça pique à
+l'œil. **Le Paradis est le plus exposé** : c'est le seul décor clair, il sert du
+quinzième cercle à l'infini, et il est dans ce lot.
 
-⚠️ Le `bg.jpg` de la Luxure est à **demi-définition** (1376 de large contre 2752
-pour les deux autres). Posé en `cover` sur une fenêtre de 1440 en écran Retina,
-il est agrandi d'environ deux fois. Il passe parce que le décor est très sombre
-et flou de nature, mais c'est le seul des trois dans ce cas : à regénérer en
-2752 × 1536 si un jour il pique à l'œil.
+Les `bet-bg.jpg` sont dans le même cas à 1792 contre 2800 de référence, en moins
+visible : seule la colonne de droite du panneau laisse respirer le décor.
 
 ### Valeurs en place (cercle 1)
 

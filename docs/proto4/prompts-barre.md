@@ -31,6 +31,11 @@ atteignait 213 px de haut et recouvrait la ligne d'état.
 par le bas du panneau et la corne par la droite. En contrepartie, les coins
 arrondis sont redits sur `.bp-foot`, seul enfant qui peint jusqu'au bord.
 
+Le patron sert aussi hors de la barre : les dés de `dice.png` décorent le bouton
+« Lancer les dés » du slot joueur (`PlaySlots.tsx`, phase course). Ce bouton-là a
+une largeur libre, calée sur son libellé, donc le décor est poussé **hors** du
+bouton (`right: -150px`) au lieu de le chevaucher : il s'y adosse par la droite.
+
 Le bouton de lancement est **le même des deux côtés** : `.bp-start` sert au pied
 du panneau de paris (`BetPanel.tsx`) et au panneau replié (`PlaySlots.tsx`,
 `.slot-player-prep`), avec les mêmes `<span>` corne et halo. Replié ou déplié,
@@ -55,6 +60,7 @@ sauf `bet.png`.
 | `chest.png` | 174 × 168 | 117 × 113 | Coffre, ancré à droite de *Boutique* |
 | `horn.png` | 246 × 152 | 264 × 163 | Corne, ancrée à droite de *Lancer la course*, sort du panneau |
 | `glow.png` | 512 × 512 | 295 × 295 | Halo de braise derrière le pavillon de la corne |
+| `dice.png` | 344 × 120 | 172 × 60 | Grappe de dés, adossée à droite de *Lancer les dés* (phase course) |
 | `coins.png` | 360 × 112 | — | **Pas encore posé** (voir plus bas) |
 
 `bet.png` est le seul **non recadré** : le CSS le cale sur des fractions
@@ -101,7 +107,9 @@ aucune couture visible, quelle que soit la largeur.
 1. Détourer la source, la déposer dans `docs/proto4/raw/barre/`.
 2. Réduire, recadrée sur l'alpha, à deux fois la taille d'affichage :
    `python3 -c "from PIL import Image; im=Image.open(SRC); im.crop(im.getbbox()).resize((W,H), Image.LANCZOS).save(DST, optimize=True)"`
-3. Ajouter au bouton les deux `<span>` (`-art` en `aria-hidden`, `-label`).
+3. Ajouter au bouton les deux `<span>` (`-art` en `aria-hidden`, `-label`). Le
+   `-label` doit être `position: relative` : un enfant en absolu se peint **au-dessus**
+   du contenu dans le flux, et sans ça le décor mange la fin du libellé.
 4. Copier le bloc `.bp-shop-art` / `.bp-shop-label` du CSS et n'ajuster que
    `width`, `aspect-ratio`, l'ancrage (`left`/`right` + `bottom`) et le `padding`
    du libellé.
