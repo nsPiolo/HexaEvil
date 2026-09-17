@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { config, shop } from '../core/config'
+import { circleArt } from './art'
 import { betType, bettingClosed, slotCount } from '../core/rules/bets'
 import { ranking } from '../core/rules/race'
 import { BetPanel, EMPTY_DRAFT, toggleDraftSoul, type BetDraft } from './BetPanel'
@@ -22,19 +23,6 @@ interface Props {
 }
 
 type Step = 0 | 1 | 2 | 3
-
-/**
- * Dossier d'images de chaque cercle dans `public/circles/` (voir docs/proto4/prompts-cercles.md).
- * Les neuf premiers sont les cercles de Dante, les six suivants le mode démon (GDD §8.1) — eux
- * ne sont pas dans `config/race.json`, les décors se préparent avant le contenu.
- */
-const CIRCLE_ART: readonly string[] = [
-  '01-limbes', '02-luxure', '03-gourmandise', '04-avarice', '05-colere',
-  '06-heresie', '07-violence', '08-fraude', '09-trahison', '10-fonds-marins',
-  '11-falaise', '12-ville', '13-montagne', '14-ciel', '15-paradis',
-]
-/** Le Paradis sert du quinzième cercle à l'infini : au-delà, on rejoue le dernier décor peint. */
-const circleArt = (circle: number): string => CIRCLE_ART[Math.min(Math.max(circle, 1), CIRCLE_ART.length) - 1]!
 
 /** Fil d'Ariane imprimé sur la table : Pari · Boutique · Course · Gains. */
 function stepOf(ui: RaceUi): Step {

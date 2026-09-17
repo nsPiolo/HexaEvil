@@ -9,12 +9,14 @@ partagées :
 |---|---|---|---|---|
 | `bg.jpg` | `public/circles/<NN>-<nom>/` | opaque | `.table` | Le décor du cercle, derrière tout |
 | `bet-bg.jpg` | `public/circles/<NN>-<nom>/` | opaque | `.panel-bets .bet-panel` | Le fond du panneau de paris |
+| `boss.webp` | `public/circles/<NN>-<nom>/` | transparent | `.dialogue-portrait` | Le portrait du boss, pour la scène qui précède sa course |
 | `frame.webp` | `public/table/` | transparent | `.felt` | La dalle de pierre qui porte le plateau et les dés |
 | `shop.webp` | `public/table/` | transparent | `.panel-shop` | Le parchemin de la boutique |
 | `tier.webp` · `tier-on.webp` | `public/table/` | transparent | `.tier` | Les dalles du choix de registre de pari |
 
 Le cadre et le parchemin sont **partagés par les neuf cercles** (`public/table/`),
-seuls le décor et le guichet sont propres à un cercle (`public/circles/`). Le
+seuls le décor, le guichet et le portrait du boss sont propres à un cercle
+(`public/circles/`). Le
 jour où un cercle mérite sa propre pierre, il suffira de déplacer le fichier.
 Les rendus bruts restent dans `docs/proto4/raw/` (traçabilité IA,
 `docs/STEAM_AI_DISCLOSURE.md`).
@@ -312,6 +314,42 @@ Format 2800 × 900 (environ 3:1), affiché 1400 × 450 CSS.
 À l'édition : mesurer la luminance des trois quarts gauche (viser < 20 %) et
 assombrir si besoin ; poser au besoin un léger dégradé sombre de gauche à droite
 pour que la colonne des mises reste lisible.
+
+---
+
+## 5. `boss.webp` — le portrait du boss
+
+Juste avant la troisième course d'un cercle, le boss se présente : même écran que
+les dialogues du stagiaire (bulles de parchemin à droite, portrait à gauche), mais
+joué **dans le décor du cercle** — `bg.jpg` passe en fond, assombri d'un voile
+(`.dialogue-scene`). Les répliques du boss et celles du stagiaire se relaient dans
+le même emplacement de portrait, en fondu : l'un remplace l'autre à chaque prise de
+parole.
+
+Source : un buste détouré cadré **exactement comme les portraits du stagiaire**
+(`docs/proto4/raw/perso/`, 976 × 1075, tête en haut du cadre) — sans quoi le
+personnage saute d'une réplique à l'autre. Conversion identique : recadrage
+`(46, 45) → (862, 1075)`, réduction à 700 px de large, WebP qualité 88. Les rendus
+bruts vivent dans `docs/proto4/raw/demons/`, nommés `<n>_<cercle>.png`.
+
+Ce qui est peint aujourd'hui : **Charon** (cercle 1). Le boss du cercle 9 est le
+stagiaire lui-même, promu — il reprend son dernier costume
+(`menu/perso/stagiaire_4_boss.webp`), rien à dessiner. Les sept autres jouent leur
+scène **sans portrait** en attendant leur dessin : les bulles et le décor suffisent,
+rien à changer dans le code, il suffit d'ajouter le fichier et son cercle dans
+`BOSS_ART` (`src/presentation/art.ts`).
+
+Le prompt reprend la DA commune, avec la phrase d'univers du cercle :
+
+> Digital concept painting with wide visible brush strokes, misty and ethereal
+> atmosphere, dramatic theatrical lighting with strong chromatic contrast between
+> warm firelight and cold blue-grey rock, expressionist and textured, like a
+> speed-painting concept art. Bust portrait of <le boss>, <deux ou trois traits du
+> personnage>, facing the viewer, cut at the chest, the head in the upper third of
+> the image and nothing touching the borders. Pure flat white background
+> (#ffffff), no drop shadow, no glow, crisp closed edges between the character and
+> the white; no pure white anywhere on the character itself. No text, no letters,
+> no logo, no user interface. 976 × 1075 pixels.
 
 ---
 

@@ -1000,22 +1000,49 @@ p { margin: 0; }
 .option select { font: inherit; color: var(--ink); background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; }
 @media (max-width: 600px) { .option { grid-template-columns: 1fr; } }
 
-/* ---- Dialogue : le stagiaire peint à gauche (public/menu/dialog-bg.jpg), ses répliques sur des lambeaux de parchemin à droite ---- */
+/* ---- Dialogue : la salle de lave en fond (public/menu/dialog-bg.jpg, sans personnage), le
+   stagiaire détouré posé à gauche (public/menu/perso/), ses répliques sur des lambeaux de
+   parchemin à droite ---- */
 .dialogue {
+  position: relative;
   justify-content: space-between;
-  background: #1a2634 url('/menu/dialog-bg.jpg') left 30% center / cover no-repeat;
+  background: #1a2634 url('/menu/dialog-bg.jpg') center / cover no-repeat;
 }
-/* Le personnage occupe le tiers gauche de l'illustration : les bulles vivent dans la partie droite, sur la fumée et la lave. */
+/* Scène jouée dans le décor d'un cercle (la présentation du boss) : l'image arrive en style
+   en ligne sur `background-image`. Les décors de course sont peints pour recevoir une table,
+   pas des bulles : un voile assombri les tient derrière le parchemin, plus dense à droite où
+   les répliques s'empilent. */
+.dialogue-scene::before {
+  content: ''; position: absolute; inset: 0; z-index: 0;
+  background: linear-gradient(to right, rgba(8, 12, 20, 0.25), rgba(8, 12, 20, 0.55));
+}
+.dialogue-stage, .dialogue-actions { position: relative; z-index: 1; }
+/* Le personnage occupe le tiers gauche de l'écran : les bulles vivent dans la partie droite, sur la fumée et la lave. */
 /* Scène et barre d'actions partagent la même grille : les boutons se rangent sous la colonne des bulles. */
 .dialogue-stage, .dialogue-actions { display: grid; grid-template-columns: minmax(26%, 1fr) minmax(0, 640px); width: 100%; max-width: 1400px; text-align: left; }
-.dialogue-stage { align-items: end; flex: 1; }
+.dialogue-stage { align-items: end; flex: 1; } /* repère des portraits, posés hors flux dans la colonne de gauche */
 .dialogue-stage .bubbles, .dialogue-actions-inner { grid-column: 2; }
-/* Portrait : le stagiaire reste visible en haut, les bulles se serrent dans la moitié basse. */
+/* Tous les portraits du dialogue sont montés d'emblée (Dialogue.tsx) et superposés : seul
+   l'actuel est opaque, le changement d'expression ou de grade se joue donc en fondu.
+   Le bas est fondu au masque : deux dessins sont coupés net au bord de l'image, ici ils se
+   perdent dans la fumée comme les autres. */
+.dialogue-portrait {
+  position: absolute; left: 0; bottom: 0; grid-column: 1;
+  height: min(76vh, 46vw, 760px); width: auto;
+  opacity: 0; transition: opacity 260ms ease;
+  filter: drop-shadow(0 10px 22px rgba(0, 0, 0, 0.55));
+  -webkit-mask-image: linear-gradient(to bottom, #000 80%, transparent 100%); mask-image: linear-gradient(to bottom, #000 80%, transparent 100%);
+  pointer-events: none; user-select: none;
+}
+.dialogue-portrait-on { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .dialogue-portrait { transition: none; } }
+/* Portrait : en une colonne, le stagiaire passe en haut et les bulles se serrent dessous.
+   Leurs deux hauteurs sont bornées pour qu'elles ne se recouvrent pas sur un écran de téléphone. */
 @media (max-width: 760px) {
   .dialogue-stage, .dialogue-actions { grid-template-columns: 1fr; }
   .dialogue-stage .bubbles, .dialogue-actions-inner { grid-column: 1; }
-  .dialogue-stage .bubbles { max-height: 50vh; }
-  .dialogue { background-position: left 22% top; }
+  .dialogue-stage .bubbles { max-height: 42vh; }
+  .dialogue-portrait { height: min(26vh, 56vw); top: 0; bottom: auto; left: 50%; transform: translateX(-50%); }
 }
 .bubbles {
   display: flex; flex-direction: column; gap: 14px; max-height: 66vh; overflow: hidden; justify-content: flex-end;
@@ -1032,6 +1059,10 @@ p { margin: 0; }
   animation: bubble-in 350ms cubic-bezier(0.2, 0.8, 0.2, 1.1) both;
 }
 .bubble-demon { align-self: flex-start; }
+/* Le boss parle sur le même parchemin que le stagiaire, mais d'une encre plus sombre et d'un
+   nom couleur braise : la scène reste lisible sans un troisième lambeau à dessiner. */
+.bubble-boss { align-self: flex-start; color: #3a1305; }
+.bubble-boss .bubble-who { color: #8f2f10; letter-spacing: 0.14em; }
 /* Papier ardoise à mi-teinte : encre claire ombrée plutôt que sombre, pour le contraste. */
 .bubble-player { align-self: flex-end; border-image-source: url('/menu/bubble-player.png'); color: #ffffff; font-weight: 700; text-shadow: 0 1px 0 #0a1220, 0 -1px 0 rgba(10, 18, 32, 0.6), 0 0 3px #0a1220, 0 0 10px rgba(10, 18, 32, 0.7); }
 .bubble-past { opacity: 0.6; }

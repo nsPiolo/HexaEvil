@@ -5,7 +5,8 @@
  * lignes de promotion et le nom du démon qui change dans les bulles.
  */
 import { config } from '../core/config'
-import { BOSS_ANNOUNCE, CIRCLES, DEMON_RANKS, fill, type DemonRank, type Line } from './texts'
+import { bossPortrait } from './art'
+import { BOSS_ANNOUNCE, CIRCLES, DEMON_RANKS, SPEAKERS, fill, portraitSrc, type DemonRank, type Line } from './texts'
 
 /** Niveau (index dans DEMON_RANKS) atteint après `circlesPaid` cercles payés (0 au départ). */
 export function demonLevel(circlesPaid: number): number {
@@ -41,14 +42,30 @@ function promotionLines(rank: DemonRank): Line[] {
   return rank.lines.map((l) => ({ ...l, text: fill(l.text, config.economy.multipliers) }))
 }
 
-/** Donne au démon le nom de son grade dans chaque ligne (le joueur garde le sien). */
+/** Donne au démon le nom et le portrait de son grade dans chaque ligne (le joueur garde le sien). */
 export function spokenBy(lines: readonly Line[], rank: DemonRank): Line[] {
-  return lines.map((l) => (l.who === 'demon' ? { ...l, label: rank.label } : l))
+  return lines.map((l) => (l.who === 'demon' ? { ...l, label: rank.label, portrait: portraitSrc(rank, l.face) } : l))
 }
 
 /** Textes d'un cercle, le dernier servant de repli au-delà de la liste. */
 export function circleTexts(circle: number) {
   return CIRCLES[circle - 1] ?? CIRCLES[CIRCLES.length - 1]!
+}
+
+/**
+ * Scène jouée juste avant la course du boss : il se présente sous son nom (`config/race.json`)
+ * et son portrait quand il est peint, le stagiaire commente avec son grade du moment. Sans
+ * portrait peint, les répliques du boss n'en portent pas : la scène se joue sur le seul décor.
+ */
+export function bossIntro(circle: number): Line[] {
+  const cfg = config.run.circles[circle - 1]
+  const label = cfg?.boss ?? SPEAKERS.boss
+  // Le boss du dernier cercle est le stagiaire lui-même, promu (config/race.json) : faute de
+  // dessin propre, il y reprend le costume de son dernier grade.
+  const promoted = DEMON_RANKS[DEMON_RANKS.length - 1]!
+  const portrait = bossPortrait(circle) ?? (circle === promoted.afterCircle + 1 ? portraitSrc(promoted) : undefined)
+  const lines = circleTexts(circle).bossIntro.map((l) => ({ ...l, text: fill(l.text, { boss: label, price: cfg?.price ?? 0 }) }))
+  return spokenBy(lines, demonRank(circle - 1)).map((l) => (l.who === 'boss' ? { ...l, label, ...(portrait === undefined ? {} : { portrait }) } : l))
 }
 
 /** Annonce du boss à la fin de la deuxième course du cercle. */

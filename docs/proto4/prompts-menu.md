@@ -27,7 +27,8 @@ dalles**. Seul le titre est une image.
 | `scroll.png` | 1400 × 1793 | transparent autour | Parchemin déroulé, fond des écrans Statistiques et Option — **rendu en place**, réduit depuis `raw/scroll.png` (1824 × 2336) |
 | `bubble-demon.png` | 1200 × 397 | transparent autour | Bande de parchemin déchiré, bulle du démon — **rendu en place**, réduit depuis `raw/` (3584 × 1184) |
 | `bubble-player.png` | 1200 × 397 | transparent autour | Même bande, papier gris-bleu, bulle du joueur — **rendu en place** |
-| `dialog-bg.jpg` | 2200 × 1118 | opaque | Fond des dialogues : le stagiaire à gauche, la salle de lave à droite — **rendu en place** (source `raw/dialog_bg.jpeg`) |
+| `dialog-bg.jpg` | 2200 × 1118 | opaque | Fond des dialogues : la salle de lave **sans personnage** — **rendu en place** (source `raw/dialog_bg.jpeg`) |
+| `perso/stagiaire_*.webp` | 700 × 884 | transparent | Portraits du stagiaire posés à gauche du dialogue, un par grade (+ cinq expressions au grade 0) — **rendus en place** (sources `raw/perso/*.png`, 976 × 1075) |
 
 Le cadre déchiré (`frame.png`) a été **retiré du menu** : le fond peint se suffit.
 Le fichier peut être supprimé de `public/menu/` (4,5 Mo copiés dans le build pour
@@ -310,8 +311,43 @@ En place : `.bubble-line` dans `src/index.css` pose le lambeau en `border-image`
 (tranches 13 % haut et bas, 5,5 % côtés, bords répétés, centre étiré), encre
 brune pour le démon et bleu-nuit pour le joueur, nom du locuteur en petites
 capitales, bulle active signalée par un halo doré. Le démon dessiné en CSS a
-disparu : le personnage est dans `dialog-bg.jpg`, à gauche, et les bulles
-occupent la partie droite de l'écran.
+disparu : le personnage est un PNG détouré posé à gauche (`perso/`, voir plus
+bas) et les bulles occupent la partie droite de l'écran.
+
+### 4 bis. `perso/` — le stagiaire, un portrait par grade
+
+Le personnage n'est plus peint dans le fond : `dialog_bg.jpeg` est une salle de
+lave vide, et le stagiaire est un **PNG détouré** posé par-dessus. Il change de
+costume à chaque promotion, comme son nom dans les bulles.
+
+Sources : `raw/perso/stagiaire_<niveau>[_<expression>].png`, 976 × 1075, buste
+cadré de la même façon d'un fichier à l'autre (la tête ne doit pas sauter au
+changement de grade). Conversion vers `Proto4Html/public/menu/perso/` : recadrage
+commun `(46, 45) → (862, 1075)`, réduction à 700 px de large, WebP qualité 88
+(≈ 60 Ko contre ≈ 460 Ko en PNG, pour neuf fichiers).
+
+| Niveau | Fichier | Grade (`DEMON_RANKS`, `texts.ts`) |
+|---:|---|---|
+| 0 | `stagiaire_0_{normal,neutre,doute,fier,degout}` | Stagiaire — **cinq expressions**, choisies réplique par réplique |
+| 1 | `stagiaire_1_assistant` | Démon assistant (après le cercle 1) |
+| 2 | `stagiaire_2_souschef` | Démon tourmenteur (après le cercle 3) |
+| 3 | `stagiaire_3_chef` | Démon contremaître (après le cercle 5) |
+| 4 | `stagiaire_4_boss` | Démon sous-directeur (après le cercle 7) **et** stagiaire promu (évasion) |
+
+Cinq dessins pour six grades : les deux derniers partagent le costume du boss,
+le sixième n'étant atteint qu'au moment de l'évasion.
+
+En place : `spokenBy` (`demon.ts`) pose `portrait` sur chaque réplique du démon
+d'après son grade et la `face` demandée par la ligne ; `Dialogue.tsx` monte tous
+les portraits du dialogue d'un coup, superposés, et ne rend opaque que l'actuel —
+le changement d'expression est un fondu de 260 ms et non un blanc le temps du
+téléchargement. Quand le joueur parle, le démon garde le portrait de sa dernière
+réplique. Le bas de l'image est fondu au masque CSS : deux dessins sont coupés
+net au bord du fichier, ici ils se perdent dans la fumée comme les autres.
+
+Les expressions ne servent qu'au grade 0, c'est-à-dire à l'introduction, à
+l'annonce du premier boss et à la fin du premier cercle. Une `face` posée sur une
+réplique dite par un grade supérieur est simplement ignorée.
 
 ### 5. `frame.png` — cadre déchiré (retiré du menu, prompt conservé)
 

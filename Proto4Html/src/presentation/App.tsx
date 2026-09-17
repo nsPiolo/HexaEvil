@@ -7,7 +7,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { config } from '../core/config'
 import { defaultInventory } from '../core/shop/shop'
-import { bossAnnounce, circleFailure, circleSuccess } from './demon'
+import { circleBg } from './art'
+import { bossAnnounce, bossIntro, circleFailure, circleSuccess, rankOfLevel, spokenBy } from './demon'
 import { DevMenu } from './DevMenu'
 import { Dialogue } from './Dialogue'
 import { GameScreen } from './GameScreen'
@@ -26,7 +27,7 @@ type Screen =
   | { kind: 'intro' }
   | { kind: 'map'; carry: SessionCarry }
   | { kind: 'game'; carry: SessionCarry; key: number }
-  | { kind: 'dialogue'; lines: readonly Line[]; then: Screen; skippable: boolean }
+  | { kind: 'dialogue'; lines: readonly Line[]; then: Screen; skip?: string; background?: string }
   | { kind: 'end'; end: 'gameover' | 'escape'; price: number; money: number }
 
 function toSave(carry: SessionCarry, bestCircle: number): RunSave {
@@ -74,6 +75,19 @@ export default function App() {
     setScreen({ kind: 'game', carry, key: gameKey + 1 })
   }, [gameKey])
 
+  /**
+   * Lancement d'une course depuis la carte. La dernière course d'un cercle est celle du boss :
+   * il se présente d'abord, dans le décor du cercle (`bossIntro`, demon.ts).
+   */
+  const launchRace = (carry: SessionCarry): void => {
+    const { circle, raceInCircle } = circleOf(carry.raceIndex)
+    if (raceInCircle < config.run.racesPerCircle) {
+      startGame(carry)
+      return
+    }
+    setScreen({ kind: 'dialogue', lines: bossIntro(circle), then: { kind: 'game', carry, key: gameKey + 1 }, skip: MENU.skip, background: circleBg(circle) })
+  }
+
   /** Entre deux courses : la carte des neuf cercles, d'où le joueur lance la course suivante. Pas de carte avant la toute première course : l'intro suffit. */
   const toMap = useCallback((carry: SessionCarry): void => {
     if (carry.raceIndex === 0) startGame(carry)
@@ -86,7 +100,9 @@ export default function App() {
     const s = toSave(carry, 1)
     saveRun(s)
     setSave(s)
-    setScreen({ kind: 'dialogue', lines: INTRO.map((l) => ({ ...l, text: fill(l.text, { money: config.economy.startingMoney, allowance: config.economy.raceAllowance }) })), then: { kind: 'game', carry, key: gameKey + 1 }, skippable: true })
+    // `spokenBy` pose le portrait du grade 0 sur chaque réplique : l'intro est le seul dialogue qui ne passe pas par demon.ts.
+    const intro = spokenBy(INTRO, rankOfLevel(0)).map((l) => ({ ...l, text: fill(l.text, { money: config.economy.startingMoney, allowance: config.economy.raceAllowance }) }))
+    setScreen({ kind: 'dialogue', lines: intro, then: { kind: 'game', carry, key: gameKey + 1 }, skip: MENU.skipIntro })
   }
 
   /** État du run visible à l'écran, sinon la sauvegarde. */
@@ -140,7 +156,7 @@ export default function App() {
       persist(carry, circle)
       const next: Screen = { kind: 'map', carry }
       if (raceInCircle === config.run.racesPerCircle - 1) {
-        setScreen({ kind: 'dialogue', lines: bossAnnounce(circle), then: next, skippable: false })
+        setScreen({ kind: 'dialogue', lines: bossAnnounce(circle), then: next })
       } else {
         toMap(carry)
       }
@@ -151,7 +167,7 @@ export default function App() {
     if (carry.money < circleCfg.price) {
       clearRun()
       setSave(null)
-      setScreen({ kind: 'dialogue', lines: circleFailure(circle), then: { kind: 'end', end: 'gameover', price: circleCfg.price, money: carry.money }, skippable: false })
+      setScreen({ kind: 'dialogue', lines: circleFailure(circle), then: { kind: 'end', end: 'gameover', price: circleCfg.price, money: carry.money } })
       return
     }
     const paid: SessionCarry = { ...carry, money: carry.money - circleCfg.price, lateBetCharges: fullCharges(carry.inventory) }
@@ -161,11 +177,11 @@ export default function App() {
       clearRun()
       setSave(null)
       setStats(updateStats((s) => ({ ...s, escapes: s.escapes + 1 })))
-      setScreen({ kind: 'dialogue', lines: circleSuccess(circle), then: { kind: 'end', end: 'escape', price: circleCfg.price, money: paid.money }, skippable: false })
+      setScreen({ kind: 'dialogue', lines: circleSuccess(circle), then: { kind: 'end', end: 'escape', price: circleCfg.price, money: paid.money } })
       return
     }
     persist(paid, circle + 1)
-    setScreen({ kind: 'dialogue', lines: circleSuccess(circle), then: { kind: 'map', carry: paid }, skippable: false })
+    setScreen({ kind: 'dialogue', lines: circleSuccess(circle), then: { kind: 'map', carry: paid } })
   }
 
   const renderScreen = () => {
@@ -184,7 +200,8 @@ export default function App() {
         return (
           <Dialogue
             lines={screen.lines}
-            {...(screen.skippable ? { skipLabel: MENU.skipIntro } : {})}
+            {...(screen.skip === undefined ? {} : { skipLabel: screen.skip })}
+            {...(screen.background === undefined ? {} : { background: screen.background })}
             onDone={() => {
               const then = screen.then
               if (then.kind === 'game') startGame(then.carry)
@@ -193,7 +210,7 @@ export default function App() {
           />
         )
       case 'map':
-        return <MapScreen carry={screen.carry} onLaunch={() => startGame(screen.carry)} onMenu={toMenu} />
+        return <MapScreen carry={screen.carry} onLaunch={() => launchRace(screen.carry)} onMenu={toMenu} />
       case 'game':
         return <GameScreen key={screen.key} carry={screen.carry} speed={options.speed} onFinished={onRaceFinished} onMenu={toMenu} />
       case 'end':

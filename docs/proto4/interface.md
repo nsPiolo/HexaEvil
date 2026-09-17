@@ -121,6 +121,27 @@ Le stagiaire revient pour te proposer de rencontrer son boss.
 
 * `Mon boss est de retour, il nous a vu jouer. Il te propose de parier avec lui, et si tu as 200 piéces, il veut bien t'autoriser à continuer de parier.`
 
+## Avant la course du boss
+
+Quand le joueur lance la **troisième course** du cercle depuis la carte, le boss se
+présente avant la table de jeu. Même écran que les dialogues du stagiaire, mais joué
+dans le décor du cercle (`public/circles/<NN>-<nom>/bg.jpg`) plutôt que dans la salle
+de lave : le boss parle sous son nom (`run.circles[].boss` de `config/race.json`) et
+son portrait quand il est peint, le stagiaire lui donne la réplique avec son grade du
+moment. La scène est passable (« Passer »), on la revoit à chaque nouvelle tentative.
+
+Les textes sont dans `CIRCLES[].bossIntro` (`src/presentation/texts.ts`), un par
+cercle ; `{boss}` et `{price}` y sont remplacés à l'affichage.
+
+### Exemple pour le cercle 1
+
+* Charon — `Alors c'est vous. Le mort qui joue aux dés au lieu de descendre.`
+* Le stagiaire — `Charon, monsieur. Il a payé son passage, techniquement…`
+* Charon — `Techniquement. J'ai passé neuf mille ans à compter des pièces, petit. Je sais ce que veut dire techniquement.`
+* Charon — `Une course, alors. Si vous sortez d'ici avec 200 pièces, je vous laisse la barque. Sinon, je vous mets à la rame.`
+* Vous — `Et si je gagne, c'est vous qui ramez ?`
+* Charon — `Personne n'a jamais vécu assez longtemps pour me poser la question.`
+
 ## A la fin d'un cercle
 
 Quand un cercle est terminé, on passe au suivant, mais avant la boutique, on affiche un écran de transition où le démon parle pour te féliciter et de dire ce qui va changer dans le prochain cercle.

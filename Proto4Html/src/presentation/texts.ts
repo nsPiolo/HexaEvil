@@ -5,19 +5,31 @@
  * docs/proto4/interface.md ; les autres cercles et la fin sont générés ici.
  */
 
-export type Speaker = 'demon' | 'player'
+export type Speaker = 'demon' | 'player' | 'boss'
+
+/**
+ * Expressions du stagiaire, disponibles au grade 0 seulement (public/menu/perso/stagiaire_0_*.webp).
+ * Aux grades suivants il n'y a qu'un portrait : la `face` d'une ligne y est ignorée.
+ */
+export type Face = 'normal' | 'neutre' | 'doute' | 'fier' | 'degout'
+
 export interface Line {
   who: Speaker
   text: string
   /** Nom affiché au-dessus de la bulle ; absent = nom par défaut du locuteur (SPEAKERS). Le démon change de nom quand il monte en grade. */
   label?: string
+  /** Expression demandée pour cette réplique du démon (grade 0 uniquement) ; absente = `normal`. */
+  face?: Face
+  /** Portrait affiché pendant la réplique, posé par `spokenBy` (demon.ts) d'après le grade et `face`. */
+  portrait?: string
 }
 
-/** Noms par défaut des locuteurs dans les bulles. */
-export const SPEAKERS: Record<Speaker, string> = { demon: 'Démon stagiaire', player: 'Vous' }
+/** Noms par défaut des locuteurs dans les bulles ; le boss prend le sien dans `config/race.json`. */
+export const SPEAKERS: Record<Speaker, string> = { demon: 'Démon stagiaire', player: 'Vous', boss: 'Le boss du cercle' }
 
-const D = (text: string): Line => ({ who: 'demon', text })
+const D = (text: string, face?: Face): Line => (face ? { who: 'demon', text, face } : { who: 'demon', text })
 const P = (text: string): Line => ({ who: 'player', text })
+const B = (text: string): Line => ({ who: 'boss', text })
 
 export const GAME_NAME = "Sinner's Bet"
 
@@ -33,30 +45,32 @@ export const MENU = {
 } as const
 
 export const INTRO: readonly Line[] = [
-  D('Félicitations, vous êtes mort !'),
-  D('On a étudié votre dossier, et sans grande surprise, vous avez fini ici.'),
-  D("Je suis en stage, et je n'ai pas les accréditations nécessaires pour vous affecter à la bonne punition. En plus elle est actuellement en réfection…"),
-  D('…on va devoir attendre le boss…'),
-  D('…voilà, voilà… désolé…'),
-  D('Ça vous tente un petit pari pour tuer le temps ?'),
+  D('Félicitations, vous êtes mort !', 'fier'),
+  D('On a étudié votre dossier, et sans grande surprise, vous avez fini ici.', 'neutre'),
+  D("Je suis en stage, et je n'ai pas les accréditations nécessaires pour vous affecter à la bonne punition. En plus elle est actuellement en réfection…", 'normal'),
+  D('…on va devoir attendre le boss…', 'doute'),
+  D('…voilà, voilà… désolé…', 'normal'),
+  D('Ça vous tente un petit pari pour tuer le temps ?', 'fier'),
   P('Non merci, sans plus.'),
-  D("Non !? Je comprends que vous ne soyez pas d'humeur, mais je m'ennuie ferme ici. Je vous prête un peu d'argent et vous pourrez conserver vos gains."),
+  D("Non !? Je comprends que vous ne soyez pas d'humeur, mais je m'ennuie ferme ici. Je vous prête un peu d'argent et vous pourrez conserver vos gains.", 'degout'),
   P("Bon, d'accord, mais pas d'entourloupe."),
-  D('Parfait, on a un pacte !'),
-  D("Ici on mise sur une course d'âmes damnées, donc voilà {money} pièces pour commencer. Et avant chaque course, je vous avancerai {allowance} pièces de plus : il faut bien que le guichet tourne."),
-  D("Ah, et je n'ai le droit de prendre que les paris simples : vainqueur, top 3, dernier, un duel. Les gros tickets, c'est au-dessus de mon grade. Pour l'instant."),
+  D('Parfait, on a un pacte !', 'fier'),
+  D("Ici on mise sur une course d'âmes damnées, donc voilà {money} pièces pour commencer. Et avant chaque course, je vous avancerai {allowance} pièces de plus : il faut bien que le guichet tourne.", 'neutre'),
+  D("Ah, et je n'ai le droit de prendre que les paris simples : vainqueur, top 3, dernier, un duel. Les gros tickets, c'est au-dessus de mon grade. Pour l'instant.", 'doute'),
 ]
 
 /** Fin de la deuxième course : le boss du cercle arrive. */
 export const BOSS_ANNOUNCE: readonly Line[] = [
-  D("Mon boss est de retour, il nous a vus jouer. Il vous propose de parier avec lui, et si vous avez {price} pièces à la fin, il veut bien vous autoriser à continuer de parier."),
+  D("Mon boss est de retour, il nous a vus jouer. Il vous propose de parier avec lui, et si vous avez {price} pièces à la fin, il veut bien vous autoriser à continuer de parier.", 'normal'),
 ]
 
 /**
  * Grades du démon (boutique-README.md « Déblocage par la hiérarchie du stagiaire »).
  * Un grade est obtenu quand le boss du cercle `afterCircle` est battu et le prix payé ;
  * ses `lines` sont dites dans le dialogue de fin de ce cercle, juste avant l'annonce du
- * cercle suivant. `label` remplace « Démon stagiaire » dans les bulles à partir de là.
+ * cercle suivant. `label` remplace « Démon stagiaire » dans les bulles à partir de là, et
+ * `portrait` le costume affiché — cinq dessins pour six grades : les deux derniers partagent
+ * le costume du boss, le sixième n'étant atteint qu'à l'évasion.
  * Pas encore d'effet sur la boutique : le grade est narratif pour l'instant.
  */
 export interface DemonRank {
@@ -64,14 +78,27 @@ export interface DemonRank {
   label: string
   afterCircle: number
   lines: readonly Line[]
+  /** Fichier du portrait dans public/menu/perso, sans extension ; avec `faces`, le suffixe d'expression s'y ajoute. */
+  portrait: string
+  /** Vrai quand ce grade a un fichier par expression (`portrait` + `_` + Face). Seul le stagiaire en a. */
+  faces?: boolean
+}
+
+/** Expression du démon quand la réplique n'en demande pas. */
+const DEFAULT_FACE: Face = 'normal'
+
+/** Portrait à afficher pendant une réplique : le costume vient du grade, la tête de l'expression. */
+export function portraitSrc(rank: DemonRank, face?: Face): string {
+  return `/menu/perso/${rank.faces ? `${rank.portrait}_${face ?? DEFAULT_FACE}` : rank.portrait}.webp`
 }
 
 export const DEMON_RANKS: readonly DemonRank[] = [
-  { name: 'Stagiaire', label: 'Démon stagiaire', afterCircle: 0, lines: [] },
+  { name: 'Stagiaire', label: 'Démon stagiaire', afterCircle: 0, lines: [], portrait: 'stagiaire_0', faces: true },
   {
     name: 'Assistant',
     label: 'Démon assistant',
     afterCircle: 1,
+    portrait: 'stagiaire_1_assistant',
     lines: [
       D("Et… j'ai une nouvelle. Charon a signé un papier : je suis assistant. Assistant ! Mon premier grade en trois siècles de stage."),
       P('Félicitations. Ça change quoi ?'),
@@ -82,6 +109,7 @@ export const DEMON_RANKS: readonly DemonRank[] = [
     name: 'Tourmenteur',
     label: 'Démon tourmenteur',
     afterCircle: 3,
+    portrait: 'stagiaire_2_souschef',
     lines: [
       D("Pendant que Cerbère cherchait sa balle, on m'a remis un grade : tourmenteur. Deuxième échelon."),
       D("J'ai le droit de tourmenter, maintenant. Officiellement. Je vais commencer par mon ancien chef de service."),
@@ -94,6 +122,7 @@ export const DEMON_RANKS: readonly DemonRank[] = [
     name: 'Contremaître',
     label: 'Démon contremaître',
     afterCircle: 5,
+    portrait: 'stagiaire_3_chef',
     lines: [
       D("Phlégyas a rendu mon évaluation. Contremaître. J'ai une équipe, un bureau, une fenêtre sur la lave."),
       D("Un contremaître, ça ne coache plus dans son coin : on me regarde. Alors ne me faites pas honte au sixième."),
@@ -106,6 +135,7 @@ export const DEMON_RANKS: readonly DemonRank[] = [
     name: 'Sous-directeur',
     label: 'Démon sous-directeur',
     afterCircle: 7,
+    portrait: 'stagiaire_4_boss',
     lines: [
       D("Sous-directeur. Le Minotaure a insisté lui-même. Il paraît que je « fais monter les enjeux »."),
       D("Deux échelons sous le boss du neuvième. Il n'y a jamais eu de stagiaire aussi haut. Il n'y a jamais eu de parieur aussi loin non plus."),
@@ -114,7 +144,7 @@ export const DEMON_RANKS: readonly DemonRank[] = [
       D("Et le grand livre s'ouvre : le « Classement complet exact », ×{fullRankingExact}. Personne ne l'a jamais touché. Ce serait amusant que ce soit contre moi."),
     ],
   },
-  { name: 'Boss du neuvième', label: 'Le stagiaire promu', afterCircle: 8, lines: [] },
+  { name: 'Boss du neuvième', label: 'Le stagiaire promu', afterCircle: 8, lines: [], portrait: 'stagiaire_4_boss' },
 ]
 
 export interface CircleTexts {
@@ -124,17 +154,30 @@ export interface CircleTexts {
   success: readonly Line[]
   /** Écran de transition après le cercle, prix impayable : fin de run. */
   failure: readonly Line[]
+  /**
+   * Scène jouée juste avant la course du boss (la dernière du cercle) : le boss se présente,
+   * le stagiaire commente. `{boss}` est son nom et `{price}` le prix de sortie du cercle.
+   */
+  bossIntro: readonly Line[]
 }
 
 export const CIRCLES: readonly CircleTexts[] = [
   {
     ordinal: '1er',
     success: [
-      D("Félicitations, je ne pensais pas que vous pouviez réussir."),
+      D("Félicitations, je ne pensais pas que vous pouviez réussir.", 'fier'),
       D('Si ça vous va, je vais vous coacher. On va vous tester dans les autres cercles.'),
       D('Prochain arrêt : la Luxure. Des vents éternels y bousculent les âmes, il y en aura {souls} au départ, une de plus. Et le tarif de sortie monte à {price} pièces.'),
     ],
-    failure: [D("Bon, vous êtes nul en fait !! Finalement, j'ai trouvé quelle punition éternelle vous allez subir. Bye.")],
+    failure: [D("Bon, vous êtes nul en fait !! Finalement, j'ai trouvé quelle punition éternelle vous allez subir. Bye.", 'degout')],
+    bossIntro: [
+      B('Alors c\'est vous. Le mort qui joue aux dés au lieu de descendre.'),
+      D('Charon, monsieur. Il a payé son passage, techniquement…', 'normal'),
+      B("Techniquement. J'ai passé neuf mille ans à compter des pièces, petit. Je sais ce que veut dire techniquement."),
+      B('Une course, alors. Si vous sortez d\'ici avec {price} pièces, je vous laisse la barque. Sinon, je vous mets à la rame.'),
+      P('Et si je gagne, c\'est vous qui ramez ?'),
+      B('Personne n\'a jamais vécu assez longtemps pour me poser la question.'),
+    ],
   },
   {
     ordinal: '2e',
@@ -143,6 +186,12 @@ export const CIRCLES: readonly CircleTexts[] = [
       D('La Gourmandise nous attend : de la boue jusqu\'aux genoux et Cerbère qui ronge tout ce qui traîne. Toujours {souls} âmes au départ, mais la sortie coûte {price} pièces.'),
     ],
     failure: [D("Dommage. Les vents de la Luxure vous emportent, et moi je retourne classer des dossiers. Bye.")],
+    bossIntro: [
+      B('{boss}. Je juge, j\'enroule ma queue, j\'envoie. C\'est un métier simple.'),
+      D('Il ne vous a pas encore jugé. C\'est bon signe. Enfin, c\'est un signe.'),
+      B('Deux tours de queue pour vous. Ou trois. Je compterai en route, les vents décideront du reste.'),
+      B('{price} pièces à la sortie. Pariez, ça m\'évitera de réfléchir.'),
+    ],
   },
   {
     ordinal: '3e',
@@ -151,6 +200,13 @@ export const CIRCLES: readonly CircleTexts[] = [
       D("L'Avarice : des âmes qui poussent des poids face à face, éternellement. {souls} âmes au départ, une de plus, et {price} pièces pour passer."),
     ],
     failure: [D("Cerbère a faim, et vous n'avez plus rien à miser. Vous connaissez la sortie… enfin, non, justement. Bye.")],
+    bossIntro: [
+      D('Alors. {boss} ne parle pas. Il a trois gueules et aucune n\'a jamais servi à ça.'),
+      B('GRRRR.'),
+      D('Ce qu\'il veut dire, c\'est que la boue ralentit tout le monde et qu\'il mord ce qui traîne.'),
+      P('Et {price} pièces pour ressortir.'),
+      D('Vous apprenez vite. Ne lui tendez pas la main.'),
+    ],
   },
   {
     ordinal: '4e',
@@ -159,6 +215,12 @@ export const CIRCLES: readonly CircleTexts[] = [
       D("La Colère, maintenant : le Styx, un marais où les âmes se frappent sans fin. Toujours {souls} âmes, et {price} pièces pour la sortie."),
     ],
     failure: [D("Les avares gardent tout, vous compris. Ça finit bizarrement bien pour eux. Bye.")],
+    bossIntro: [
+      B('Pape Satàn, pape Satàn aleppe !'),
+      D('Personne n\'a jamais su ce que ça voulait dire. Moi non plus.'),
+      B('Ça veut dire : montrez-moi votre bourse.'),
+      B('{price} pièces à la sortie. Ici, on pousse des poids pour l\'éternité pour beaucoup moins que ça.'),
+    ],
   },
   {
     ordinal: '5e',
@@ -167,6 +229,13 @@ export const CIRCLES: readonly CircleTexts[] = [
       D("L'Hérésie ensuite : des tombes incandescentes, et {souls} âmes au départ, une de plus. La sortie passe à {price} pièces."),
     ],
     failure: [D("Le Styx vous garde. Pas de rancune : je vous mets dans le marais, c'est juste à côté du bureau. Bye.")],
+    bossIntro: [
+      B('Montez. Le Styx est calme aujourd\'hui. Calme pour le Styx.'),
+      D('Ne regardez pas dans l\'eau.'),
+      B('Regardez dans l\'eau, au contraire. Vous y verrez tous ceux qui ont parié avant vous.'),
+      P('Ils ont perdu ?'),
+      B('Ils ont discuté. {price} pièces, et vous traversez sans vous mouiller.'),
+    ],
   },
   {
     ordinal: '6e',
@@ -175,6 +244,12 @@ export const CIRCLES: readonly CircleTexts[] = [
       D("La Violence est en trois sous-cercles : fleuve de sang, buissons, sable brûlant. Toujours {souls} âmes, mais {price} pièces pour passer."),
     ],
     failure: [D("Les tombes de l'Hérésie ont une place libre, ça tombe bien. Bye.")],
+    bossIntro: [
+      B('Trois voix, un seul avis : vous n\'avez rien à faire ici.'),
+      D('Elles disent ça à tout le monde. Elles le pensent aussi.'),
+      B('Les tombes sont ouvertes, elles chauffent depuis ce matin. Il en reste une à votre taille.'),
+      B('{price} pièces pour la refermer sans vous dedans.'),
+    ],
   },
   {
     ordinal: '7e',
@@ -183,6 +258,14 @@ export const CIRCLES: readonly CircleTexts[] = [
       D("La Fraude : dix fosses concentriques, les Malebolge, pleines de séducteurs et de faussaires. {souls} âmes au départ, une de plus, et {price} pièces de sortie."),
     ],
     failure: [D("Le sable brûlant, le fleuve de sang… choisissez, je suis bon prince. Bye.")],
+    bossIntro: [
+      D('Ne le regardez pas dans les yeux. Ni ailleurs, d\'ailleurs.'),
+      B('JE SUIS CALME.'),
+      D('Il n\'est pas calme.'),
+      B('{price} PIÈCES ET VOUS PASSEZ. C\'EST ÉCRIT. JE RESPECTE CE QUI EST ÉCRIT.'),
+      P('Il crie toujours ?'),
+      D('Non. Parfois il charge.'),
+    ],
   },
   {
     ordinal: '8e',
@@ -191,6 +274,13 @@ export const CIRCLES: readonly CircleTexts[] = [
       D("Ce n'est pas un problème, hein ? Un pacte, c'est un pacte. Il y aura {souls} âmes au départ, gelées dans le Cocyte, et il faudra {price} pièces pour sortir. Pour de bon."),
     ],
     failure: [D("Les faussaires vous ont eu à votre propre jeu. Une fosse vous attend au fond des Malebolge. Bye.")],
+    bossIntro: [
+      B('Bienvenue. Asseyez-vous, prenez ce que vous voulez, c\'est offert.'),
+      D('Ne prenez rien.'),
+      B('On me dit souvent que j\'ai un visage honnête. C\'est la queue qu\'il faut surveiller.'),
+      B('La course sera régulière, je vous en donne ma parole. {price} pièces à la sortie.'),
+      D('Sa parole. Voilà.'),
+    ],
   },
   {
     ordinal: '9e',
@@ -202,6 +292,12 @@ export const CIRCLES: readonly CircleTexts[] = [
       D("Allez, filez. Et gardez la monnaie."),
     ],
     failure: [D("À une pièce près. C'est le cercle de la Trahison, vous vous attendiez à quoi ? Bienvenue dans la glace. Bye.")],
+    bossIntro: [
+      B('Vous voilà. Dernier cercle, dernier guichet — et de mon côté du comptoir, cette fois.'),
+      P('Vous m\'avez coaché pendant huit cercles.'),
+      B('Et j\'ai appris en vous regardant. Je connais vos paris avant que vous les posiez.'),
+      B('{price} pièces. Un pacte, c\'est un pacte : je ne triche pas. Je gagne, c\'est différent.'),
+    ],
   },
 ]
 
