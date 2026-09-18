@@ -94,6 +94,8 @@ Chaque couloir est découpé en cases. Les cases des couloirs sont alignées ent
 
 Dans certaines colonnes, les cases d'un couloir peuvent être manquantes ou **bloquées**, forçant l'âme à se déporter sur une autre case de la colonne. Ce rétrécissement de la piste va provoquer des événements stratégiques. La ligne de départ est commune : toutes les âmes y tiennent sans collision.
 
+Chaque cercle propose plusieurs **variantes de terrain** — chacune son nom et ses cases bloquées — et une seule est tirée au départ de chaque course : les trois courses d'un cercle ne se jouent donc pas sur la même piste, et la carte annonce les variantes possibles sans dire laquelle sortira. Une colonne n'est jamais entièrement bloquée, il y reste toujours une case libre ; le cercle 1, qui n'a qu'un couloir, n'a donc qu'une variante, sans case bloquée (`run.circles[].terrains` dans `config/race.json`).
+
 Le seuil de 60 % est matérialisé par des zones de couleur. Un pari supplémentaire ne peut pas cibler une âme qui a dépassé ce seuil. La course continue jusqu'à ce qu'au moins une âme franchisse l'arrivée ; le tour en cours est néanmoins résolu jusqu'au bout. Le classement final est ensuite calculé à partir des positions atteintes après cette résolution complète, y compris les cases situées au-delà de l'arrivée.
 
 ### 2.3 Âmes en course
@@ -278,6 +280,8 @@ C'est le démon stagiaire qui peut remplacer les âmes en course par des âmes a
 
 Après le neuvième cercle, le joueur peut choisir de terminer le jeu. Il peut aussi continuer comme démon dans les cercles 10 et suivants. La transition exacte, la nature de la promotion et la forme de la fin principale sont à préciser dans l'écriture narrative, sans modifier les règles établies ci-dessus.
 
+**Dans le proto** : le neuvième cercle payé, l'écran « Évasion » propose les deux issues — rentrer au menu, ou monter avec le stagiaire. L'évasion est comptée dans les statistiques dans les deux cas : elle est acquise, c'est la sortie qui est refusée. Tant que le joueur n'est pas rentré au menu, le run reste ouvert et sauvegardé (`run.escapeCircle` dans `config/race.json`).
+
 ---
 
 ## 6. Boutique, artefacts, cartes actions et archétypes d'âmes
@@ -368,6 +372,8 @@ Ces modifications doivent être visibles avant les paris initiaux. Une modificat
 ### 8.1 Cercles infernaux 10+
 
 Après le neuvième cercle, le joueur peut continuer en tant que démon et affronter des cercles supplémentaires : 10, 11, 12, etc. Ces cercles sont infernaux, mais ne suivent pas nécessairement une cosmologie fixe. Ils servent de contenu de maîtrise et de rejouabilité.
+
+**Dans le proto** : les cercles 10 à 15 sont écrits à la main, pas générés — une montée qui quitte l'enfer (fonds marins, falaise, ville, montagne, ciel, paradis), chacun avec son décor, son boss, son portrait, ses terrains et ses dialogues. Au-delà du quinzième, le jeu rejoue le paradis sans fin, avec un prix de sortie multiplié par `run.beyondPriceGrowth` à chaque tour : le run s'arrête quand le joueur ne peut plus payer, et non à un cercle fixé. La génération procédurale de boss par assemblage de tags reste à faire — les pouvoirs de boss eux-mêmes ne sont pas encore appliqués en course.
 
 Les boss post-9 sont générés procéduralement en assemblant **2 à 4 effets** tirés parmi une liste de tags/effets. Chaque effet doit être suffisamment indépendant pour pouvoir se combiner avec les deux autres sans produire de règle illisible.
 

@@ -1,6 +1,7 @@
 import { config } from '../core/config'
 import { fmtFace, type Face } from '../core/rules/dice'
 import type { Inventory as Inv } from '../core/shop/shop'
+import { ItemArt } from './ItemArt'
 import { itemName } from './useRace'
 
 const EFFECT_ICON: Record<NonNullable<Face['effect']>, string> = { gold: '✦', betSeal: '♠' }
@@ -34,6 +35,7 @@ export function Inventory({ inventory, lateBetCharges, compact }: Props) {
           {inventory.artefacts.length === 0 && <span className="muted small">aucun</span>}
           {inventory.artefacts.map((id) => (
             <span key={id} className="inv-artefact" title={id}>
+              <ItemArt id={id} className="inv-art" />
               {itemName(id)}
               {id === 'lateBet' && (
                 <span className="artefact-charges">

@@ -805,7 +805,9 @@ p { margin: 0; }
 .inventory { display: flex; gap: 24px; flex-wrap: wrap; padding: 8px 16px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
 .inv-group { display: flex; flex-direction: column; gap: 4px; }
 .inv-items { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-.inv-artefact { padding: 3px 10px; border-radius: 999px; background: #2f2216; border: 1px solid #4a331b; color: var(--gold); font-size: 0.8rem; font-weight: 600; }
+.inv-artefact { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; background: #2f2216; border: 1px solid #4a331b; color: var(--gold); font-size: 0.8rem; font-weight: 600; }
+/* Vignette de l'objet possédé, à la hauteur du texte de la pastille (ItemArt.tsx ; absente tant que le dessin manque). */
+.inv-art { width: 18px; height: 18px; object-fit: contain; }
 .inv-die { display: inline-flex; align-items: center; gap: 3px; padding: 3px 8px; border-radius: 8px; background: var(--panel-2); font-size: 0.8rem; }
 .inv-die-name { font-weight: 600; margin-right: 6px; }
 .face { display: inline-flex; align-items: center; min-width: 26px; justify-content: center; padding: 1px 5px; border-radius: 5px; background: var(--bg-2); border: 1px solid var(--line); font-variant-numeric: tabular-nums; font-weight: 700; font-size: 0.8rem; }
@@ -824,6 +826,13 @@ p { margin: 0; }
 .shop-item header { display: flex; justify-content: space-between; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
 .shop-item h3 { font-size: 0.95rem; text-transform: none; letter-spacing: 0; color: var(--ink); }
 .shop-item p { flex: 1; color: var(--muted); }
+/* Corps de la carte : la vignette de l'objet (public/objets/<id>.webp) à gauche, le nom et
+   l'effet à droite. Sans dessin, `ItemArt` ne rend rien et le texte reprend toute la largeur —
+   la carte ne garde pas de trou. La vignette se mesure en % de la carte pour rester lisible
+   d'une vitrine étroite (190 px) au panneau de parchemin (300 px). */
+.shop-body { display: flex; align-items: flex-start; gap: 10px; flex: 1; }
+.shop-text { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0; }
+.shop-art { flex: 0 0 auto; width: clamp(52px, 28%, 88px); aspect-ratio: 1; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5)); }
 .shop-item footer { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .kind-artefact { border-top-color: var(--gold); }
 .kind-die { border-top-color: var(--human); }
@@ -1080,6 +1089,8 @@ p { margin: 0; }
 .end-gameover h1 { color: var(--bad); text-shadow: 0 0 24px rgba(208, 69, 60, 0.5); }
 .end-escape h1 { color: var(--gold); text-shadow: 0 0 24px rgba(224, 168, 60, 0.5); }
 .end p { max-width: 520px; color: var(--muted); }
+/* Évasion : sortir ou continuer à monter (GDD §5.3) ; les deux boutons sur une ligne, l'un à côté de l'autre. */
+.end-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
 
 /* ---- Carte des neuf cercles ----
    Le décor (public/map/bg.jpg) porte les deux emplacements : une pierre ronde à gauche pour la
@@ -1161,6 +1172,10 @@ p { margin: 0; }
 .map-dl { margin: 0; display: flex; flex-direction: column; gap: 0.5em; }
 .map-dl dt { font-size: 0.68em; text-transform: uppercase; letter-spacing: 0.08em; color: #9fb0c4; }
 .map-dl dd { margin: 0.1em 0 0; font-size: 0.95em; line-height: 1.25; }
+/* Variantes de terrain du cercle : une liste serrée sous le libellé, le nom de la variante en clair. */
+.map-terrains { margin: 0.25em 0 0; padding: 0; list-style: none; font-size: 0.85em; color: #9fb0c4; }
+.map-terrains li { line-height: 1.35; }
+.map-terrain-name { color: #dce7f4; font-weight: 600; }
 .map-info .btn-primary { margin-top: auto; padding: 0.6em 0.9em; font-size: 0.95em; }
 .map-info .tag { padding: 0 0.5em; font-size: 0.8em; }
 

@@ -161,6 +161,11 @@ export interface CircleTexts {
   bossIntro: readonly Line[]
 }
 
+/**
+ * Un bloc par cercle : les neuf de Dante, puis la montée du mode démon (GDD §8.1). Au-delà du
+ * dernier, `circleTexts` (demon.ts) rejoue ce dernier bloc — le quinzième est donc écrit pour
+ * être redit à chaque tour de paradis, sans promettre de suite.
+ */
 export const CIRCLES: readonly CircleTexts[] = [
   {
     ordinal: '1er',
@@ -286,10 +291,11 @@ export const CIRCLES: readonly CircleTexts[] = [
     ordinal: '9e',
     success: [
       D("Vous… vous avez payé. Contre moi. Contre le neuvième cercle."),
-      D("Un pacte, c'est un pacte. La porte est là. Personne n'est jamais remonté d'ici, alors ne racontez pas comment vous avez fait."),
+      D("Un pacte, c'est un pacte. La porte est là, ouverte. Personne n'est jamais remonté d'ici, alors ne racontez pas comment vous avez fait."),
       P("Et vous ?"),
-      D("Moi ? Je suis patron d'un cercle. Il me manque juste un parieur qui sache lire une course. Vous connaissez quelqu'un ?"),
-      D("Allez, filez. Et gardez la monnaie."),
+      D("Moi ? Patron d'un cercle, et toujours pas grand-chose. Il me manque un parieur qui sache lire une course."),
+      D("Parce qu'il y a autre chose, au-dessus. J'ai vu les registres : les fonds marins, une falaise, une ville, une montagne, le ciel. Et tout en haut, un guichet que personne n'a jamais tenu."),
+      D("Alors : la porte, ou la montée. Vous gardez la monnaie dans les deux cas."),
     ],
     failure: [D("À une pièce près. C'est le cercle de la Trahison, vous vous attendiez à quoi ? Bienvenue dans la glace. Bye.")],
     bossIntro: [
@@ -299,6 +305,92 @@ export const CIRCLES: readonly CircleTexts[] = [
       B('{price} pièces. Un pacte, c\'est un pacte : je ne triche pas. Je gagne, c\'est différent.'),
     ],
   },
+  {
+    ordinal: '10e',
+    success: [
+      D("Premier cercle au-dessus de l'enfer, et vous respirez encore. Enfin, vous ne respiriez déjà plus, mais l'idée est là."),
+      D("La falaise ensuite : du basalte noir, des chaînes qui pendent et rien pour se rattraper. Toujours {souls} âmes, et {price} pièces pour monter d'un cran."),
+    ],
+    failure: [D("L'eau vous garde. C'est calme, au fond. Vous aurez tout le temps de recompter ce qu'il vous manquait.")],
+    bossIntro: [
+      B("On ne parle pas, ici. On gargouille. Vous vous y ferez."),
+      D("C'est {boss}. Il tient le guichet du fond depuis que la cathédrale a coulé."),
+      B("Les paris descendent lentement, comme tout le reste. {price} pièces et je vous laisse remonter."),
+      P("Et si je reste ?"),
+      B("Personne ne reste. Tout le monde coule."),
+    ],
+  },
+  {
+    ordinal: '11e',
+    success: [
+      D("Vous grimpez plus vite que les chaînes ne tombent. Je note."),
+      D("Au-dessus : une ville. Des rues, des balcons de fer, de la suie, et des âmes qui font la queue devant des guichets fermés. {souls} âmes en course et {price} pièces de péage."),
+    ],
+    failure: [D("La paroi est longue et vous n'avez plus de quoi payer la corde. Bonne descente.")],
+    bossIntro: [
+      B("{boss}. Je compte les chaînes, et il en manque toujours une."),
+      D("Ne demandez pas où elle est passée."),
+      B("Elle est autour de quelqu'un. Montez donc, si vous avez {price} pièces au bout. Sinon vous ferez le poids qui manque."),
+    ],
+  },
+  {
+    ordinal: '12e',
+    success: [
+      D("Une ville entière qui attend son tour, et c'est vous qui passez devant. Ça ne se fait pas. J'adore."),
+      D("La montagne, maintenant : des séracs, de la neige de nuit, des cordes gelées. {souls} âmes au départ et {price} pièces pour continuer."),
+    ],
+    failure: [D("Vous voilà dans la file. Elle avance, paraît-il. Personne ne l'a vérifié.")],
+    bossIntro: [
+      B("Bonjour. Prenez un ticket. Asseyez-vous. Le guichet ouvre bientôt."),
+      D("Il dit ça depuis quatre siècles."),
+      B("Le guichet ouvre bientôt. Pour vous, exceptionnellement : une course, {price} pièces, et vous passez devant tout le monde."),
+      P("Et eux ?"),
+      B("Eux ? Eux attendent. C'est leur métier."),
+    ],
+  },
+  {
+    ordinal: '13e',
+    success: [
+      D("Il fait froid et vous pariez encore. Je commence à croire que vous aimez ça."),
+      D("Au-dessus de la montagne, il n'y a plus de sol : le ciel, des murs de nuages et un pont rompu. {souls} âmes, {price} pièces."),
+    ],
+    failure: [D("La corde a gelé, vos mains aussi, et votre bourse est vide. La montagne vous garde debout, au moins.")],
+    bossIntro: [
+      B("…"),
+      D("{boss} ne dit jamais rien. Il attend que vous ayez froid."),
+      B("…"),
+      D("Voilà. Il attend. {price} pièces, et il vous laisse passer avant que vos doigts ne tombent."),
+    ],
+  },
+  {
+    ordinal: '14e',
+    success: [
+      D("Un pont rompu, et vous êtes de l'autre côté. Je ne demande pas comment."),
+      D("Il reste une marche. Tout en haut : des gradins de nuage, des anneaux d'or et un guichet que personne n'a jamais tenu. {souls} âmes et {price} pièces."),
+    ],
+    failure: [D("Le vent a emporté le reste. Vous tombez longtemps. Très longtemps. J'ai le temps de vous saluer.")],
+    bossIntro: [
+      B("Je suis le courant d'air entre deux mondes. On ne me voit pas, on me subit."),
+      D("Il aime bien cette phrase. Il la répète à chaque orage."),
+      B("Rien ne tient en l'air, parieur. Ni les âmes, ni les tickets, ni vous. {price} pièces si vous tenez quand même."),
+    ],
+  },
+  {
+    ordinal: '15e',
+    success: [
+      D("Nous y sommes. Au-dessus, il n'y a plus rien — alors on recommence ici, et le tarif monte."),
+      D("Les gradins se remplissent à nouveau, les anneaux tournent, et le guichet reste ouvert. {souls} âmes au départ, {price} pièces pour le tour suivant."),
+      P("Ça ne s'arrête jamais ?"),
+      D("Vous avez eu une porte. Vous ne l'avez pas prise."),
+    ],
+    failure: [D("Au paradis aussi, on ferme le guichet quand la bourse est vide. Asseyez-vous dans les gradins, vous regarderez les autres.")],
+    bossIntro: [
+      B("Vous m'avez reconnu ? Je vous ai coaché pendant neuf cercles, et j'avais un badge en plastique."),
+      P("Vous avez des ailes."),
+      B("On me les a données en haut. Personne ne m'a expliqué pourquoi, et je n'ai pas posé la question."),
+      B("{price} pièces. Et cette fois, c'est moi qui lis la course avant vous."),
+    ],
+  },
 ]
 
 export const ENDINGS = {
@@ -306,6 +398,9 @@ export const ENDINGS = {
   gameOverBody: 'Le prix du cercle était de {price} pièces. Il vous en manquait {missing}.',
   escapeTitle: 'Évasion',
   escapeBody: 'Neuf cercles traversés, {money} pièces en poche. Le stagiaire est devenu boss, et vous, vous êtes sorti.',
+  /** Au neuvième cercle payé, la porte n'est pas la seule issue (GDD §5.3, §8.1). */
+  escapeStay: 'Ou vous restez, du bon côté du guichet cette fois, et vous montez voir ce qu\'il y a au-dessus de l\'enfer.',
+  escapeContinue: 'Monter avec lui',
   backToMenu: 'Retour au menu',
 } as const
 
@@ -326,6 +421,7 @@ export const HUD = {
   artefacts: '{n} artefact{s}',
   price: 'Prix du cercle : {price} pièces',
   demon: 'Coach : {rank}',
+  terrain: 'Terrain : {name}',
   results: 'Gains',
   raceResult: 'Résultat de la course',
   seeTable: 'Voir la table',
@@ -339,7 +435,7 @@ export const HUD = {
 } as const
 
 export const MAP = {
-  title: 'Les neuf cercles',
+  title: 'Les cercles',
   subtitle: 'Cliquez sur la prochaine course pour la lancer.',
   current: 'Vous êtes ici',
   done: 'course jouée',
@@ -352,6 +448,9 @@ export const MAP = {
   lanes: '{n} couloir{s}',
   blocked: '{n} case{s} bloquée{s} (colonnes {columns})',
   noBlocked: 'aucune case bloquée',
+  terrain: 'Terrain',
+  terrainDrawn: 'tiré au sort au départ de chaque course',
+  terrainOne: 'terrain unique',
   price: 'Prix du cercle',
   priceHidden: 'inconnu tant que vous n’y êtes pas',
   race: 'Course {n}',
@@ -524,7 +623,7 @@ export const HELP = {
   navLabel: 'Sections de l’aide',
   close: 'Fermer',
   intro: [
-    'Vous êtes mort. Bienvenue. Le démon stagiaire qui gère votre dossier s’ennuie ferme, alors il vous propose un pacte : pariez sur des courses d’âmes damnées, gagnez assez de pièces pour payer votre passage, et remontez les neuf cercles de l’enfer. **Lui, il coache. Vous, vous misez.**',
+    'Vous êtes mort. Bienvenue. Le démon stagiaire qui gère votre dossier s’ennuie ferme, alors il vous propose un pacte : pariez sur des courses d’âmes damnées, gagnez assez de pièces pour payer votre passage, et remontez les neuf cercles de l’enfer. **Lui, il coache. Vous, vous misez.** Au neuvième, la porte s’ouvre — et rien ne vous oblige à la prendre.',
     'Cette page répond à trois questions : *comment se joue une course ?*, *comment gagne-t-on de l’argent ?*, *comment sort-on d’un cercle ?*',
     'L’aide se consulte à tout moment : elle **n’interrompt rien** de la course en cours.',
   ],
@@ -682,6 +781,14 @@ export const DEV = {
   apply: 'Appliquer',
   cancel: 'Annuler',
 } as const
+
+/**
+ * Rang du cercle affiché dans le HUD (« 1er », « 9e », « 23e »). Les cercles écrits ont leur
+ * forme dans CIRCLES ; au-delà, le jeu continue de compter (GDD §8.1).
+ */
+export function ordinalOf(circle: number): string {
+  return CIRCLES[circle - 1]?.ordinal ?? `${circle}e`
+}
 
 /** Remplace les {clés} d'un texte. */
 export function fill(text: string, values: Record<string, string | number>): string {

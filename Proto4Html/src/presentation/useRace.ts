@@ -7,7 +7,7 @@
  * testeur voie chaque geste. Un `runId` invalide toute séquence en cours quand on
  * relance une course. La vérité vit dans `uiRef` ; `setUi` ne sert qu'à rafraîchir.
  */
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { config, shop } from '../core/config'
 import { betRefusal, betType, betUnlocked, cancelBet as cancelBetRule, currentMultiplier, effectiveBase, fmtMultiplier, potentialPayout, raceProgress, settleBets, type BaseModifiers, type Bet, type BetTypeId, type Settlement } from '../core/rules/bets'
 import { fmtFace, type DistanceDie } from '../core/rules/dice'
@@ -33,7 +33,8 @@ import {
   type Roll,
 } from '../core/rules/race'
 import { randomSeed, seededRng, type Rng } from '../core/rules/rng'
-import type { BlockedCell } from '../core/config/schema'
+import { terrainFor } from '../core/rules/terrain'
+import type { Terrain } from '../core/config/schema'
 import type { ShopItem } from '../core/shop/items'
 import { applyPurchase, findItem, generateVitrine, opponentNegativesFlipped, priceAtCircle, type Inventory, type PurchaseTarget } from '../core/shop/shop'
 import { demonLevelAtRace, rankOfLevel } from './demon'
@@ -68,6 +69,8 @@ export interface RaceUi {
   lastResult: MoveResult | null
   log: LogEntry[]
   seed: number
+  /** Terrain tiré pour cette course (une des variantes du cercle). */
+  terrain: Terrain
   /** Argent du joueur, conservé de course en course. */
   money: number
   bets: Bet[]
@@ -104,9 +107,9 @@ export interface UseRaceProps {
   carry: SessionCarry
   /** Nombre d'âmes en course pour ce cercle. */
   soulCount: number
-  /** Couloirs et cases bloquées du cercle (GDD §2.2). */
+  /** Couloirs du cercle et ses variantes de terrain (GDD §2.2) ; une est tirée par course. */
   lanes: number
-  blocked: readonly BlockedCell[]
+  terrains: readonly Terrain[]
   /** Multiplicateur de vitesse des animations (option). */
   speed: number
 }
@@ -218,14 +221,14 @@ export function previewNext(u: RaceUi): MoveResult | null {
   return { ...result, move: first }
 }
 
-function initial(seed: number, carry: SessionCarry, base: RaceOptions): RaceUi {
+function initial(seed: number, carry: SessionCarry, terrain: Terrain, base: RaceOptions): RaceUi {
   const { circle, raceInCircle } = circleOf(carry.raceIndex)
-  const race = createRace(config, raceOptions(carry.inventory, base))
+  const race = createRace(config, raceOptions(carry.inventory, { ...base, blocked: terrain.blocked }))
   const lanes = race.track.lanes
   const blocked = race.track.blocked.length
   // Avance de course : versée avant les paris initiaux, racontée dans le journal (visible sous le plateau).
   const allowance = raceAllowance(config.economy.raceAllowance, carry.inventory, shop)
-  const log: LogEntry[] = [{ id: 0, turn: 1, source: 'system', text: `Cercle ${circle}, course ${raceInCircle}/${config.run.racesPerCircle} — ${race.souls.length} âmes, ${config.track.columns} cases, ${lanes} couloir${lanes > 1 ? 's' : ''}${blocked > 0 ? `, ${blocked} case${blocked > 1 ? 's' : ''} bloquée${blocked > 1 ? 's' : ''}` : ''}, graine ${seed}. Posez vos paris initiaux.` }]
+  const log: LogEntry[] = [{ id: 0, turn: 1, source: 'system', text: `Cercle ${circle}, course ${raceInCircle}/${config.run.racesPerCircle} — terrain « ${terrain.name} », ${race.souls.length} âmes, ${config.track.columns} cases, ${lanes} couloir${lanes > 1 ? 's' : ''}${blocked > 0 ? `, ${blocked} case${blocked > 1 ? 's' : ''} bloquée${blocked > 1 ? 's' : ''}` : ''}, graine ${seed}. Posez vos paris initiaux.` }]
   if (allowance.total > 0) log.push({ id: 1, turn: 1, source: 'system', text: `Le stagiaire vous avance ${allowance.total} pièces pour cette course${allowance.bonus > 0 ? ` (dont ${allowance.bonus} grâce à la ${itemName('tirelire')})` : ''}.` })
   return {
     race,
@@ -238,6 +241,7 @@ function initial(seed: number, carry: SessionCarry, base: RaceOptions): RaceUi {
     lastResult: null,
     log,
     seed,
+    terrain,
     money: carry.money + allowance.total,
     bets: [],
     settlement: null,
@@ -256,10 +260,12 @@ export function carryOut(ui: RaceUi): SessionCarry {
   return { money: ui.money, inventory: ui.inventory, raceIndex: ui.raceIndex + 1, lateBetCharges: ui.lateBetCharges }
 }
 
-export function useRace({ carry, soulCount, lanes, blocked, speed }: UseRaceProps) {
+export function useRace({ carry, soulCount, lanes, terrains, speed }: UseRaceProps) {
   // Graine au hasard, sauf `?seed=NNN` dans l'URL (tests e2e) : course, dés et vitrine deviennent déterministes.
   const [seed] = useState(() => seedForRace(carry.raceIndex) ?? randomSeed())
-  const [ui, setUi] = useState<RaceUi>(() => initial(seed, carry, { soulCount, lanes, blocked }))
+  // Le terrain se tire sur la graine, à part du hasard de la course (terrain.ts).
+  const terrain = useMemo(() => terrainFor(terrains, seed), [terrains, seed])
+  const [ui, setUi] = useState<RaceUi>(() => initial(seed, carry, terrain, { soulCount, lanes }))
   const [auto, setAuto] = useState(false)
 
   const uiRef = useRef<RaceUi>(ui)

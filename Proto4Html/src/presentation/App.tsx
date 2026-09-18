@@ -7,6 +7,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { config } from '../core/config'
 import { defaultInventory } from '../core/shop/shop'
+import { circleAt } from '../core/rules/circles'
 import { circleBg } from './art'
 import { bossAnnounce, bossIntro, circleFailure, circleSuccess, rankOfLevel, spokenBy } from './demon'
 import { DevMenu } from './DevMenu'
@@ -28,7 +29,7 @@ type Screen =
   | { kind: 'map'; carry: SessionCarry }
   | { kind: 'game'; carry: SessionCarry; key: number }
   | { kind: 'dialogue'; lines: readonly Line[]; then: Screen; skip?: string; background?: string }
-  | { kind: 'end'; end: 'gameover' | 'escape'; price: number; money: number }
+  | { kind: 'end'; end: 'gameover' | 'escape'; price: number; money: number; carry?: SessionCarry }
 
 function toSave(carry: SessionCarry, bestCircle: number): RunSave {
   return { ...carry, bestCircle, savedAt: Date.now() }
@@ -69,6 +70,13 @@ export default function App() {
   }, [])
 
   const toMenu = useCallback(() => setScreen({ kind: 'menu' }), [])
+
+  /** Le joueur quitte une fin : le run est clos pour de bon, la sauvegarde effacée. */
+  const endRun = useCallback((): void => {
+    clearRun()
+    setSave(null)
+    toMenu()
+  }, [toMenu])
 
   const startGame = useCallback((carry: SessionCarry): void => {
     setGameKey((k) => k + 1)
@@ -132,7 +140,7 @@ export default function App() {
     const carry = carryOut(ui)
     const finished = ui.raceIndex
     const { circle, raceInCircle } = circleOf(finished)
-    const circleCfg = config.run.circles[circle - 1]!
+    const circleCfg = circleAt(config.run, circle)
     const staked = ui.settlement?.staked ?? 0
     const returned = ui.settlement?.returned ?? 0
     setStats(
@@ -171,16 +179,14 @@ export default function App() {
       return
     }
     const paid: SessionCarry = { ...carry, money: carry.money - circleCfg.price, lateBetCharges: fullCharges(carry.inventory) }
-    const nextCircleCfg = config.run.circles[circle]
-    if (!nextCircleCfg) {
-      // Neuvième cercle payé : évasion.
-      clearRun()
-      setSave(null)
+    // Le run continue toujours : au-delà du dernier cercle écrit, le paradis se rejoue (circles.ts).
+    persist(paid, circle + 1)
+    if (circle === config.run.escapeCircle) {
+      // Neuvième cercle payé : l'évasion est acquise, mais le joueur peut rester et monter (GDD §5.3).
       setStats(updateStats((s) => ({ ...s, escapes: s.escapes + 1 })))
-      setScreen({ kind: 'dialogue', lines: circleSuccess(circle), then: { kind: 'end', end: 'escape', price: circleCfg.price, money: paid.money } })
+      setScreen({ kind: 'dialogue', lines: circleSuccess(circle), then: { kind: 'end', end: 'escape', price: circleCfg.price, money: paid.money, carry: paid } })
       return
     }
-    persist(paid, circle + 1)
     setScreen({ kind: 'dialogue', lines: circleSuccess(circle), then: { kind: 'map', carry: paid } })
   }
 
@@ -213,8 +219,12 @@ export default function App() {
         return <MapScreen carry={screen.carry} onLaunch={() => launchRace(screen.carry)} onMenu={toMenu} />
       case 'game':
         return <GameScreen key={screen.key} carry={screen.carry} speed={options.speed} onFinished={onRaceFinished} onMenu={toMenu} />
-      case 'end':
-        return <EndScreen kind={screen.end} price={screen.price} money={screen.money} onBack={toMenu} />
+      case 'end': {
+        const carry = screen.carry
+        return (
+          <EndScreen kind={screen.end} price={screen.price} money={screen.money} {...(carry === undefined ? {} : { onContinue: () => toMap(carry) })} onBack={endRun} />
+        )
+      }
     }
   }
 

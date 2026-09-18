@@ -28,7 +28,7 @@ dalles**. Seul le titre est une image.
 | `bubble-demon.png` | 1200 × 397 | transparent autour | Bande de parchemin déchiré, bulle du démon — **rendu en place**, réduit depuis `raw/` (3584 × 1184) |
 | `bubble-player.png` | 1200 × 397 | transparent autour | Même bande, papier gris-bleu, bulle du joueur — **rendu en place** |
 | `dialog-bg.jpg` | 2200 × 1118 | opaque | Fond des dialogues : la salle de lave **sans personnage** — **rendu en place** (source `raw/dialog_bg.jpeg`) |
-| `perso/stagiaire_*.webp` | 700 × 884 | transparent | Portraits du stagiaire posés à gauche du dialogue, un par grade (+ cinq expressions au grade 0) — **rendus en place** (sources `raw/perso/*.png`, 976 × 1075) |
+| `perso/stagiaire_*.webp` | 700 × 771 | transparent | Portraits du stagiaire posés à gauche du dialogue, un par grade (+ cinq expressions au grade 0) — **rendus en place** (sources `raw/perso/*.png`, 976 × 1075) |
 
 Le cadre déchiré (`frame.png`) a été **retiré du menu** : le fond peint se suffit.
 Le fichier peut être supprimé de `public/menu/` (4,5 Mo copiés dans le build pour
@@ -320,11 +320,12 @@ Le personnage n'est plus peint dans le fond : `dialog_bg.jpeg` est une salle de
 lave vide, et le stagiaire est un **PNG détouré** posé par-dessus. Il change de
 costume à chaque promotion, comme son nom dans les bulles.
 
-Sources : `raw/perso/stagiaire_<niveau>[_<expression>].png`, 976 × 1075, buste
-cadré de la même façon d'un fichier à l'autre (la tête ne doit pas sauter au
-changement de grade). Conversion vers `Proto4Html/public/menu/perso/` : recadrage
-commun `(46, 45) → (862, 1075)`, réduction à 700 px de large, WebP qualité 88
-(≈ 60 Ko contre ≈ 460 Ko en PNG, pour neuf fichiers).
+Sources : `raw/perso/stagiaire_<niveau>[_<expression>].png`, buste détouré sur le
+**canevas commun 976 × 1075**, partagé avec les portraits des boss
+(`raw/demons/png/`, voir `prompts-cercles.md`) : c'est lui qui fait que deux
+portraits se remplacent au même endroit sans que le personnage saute. Conversion
+vers `Proto4Html/public/menu/perso/` : pas de recadrage, réduction à 700 px de
+large, WebP qualité 88 (≈ 50 Ko contre ≈ 460 Ko en PNG, pour neuf fichiers).
 
 | Niveau | Fichier | Grade (`DEMON_RANKS`, `texts.ts`) |
 |---:|---|---|

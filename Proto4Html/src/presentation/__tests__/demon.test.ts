@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { config } from '../../core/config'
-import { bossAnnounce, circleFailure, circleSuccess, demonLevel, demonLevelAtRace, demonRank, demonRankAtRace, rankOfLevel } from '../demon'
-import { CIRCLES, DEMON_RANKS } from '../texts'
+import { bossAnnounce, bossIntro, circleFailure, circleSuccess, demonLevel, demonLevelAtRace, demonRank, demonRankAtRace, rankOfLevel } from '../demon'
+import { CIRCLES, DEMON_RANKS, ordinalOf } from '../texts'
 
 const per = config.run.racesPerCircle
 
@@ -101,5 +101,41 @@ describe('dialogues de transition', () => {
     const boss = bossAnnounce(2)
     expect(boss[0]!.label).toBe('Démon assistant')
     expect(boss[0]!.text).toContain(String(config.run.circles[1]!.price))
+  })
+})
+
+/**
+ * Au-delà du dernier cercle écrit, le jeu continue (GDD §8.1) : tous les textes indexés par
+ * cercle doivent tenir, sans accolade oubliée ni texte vide.
+ */
+describe('cercles au-delà de la liste écrite', () => {
+  const beyond = [CIRCLES.length + 1, CIRCLES.length + 2, CIRCLES.length + 7, 40]
+
+  it('a un texte de réussite, d’échec, d’annonce et de scène de boss, sans clé non remplie', () => {
+    for (const circle of beyond) {
+      for (const lines of [circleSuccess(circle), circleFailure(circle), bossAnnounce(circle), bossIntro(circle)]) {
+        expect(lines.length).toBeGreaterThan(0)
+        const text = lines.map((l) => l.text).join(' ')
+        expect(text).not.toMatch(/\{\w+\}/)
+        expect(text.trim()).not.toBe('')
+      }
+    }
+  })
+
+  it('donne un portrait et un nom à chaque locuteur de la scène du boss', () => {
+    for (const circle of beyond) {
+      for (const line of bossIntro(circle)) {
+        if (line.who === 'player') continue
+        expect(line.label).toBeTruthy()
+        expect(line.portrait).toBeTruthy()
+      }
+    }
+  })
+
+  it('continue de compter les cercles dans le HUD', () => {
+    expect(ordinalOf(1)).toBe('1er')
+    expect(ordinalOf(CIRCLES.length)).toBe(`${CIRCLES.length}e`)
+    expect(ordinalOf(CIRCLES.length + 1)).toBe(`${CIRCLES.length + 1}e`)
+    expect(ordinalOf(112)).toBe('112e')
   })
 })

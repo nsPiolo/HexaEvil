@@ -64,7 +64,9 @@ couloir — jusqu'à six au neuvième cercle. Trois choses à retenir :
   en enfer : le classement tranche tout, couloir compris.
 
 Les cases bloquées rétrécissent la piste et créent des embouteillages : ce sont
-des pièges à collisions, repérez-les avant de miser.
+des pièges à collisions, repérez-les avant de miser. Chaque cercle a plusieurs
+**terrains** possibles, tirés au sort au départ de chaque course : la carte vous dit
+lesquels, jamais lequel. Le terrain joué est nommé en haut à gauche de la table.
 
 ### L'arrivée
 
@@ -124,6 +126,18 @@ hiérarchie : Assistant, Tourmenteur, Contremaître, Sous-directeur… Chaque
 promotion **ouvre de nouveaux paris** et garnit la boutique. Après le huitième
 cercle, il obtient même une belle promotion. Au neuvième — le cercle de la
 Trahison — devinez qui tient le guichet en face de vous.
+
+## Et après le neuvième ?
+
+Payer le neuvième cercle, c'est sortir de l'enfer : la porte s'ouvre et la partie
+peut s'arrêter là. Mais rien ne vous y oblige. Le stagiaire a lu les registres et
+il y a autre chose au-dessus — les fonds marins, une falaise, une ville, une
+montagne, le ciel, et tout en haut un guichet que personne n'a jamais tenu. Si
+vous montez avec lui, vous gardez tout : votre argent, vos dés, vos artefacts.
+
+Au sommet, ça ne s'arrête plus : on rejoue le dernier cercle, encore et encore,
+avec un tarif de sortie qui grimpe à chaque tour. La partie se termine le jour où
+vous ne pouvez plus payer. C'était le marché depuis le début.
 
 ## Les trois conseils du stagiaire
 

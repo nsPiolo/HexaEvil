@@ -134,10 +134,12 @@ interface EndProps {
   kind: 'gameover' | 'escape'
   price: number
   money: number
+  /** Évasion seulement : poursuivre le run comme démon dans les cercles suivants (GDD §5.3). */
+  onContinue?: () => void
   onBack: () => void
 }
 
-export function EndScreen({ kind, price, money, onBack }: EndProps) {
+export function EndScreen({ kind, price, money, onContinue, onBack }: EndProps) {
   const [shown, setShown] = useState(false)
   useEffect(() => {
     const t = setTimeout(() => setShown(true), 50)
@@ -148,9 +150,18 @@ export function EndScreen({ kind, price, money, onBack }: EndProps) {
     <div className={`screen end ${escape ? 'end-escape' : 'end-gameover'}` + (shown ? ' end-shown' : '')}>
       <h1>{escape ? ENDINGS.escapeTitle : ENDINGS.gameOverTitle}</h1>
       <p>{escape ? fill(ENDINGS.escapeBody, { money }) : fill(ENDINGS.gameOverBody, { price, missing: Math.max(0, price - money) })}</p>
-      <button type="button" className="btn btn-primary" onClick={onBack}>
-        {ENDINGS.backToMenu}
-      </button>
+      {/* L'évasion est une fin, pas la seule : le run reste ouvert tant que le joueur n'est pas rentré au menu. */}
+      {escape && onContinue && <p className="muted">{ENDINGS.escapeStay}</p>}
+      <div className="end-actions">
+        {escape && onContinue && (
+          <button type="button" className="btn btn-primary" onClick={onContinue}>
+            {ENDINGS.escapeContinue}
+          </button>
+        )}
+        <button type="button" className={escape && onContinue ? 'btn' : 'btn btn-primary'} onClick={onBack}>
+          {ENDINGS.backToMenu}
+        </button>
+      </div>
     </div>
   )
 }

@@ -3,6 +3,7 @@ import { shop } from '../core/config'
 import { riskOf, sortByRisk, type ShopItem } from '../core/shop/items'
 import type { Inventory as Inv, PurchaseTarget } from '../core/shop/shop'
 import { FaceChip } from './Inventory'
+import { ItemArt } from './ItemArt'
 import { MoneyGauge } from './MoneyGauge'
 import { SHOP, fill } from './texts'
 import { priceFor } from './useRace'
@@ -180,8 +181,13 @@ export function ShopPanel({ vitrine, unlocked, money, price, staked, raceIndex, 
                   <span className={`shop-rarity rarity-${item.rarity}`}>{RARITY_LABEL[item.rarity]}</span>
                   {/* Emplacement réservé au LockBadge (déblocage par rang, à venir avec les personnalités). */}
                 </header>
-                <h3>{item.name}</h3>
-                <p className="small">{item.description}</p>
+                <div className="shop-body">
+                  <ItemArt id={item.id} className="shop-art" />
+                  <div className="shop-text">
+                    <h3>{item.name}</h3>
+                    <p className="small">{item.description}</p>
+                  </div>
+                </div>
                 {item.warning && <p className="small shop-warning">⚠ {item.warning}</p>}
                 {item.kind === 'die' && (
                   <p className="shop-faces-preview">

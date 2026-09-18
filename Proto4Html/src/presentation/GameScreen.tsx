@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { config, shop } from '../core/config'
+import { circleAt } from '../core/rules/circles'
 import { circleArt } from './art'
 import { betType, bettingClosed, slotCount } from '../core/rules/bets'
 import { ranking } from '../core/rules/race'
@@ -12,7 +13,7 @@ import { MoneyGauge } from './MoneyGauge'
 import { Ranking } from './Ranking'
 import { ShopPanel } from './ShopPanel'
 import { OpponentSlot, PhaseStrip, PlayerSlot } from './PlaySlots'
-import { CIRCLES, HELP, HUD, RACE, fill } from './texts'
+import { HELP, HUD, RACE, fill, ordinalOf } from './texts'
 import { betBase, canBetNow, circleOf, itemName, previewNext, stakedOpen, useRace, type RaceUi, type SessionCarry } from './useRace'
 
 interface Props {
@@ -45,8 +46,8 @@ function typing(): boolean {
  */
 export function GameScreen({ carry, speed, onFinished, onMenu }: Props) {
   const { circle, raceInCircle } = circleOf(carry.raceIndex)
-  const circleCfg = config.run.circles[circle - 1] ?? config.run.circles[config.run.circles.length - 1]!
-  const { ui, auto, setAuto, shopUnlocked, level, actions } = useRace({ carry, soulCount: circleCfg.souls, lanes: circleCfg.lanes, blocked: circleCfg.blocked, speed })
+  const circleCfg = circleAt(config.run, circle)
+  const { ui, auto, setAuto, shopUnlocked, level, actions } = useRace({ carry, soulCount: circleCfg.souls, lanes: circleCfg.lanes, terrains: circleCfg.terrains, speed })
   const [betsOpen, setBetsOpen] = useState(true)
   const [shopOpen, setShopOpen] = useState(false)
   const [artefactsOpen, setArtefactsOpen] = useState(false)
@@ -63,7 +64,7 @@ export function GameScreen({ carry, speed, onFinished, onMenu }: Props) {
   const [hoverSoul, setHoverSoul] = useState<number | null>(null)
   const step = stepOf(ui)
   const isBoss = raceInCircle === config.run.racesPerCircle
-  const ordinal = CIRCLES[circle - 1]?.ordinal ?? `${circle}e`
+  const ordinal = ordinalOf(circle)
   const rank = demonRankAtRace(carry.raceIndex)
   const price = circleCfg.price
   const staked = stakedOpen(ui.bets)
@@ -176,6 +177,8 @@ export function GameScreen({ carry, speed, onFinished, onMenu }: Props) {
           <span className="hud-big">{fill(HUD.circle, { ordinal })}</span>
           <span>{isBoss ? fill(HUD.bossRace, { n: raceInCircle, total: config.run.racesPerCircle }) : fill(HUD.race, { n: HUD.raceOrdinals[raceInCircle - 1] ?? raceInCircle, total: config.run.racesPerCircle })}</span>
           <span className="muted small">{fill(HUD.demon, { rank: rank.name })}</span>
+          {/* Le terrain change d'une course à l'autre dans un même cercle : il est nommé ici, comme le coach. */}
+          <span className="muted small">{fill(HUD.terrain, { name: ui.terrain.name })}</span>
         </div>
         <ol className="steps" aria-label="Étapes" data-testid="steps">
           {HUD.steps.map((label, i) => (

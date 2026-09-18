@@ -12,6 +12,7 @@ Faire du séquencement des combinaisons une manipulation directe et réversible 
 Déjà conforme (à conserver) :
 
 - Association clic-clic : dé Âme puis dé Distance ; badges d'ordre `1·2·3` sur les dés appariés ; dé Âme inutilisé marqué `die-unused` ; liste `combos` avec note « cumulé avec la précédente » ; « Résoudre » actif seulement quand l'appariement est complet (`isPairingComplete`) ; « Réinitialiser » ; phrase d'aide contextuelle (`hint()`).
+- HUD gauche : cercle, course, coach, et **terrain tiré** pour cette course (une des variantes du cercle).
 - Plateau : couloir 0 en bas, cases bloquées hachurées `✕`, zone de pari teintée (`cell-betzone`), en-tête de colonnes avec « Départ / {seuil} % / Arrivée » et numéros, empilement sur case partagée, bulles d'événement (`↷` saut, `⇄` échange, `↕` détour, `✕` départ bloqué, `🏁`), légende avec positions, `activeSoul` en surbrillance pendant la résolution.
 - Tour adverse : paire révélée dans `OpponentSlot` avant résolution.
 

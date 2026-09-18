@@ -21,11 +21,15 @@ export const circleArt = (circle: number): string => CIRCLE_ART[Math.min(Math.ma
 export const circleBg = (circle: number): string => `/circles/${circleArt(circle)}/bg.jpg`
 
 /**
- * Cercles dont le portrait du boss est peint (`public/circles/<dossier>/boss.webp`, même
- * cadrage et même largeur que les portraits du stagiaire). Les autres jouent la scène sans
- * portrait : le décor et les bulles suffisent en attendant le dessin.
+ * Portrait du boss d'un cercle, pour la scène qui précède sa course. Les quinze sont peints,
+ * sur le même canevas et à la même largeur que les portraits du stagiaire : les deux se
+ * remplacent au même endroit sans que le personnage saute.
  */
-const BOSS_ART: ReadonlySet<number> = new Set([1])
+export const bossPortrait = (circle: number): string => `/circles/${circleArt(circle)}/boss.webp`
 
-/** Portrait du boss d'un cercle, ou `undefined` tant qu'il n'est pas peint. */
-export const bossPortrait = (circle: number): string | undefined => (BOSS_ART.has(circle) ? `/circles/${circleArt(circle)}/boss.webp` : undefined)
+/**
+ * Vignette d'un objet de la boutique (artefact, dé ou opération de forge), nommée par son id
+ * dans `config/shop.json` : `public/objets/<id>.webp`. Les dessins arrivent au fur et à mesure ;
+ * `ItemArt` se passe de l'image tant que le fichier manque, il n'y a donc rien à déclarer ici.
+ */
+export const itemArt = (id: string): string => `/objets/${id}.webp`

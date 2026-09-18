@@ -204,17 +204,35 @@ Si le joueur n'a pas assez :
 * Réussite : `Huit cercles. Il ne reste que la Trahison. Et… on m'a promu. Je dirige le neuvième.` / `Ce n'est pas un problème, hein ? Un pacte, c'est un pacte. Il y aura {souls} âmes au départ, gelées dans le Cocyte, et il faudra {price} pièces pour sortir. Pour de bon.`
 * Échec : `Les faussaires vous ont eu à votre propre jeu. Une fosse vous attend au fond des Malebolge. Bye.`
 
-### Cercle 9 — Trahison (fin du jeu)
+### Cercle 9 — Trahison (le carrefour)
+
+Le neuvième cercle payé n'est plus la fin du jeu : c'est un **choix** (GDD §5.3).
+Le dialogue ouvre les deux issues, l'écran `Évasion` les propose, et le run reste
+sauvegardé tant que le joueur n'est pas rentré au menu.
 
 * Réussite (évasion) :
   * Démon : `Vous… vous avez payé. Contre moi. Contre le neuvième cercle.`
-  * Démon : `Un pacte, c'est un pacte. La porte est là. Personne n'est jamais remonté d'ici, alors ne racontez pas comment vous avez fait.`
+  * Démon : `Un pacte, c'est un pacte. La porte est là, ouverte. Personne n'est jamais remonté d'ici, alors ne racontez pas comment vous avez fait.`
   * Joueur : `Et vous ?`
-  * Démon : `Moi ? Je suis patron d'un cercle. Il me manque juste un parieur qui sache lire une course. Vous connaissez quelqu'un ?`
-  * Démon : `Allez, filez. Et gardez la monnaie.`
+  * Démon : `Moi ? Patron d'un cercle, et toujours pas grand-chose. Il me manque un parieur qui sache lire une course.`
+  * Démon : `Parce qu'il y a autre chose, au-dessus. J'ai vu les registres : les fonds marins, une falaise, une ville, une montagne, le ciel. Et tout en haut, un guichet que personne n'a jamais tenu.`
+  * Démon : `Alors : la porte, ou la montée. Vous gardez la monnaie dans les deux cas.`
   * Écran final `Évasion` : `Neuf cercles traversés, {money} pièces en poche. Le stagiaire est devenu boss, et vous, vous êtes sorti.`
+  * Deux boutons : `Monter avec lui` (le run continue au cercle 10) et `Retour au menu` (le run est clos).
 * Échec : `À une pièce près. C'est le cercle de la Trahison, vous vous attendiez à quoi ? Bienvenue dans la glace. Bye.`
   * Écran final `Punition éternelle` : `Le prix du cercle était de {price} pièces. Il vous en manquait {missing}.`
+
+### Cercles 10 à 15 — la montée (mode démon)
+
+Le joueur qui reste quitte l'enfer par le haut : fonds marins, falaise, ville,
+montagne, ciel, paradis. Mêmes règles, mêmes écrans ; ce qui change est le décor,
+le boss, le nombre d'âmes (jusqu'à 12) et le prix. Les textes sont dans `CIRCLES`
+(`src/presentation/texts.ts`) comme les neuf premiers.
+
+Au-delà du quinzième, le paradis se rejoue sans fin avec un prix qui monte à
+chaque tour : le run s'arrête quand le joueur ne peut plus payer. Le HUD continue
+de compter les cercles (« 22e Cercle »), et la carte allonge sa spirale d'un tour
+par cercle, dans la même pierre peinte.
 
 ### Montées en grade du stagiaire
 

@@ -7,6 +7,31 @@ export interface BlockedCell {
   lane: number
 }
 
+/**
+ * Variante de terrain d'un cercle : un même cercle en propose plusieurs et une est tirée au
+ * début de chaque course, pour que les trois courses d'un cercle ne se jouent pas sur la même
+ * piste. Un cercle à un seul couloir n'en a qu'une, sans case bloquée : une case bloquée y
+ * fermerait la colonne entière.
+ */
+export interface Terrain {
+  name: string
+  blocked: readonly BlockedCell[]
+}
+
+/** Un cercle de la course : ce que `config/race.json` décrit pour chacun. */
+export interface CircleConfig {
+  name: string
+  price: number
+  souls: number
+  /** Couloirs de la piste (GDD §2.2). Pas encore appliqué en course. */
+  lanes: number
+  /** Variantes de terrain du cercle, non vide : une est tirée au début de chaque course. */
+  terrains: readonly Terrain[]
+  boss: string
+  /** Pouvoir du boss, affiché sur la carte. Pas encore appliqué en course. */
+  power: string
+}
+
 export interface RaceConfig {
   souls: {
     /** Nombre d'âmes au départ (5 au cercle 1). */
@@ -45,17 +70,17 @@ export interface RaceConfig {
   }
   run: {
     racesPerCircle: number
-    circles: readonly {
-      name: string
-      price: number
-      souls: number
-      /** Couloirs de la piste (GDD §2.2). Pas encore appliqué en course. */
-      lanes: number
-      /** Cases bloquées : colonne de parcours (1 = première après le départ), couloir (0 = celui du bas). */
-      blocked: readonly BlockedCell[]
-      boss: string
-      power: string
-    }[]
+    /**
+     * Cercle dont le paiement libère de l'enfer (le neuvième) : le joueur y choisit entre sortir
+     * et continuer comme démon dans les cercles suivants (GDD §5.3).
+     */
+    escapeCircle: number
+    /**
+     * Facteur appliqué au prix du dernier cercle écrit, par cercle supplémentaire : au-delà de la
+     * liste, le jeu rejoue le dernier cercle avec un prix qui monte, sans fin (GDD §8.1).
+     */
+    beyondPriceGrowth: number
+    circles: readonly CircleConfig[]
   }
   artefacts: {
     lateBet: { chargesPerCircle: number }

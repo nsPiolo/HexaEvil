@@ -287,56 +287,70 @@ describe('couloirs : choix de la case (GDD §2.6)', () => {
     const ranked = ranking(race)
     expect(ranked.map((r) => [r.soul.id, r.rank])).toEqual([[2, 1], [1, 2], [0, 3], [3, 4]])
   })
-  it('course complète au cercle 3 : jamais sur une case bloquée, une âme par case hors départ et dernière case', () => {
-    const circle = cfg.run.circles[2]!
-    expect(circle.lanes).toBe(2)
-    for (let seed = 1; seed <= 200; seed++) {
-      const rng = seededRng(seed)
-      let state = createRace(cfg, { soulCount: circle.souls, lanes: circle.lanes, blocked: circle.blocked })
-      let guard = 0
-      while (!state.finished && guard++ < 1000) {
-        const r = rollPlayerDice(cfg, state.souls.length, rng, dice)
-        for (const m of buildMoves(r, naturalCombinations(r), 'player')) state = applyMove(state, m).state
-        const pair = rollOpponentPair(cfg, state.souls.length, rng)
-        for (const m of buildMoves(pair, naturalCombinations(pair), 'opponent')) state = applyMove(state, m).state
-        state = endTurn(state)
-        for (const s of state.souls) {
-          expect(circle.blocked.some((b) => b.column === s.position && b.lane === s.lane)).toBe(false)
-          expect(s.lane).toBeLessThan(circle.lanes)
+  it('course complète sur chaque terrain de chaque cercle : jamais sur une case bloquée, une âme par case hors départ et dernière case', () => {
+    for (const circle of cfg.run.circles) {
+      for (const terrain of circle.terrains) {
+        for (let seed = 1; seed <= 30; seed++) {
+          const rng = seededRng(seed)
+          let state = createRace(cfg, { soulCount: circle.souls, lanes: circle.lanes, blocked: terrain.blocked })
+          let guard = 0
+          while (!state.finished && guard++ < 1000) {
+            const r = rollPlayerDice(cfg, state.souls.length, rng, dice)
+            for (const m of buildMoves(r, naturalCombinations(r), 'player')) state = applyMove(state, m).state
+            const pair = rollOpponentPair(cfg, state.souls.length, rng)
+            for (const m of buildMoves(pair, naturalCombinations(pair), 'opponent')) state = applyMove(state, m).state
+            state = endTurn(state)
+            for (const s of state.souls) {
+              expect(terrain.blocked.some((b) => b.column === s.position && b.lane === s.lane)).toBe(false)
+              expect(s.lane).toBeLessThan(circle.lanes)
+            }
+            const inner = state.souls.filter((s) => s.position > 0 && s.position < state.track.totalCells - 1).map((s) => `${s.position}:${s.lane}`)
+            expect(new Set(inner).size).toBe(inner.length)
+          }
+          expect(state.finished).toBe(true)
+          expect(ranking(state)).toHaveLength(circle.souls)
         }
-        const inner = state.souls.filter((s) => s.position > 0 && s.position < state.track.totalCells - 1).map((s) => `${s.position}:${s.lane}`)
-        expect(new Set(inner).size).toBe(inner.length)
       }
-      expect(state.finished).toBe(true)
-      expect(ranking(state)).toHaveLength(circle.souls)
     }
   })
 })
 
-describe('couloirs et cases bloquées : config', () => {
-  type Raw = { run: { circles: { souls: number; lanes: number; blocked: { column: number; lane: number }[] }[] }; track: { columns: number } }
+describe('couloirs et terrains : config', () => {
+  type Raw = { run: { circles: { souls: number; lanes: number; terrains: { name: string; blocked: number[][] }[] }[] }; track: { columns: number } }
   const clone = (): Raw => JSON.parse(JSON.stringify(rawConfig)) as Raw
-  it('la config du proto suit le GDD : 1 couloir au cercle 1, 2 au cercle 2, 4 cases bloquées au cercle 3', () => {
+  it('la config du proto suit le GDD : 1 couloir au cercle 1, 2 au cercle 2, 4 cases bloquées sur les Fondrières du cercle 3', () => {
     const c = loadConfig(rawConfig).run.circles
     expect(c[0]!.lanes).toBe(1)
     expect(c[1]!.lanes).toBe(2)
     expect(c[2]!.lanes).toBe(2)
-    expect(c[2]!.blocked.map((b) => b.column)).toEqual([4, 5, 8, 9])
+    expect(c[2]!.terrains[0]!.name).toBe('Fondrières')
+    expect(c[2]!.terrains[0]!.blocked.map((b) => b.column)).toEqual([4, 5, 8, 9])
     for (const circle of c) expect(circle.lanes).toBe(Math.max(1, circle.souls - 4))
   })
-  it('refuse un couloir hors piste, une colonne entièrement bloquée ou un doublon', () => {
+  it("chaque cercle a au moins un terrain, et un cercle à un couloir n'en a qu'un, vide", () => {
+    const c = loadConfig(rawConfig).run.circles
+    for (const circle of c) {
+      expect(circle.terrains.length).toBeGreaterThan(0)
+      if (circle.lanes === 1) expect(circle.terrains).toEqual([{ name: circle.terrains[0]!.name, blocked: [] }])
+      else expect(circle.terrains.length).toBeGreaterThan(1)
+    }
+  })
+  it('refuse un couloir hors piste, une colonne entièrement bloquée, un doublon ou un cercle sans terrain', () => {
     const lane = clone()
-    lane.run.circles[2]!.blocked[0]!.lane = 2
-    expect(() => loadConfig(lane)).toThrow(/lane/)
+    lane.run.circles[2]!.terrains[0]!.blocked[0]![1] = 2
+    expect(() => loadConfig(lane)).toThrow(/\[1\]/)
     const column = clone()
-    column.run.circles[2]!.blocked[0]!.column = column.track.columns + 1
-    expect(() => loadConfig(column)).toThrow(/column/)
+    column.run.circles[2]!.terrains[0]!.blocked[0]![0] = column.track.columns + 1
+    expect(() => loadConfig(column)).toThrow(/\[0\]/)
     const full = clone()
-    full.run.circles[2]!.blocked.push({ column: 4, lane: 0 })
+    full.run.circles[2]!.terrains[0]!.blocked.push([4, 0])
     expect(() => loadConfig(full)).toThrow(/entièrement bloquée/)
     const dup = clone()
-    dup.run.circles[2]!.blocked.push({ column: 4, lane: 1 })
+    dup.run.circles[2]!.terrains[0]!.blocked.push([4, 1])
     expect(() => loadConfig(dup)).toThrow(/double/)
+    const empty = clone()
+    empty.run.circles[2]!.terrains = []
+    expect(() => loadConfig(empty)).toThrow(/terrains/)
     const tooMany = clone()
     tooMany.run.circles[0]!.lanes = 6
     expect(() => loadConfig(tooMany)).toThrow(/couloirs/)
@@ -383,7 +397,7 @@ describe('prévisualisation du prochain déplacement (previewMove)', () => {
     for (let seed = 1; seed <= 100; seed++) {
       const rng = seededRng(seed)
       const witness = seededRng(seed)
-      let state = createRace(cfg, { soulCount: 6, lanes: 2, blocked: cfg.run.circles[2]!.blocked })
+      let state = createRace(cfg, { soulCount: 6, lanes: 2, blocked: cfg.run.circles[2]!.terrains[0]!.blocked })
       let guard = 0
       while (!state.finished && guard++ < 1000) {
         const r = rollPlayerDice(cfg, state.souls.length, rng, dice)

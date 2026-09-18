@@ -17,6 +17,10 @@ Les objets marqués ✔ dans les listes sont implémentés dans `Proto4Html`
 ouvre **après les paris initiaux** (au moins un) et avant la course, conformément
 au cycle macro révisé du GDD §2.1.
 
+Les **vignettes** des seize objets du proto (leur emplacement dans la carte de
+vitrine et dans l'inventaire, et les prompts pour les générer) sont décrites dans
+[`prompts-objets.md`](prompts-objets.md).
+
 ## Hypothèses économiques
 
 L'argent sert à parier, acheter et payer le prix du cercle : une même pièce a

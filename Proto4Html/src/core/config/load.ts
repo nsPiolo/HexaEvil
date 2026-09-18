@@ -3,7 +3,7 @@
  * Une erreur désigne toujours le champ fautif, pour qu'un réglage cassé se voie au premier écran.
  */
 import { BET_TYPE_IDS, type BetTypeId } from '../rules/betTypes'
-import type { BlockedCell, RaceConfig } from './schema'
+import type { BlockedCell, RaceConfig, Terrain } from './schema'
 
 export class ConfigError extends Error {
   constructor(field: string, detail: string) {
@@ -106,6 +106,8 @@ export function loadConfig(raw: unknown): RaceConfig {
 
   const run = obj(root.run, 'run')
   const racesPerCircle = int(run.racesPerCircle, 'run.racesPerCircle', 1)
+  const beyondPriceGrowth = num(run.beyondPriceGrowth, 'run.beyondPriceGrowth')
+  if (beyondPriceGrowth < 1) fail('run.beyondPriceGrowth', 'au moins 1 (le prix ne redescend pas au-delà du dernier cercle)')
   if (!Array.isArray(run.circles) || run.circles.length === 0) fail('run.circles', 'tableau non vide attendu')
   const circles = run.circles.map((c, i) => {
     const f = `run.circles[${i}]`
@@ -113,31 +115,41 @@ export function loadConfig(raw: unknown): RaceConfig {
     const soulsInCircle = int(o.souls, `${f}.souls`, 2)
     const lanes = int(o.lanes, `${f}.lanes`, 1)
     if (lanes > soulsInCircle) fail(`${f}.lanes`, `plus de couloirs (${lanes}) que d'âmes (${soulsInCircle})`)
-    if (!Array.isArray(o.blocked)) fail(`${f}.blocked`, 'tableau attendu (vide si aucune case bloquée)')
-    const blocked: BlockedCell[] = o.blocked.map((b, k) => {
-      const cell = obj(b, `${f}.blocked[${k}]`)
-      const column = int(cell.column, `${f}.blocked[${k}].column`, 1)
-      if (column > columns) fail(`${f}.blocked[${k}].column`, `au plus track.columns (${columns})`)
-      const lane = int(cell.lane, `${f}.blocked[${k}].lane`, 0)
-      if (lane >= lanes) fail(`${f}.blocked[${k}].lane`, `au plus lanes − 1 (${lanes - 1})`)
-      return { column, lane }
+    if (!Array.isArray(o.terrains) || o.terrains.length === 0) fail(`${f}.terrains`, 'tableau non vide attendu (au moins une variante de terrain)')
+    const terrains: Terrain[] = o.terrains.map((t, ti) => {
+      const g = `${f}.terrains[${ti}]`
+      const to = obj(t, g)
+      if (!Array.isArray(to.blocked)) fail(`${g}.blocked`, 'tableau attendu (vide si aucune case bloquée)')
+      // Chaque case est une paire [colonne, couloir] : le fichier de configuration se relit à l'œil.
+      const blocked: BlockedCell[] = to.blocked.map((b, k) => {
+        if (!Array.isArray(b) || b.length !== 2) fail(`${g}.blocked[${k}]`, 'paire [colonne, couloir] attendue')
+        const column = int(b[0], `${g}.blocked[${k}][0]`, 1)
+        if (column > columns) fail(`${g}.blocked[${k}][0]`, `au plus track.columns (${columns})`)
+        const lane = int(b[1], `${g}.blocked[${k}][1]`, 0)
+        if (lane >= lanes) fail(`${g}.blocked[${k}][1]`, `au plus lanes − 1 (${lanes - 1})`)
+        return { column, lane }
+      })
+      if (new Set(blocked.map((b) => `${b.column}:${b.lane}`)).size !== blocked.length) fail(`${g}.blocked`, 'case bloquée en double')
+      const perColumn = new Map<number, number>()
+      for (const b of blocked) perColumn.set(b.column, (perColumn.get(b.column) ?? 0) + 1)
+      for (const [column, n] of perColumn) {
+        if (n >= lanes) fail(`${g}.blocked`, `colonne ${column} entièrement bloquée : il faut au moins une case libre par colonne`)
+      }
+      return { name: str(to.name, `${g}.name`), blocked }
     })
-    if (new Set(blocked.map((b) => `${b.column}:${b.lane}`)).size !== blocked.length) fail(`${f}.blocked`, 'case bloquée en double')
-    const perColumn = new Map<number, number>()
-    for (const b of blocked) perColumn.set(b.column, (perColumn.get(b.column) ?? 0) + 1)
-    for (const [column, n] of perColumn) {
-      if (n >= lanes) fail(`${f}.blocked`, `colonne ${column} entièrement bloquée : il faut au moins une case libre par colonne`)
-    }
+    if (new Set(terrains.map((t) => t.name)).size !== terrains.length) fail(`${f}.terrains`, 'nom de terrain en double')
     return {
       name: str(o.name, `${f}.name`),
       price: int(o.price, `${f}.price`, 0),
       souls: soulsInCircle,
       lanes,
-      blocked,
+      terrains,
       boss: str(o.boss, `${f}.boss`),
       power: str(o.power, `${f}.power`),
     }
   })
+  const escapeCircle = int(run.escapeCircle, 'run.escapeCircle', 1)
+  if (escapeCircle > circles.length) fail('run.escapeCircle', `au plus le nombre de cercles écrits (${circles.length})`)
   const maxSouls = Math.max(...circles.map((c) => c.souls))
   if (names.length < maxSouls) fail('souls.names', `il faut au moins ${maxSouls} noms (cercle le plus peuplé)`)
 
@@ -163,7 +175,7 @@ export function loadConfig(raw: unknown): RaceConfig {
     dice: { distanceFaces, distanceDice, soulDice },
     opponent: { rollsPerTurn },
     economy: { startingMoney, raceAllowance, stakes, multipliers, betUnlockLevel, decay: { exponent, minMultiplier } },
-    run: { racesPerCircle, circles },
+    run: { racesPerCircle, escapeCircle, beyondPriceGrowth, circles },
     artefacts: { lateBet: { chargesPerCircle }, sablier: { betThresholdRatio: sablierRatio } },
     animation: { stepMs, diceMs, pauseMs, betRevealMs, idlePulseMs, gaugeMs, betConfirmMs },
   }

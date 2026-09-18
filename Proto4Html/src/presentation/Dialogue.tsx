@@ -37,9 +37,8 @@ export function Dialogue({ lines, skipLabel, background, onDone }: Props) {
    */
   const portraits = useMemo(() => [...new Set(lines.map((l) => l.portrait).filter((p) => p !== undefined))], [lines])
   /**
-   * Le portrait suit celui qui parle : chaque réplique du démon ou du boss impose le sien (ou
-   * aucun, tant que le boss n'est pas peint). Une réplique du joueur laisse en scène celui qui
-   * lui répond.
+   * Le portrait suit celui qui parle : chaque réplique du démon ou du boss impose le sien.
+   * Une réplique du joueur laisse en scène celui qui lui répond.
    */
   const portrait = lines.slice(0, index + 1).reduce<string | undefined>((p, l) => (l.who === 'player' ? p : l.portrait), portraits[0])
 

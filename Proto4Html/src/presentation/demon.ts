@@ -5,8 +5,9 @@
  * lignes de promotion et le nom du démon qui change dans les bulles.
  */
 import { config } from '../core/config'
+import { circleAt } from '../core/rules/circles'
 import { bossPortrait } from './art'
-import { BOSS_ANNOUNCE, CIRCLES, DEMON_RANKS, SPEAKERS, fill, portraitSrc, type DemonRank, type Line } from './texts'
+import { BOSS_ANNOUNCE, CIRCLES, DEMON_RANKS, fill, portraitSrc, type DemonRank, type Line } from './texts'
 
 /** Niveau (index dans DEMON_RANKS) atteint après `circlesPaid` cercles payés (0 au départ). */
 export function demonLevel(circlesPaid: number): number {
@@ -54,23 +55,20 @@ export function circleTexts(circle: number) {
 
 /**
  * Scène jouée juste avant la course du boss : il se présente sous son nom (`config/race.json`)
- * et son portrait quand il est peint, le stagiaire commente avec son grade du moment. Sans
- * portrait peint, les répliques du boss n'en portent pas : la scène se joue sur le seul décor.
+ * et son portrait, le stagiaire commente avec son grade du moment. Le boss du dernier cercle
+ * est le stagiaire lui-même, promu : son portrait est celui du neuvième cercle.
  */
 export function bossIntro(circle: number): Line[] {
-  const cfg = config.run.circles[circle - 1]
-  const label = cfg?.boss ?? SPEAKERS.boss
-  // Le boss du dernier cercle est le stagiaire lui-même, promu (config/race.json) : faute de
-  // dessin propre, il y reprend le costume de son dernier grade.
-  const promoted = DEMON_RANKS[DEMON_RANKS.length - 1]!
-  const portrait = bossPortrait(circle) ?? (circle === promoted.afterCircle + 1 ? portraitSrc(promoted) : undefined)
-  const lines = circleTexts(circle).bossIntro.map((l) => ({ ...l, text: fill(l.text, { boss: label, price: cfg?.price ?? 0 }) }))
-  return spokenBy(lines, demonRank(circle - 1)).map((l) => (l.who === 'boss' ? { ...l, label, ...(portrait === undefined ? {} : { portrait }) } : l))
+  const cfg = circleAt(config.run, circle)
+  const label = cfg.boss
+  const portrait = bossPortrait(circle)
+  const lines = circleTexts(circle).bossIntro.map((l) => ({ ...l, text: fill(l.text, { boss: label, price: cfg.price }) }))
+  return spokenBy(lines, demonRank(circle - 1)).map((l) => (l.who === 'boss' ? { ...l, label, portrait } : l))
 }
 
 /** Annonce du boss à la fin de la deuxième course du cercle. */
 export function bossAnnounce(circle: number): Line[] {
-  const price = config.run.circles[circle - 1]?.price ?? 0
+  const price = circleAt(config.run, circle).price
   const lines = BOSS_ANNOUNCE.map((l) => ({ ...l, text: fill(l.text, { price }) }))
   return spokenBy(lines, demonRank(circle - 1))
 }
@@ -82,17 +80,16 @@ export function circleFailure(circle: number): Line[] {
 
 /**
  * Fin de cercle, prix payé. Si ce cercle fait monter le démon en grade, ses lignes de
- * promotion sont dites avec le nouveau nom, insérées juste avant la dernière ligne du
- * texte de réussite (l'annonce du cercle suivant). Sans cercle suivant (évasion), tout
- * le texte précède la promotion.
+ * promotion sont dites avec le nouveau nom, insérées juste avant la dernière ligne du texte
+ * de réussite — celle qui annonce le cercle suivant. Il y a toujours un cercle suivant : au
+ * bout de la liste, le dernier se rejoue (circles.ts).
  */
 export function circleSuccess(circle: number): Line[] {
   const before = demonRank(circle - 1)
   const after = demonRank(circle)
-  const next = config.run.circles[circle]
-  const values = next ? { souls: next.souls, price: next.price } : {}
-  const success = circleTexts(circle).success.map((l) => ({ ...l, text: fill(l.text, values) }))
+  const next = circleAt(config.run, circle + 1)
+  const success = circleTexts(circle).success.map((l) => ({ ...l, text: fill(l.text, { souls: next.souls, price: next.price }) }))
   if (after === before || after.lines.length === 0) return spokenBy(success, after.afterCircle === circle ? after : before)
-  const cut = next ? success.length - 1 : success.length
+  const cut = success.length - 1
   return [...spokenBy(success.slice(0, cut), before), ...spokenBy(promotionLines(after), after), ...spokenBy(success.slice(cut), after)]
 }

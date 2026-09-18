@@ -326,18 +326,19 @@ joué **dans le décor du cercle** — `bg.jpg` passe en fond, assombri d'un voi
 le même emplacement de portrait, en fondu : l'un remplace l'autre à chaque prise de
 parole.
 
-Source : un buste détouré cadré **exactement comme les portraits du stagiaire**
-(`docs/proto4/raw/perso/`, 976 × 1075, tête en haut du cadre) — sans quoi le
-personnage saute d'une réplique à l'autre. Conversion identique : recadrage
-`(46, 45) → (862, 1075)`, réduction à 700 px de large, WebP qualité 88. Les rendus
-bruts vivent dans `docs/proto4/raw/demons/`, nommés `<n>_<cercle>.png`.
+Source : un buste détouré sur le **canevas commun 976 × 1075**, le même que les
+portraits du stagiaire (`docs/proto4/raw/perso/`) — c'est lui qui fait que les deux
+se remplacent au même endroit sans que le personnage saute. Le canevas n'est jamais
+recadré à la conversion : réduction à 700 px de large, WebP qualité 88, et c'est
+tout. Les rendus bruts vivent dans `docs/proto4/raw/demons/png/`, nommés
+`<n>_<univers>.png` ; le numéro donne le cercle, pas le nom du dossier
+(`10_mer` → `10-fonds-marins`, `13_neige` → `13-montagne`, `14_vent` → `14-ciel`,
+`15_ange` → `15-paradis`).
 
-Ce qui est peint aujourd'hui : **Charon** (cercle 1). Le boss du cercle 9 est le
-stagiaire lui-même, promu — il reprend son dernier costume
-(`menu/perso/stagiaire_4_boss.webp`), rien à dessiner. Les sept autres jouent leur
-scène **sans portrait** en attendant leur dessin : les bulles et le décor suffisent,
-rien à changer dans le code, il suffit d'ajouter le fichier et son cercle dans
-`BOSS_ART` (`src/presentation/art.ts`).
+Les quinze sont peints. Celui du cercle 9 est le stagiaire lui-même, promu : c'est le
+même personnage que `menu/perso/stagiaire_4_boss.webp`, en costume bleu. Les cercles
+10 à 15 ont leur portrait d'avance, comme leurs décors — ils n'ont pas encore de
+boss dans `config/race.json`, donc pas encore de scène.
 
 Le prompt reprend la DA commune, avec la phrase d'univers du cercle :
 
@@ -378,10 +379,16 @@ quinzième cercle à l'infini, c'est le Paradis qui rejoue.
 
 ### Cercles 10 et suivants : le mode démon
 
-Après le neuvième, le joueur peut continuer comme démon dans des cercles
-générés (GDD §8.1). Ils ne sont pas dans `config/race.json`, qui s'arrête à
-neuf : les décors se préparent avant le contenu. Ils quittent la cosmologie de
-Dante, mais gardent la DA commune, les formats et les règles de lisibilité.
+Après le neuvième, le joueur choisit entre sortir et continuer comme démon
+(GDD §5.3). S'il monte, les six cercles suivants sont **jouables** : ils sont
+dans `config/race.json` comme les neuf premiers, avec leurs âmes, leurs couloirs,
+leurs terrains, leur boss et leur prix. Ils quittent la cosmologie de Dante, mais
+gardent la DA commune, les formats et les règles de lisibilité.
+
+Au-delà du quinzième, le jeu ne s'arrête pas : le paradis se rejoue indéfiniment,
+décor et boss compris, avec un prix de sortie qui monte à chaque tour
+(`run.beyondPriceGrowth`, `src/core/rules/circles.ts`) jusqu'à ce que le joueur ne
+puisse plus payer. Rien de nouveau à peindre pour ces tours-là.
 
 | # | Cercle | Matière du décor | Lumière | Le piège propre au cercle |
 |---|---|---|---|---|
