@@ -632,10 +632,13 @@ export const BOARD = {
   /** Cases spéciales du terrain : elles n'agissent que sur l'âme qui s'y arrête (GDD §2.2). */
   specialMark: { gold: '¤', trap: '✷', boost: '▲' } as const,
   special: {
-    gold: 'Case payante : l’âme qui s’y arrête vous rapporte {n} pièces.',
-    trap: 'Piège : l’âme qui s’y arrête recule de {n} case(s).',
-    boost: 'Tremplin : l’âme qui s’y arrête avance de {n} case(s) de plus.',
+    // `{s}` porte le pluriel (voir `fill`) : ces phrases sont désormais affichées telles
+    // quelles dans la bulle de survol, où « 1 case(s) » se verrait.
+    gold: 'Case payante : l’âme qui s’y arrête vous rapporte {n} pièce{s}.',
+    trap: 'Piège : l’âme qui s’y arrête recule de {n} case{s}.',
+    boost: 'Tremplin : l’âme qui s’y arrête avance de {n} case{s} de plus.',
   } as const,
+  blockedTitle: 'Case bloquée (colonne {column}, couloir {lane}) : aucune âme ne peut s’y arrêter.',
   tribune: 'Tribune infernale',
   tribuneTitle: 'Tribune infernale : l’âme qui s’arrête ici vous paie et repart poussée.',
   tribunePlace: 'Poser la tribune sur la case {column}',
@@ -863,4 +866,14 @@ export function ordinalOf(circle: number): string {
 /** Remplace les {clés} d'un texte. */
 export function fill(text: string, values: Record<string, string | number>): string {
   return text.replace(/\{(\w+)\}/g, (_, k: string) => (values[k] !== undefined ? String(values[k]) : `{${k}}`))
+}
+
+/**
+ * Marque de pluriel à passer à `fill` sous la clé `s`, pour les phrases qui comptent quelque
+ * chose : « recule de {n} case{s} ». Le français accorde à partir de deux, zéro reste au
+ * singulier — mais aucune de ces phrases ne s'écrit avec zéro, elles ne sont affichées que
+ * lorsqu'il y a quelque chose à annoncer.
+ */
+export function plural(n: number): string {
+  return n > 1 ? 's' : ''
 }

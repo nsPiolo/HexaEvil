@@ -2,7 +2,7 @@ import { isBlocked, isInBetZone, specialAt, type MoveResult, type RaceState } fr
 import { blockedArt, cellArt } from './art'
 import { fmtDistance, soulColor } from './souls'
 import { bettingClosed } from '../core/rules/bets'
-import { BETS, BET_LIVE, BOARD, GLOSSARY, RACE, fill } from './texts'
+import { BETS, BET_LIVE, BOARD, GLOSSARY, RACE, fill, plural } from './texts'
 
 /** Sélection d'âmes pour le ticket de pari, depuis le plateau (spec 03/C2). */
 export interface BoardSelection {
@@ -96,6 +96,20 @@ export function Board({ race, lastResult, activeSoul, highlightSoul = null, onHo
     return { picked, canPick: true, why: BETS.pickOnBoard }
   }
 
+  /**
+   * Ce qu'une case a à dire au survol, dans l'ordre où on le lit : ce qui empêche de s'y
+   * arrêter, puis ce qui s'y déclenche. Une case peut cumuler — le joueur pose la tribune
+   * où il veut, y compris sur une case spéciale — d'où une liste et non un texte.
+   */
+  const cellTips = (c: number, lane: number): string[] => {
+    const out: string[] = []
+    if (isBlocked(track, c, lane)) out.push(fill(BOARD.blockedTitle, { column: c, lane: lane + 1 }))
+    const sp = specialAt(track, c, lane)
+    if (sp) out.push(fill(BOARD.special[sp.kind], { n: sp.value, s: plural(sp.value) }))
+    if (race.tribune?.column === c && race.tribune.lane === lane) out.push(BOARD.tribuneTitle)
+    return out
+  }
+
   const cellStyle = (position: number, lane: number, offset = 0) => ({
     left: `calc(${position} * (100% / var(--cells)))`,
     top: `calc(${lanes - 1 - lane} * (100% / var(--lanes)))`,
@@ -119,14 +133,16 @@ export function Board({ race, lastResult, activeSoul, highlightSoul = null, onHo
           </div>
         )}
         {rows.map((lane) =>
-          cols.map((c) => (
-            <div key={`${lane}-${c}`} className={cellClass(c, lane)} title={isBlocked(track, c, lane) ? `Case bloquée (colonne ${c}, couloir ${lane + 1})` : tieColumns.includes(c) ? BOARD.tieColumn : undefined}>
+          cols.map((c) => {
+            const tips = cellTips(c, lane)
+            return (
+            <div key={`${lane}-${c}`} className={cellClass(c, lane)} title={tips.length > 0 ? undefined : tieColumns.includes(c) ? BOARD.tieColumn : undefined}>
               {isBlocked(track, c, lane) && <img className="cell-blocked-mark" src={blockedArt(c, lane)} alt="" aria-hidden="true" />}
               {/* Case spéciale (GDD §2.2) : elle n'agit que sur l'âme qui s'y arrête. */}
               {(() => {
                 const sp = specialAt(track, c, lane)
                 return sp ? (
-                  <span className={`cell-special cell-${sp.kind}`} title={fill(BOARD.special[sp.kind], { n: sp.value })}>
+                  <span className={`cell-special cell-${sp.kind}`}>
                     <img src={cellArt(sp.kind)} alt="" />
                   </span>
                 ) : null
@@ -135,8 +151,18 @@ export function Board({ race, lastResult, activeSoul, highlightSoul = null, onHo
               {onPlaceTribune && c > 0 && c < track.betThresholdColumn && !isBlocked(track, c, lane) && (
                 <button type="button" className="cell-tribune" onClick={() => onPlaceTribune(c, lane)} aria-label={fill(BOARD.tribunePlace, { column: c })} title={fill(BOARD.tribunePlace, { column: c })} />
               )}
+              {/* Au survol : ce que la case fait. Elle sort vers le haut, sauf sur la ligne du
+                  haut où elle sortirait du plateau — `.board` défile en x, donc il coupe en y. */}
+              {tips.length > 0 && (
+                <span className={'cell-tip' + (lane === lanes - 1 ? ' cell-tip-below' : '')} role="tooltip" data-testid={`cell-tip-${c}-${lane}`}>
+                  {tips.map((line) => (
+                    <span key={line}>{line}</span>
+                  ))}
+                </span>
+              )}
             </div>
-          )),
+            )
+          }),
         )}
         {race.souls.map((soul) => {
           const stack = occupants.get(`${soul.position}:${soul.lane}`) ?? [soul.id]

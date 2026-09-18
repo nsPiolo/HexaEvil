@@ -48,7 +48,10 @@
     "modele": "gemini-3-pro-image",
     "taille": "2K",
     "ratio": "1:1",
-    "etat": "à générer",
+    "fichier": "sablier.jpg",
+    "mime": "image/jpeg",
+    "octets": 1964643,
+    "genereLe": "2026-09-18T17:00:29.774Z",
     "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: a squat hourglass in tarnished bronze and dark waterlogged wood, the falling sand glowing faint amber, river silt crusted on its base, a cold pale rim light along the wooden frame. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
   },
   "boussole": {
@@ -56,7 +59,10 @@
     "modele": "gemini-3-pro-image",
     "taille": "2K",
     "ratio": "1:1",
-    "etat": "à générer",
+    "fichier": "boussole.jpg",
+    "mime": "image/jpeg",
+    "octets": 2249777,
+    "genereLe": "2026-09-18T17:00:52.424Z",
     "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: a battered brass compass, its lid open, the needle spinning loose over a dial with no marks, pale green patina on the case. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
   },
   "clepsydre": {
@@ -64,7 +70,10 @@
     "modele": "gemini-3-pro-image",
     "taille": "2K",
     "ratio": "1:1",
-    "etat": "à générer",
+    "fichier": "clepsydre.jpg",
+    "mime": "image/jpeg",
+    "octets": 2067603,
+    "genereLe": "2026-09-18T17:01:15.968Z",
     "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: a small stone water clock, cracked from rim to base, a thin thread of luminous water escaping through the crack. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
   },
   "ferACheval": {
@@ -72,7 +81,10 @@
     "modele": "gemini-3-pro-image",
     "taille": "2K",
     "ratio": "1:1",
-    "etat": "à générer",
+    "fichier": "ferACheval.jpg",
+    "mime": "image/jpeg",
+    "octets": 1883614,
+    "genereLe": "2026-09-18T17:01:38.490Z",
     "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: a heavy horseshoe eaten by rust, one branch bent out of shape, three bent nails still stuck in it. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
   },
   "boursePercee": {
@@ -80,7 +92,10 @@
     "modele": "gemini-3-pro-image",
     "taille": "2K",
     "ratio": "1:1",
-    "etat": "à générer",
+    "fichier": "boursePercee.jpg",
+    "mime": "image/jpeg",
+    "octets": 1833627,
+    "genereLe": "2026-09-18T17:02:00.340Z",
     "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: a worn leather coin purse, its drawstring loose and a hole torn in the bottom, two or three tarnished coins slipping out. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
   },
   "tirelire": {
@@ -88,7 +103,10 @@
     "modele": "gemini-3-pro-image",
     "taille": "2K",
     "ratio": "1:1",
-    "etat": "à générer",
+    "fichier": "tirelire.jpg",
+    "mime": "image/jpeg",
+    "octets": 1907205,
+    "genereLe": "2026-09-18T17:02:21.431Z",
     "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: a small chipped clay money box shaped like a horned imp, a coin slot on top, a hairline crack down one side. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
   },
   "limbes": {
@@ -129,7 +147,10 @@
     "modele": "gemini-3-pro-image",
     "taille": "2K",
     "ratio": "1:1",
-    "etat": "à générer",
+    "fichier": "limee.jpg",
+    "mime": "image/jpeg",
+    "octets": 2068188,
+    "genereLe": "2026-09-18T17:12:03.033Z",
     "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: a worn iron file lying at an angle, its handle wrapped in cracked leather, fine metal dust caught along its teeth, a cold pale rim light running the length of the blade. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
   },
   "retournee": {
@@ -137,7 +158,10 @@
     "modele": "gemini-3-pro-image",
     "taille": "2K",
     "ratio": "1:1",
-    "etat": "à générer",
+    "fichier": "retournee.jpg",
+    "mime": "image/jpeg",
+    "octets": 2020525,
+    "genereLe": "2026-09-18T17:12:27.050Z",
     "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: a blacksmith's iron tongs gripping a small glowing plate of metal, turning it over, the plate lit orange from within, a cold pale rim light along the arms of the tongs. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
   },
   "sceau": {
@@ -145,7 +169,10 @@
     "modele": "gemini-3-pro-image",
     "taille": "2K",
     "ratio": "1:1",
-    "etat": "à générer",
+    "fichier": "sceau.jpg",
+    "mime": "image/jpeg",
+    "octets": 1838856,
+    "genereLe": "2026-09-18T17:12:49.345Z",
     "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: a heavy wax seal stamp in blackened bronze, its handle short and thick, a blob of warm scarlet sealing wax still stuck to its face, never purple, a cold pale rim light along the handle and the collar. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
   },
   "relanceJumelle": {
@@ -153,7 +180,10 @@
     "modele": "gemini-3-pro-image",
     "taille": "2K",
     "ratio": "1:1",
-    "etat": "à générer",
+    "fichier": "relanceJumelle.jpg",
+    "mime": "image/jpeg",
+    "octets": 2153043,
+    "genereLe": "2026-09-18T17:02:46.021Z",
     "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: a pair of twin bronze amulets cast from the same mould, hanging side by side from one split ring, one of them turned to show its blank reverse. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
   },
   "quatriemeTete": {
@@ -161,7 +191,10 @@
     "modele": "gemini-3-pro-image",
     "taille": "2K",
     "ratio": "1:1",
-    "etat": "à générer",
+    "fichier": "quatriemeTete.jpg",
+    "mime": "image/jpeg",
+    "octets": 2104204,
+    "genereLe": "2026-09-18T17:03:17.415Z",
     "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: a stone carving of a fourth dog's head, freshly broken off a larger statue, its muzzle chipped and its eye sockets lit by a faint amber ember. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
   },
   "fioleDeSang": {
@@ -169,7 +202,10 @@
     "modele": "gemini-3-pro-image",
     "taille": "2K",
     "ratio": "1:1",
-    "etat": "à générer",
+    "fichier": "fioleDeSang.jpg",
+    "mime": "image/jpeg",
+    "octets": 1909178,
+    "genereLe": "2026-09-18T17:03:40.211Z",
     "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: a small thick glass vial of dark blood, its cork sealed with red wax and bound with a leather cord, a single drop running down the outside. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
   },
   "verrouDeMinos": {
@@ -177,7 +213,10 @@
     "modele": "gemini-3-pro-image",
     "taille": "2K",
     "ratio": "1:1",
-    "etat": "à générer",
+    "fichier": "verrouDeMinos.jpg",
+    "mime": "image/jpeg",
+    "octets": 2289470,
+    "genereLe": "2026-09-18T17:04:02.011Z",
     "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: a heavy square iron padlock, ancient and pitted, its shackle firmly closed, a short length of scaled tail-like chain threaded through it. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
   },
   "semellesDePlomb": {
@@ -185,7 +224,10 @@
     "modele": "gemini-3-pro-image",
     "taille": "2K",
     "ratio": "1:1",
-    "etat": "à générer",
+    "fichier": "semellesDePlomb.jpg",
+    "mime": "image/jpeg",
+    "octets": 1981609,
+    "genereLe": "2026-09-18T17:04:25.687Z",
     "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: a pair of thick boot soles cast in dull grey lead, their leather straps frayed and their edges rounded by dragging. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
   },
   "batDeChameau": {
@@ -193,7 +235,10 @@
     "modele": "gemini-3-pro-image",
     "taille": "2K",
     "ratio": "1:1",
-    "etat": "à générer",
+    "fichier": "batDeChameau.jpg",
+    "mime": "image/jpeg",
+    "octets": 2268664,
+    "genereLe": "2026-09-18T17:04:48.730Z",
     "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: a heavy leather pack-saddle on a wooden frame, a laden pannier slung on either side, its girth strap buckled tight. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
   },
   "balanceTruquee": {
@@ -201,7 +246,10 @@
     "modele": "gemini-3-pro-image",
     "taille": "2K",
     "ratio": "1:1",
-    "etat": "à générer",
+    "fichier": "balanceTruquee.jpg",
+    "mime": "image/jpeg",
+    "octets": 2151395,
+    "genereLe": "2026-09-18T17:05:10.448Z",
     "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: a small brass balance scale, visibly rigged, one pan hanging far lower than the other, a lead slug stuck under it. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
   },
   "chaineDuCoccyte": {
@@ -209,7 +257,10 @@
     "modele": "gemini-3-pro-image",
     "taille": "2K",
     "ratio": "1:1",
-    "etat": "à générer",
+    "fichier": "chaineDuCoccyte.jpg",
+    "mime": "image/jpeg",
+    "octets": 2465268,
+    "genereLe": "2026-09-18T17:05:33.114Z",
     "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: a short length of thick iron chain caught inside a block of blue-white ice, two links protruding at either end, hoarfrost along the metal. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
   },
   "ticketPremiereHeure": {
@@ -217,7 +268,10 @@
     "modele": "gemini-3-pro-image",
     "taille": "2K",
     "ratio": "1:1",
-    "etat": "à générer",
+    "fichier": "ticketPremiereHeure.jpg",
+    "mime": "image/jpeg",
+    "octets": 2027396,
+    "genereLe": "2026-09-18T17:05:55.843Z",
     "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: a torn paper betting slip, blank and unprinted, its edge ragged where it was pulled from a book, punched once with a round hole, yellowed and creased. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
   },
   "quatriemeMarche": {
@@ -225,7 +279,10 @@
     "modele": "gemini-3-pro-image",
     "taille": "2K",
     "ratio": "1:1",
-    "etat": "à générer",
+    "fichier": "quatriemeMarche.jpg",
+    "mime": "image/jpeg",
+    "octets": 2072481,
+    "genereLe": "2026-09-18T17:06:18.428Z",
     "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: a short flight of worn stone steps, three of them smoothed hollow by use, a fourth one freshly cut and paler with its edge still sharp. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
   },
   "encensoirDuDernier": {
@@ -233,7 +290,10 @@
     "modele": "gemini-3-pro-image",
     "taille": "2K",
     "ratio": "1:1",
-    "etat": "à générer",
+    "fichier": "encensoirDuDernier.jpg",
+    "mime": "image/jpeg",
+    "octets": 2353189,
+    "genereLe": "2026-09-18T17:06:41.627Z",
     "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: a battered brass censer hanging from three short chains, its pierced lid half open, a little pale smoke caught in the holes and going no further. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
   },
   "pieceADeuxFaces": {
@@ -241,7 +301,10 @@
     "modele": "gemini-3-pro-image",
     "taille": "2K",
     "ratio": "1:1",
-    "etat": "à générer",
+    "fichier": "pieceADeuxFaces.jpg",
+    "mime": "image/jpeg",
+    "octets": 2104167,
+    "genereLe": "2026-09-18T17:07:06.251Z",
     "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: a thick tarnished silver coin standing on its edge and caught mid-spin, both visible faces struck with the same blank relief. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
   },
   "denierDuCercle": {
@@ -249,7 +312,10 @@
     "modele": "gemini-3-pro-image",
     "taille": "2K",
     "ratio": "1:1",
-    "etat": "à générer",
+    "fichier": "denierDuCercle.jpg",
+    "mime": "image/jpeg",
+    "octets": 2054088,
+    "genereLe": "2026-09-18T17:07:28.898Z",
     "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: one large worn silver coin resting on a small stack of three lesser ones, its rim deeply nicked all the way round. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
   },
   "baumeDuPerdant": {
@@ -257,7 +323,10 @@
     "modele": "gemini-3-pro-image",
     "taille": "2K",
     "ratio": "1:1",
-    "etat": "à générer",
+    "fichier": "baumeDuPerdant.jpg",
+    "mime": "image/jpeg",
+    "octets": 2097050,
+    "genereLe": "2026-09-18T17:07:50.271Z",
     "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: a squat clay ointment jar, its stopper pushed askew, a pale greenish balm oozing over the rim and down one side. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
   },
   "tribuneInfernale": {
@@ -265,7 +334,10 @@
     "modele": "gemini-3-pro-image",
     "taille": "2K",
     "ratio": "1:1",
-    "etat": "à générer",
+    "fichier": "tribuneInfernale.jpg",
+    "mime": "image/jpeg",
+    "octets": 2044895,
+    "genereLe": "2026-09-18T17:08:12.122Z",
     "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: a small wooden grandstand of three tiered benches built from dark salvaged planks, one of its legs propped up on a stone. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
   },
   "detteInfernale": {
@@ -273,7 +345,10 @@
     "modele": "gemini-3-pro-image",
     "taille": "2K",
     "ratio": "1:1",
-    "etat": "à générer",
+    "fichier": "detteInfernale.jpg",
+    "mime": "image/jpeg",
+    "octets": 2061655,
+    "genereLe": "2026-09-18T17:08:34.013Z",
     "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: a folded parchment note sealed with a blob of dark red wax, a broken length of iron chain threaded through a hole torn in its corner. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
   },
   "pourboireDuStagiaire": {
@@ -281,7 +356,10 @@
     "modele": "gemini-3-pro-image",
     "taille": "2K",
     "ratio": "1:1",
-    "etat": "à générer",
+    "fichier": "pourboireDuStagiaire.jpg",
+    "mime": "image/jpeg",
+    "octets": 1997156,
+    "genereLe": "2026-09-18T17:08:57.567Z",
     "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: a chipped clay saucer holding a loose handful of tarnished coins, one coin balanced upright against the rim. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
   },
   "oeilDeCharon": {
@@ -289,7 +367,10 @@
     "modele": "gemini-3-pro-image",
     "taille": "2K",
     "ratio": "1:1",
-    "etat": "à générer",
+    "fichier": "oeilDeCharon.jpg",
+    "mime": "image/jpeg",
+    "octets": 2121402,
+    "genereLe": "2026-09-18T17:09:20.356Z",
     "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: a short battered brass spyglass, its barrel green with patina, its lens clouded, an old coin wedged into the ring of the eyepiece. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
   },
   "fouetDuContremaitre": {
@@ -297,7 +378,10 @@
     "modele": "gemini-3-pro-image",
     "taille": "2K",
     "ratio": "1:1",
-    "etat": "à générer",
+    "fichier": "fouetDuContremaitre.jpg",
+    "mime": "image/jpeg",
+    "octets": 2247728,
+    "genereLe": "2026-09-18T17:09:44.516Z",
     "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: a coiled leather whip with a braided handle bound in brass wire, its lash wound tight and its tip frayed to threads. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
   },
   "miroirDeNarcisse": {
@@ -305,7 +389,10 @@
     "modele": "gemini-3-pro-image",
     "taille": "2K",
     "ratio": "1:1",
-    "etat": "à générer",
+    "fichier": "miroirDeNarcisse.jpg",
+    "mime": "image/jpeg",
+    "octets": 1795715,
+    "genereLe": "2026-09-18T17:10:07.835Z",
     "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: a small hand mirror in tarnished silver with an ornate handle, its glass cracked across once and reflecting nothing but flat grey. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
   },
   "marteauHephaistos": {
@@ -313,7 +400,10 @@
     "modele": "gemini-3-pro-image",
     "taille": "2K",
     "ratio": "1:1",
-    "etat": "à générer",
+    "fichier": "marteauHephaistos.jpg",
+    "mime": "image/jpeg",
+    "octets": 1770066,
+    "genereLe": "2026-09-18T17:10:32.033Z",
     "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: a blacksmith's hammer with a scarred steel head and a short charred wooden handle, its striking face still glowing dull orange from the anvil. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
   },
   "rabaisDePloutos": {
@@ -321,7 +411,10 @@
     "modele": "gemini-3-pro-image",
     "taille": "2K",
     "ratio": "1:1",
-    "etat": "à générer",
+    "fichier": "rabaisDePloutos.jpg",
+    "mime": "image/jpeg",
+    "octets": 2161446,
+    "genereLe": "2026-09-18T17:10:55.147Z",
     "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: a merchant's brass scale weight, squat and round with a ring handle on top, visibly filed down along its base, brass dust caught in the cuts. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
   },
   "fraude": {
@@ -329,7 +422,10 @@
     "modele": "gemini-3-pro-image",
     "taille": "2K",
     "ratio": "1:1",
-    "etat": "à générer",
+    "fichier": "fraude.jpg",
+    "mime": "image/jpeg",
+    "octets": 2158075,
+    "genereLe": "2026-09-18T17:11:18.767Z",
     "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: a single cube with the proportions of a gaming die, seen at a three-quarter angle so three faces are visible, its corners rounded and its edges worn, cast in tarnished green-grey lead, one face visibly slumped and re-cast as if tampered with; its faces completely blank — no pips, no dots, no numbers, no carving of any kind. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
   },
   "troisiemeDe": {
@@ -337,7 +433,10 @@
     "modele": "gemini-3-pro-image",
     "taille": "2K",
     "ratio": "1:1",
-    "etat": "à générer",
+    "fichier": "troisiemeDe.jpg",
+    "mime": "image/jpeg",
+    "octets": 2150122,
+    "genereLe": "2026-09-18T17:11:40.373Z",
     "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: a single cube with the proportions of a gaming die, seen at a three-quarter angle so three faces are visible, its corners rounded and its edges crisp, carved from plain bone yellowed with age, a hairline crack running across one face; its faces completely blank — no pips, no dots, no numbers, no carving of any kind. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
   },
   "explosive": {
@@ -345,7 +444,10 @@
     "modele": "gemini-3-pro-image",
     "taille": "2K",
     "ratio": "1:1",
-    "etat": "à générer",
+    "fichier": "explosive.jpg",
+    "mime": "image/jpeg",
+    "octets": 1917881,
+    "genereLe": "2026-09-18T17:13:11.899Z",
     "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: a squat blackened iron powder charge bound with two bands, its short fuse lit, a tight orange spark contained at the tip. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
   },
   "bond": {
@@ -353,7 +455,10 @@
     "modele": "gemini-3-pro-image",
     "taille": "2K",
     "ratio": "1:1",
-    "etat": "à générer",
+    "fichier": "bond.jpg",
+    "mime": "image/jpeg",
+    "octets": 2183024,
+    "genereLe": "2026-09-18T17:13:33.524Z",
     "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: a thick oiled steel spring compressed under a worn iron plate, wound tight and about to let go. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
   },
   "miroir": {
@@ -361,7 +466,10 @@
     "modele": "gemini-3-pro-image",
     "taille": "2K",
     "ratio": "1:1",
-    "etat": "à générer",
+    "fichier": "miroir.jpg",
+    "mime": "image/jpeg",
+    "octets": 2231534,
+    "genereLe": "2026-09-18T17:13:56.226Z",
     "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: a polished steel plate held in a small clamp, its surface mirror-bright and slightly warped, the reflection smeared out of shape. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
   },
   "feuFollet": {
@@ -369,7 +477,10 @@
     "modele": "gemini-3-pro-image",
     "taille": "2K",
     "ratio": "1:1",
-    "etat": "à générer",
+    "fichier": "feuFollet.jpg",
+    "mime": "image/jpeg",
+    "octets": 1938647,
+    "genereLe": "2026-09-18T17:14:18.414Z",
     "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: a small glass lantern with no candle in it, a pale green flame floating loose inside the glass, the top of the pane smoked black-brown. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
   },
   "elan": {
@@ -377,7 +488,10 @@
     "modele": "gemini-3-pro-image",
     "taille": "2K",
     "ratio": "1:1",
-    "etat": "à générer",
+    "fichier": "elan.jpg",
+    "mime": "image/jpeg",
+    "octets": 2276967,
+    "genereLe": "2026-09-18T17:14:41.270Z",
     "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: a heavy iron flywheel on a short axle, its rim nicked and scarred, spinning fast enough to blur along one side. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
   },
   "gel": {
@@ -385,7 +499,10 @@
     "modele": "gemini-3-pro-image",
     "taille": "2K",
     "ratio": "1:1",
-    "etat": "à générer",
+    "fichier": "gel.jpg",
+    "mime": "image/jpeg",
+    "octets": 1884358,
+    "genereLe": "2026-09-18T17:15:05.299Z",
     "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: a blacksmith's tongs gripping a metal plate that has frozen instead of glowing, blue-white frost creeping up the jaws. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
   },
   "aimant": {
@@ -393,7 +510,10 @@
     "modele": "gemini-3-pro-image",
     "taille": "2K",
     "ratio": "1:1",
-    "etat": "à générer",
+    "fichier": "aimant.jpg",
+    "mime": "image/jpeg",
+    "octets": 1906466,
+    "genereLe": "2026-09-18T17:15:29.049Z",
     "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: a squat grey bar lodestone, pitted and dark, iron filings and two bent nails clinging in dense tufts to each end. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
   }
 }

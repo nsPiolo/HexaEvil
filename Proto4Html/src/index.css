@@ -201,6 +201,48 @@ p { margin: 0; }
 /* Éboulis peint (`public/table/cases/blocked.webp`) posé sur la hachure : la hachure dit
    « on ne s'arrête pas là » d'un coup d'œil sur toute la piste, le dessin dit pourquoi. */
 .cell-blocked-mark { width: 100%; height: 100%; object-fit: contain; padding: 2px; opacity: 0.9; }
+/*
+ * Ce que fait une case, au survol. Les marqueurs peints disent qu'il se passe quelque chose,
+ * pas quoi ni de combien : la valeur (« recule de 2 », « rapporte 15 pièces ») n'est nulle
+ * part ailleurs sur le plateau.
+ *
+ * Une bulle dessinée plutôt que l'attribut `title` : sur une case de 74 px, une infobulle
+ * système qui met une seconde à venir se rate à chaque survol. C'est aussi le `title` qui
+ * était censé porter cette information jusqu'ici, sauf qu'il était posé sur `.cell-special`,
+ * en `pointer-events: none` — il n'est jamais apparu une seule fois.
+ *
+ * `visibility` en plus de l'opacité : sans elle la bulle reste dans le flux au survol du
+ * plateau voisin, et son ombre portée se devine sur les cases d'à côté.
+ */
+.cell-tip {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 6px);
+  transform: translateX(-50%);
+  z-index: 6; /* au-dessus des jetons (1 à 4) : une case occupée doit rester lisible */
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: max-content;
+  max-width: 190px;
+  padding: 6px 9px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--panel-2);
+  color: var(--ink);
+  font-size: 0.72rem;
+  line-height: 1.3;
+  text-align: left;
+  box-shadow: 0 8px 20px rgba(4, 8, 14, 0.75);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 120ms ease-out, visibility 120ms;
+}
+/* Ligne du haut : la bulle passe dessous, sinon elle sort du plateau, qui la couperait. */
+.cell-tip-below { bottom: auto; top: calc(100% + 6px); }
+.cell:hover .cell-tip { opacity: 1; visibility: visible; }
+
 /* Seuil franchi : la tête de colonne l'écrit. Départage : la colonne entière s'allume brièvement. */
 .head-closed { color: var(--bad) !important; }
 .cell-tie { animation: tie-flash 1.2s ease-out both; }
