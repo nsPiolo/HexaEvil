@@ -14,7 +14,7 @@ import { MoneyGauge } from './MoneyGauge'
 import { Ranking } from './Ranking'
 import { ShopPanel } from './ShopPanel'
 import { OpponentSlot, PhaseStrip, PlayerSlot } from './PlaySlots'
-import { HELP, HUD, ITEMS, RACE, fill, ordinalOf } from './texts'
+import { HELP, HUD, ITEMS, RACE, UI, fill, ordinalOf } from './texts'
 import { betBase, bettedSouls as bettedSoulsOf, bossPowerText, canBetNow, circleOf, has, itemName, previewNext, stakedOpen, useRace, type RaceUi, type SessionCarry } from './useRace'
 
 interface Props {
@@ -233,7 +233,7 @@ export function GameScreen({ carry, unlocked, speed, onFinished, onMenu }: Props
           {/* Le terrain change d'une course à l'autre dans un même cercle : il est nommé ici, comme le coach. */}
           <span className="muted small">{fill(HUD.terrain, { name: ui.terrain.name })}</span>
         </div>
-        <ol className="steps" aria-label="Étapes" data-testid="steps">
+        <ol className="steps" aria-label={UI.game.steps} data-testid="steps">
           {HUD.steps.map((label, i) => (
             <li key={label} className={'step' + (i < step ? ' step-done' : '') + (i === step ? ' step-current' : '')} aria-current={i === step ? 'step' : undefined}>
               {label}
@@ -249,8 +249,8 @@ export function GameScreen({ carry, unlocked, speed, onFinished, onMenu }: Props
           </div>
           <MoneyGauge money={ui.money} price={price} staked={staked} />
           <span className="hud-tools">
-            <button type="button" className={'chip' + (auto ? ' chip-on' : '')} onClick={() => setAuto(!auto)} title="Mode test : enchaîne les tours tout seul">
-              auto
+            <button type="button" className={'chip' + (auto ? ' chip-on' : '')} onClick={() => setAuto(!auto)} title={UI.game.autoTitle}>
+              {UI.game.auto}
             </button>
             <button type="button" className="btn-stone btn-stone-sm" data-testid="help-open" onClick={() => setHelpOpen(true)}>
               {HELP.open}
@@ -458,9 +458,9 @@ export function GameScreen({ carry, unlocked, speed, onFinished, onMenu }: Props
       {/* Popup artefacts */}
       {artefactsOpen && (
         <div className="popup-backdrop" onClick={() => setArtefactsOpen(false)} role="presentation">
-          <div className="popup" role="dialog" aria-label="Artefacts actifs" onClick={(e) => e.stopPropagation()}>
-            <h2>Artefacts actifs</h2>
-            {n === 0 && <p className="muted">Aucun artefact. La boutique en propose entre les paris et la course.</p>}
+          <div className="popup" role="dialog" aria-label={UI.game.activeArtefacts} onClick={(e) => e.stopPropagation()}>
+            <h2>{UI.game.activeArtefacts}</h2>
+            {n === 0 && <p className="muted">{UI.game.noArtefact}</p>}
             <ul>
               {ui.inventory.artefacts.map((id) => (
                 <li key={id}>

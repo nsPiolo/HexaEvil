@@ -33,31 +33,31 @@ export type BossEffectId = (typeof BOSS_EFFECT_IDS)[number]
 
 export interface BossEffect {
   id: BossEffectId
-  /** Amplitude de l'effet ; son sens dépend de l'id (voir `BOSS_EFFECT_DOC`). */
+  /** Amplitude de l'effet ; son sens dépend de l'id (voir `BOSS_EFFECTS` du lexique). */
   value: number
 }
 
 /**
- * Ce que `value` veut dire pour chaque effet, la valeur retenue quand la config n'en donne pas,
- * et la phrase d'annonce. `{n}` y est remplacé par la valeur : une annonce de boss doit se lire
- * comme une règle, pas comme une fiche technique.
+ * Valeur retenue pour chaque effet quand la configuration n'en donne pas. Ce que `value`
+ * veut dire, effet par effet, est écrit dans la phrase d'annonce correspondante
+ * (`BOSS_EFFECTS` du lexique) : une règle de boss se lit, elle ne s'épelle pas.
  */
-export const BOSS_EFFECT_DOC: Readonly<Record<BossEffectId, { label: string; sentence: string; fallback: number }>> = {
-  extraPairs: { label: 'Cadence', sentence: 'L’adversaire lance {n} paire(s) de plus par tour.', fallback: 1 },
-  harshNegatives: { label: 'Reculs aggravés', sentence: 'Toute distance négative recule de {n} case(s) de plus, des deux côtés.', fallback: 1 },
-  bite: { label: 'Morsure', sentence: 'Une âme percutée est mordue : elle recule de {n} case(s) après le saut.', fallback: 1 },
-  costlyLateBets: { label: 'Guichet gourmand', sentence: 'Un pari posé en course coûte {n} fois sa mise.', fallback: 2 },
-  pushBack: { label: 'Poussée', sentence: 'Reculer sur une âme la pousse en arrière au lieu d’échanger.', fallback: 1 },
-  betThreshold: { label: 'Guichet avancé', sentence: 'Le seuil de pari tombe à {n} % du parcours.', fallback: 40 },
-  opponentBoost: { label: 'Charge', sentence: 'Les distances positives de l’adversaire gagnent {n} case(s).', fallback: 1 },
-  lyingSoulDice: { label: 'Dés menteurs', sentence: 'Une fois sur {n}, un dé Âme désigne l’âme voisine.', fallback: 4 },
-  targetBettedSouls: { label: 'Il lit vos tickets', sentence: 'Les paires adverses visent vos âmes pariées et les font reculer.', fallback: 1 },
-  slowWater: { label: 'Eaux lourdes', sentence: 'Toute distance positive perd {n} case(s), des deux côtés.', fallback: 1 },
-  chained: { label: 'Chaînes', sentence: 'Une âme percutée est enchaînée : elle ne bouge plus pendant {n} tour(s).', fallback: 1 },
-  closeWindow: { label: 'Guichet fermé', sentence: '{n} type(s) de pari deviennent indisponibles, en rotation à chaque tour.', fallback: 1 },
-  frozenLanes: { label: 'Couloirs gelés', sentence: 'Une âme ne se déporte plus dans un autre couloir : elle percute.', fallback: 1 },
-  backdraft: { label: 'Souffle', sentence: 'À la fin de chaque tour, toutes les âmes reculent de {n} case(s).', fallback: 1 },
-  replayTurn: { label: 'Tour rejoué', sentence: 'Le tour d’arrivée est résolu une seconde fois, adversaire compris.', fallback: 1 },
+export const BOSS_EFFECT_FALLBACK: Readonly<Record<BossEffectId, number>> = {
+  extraPairs: 1,
+  harshNegatives: 1,
+  bite: 1,
+  costlyLateBets: 2,
+  pushBack: 1,
+  betThreshold: 40,
+  opponentBoost: 1,
+  lyingSoulDice: 4,
+  targetBettedSouls: 1,
+  slowWater: 1,
+  chained: 1,
+  closeWindow: 1,
+  frozenLanes: 1,
+  backdraft: 1,
+  replayTurn: 1,
 }
 
 export function isBossEffectId(id: string): id is BossEffectId {
@@ -102,18 +102,6 @@ export function generateBossEffects(rng: Rng, min = 2, max = 4): BossEffect[] {
     const pick = pool.splice(rng.int(pool.length), 1)[0]!
     if (compatible(chosen, pick)) chosen.push(pick)
   }
-  return chosen.map((id) => ({ id, value: BOSS_EFFECT_DOC[id].fallback }))
+  return chosen.map((id) => ({ id, value: BOSS_EFFECT_FALLBACK[id] }))
 }
 
-/**
- * Annonce lisible d'un pouvoir assemblé : une phrase par effet, dans l'ordre du tirage. `{n}`
- * prend la valeur et `(s)` s'accorde avec elle — une règle de boss se lit, elle ne s'épelle pas.
- */
-export function describeBossEffects(effects: readonly BossEffect[]): string {
-  return effects
-    .map((e) => {
-      const plural = Math.abs(e.value) > 1
-      return BOSS_EFFECT_DOC[e.id].sentence.replace('{n}', String(e.value)).replace(/\(s\)/g, plural ? 's' : '')
-    })
-    .join(' ')
-}

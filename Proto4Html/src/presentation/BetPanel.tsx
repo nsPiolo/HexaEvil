@@ -1,12 +1,13 @@
 import { useMemo, useState, type DragEvent } from 'react'
 import { config } from '../core/config'
-import { BET_TYPES, TIER_LABEL, betRefusal, betType, betUnlocked, bettingClosed, currentMultiplier, evaluateBet, fmtMultiplier, potentialPayout, raceProgress, slotCount, type Bet, type BetTier, type BetTypeId } from '../core/rules/bets'
+import { BET_TYPES, betRefusal, betType, betUnlocked, bettingClosed, currentMultiplier, evaluateBet, fmtMultiplier, potentialPayout, raceProgress, slotCount, type Bet, type BetTier, type BetTypeId } from '../core/rules/bets'
 import { isInBetZone, ranking, type RaceState, type Roll } from '../core/rules/race'
 import type { Phase } from './useRace'
 import { LockBadge, lockTitle } from './LockBadge'
 import { MoneyGauge } from './MoneyGauge'
 import { fmtDistance, soulColor } from './souls'
-import { BETS, BET_LIVE, fill } from './texts'
+import { BETS, BET_LIVE, BET_TIERS, BET_TYPE_TEXTS, HUD, UI, fill, plural } from './texts'
+import { betRefusalText } from './messages'
 
 /** Brouillon de ticket : type choisi et âmes désignées. Partagé avec le plateau (spec 03/C2). */
 export interface BetDraft {
@@ -182,23 +183,23 @@ export function BetPanel({ race, money, stakes, price, bets, open, phase, level,
   if (error) {
     status = error
   } else if (!open) {
-    status = race.finished ? 'Course terminée : les paris sont réglés.' : closed ? `Une âme a dépassé le seuil de ${Math.round(race.track.betThresholdRatio * 100)} % : plus de pari.` : phase === 'pairing' ? 'Les dés sont lancés : les paris reprennent au prochain tour.' : 'Paris suspendus pendant la résolution.'
+    status = race.finished ? UI.bets.raceOver : closed ? fill(UI.bets.thresholdPassed, { pct: Math.round(race.track.betThresholdRatio * 100) }) : phase === 'pairing' ? UI.bets.rolled : UI.bets.resolving
   } else if (missing > 0) {
-    status = `Choisis encore ${missing} âme${missing > 1 ? 's' : ''} — dans le panneau ou en cliquant les jetons du plateau.`
+    status = fill(UI.bets.pickMore, { n: missing, s: plural(missing) })
   } else if (refusal) {
-    status = refusal
+    status = betRefusalText(refusal)
   } else {
-    status = `${def.label} · mise ${stake} à ${fmtMultiplier(mult)}.`
+    status = fill(UI.bets.draft, { type: BET_TYPE_TEXTS[type].label, stake, mult: fmtMultiplier(mult) })
   }
 
   return (
-    <section className="bet-panel" aria-label="Paris">
+    <section className="bet-panel" aria-label={UI.bets.panel}>
       <header className="bp-head">
         <div className="bp-title">
-          <h2 className="serif">Poser un pari</h2>
+          <h2 className="serif">{UI.bets.open}</h2>
           <p className="muted">
-            {prep ? 'Au moins un pari pour lancer la course.' : open ? 'Dernier moment pour parier ce tour.' : status}
-            {progress > 0 && open && <> Cotes décotées : course à {Math.round(progress * 100)} %.</>}
+            {prep ? UI.bets.needOne : open ? UI.bets.lastCall : status}
+            {progress > 0 && open && <>{fill(UI.bets.decayed, { pct: Math.round(progress * 100) })}</>}
           </p>
           {roll && phase === 'pairing' && <p className="small bp-dice">{fill(BETS.diceSeen, { souls: roll.soul.map((id) => soulName(id)).join(' · '), dist: roll.distance.map(fmtDistance).join(' / ') })}</p>}
         </div>
@@ -208,7 +209,7 @@ export function BetPanel({ race, money, stakes, price, bets, open, phase, level,
           <MoneyGauge money={money} price={price} staked={staked} />
         </div>
         {onClose && (
-          <button type="button" className="bp-close" onClick={onClose} aria-label="Fermer">
+          <button type="button" className="bp-close" onClick={onClose} aria-label={HUD.close}>
             ×
           </button>
         )}
@@ -232,7 +233,7 @@ export function BetPanel({ race, money, stakes, price, bets, open, phase, level,
           <div className="tiers" role="tablist">
             {TIERS.map((t) => (
               <button key={t} type="button" role="tab" aria-selected={tier === t} className={'tier' + (tier === t ? ' tier-on' : '')} disabled={!open || BET_TYPES.every((b) => b.tier !== t || isLocked(b.id))} onClick={() => changeTier(t)}>
-                <span className="tier-name">{TIER_LABEL[t]}</span>
+                <span className="tier-name">{BET_TIERS[t]}</span>
                 <span className="tier-range">{range(t)}</span>
               </button>
             ))}
@@ -244,8 +245,8 @@ export function BetPanel({ race, money, stakes, price, bets, open, phase, level,
                 <li key={b.id}>
                   <button type="button" className={'type' + (type === b.id ? ' type-on' : '') + (locked ? ' type-locked' : '')} disabled={!open || locked} onClick={() => changeType(b.id)} aria-pressed={type === b.id} title={locked ? lockTitle(unlock[b.id]) : undefined}>
                     <span className="type-text">
-                      <span className="type-name">{b.label}</span>
-                      <span className="type-desc">{b.description}</span>
+                      <span className="type-name">{BET_TYPE_TEXTS[b.id].label}</span>
+                      <span className="type-desc">{BET_TYPE_TEXTS[b.id].description}</span>
                     </span>
                     {locked ? <LockBadge level={unlock[b.id]} /> : <span className="mult-badge serif">{fmtMultiplier(multOf(b.id))}</span>}
                   </button>
@@ -257,7 +258,7 @@ export function BetPanel({ race, money, stakes, price, bets, open, phase, level,
 
         <div className="bp-col">
           <h3 className="bp-section">
-            <span className="numeral">{NUMERALS[1]}</span> {def.ordered && slots > 1 ? 'Âmes, dans l’ordre' : slots > 1 ? 'Âmes' : 'Âme'}
+            <span className="numeral">{NUMERALS[1]}</span> {def.ordered && slots > 1 ? UI.ticket.soulsOrdered : slots > 1 ? UI.ticket.souls : UI.ticket.soul}
             <span className="bp-count">
               {souls.length}/{slots}
             </span>
@@ -265,7 +266,7 @@ export function BetPanel({ race, money, stakes, price, bets, open, phase, level,
           <div className="bet-slots">
             {Array.from({ length: slots }, (_, i) => {
               const id = souls[i]
-              const label = def.slots?.[i] ?? (def.ordered ? `${i + 1}` : null)
+              const label = BET_TYPE_TEXTS[type].slots?.[i] ?? (def.ordered ? `${i + 1}` : null)
               return (
                 <button key={i} type="button" className={'bet-slot' + (id !== undefined ? ' bet-slot-filled' : '')} style={id !== undefined ? { ['--soul' as string]: soulColor(id) } : undefined} onClick={() => id !== undefined && toggleSoul(id)} disabled={id === undefined || !open} title={id !== undefined ? 'Retirer' : ''} aria-label={id === undefined ? BETS.emptySlot : undefined}>
                   {label && <span className="bet-slot-tag">{label}</span>}
@@ -361,7 +362,7 @@ export function BetPanel({ race, money, stakes, price, bets, open, phase, level,
       {/* Paris posés : la liste apparaît dès le premier ticket et reste ouverte. Elle remplace
           le compteur repliable de l'en-tête — à zéro pari il n'y avait rien à replier. */}
       {bets.length > 0 && (
-        <section id="bp-placed" className="bp-placed" aria-label="Paris posés">
+        <section id="bp-placed" className="bp-placed" aria-label={UI.bets.placed}>
           <BetList race={race} bets={bets} live={!prep} {...(onCancel ? { onCancel } : {})} />
         </section>
       )}
@@ -371,12 +372,12 @@ export function BetPanel({ race, money, stakes, price, bets, open, phase, level,
           <button type="button" className="btn btn-primary bp-place" disabled={!open || refusal !== null} onClick={place}>
             {/* Le parchemin est un décor : il déborde du bouton et ne doit rien dire aux lecteurs d'écran. */}
             <span className="bp-place-art" aria-hidden="true" />
-            <span className="bp-place-label">Poser le pari</span>
+            <span className="bp-place-label">{UI.bets.submit}</span>
           </button>
           {prep && onOpenShop && (
-            <button type="button" className="btn btn-gold bp-shop" disabled={bets.length === 0} onClick={onOpenShop} title={bets.length === 0 ? 'La boutique n’ouvre sa caisse qu’après un premier pari' : undefined}>
+            <button type="button" className="btn btn-gold bp-shop" disabled={bets.length === 0} onClick={onOpenShop} title={bets.length === 0 ? UI.bets.shopNeedsBet : undefined}>
               <span className="bp-shop-art" aria-hidden="true" />
-              <span className="bp-shop-label">Boutique</span>
+              <span className="bp-shop-label">{HUD.shop}</span>
             </button>
           )}
           {prep && onStart && (
@@ -384,7 +385,7 @@ export function BetPanel({ race, money, stakes, price, bets, open, phase, level,
               <span className="bp-start-glow" aria-hidden="true" />
               <span className="bp-start-art" aria-hidden="true" />
               <span className="bp-start-label">
-                {bets.length === 0 ? 'Lancer la course — pose d’abord un pari' : 'Lancer la course'}
+                {bets.length === 0 ? UI.bets.raceNeedsBet : HUD.toRace}
               </span>
             </button>
           )}
@@ -397,7 +398,7 @@ export function BetPanel({ race, money, stakes, price, bets, open, phase, level,
 /** Liste des paris posés, avec leur état. Utilisée dans le panneau de paris et sur la table. */
 export function BetList({ race, bets, compact, live, onCancel }: { race: RaceState; bets: readonly Bet[]; compact?: boolean; /** En course : état provisoire de chaque pari ouvert d'après les positions actuelles. */ live?: boolean; onCancel?: (id: number) => string | null }) {
   const soulName = (id: number): string => race.souls[id]?.name ?? `#${id}`
-  if (bets.length === 0) return <p className="muted small">Aucun pari pour cette course.</p>
+  if (bets.length === 0) return <p className="muted small">{UI.bets.none}</p>
   const provisional = live && race.souls.some((s) => s.position > 0) ? ranking(race) : null
   return (
     <ul className={'bets' + (compact ? ' bets-compact' : '') + (onCancel ? ' bets-cancellable' : '')}>
@@ -405,7 +406,7 @@ export function BetList({ race, bets, compact, live, onCancel }: { race: RaceSta
         const onTrack = provisional && b.status === 'open' ? evaluateBet(b, provisional) : null
         return (
           <li key={b.id} className={`bet bet-${b.status}` + (onTrack === null ? '' : onTrack ? ' bet-on-track' : ' bet-at-risk')} data-live={onTrack === null ? undefined : onTrack ? 'on-track' : 'at-risk'}>
-            <span className="bet-type">{betType(b.type).label}</span>
+            <span className="bet-type">{BET_TYPE_TEXTS[b.type].label}</span>
             <span className="bet-targets">
               {b.souls.map((id, i) => (
                 <span key={id}>
@@ -416,17 +417,17 @@ export function BetList({ race, bets, compact, live, onCancel }: { race: RaceSta
             </span>
             <span className="bet-stake">
               {b.stake} {fmtMultiplier(b.multiplier)}
-              {b.turn > 0 && !compact && <span className="muted"> · tour {b.turn}</span>}
+              {b.turn > 0 && !compact && <span className="muted">{fill(UI.ticket.turn, { n: b.turn })}</span>}
             </span>
             <span className="bet-status">
-              {b.status === 'open' && onTrack === null && (compact ? `+${potentialPayout(b.stake, b.multiplier) - b.stake} si gagné` : `+${potentialPayout(b.stake, b.multiplier) - b.stake} si gagné`)}
+              {b.status === 'open' && onTrack === null && fill(UI.ticket.ifWon, { net: potentialPayout(b.stake, b.multiplier) - b.stake })}
               {b.status === 'open' && onTrack !== null && (
                 <span className="bet-live" title={BET_LIVE.title}>
                   {onTrack ? BET_LIVE.onTrack : BET_LIVE.atRisk} <span className="muted">· {BET_LIVE.provisional}</span>
                 </span>
               )}
-              {b.status === 'won' && `gagné +${b.payout - b.stake}`}
-              {b.status === 'lost' && `perdu −${b.stake}`}
+              {b.status === 'won' && fill(UI.ticket.won, { net: b.payout - b.stake })}
+              {b.status === 'lost' && fill(UI.ticket.lost, { stake: b.stake })}
             </span>
             {onCancel && b.status === 'open' && (
               <button type="button" className="bet-cancel" onClick={() => onCancel(b.id)} title={fill(BETS.cancelTitle, { stake: b.stake })}>

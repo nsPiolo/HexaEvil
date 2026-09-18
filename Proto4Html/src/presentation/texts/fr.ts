@@ -1,42 +1,29 @@
 /**
- * Tous les textes affichés au joueur, en français. Regroupés ici pour qu'une
- * traduction ultérieure (option « Langue ») n'ait qu'un fichier à toucher.
+ * Lexique français — la langue de référence du jeu. Toute clé naît ici : `Pack` se déduit
+ * de ce fichier, donc une clé ajoutée ici et oubliée dans `en.ts` ne compile pas.
  * Les dialogues de l'intro, de la fin de 2e course et du cercle 1 viennent de
  * docs/proto4/interface.md ; les autres cercles et la fin sont générés ici.
+ *
+ * Rien ne s'importe d'ici : l'écran passe par `./index`, qui sert le pack de la langue
+ * choisie dans les options.
  */
+import type { BetRefusal, BetTier, CancelRefusal } from '../../core/rules/bets'
+import type { BetTypeId } from '../../core/rules/betTypes'
+import type { BossEffectId } from '../../core/rules/boss'
+import type { MoveNoteId } from '../../core/rules/race'
+import type { ItemKind, Rarity } from '../../core/shop/items'
+import type { PurchaseLog } from '../../core/shop/shop'
+import { B, D, P, type BetTypeText, type CircleTexts, type DemonRank, type Fmt, type HelpSection, type Line, type Speaker } from './types'
 
-export type Speaker = 'demon' | 'player' | 'boss'
-
-/**
- * Expressions du stagiaire, disponibles au grade 0 seulement (public/menu/perso/stagiaire_0_*.webp).
- * Aux grades suivants il n'y a qu'un portrait : la `face` d'une ligne y est ignorée.
- */
-export type Face = 'normal' | 'neutre' | 'doute' | 'fier' | 'degout'
-
-export interface Line {
-  who: Speaker
-  text: string
-  /** Nom affiché au-dessus de la bulle ; absent = nom par défaut du locuteur (SPEAKERS). Le démon change de nom quand il monte en grade. */
-  label?: string
-  /** Expression demandée pour cette réplique du démon (grade 0 uniquement) ; absente = `normal`. */
-  face?: Face
-  /** Portrait affiché pendant la réplique, posé par `spokenBy` (demon.ts) d'après le grade et `face`. */
-  portrait?: string
-}
+/** Nom du démon qui vous coache. Judas Iscariote : le traître, qui finira boss du neuvième cercle. */
+const DEMON_NAME = 'Iscariote'
 
 /** Noms par défaut des locuteurs dans les bulles ; le boss prend le sien dans `config/race.json`. */
-/** Nom du démon qui vous coache. Judas Iscariote : le traître, qui finira boss du neuvième cercle. */
-export const DEMON_NAME = 'Iscariote'
+const SPEAKERS: Record<Speaker, string> = { demon: `${DEMON_NAME}, stagiaire`, player: 'Vous', boss: 'Le boss du cercle' }
 
-export const SPEAKERS: Record<Speaker, string> = { demon: `${DEMON_NAME}, stagiaire`, player: 'Vous', boss: 'Le boss du cercle' }
+const GAME_NAME = "Sinner's Bet"
 
-const D = (text: string, face?: Face): Line => (face ? { who: 'demon', text, face } : { who: 'demon', text })
-const P = (text: string): Line => ({ who: 'player', text })
-const B = (text: string): Line => ({ who: 'boss', text })
-
-export const GAME_NAME = "Sinner's Bet"
-
-export const MENU = {
+const MENU = {
   continue: 'Continuer',
   newRun: 'Commencer une nouvelle évasion',
   stats: 'Statistiques',
@@ -48,7 +35,7 @@ export const MENU = {
   skip: 'Passer',
 } as const
 
-export const INTRO: readonly Line[] = [
+const INTRO: readonly Line[] = [
   D('Félicitations, vous êtes mort !', 'fier'),
   D('On a étudié votre dossier, et sans grande surprise, vous avez fini ici.', 'neutre'),
   D("Iscariote, démon stagiaire. Je n'ai pas les accréditations pour vous affecter à la bonne punition — et de toute façon, elle est en réfection.", 'normal'),
@@ -67,7 +54,7 @@ export const INTRO: readonly Line[] = [
  * Fin de l'avant-dernière course du **premier** cercle : le joueur ignore encore qu'un boss
  * ferme chaque cercle, on le lui apprend ici.
  */
-export const BOSS_ANNOUNCE: readonly Line[] = [
+const BOSS_ANNOUNCE: readonly Line[] = [
   D("Mon boss est de retour, il nous a vus jouer. Il veut sa part : {price} pièces à la fin du cercle, et il tiendra lui-même la dernière course.", 'normal'),
   D("Vous payez, il vous laisse monter d'un cercle. Vous ne payez pas, il vous garde — c'est son métier, il le fait bien.", 'doute'),
 ]
@@ -79,7 +66,7 @@ export const BOSS_ANNOUNCE: readonly Line[] = [
  * dépouillerait de son entrée. Une variante par cercle, rejouées en boucle au-delà de la liste :
  * la même phrase neuf fois de suite ne s'entendrait plus.
  */
-export const BOSS_ANNOUNCE_NEXT: readonly (readonly Line[])[] = [
+const BOSS_ANNOUNCE_NEXT: readonly (readonly Line[])[] = [
   [D("Vous connaissez la maison, maintenant : la dernière course du cercle, c'est le boss qui la tient. {price} pièces en poche à l'arrivée, et on passe.", 'neutre')],
   [D("Prochaine course, dernière du cercle. Le patron d'ici descend tenir le guichet lui-même, et il faudra {price} pièces pour qu'il ouvre la porte.", 'normal')],
   [D("Encore une, et c'est celle du boss. Je vous le dis franchement : sans {price} pièces au bout, on ne sort pas de ce cercle.", 'doute')],
@@ -94,7 +81,7 @@ export const BOSS_ANNOUNCE_NEXT: readonly (readonly Line[])[] = [
  * au cercle précédent. La variante générique gâcherait le seul retournement de la partie — il
  * annonce donc un boss qu'il connaît bien, sans se nommer, et `bossIntro` fait le reste.
  */
-export const BOSS_ANNOUNCE_SELF: readonly Line[] = [
+const BOSS_ANNOUNCE_SELF: readonly Line[] = [
   D("Dernière course du dernier cercle. {price} pièces, et la porte s'ouvre. Pour de bon."),
   D("C'est le boss de la Trahison qui tient le guichet. Je le connais bien."),
   P('Il est comment ?'),
@@ -110,26 +97,7 @@ export const BOSS_ANNOUNCE_SELF: readonly Line[] = [
  * le costume du boss, le sixième n'étant atteint qu'à l'évasion.
  * Pas encore d'effet sur la boutique : le grade est narratif pour l'instant.
  */
-export interface DemonRank {
-  name: string
-  label: string
-  afterCircle: number
-  lines: readonly Line[]
-  /** Fichier du portrait dans public/menu/perso, sans extension ; avec `faces`, le suffixe d'expression s'y ajoute. */
-  portrait: string
-  /** Vrai quand ce grade a un fichier par expression (`portrait` + `_` + Face). Seul le stagiaire en a. */
-  faces?: boolean
-}
-
-/** Expression du démon quand la réplique n'en demande pas. */
-const DEFAULT_FACE: Face = 'normal'
-
-/** Portrait à afficher pendant une réplique : le costume vient du grade, la tête de l'expression. */
-export function portraitSrc(rank: DemonRank, face?: Face): string {
-  return `/menu/perso/${rank.faces ? `${rank.portrait}_${face ?? DEFAULT_FACE}` : rank.portrait}.webp`
-}
-
-export const DEMON_RANKS: readonly DemonRank[] = [
+const DEMON_RANKS: readonly DemonRank[] = [
   { name: 'Stagiaire', label: `${DEMON_NAME}, stagiaire`, afterCircle: 0, lines: [], portrait: 'stagiaire_0', faces: true },
   {
     name: 'Assistant',
@@ -187,20 +155,6 @@ export const DEMON_RANKS: readonly DemonRank[] = [
   { name: 'Boss du neuvième', label: `${DEMON_NAME}, boss du neuvième`, afterCircle: 8, lines: [], portrait: 'stagiaire_4_boss' },
 ]
 
-export interface CircleTexts {
-  /** Nom ordinal affiché en overlay : « 1er Cercle ». */
-  ordinal: string
-  /** Écran de transition après le cercle, prix payé. Dit ce qui change au cercle suivant. */
-  success: readonly Line[]
-  /** Écran de transition après le cercle, prix impayable : fin de run. */
-  failure: readonly Line[]
-  /**
-   * Scène jouée juste avant la course du boss (la dernière du cercle) : le boss se présente,
-   * le stagiaire commente. `{boss}` est son nom et `{price}` le prix de sortie du cercle.
-   */
-  bossIntro: readonly Line[]
-}
-
 /**
  * Un bloc par cercle : les neuf de Dante, puis la montée du mode démon (GDD §8.1). Au-delà du
  * dernier, `circleTexts` (demon.ts) rejoue ce dernier bloc — le quinzième est donc écrit pour
@@ -210,7 +164,7 @@ export interface CircleTexts {
  * qu'il est chez lui. Au-dessus de l'enfer il n'est plus en terrain connu et ne congédie plus
  * personne — l'absence est voulue, ne pas « compléter » les cercles 10 à 15.
  */
-export const CIRCLES: readonly CircleTexts[] = [
+const CIRCLES: readonly CircleTexts[] = [
   {
     ordinal: '1er',
     success: [
@@ -442,7 +396,7 @@ export const CIRCLES: readonly CircleTexts[] = [
   },
 ]
 
-export const ENDINGS = {
+const ENDINGS = {
   gameOverTitle: 'Punition éternelle',
   gameOverBody: 'Le prix du cercle était de {price} pièces. Il vous en manquait {missing}.',
   escapeTitle: 'Évasion',
@@ -453,7 +407,7 @@ export const ENDINGS = {
   backToMenu: 'Retour au menu',
 } as const
 
-export const HUD = {
+const HUD = {
   steps: ['Pari', 'Boutique', 'Course', 'Gains'] as const,
   /** Poignées repliées : elles résument leur contenu (spec 02/C1). */
   tabBets: 'Paris ({n})',
@@ -486,7 +440,7 @@ export const HUD = {
   menu: 'Menu',
 } as const
 
-export const MAP = {
+const MAP = {
   title: 'Les cercles',
   subtitle: 'Cliquez sur la prochaine course pour la lancer.',
   current: 'Vous êtes ici',
@@ -510,7 +464,7 @@ export const MAP = {
   circleOf: 'Cercle {n} — {name}',
 } as const
 
-export const STATS = {
+const STATS = {
   title: 'Statistiques',
   attempts: 'Nombre de tentatives',
   escapes: "Nombre d'évasions",
@@ -526,7 +480,7 @@ export const STATS = {
  * Collection : les objets de boutique débloqués d'un run à l'autre (core/shop/unlocks.ts).
  * Les scellés se comptent mais ne se nomment pas — c'est la surprise de fin de cercle.
  */
-export const COLLECTION = {
+const COLLECTION = {
   title: 'Collection',
   count: '{n} objets sur {total} en rayon',
   hint: 'Chaque cercle payé descelle un objet, pour toutes vos évasions à venir.',
@@ -538,7 +492,7 @@ export const COLLECTION = {
 } as const
 
 /** Révélation de fin de cercle : l'objet que le cercle payé vient de desceller. */
-export const UNLOCK = {
+const UNLOCK = {
   title: 'La réserve s’entrouvre',
   intro: 'Le stagiaire disparaît sous le guichet, remonte poussiéreux, et pose ça devant vous.',
   added: 'Descellé pour de bon : cet objet peut désormais sortir en vitrine, dans cette évasion comme dans les suivantes.',
@@ -548,7 +502,7 @@ export const UNLOCK = {
 } as const
 
 /** Dette infernale : le marché proposé quand le prix du cercle est hors d'atteinte. */
-export const DEBT = {
+const DEBT = {
   title: 'Le stagiaire sort un registre',
   lead: 'Le cercle coûte {price} pièces. Vous en avez {money}. Il en manque {missing}.',
   offer: '« Je peux avancer {borrow} pièces. Une seule fois, et je ne fais pas ça par bonté. »',
@@ -557,17 +511,16 @@ export const DEBT = {
   refuse: 'Refuser et rester ici',
 } as const
 
-export const OPTIONS = {
+const OPTIONS = {
   title: 'Option',
   volume: 'Volume',
   volumeDisabled: "pas de musique pour l'instant",
   language: 'Langue',
-  languageDisabled: 'seul le français est disponible pour l’instant',
   speed: 'Vitesse des animations',
 } as const
 
 /** Paris verrouillés par le grade du stagiaire ; ticket de guichet (spec 03). */
-export const BETS = {
+const BETS = {
   emptySlot: "Emplacement d'âme vide",
   locked: 'Ce pari s’ouvrira quand le stagiaire sera {rank}.',
   lockedBadge: 'dès {rank}',
@@ -588,7 +541,7 @@ export const BETS = {
 } as const
 
 /** Jauge des trois usages : solde, misé en course, prix du cercle (spec 01/C1). */
-export const GAUGE = {
+const GAUGE = {
   label: 'Solde et prix du cercle',
   balance: 'solde',
   price: 'prix du cercle',
@@ -600,7 +553,7 @@ export const GAUGE = {
 } as const
 
 /** Boutique : état vide, triade de risque, confirmation (specs 02/C2 et 04). */
-export const SHOP = {
+const SHOP = {
   emptyState: 'Posez d’abord un pari, le stagiaire n’ouvre pas la caisse aux indécis.',
   goToBets: 'Aller aux paris',
   emptyVitrine: 'Rien en rayon aujourd’hui. Le stagiaire hausse les épaules.',
@@ -630,12 +583,12 @@ export const SHOP = {
 
 /** Écran de course : frise de sous-phases, file de combinaisons, prévisualisation (spec 05). */
 /** Objets que le joueur déclenche lui-même depuis l'écran de course. */
-export const ITEMS = {
+const ITEMS = {
   tribuneHint: 'Tribune infernale : choisissez une case libre, hors départ et hors zone de fin.',
   double: 'Pièce à deux faces : doubler {stake} ¤ de mises',
 } as const
 
-export const RACE = {
+const RACE = {
   /** Touche qui lance les dés : la plus grande du clavier pour le geste le plus répété. */
   rollKey: 'Espace',
   /** Objets déclenchés sur un dé précis pendant l'appariement (Fiole, Élan, Verrou). */
@@ -667,7 +620,7 @@ export const RACE = {
 } as const
 
 /** État vivant d'un pari pendant la course (provisoire : le classement n'est définitif qu'à la fin). */
-export const BET_LIVE = {
+const BET_LIVE = {
   onTrack: 'en bonne voie',
   atRisk: 'compromis',
   provisional: 'provisoire',
@@ -676,7 +629,7 @@ export const BET_LIVE = {
 } as const
 
 /** Plateau. */
-export const BOARD = {
+const BOARD = {
   /** Cases spéciales du terrain : elles n'agissent que sur l'âme qui s'y arrête (GDD §2.2). */
   specialMark: { gold: '¤', trap: '✷', boost: '▲' } as const,
   special: {
@@ -696,7 +649,7 @@ export const BOARD = {
 } as const
 
 /** Modale de fin de course (spec 06). */
-export const RESULTS = {
+const RESULTS = {
   subtitle: 'Établi après la résolution complète du tour {turn}, paire adverse comprise.',
   net: 'Net de la course : {net} ¤',
   refund: 'Livre des comptes : {n} ¤ remboursés',
@@ -708,7 +661,7 @@ export const RESULTS = {
 } as const
 
 /** Glossaire : les termes canon reçoivent une explication au survol (spec 01/C4). */
-export const GLOSSARY = {
+const GLOSSARY = {
   percuter: 'Percuter : atterrir en avançant sur une case occupée → saut devant.',
   echanger: 'Échanger : atterrir en reculant sur une case occupée → échange de place.',
   detour: 'Détour : la case visée est bloquée ou occupée, l’âme se décale sur un autre couloir.',
@@ -724,21 +677,7 @@ export const GLOSSARY = {
  * à droite. Le contenu reprend docs/proto4/regles-du-jeu.md. Balisage inline
  * accepté dans les textes : **gras** et *italique* (rendu par HelpPanel).
  */
-export interface HelpBlock {
-  /** 'p' paragraphe · 'h' sous-titre · 'ul' puces · 'ol' étapes numérotées. */
-  kind: 'p' | 'h' | 'ul' | 'ol'
-  text?: string
-  items?: readonly string[]
-}
-export interface HelpSection {
-  id: string
-  /** Libellé dans l'index de gauche, titre de la carte de droite. */
-  title: string
-  icon: string
-  blocks: readonly HelpBlock[]
-}
-
-export const HELP = {
+const HELP = {
   open: 'Aide',
   title: 'Aide — Sinner’s Bet',
   navLabel: 'Sections de l’aide',
@@ -891,7 +830,7 @@ export const HELP = {
 } as const
 
 /** Menu de développement (bouton « dev » discret, Ctrl+Maj+D). */
-export const DEV = {
+const DEV = {
   open: 'dev',
   title: 'Menu développeur',
   hint: 'Fixe le solde et la course de reprise. L’inventaire est conservé, la course en cours est abandonnée, la sauvegarde est écrasée.',
@@ -903,35 +842,300 @@ export const DEV = {
   cancel: 'Annuler',
 } as const
 
-/**
- * Rang du cercle affiché dans le HUD (« 1er », « 9e », « 23e »). Les cercles écrits ont leur
- * forme dans CIRCLES ; au-delà, le jeu continue de compter (GDD §8.1).
- */
-export function ordinalOf(circle: number): string {
-  return CIRCLES[circle - 1]?.ordinal ?? `${circle}e`
+// ---- Tables indexées par les identifiants du noyau ---------------------------
+// Le moteur ne porte que des ids et des nombres ; les mots sont ici, une colonne par langue.
+// Les `Record` sont typés sur les ids : un effet, un pari ou une rareté ajoutés au noyau
+// ne compilent plus tant que toutes les langues ne les ont pas nommés.
+
+/** Annonce du pouvoir d'un boss. `{n}` prend la valeur de l'effet, `(s)` s'accorde dessus. */
+const BOSS_EFFECTS: Readonly<Record<BossEffectId, string>> = {
+  extraPairs: 'L’adversaire lance {n} paire(s) de plus par tour.',
+  harshNegatives: 'Toute distance négative recule de {n} case(s) de plus, des deux côtés.',
+  bite: 'Une âme percutée est mordue : elle recule de {n} case(s) après le saut.',
+  costlyLateBets: 'Un pari posé en course coûte {n} fois sa mise.',
+  pushBack: 'Reculer sur une âme la pousse en arrière au lieu d’échanger.',
+  betThreshold: 'Le seuil de pari tombe à {n} % du parcours.',
+  opponentBoost: 'Les distances positives de l’adversaire gagnent {n} case(s).',
+  lyingSoulDice: 'Une fois sur {n}, un dé Âme désigne l’âme voisine.',
+  targetBettedSouls: 'Les paires adverses visent vos âmes pariées et les font reculer.',
+  slowWater: 'Toute distance positive perd {n} case(s), des deux côtés.',
+  chained: 'Une âme percutée est enchaînée : elle ne bouge plus pendant {n} tour(s).',
+  closeWindow: '{n} type(s) de pari deviennent indisponibles, en rotation à chaque tour.',
+  frozenLanes: 'Une âme ne se déporte plus dans un autre couloir : elle percute.',
+  backdraft: 'À la fin de chaque tour, toutes les âmes reculent de {n} case(s).',
+  replayTurn: 'Le tour d’arrivée est résolu une seconde fois, adversaire compris.',
 }
 
-/**
- * Cotes prêtes à citer dans un texte : virgule décimale française (2.2 → « 2,2 »). Tout
- * texte qui annonce une cote — lignes de promotion, page d'aide — passe par ici plutôt que
- * d'écrire le chiffre en dur : les cotes se recalibrent (`npm run odds -- --suggest`) et les
- * textes suivent d'eux-mêmes.
- */
-export function oddsText(multipliers: Readonly<Record<string, number>>): Record<string, string> {
-  return Object.fromEntries(Object.entries(multipliers).map(([id, m]) => [id, String(m).replace('.', ',')]))
+const BET_TIERS: Readonly<Record<BetTier, string>> = { simple: 'Simples', intermediate: 'Combinés', advanced: 'Avancés' }
+
+const BET_TYPE_TEXTS: Readonly<Record<BetTypeId, BetTypeText>> = {
+  winner: { label: 'Vainqueur pur', description: `L'âme termine première.` },
+  top3: { label: 'Top 3', description: `L'âme termine dans les trois premières.` },
+  notTop3: { label: 'Pas dans le top 3', description: `L'âme ne termine pas dans les trois premières.` },
+  last: { label: 'Dernière place', description: `L'âme termine dernière.` },
+  podiumAnyOrder: { label: 'Top 3 dans le désordre', description: 'Les trois âmes occupent les trois premières places, dans un ordre quelconque.' },
+  twoInTop3: { label: 'Deux âmes dans le top 3', description: 'Les deux âmes terminent toutes deux dans le top 3.' },
+  duel: { label: 'Duel', description: 'La première âme termine devant la seconde.', slots: ['devant', 'derrière'] },
+  podiumExact: { label: 'Podium exact', description: 'Les trois premières places, dans cet ordre exact.', slots: ['1re', '2e', '3e'] },
+  fullRankingExact: { label: 'Classement complet exact', description: 'Toutes les positions finales, dans cet ordre exact.' },
+  winnerAndLast: { label: 'Vainqueur + dernier', description: 'La première et la dernière âme, exactement.', slots: ['vainqueur', 'dernier'] },
 }
 
-/** Remplace les {clés} d'un texte. */
-export function fill(text: string, values: Record<string, string | number>): string {
-  return text.replace(/\{(\w+)\}/g, (_, k: string) => (values[k] !== undefined ? String(values[k]) : `{${k}}`))
+const BET_REFUSALS: Readonly<Record<BetRefusal['kind'], string>> = {
+  raceFinished: 'La course est terminée.',
+  bettingClosed: 'Une âme a dépassé le seuil : plus de pari sur cette course.',
+  soulTwice: 'Une âme ne peut être désignée qu’une fois.',
+  missingSouls: 'Désignez {needed} âme{s} ({given}/{needed}).',
+  tooManySouls: 'Trop d’âmes désignées.',
+  unknownSoul: 'Âme inconnue.',
+  alreadyPlaced: 'Ce pari est déjà posé.',
+  noStake: 'Choisissez une mise.',
+  tooExpensive: 'Pas assez d’argent pour cette mise.',
 }
 
+const CANCEL_REFUSALS: Readonly<Record<CancelRefusal, string>> = {
+  raceStarted: 'La course est lancée : un pari posé ne se retire plus.',
+  notFound: 'Pari introuvable.',
+  alreadySettled: 'Ce pari est déjà réglé.',
+}
+
+const ITEM_KINDS: Readonly<Record<ItemKind, string>> = { artefact: 'Artefact', die: 'Dé', forge: 'Forge' }
+const RARITIES: Readonly<Record<Rarity, string>> = { common: 'commun', rare: 'rare', legendary: 'légendaire' }
+
+/** Ligne de journal d'un achat. `{name}` est l'objet, `{die}` le dé visé, `{n}` son numéro. */
+const PURCHASE_LOG: Readonly<Record<PurchaseLog['kind'], string>> = {
+  decap: 'Face décapée sur le {die} n°{n} : elle revaut {value}.',
+  artefactSold: 'Artefact revendu : {name}.',
+  artefactReplaced: `{name} remplace {replaced} — l'ancien est détruit.`,
+  artefactBought: 'Artefact acquis : {name}.',
+  dieAdded: '{name} rejoint le lancer : {count} dés Distance.',
+  dieReplaced: '{name} remplace le {die} n°{n}.',
+  faceForged: '{name} gravée sur le {die} n°{n}, face {value}.',
+}
+
+/** Récit d'un déplacement dans le journal. Les quatre dernières s'ajoutent à `move`. */
+const MOVE = {
+  blockedAtStart: '{who} {dist}{notes} : sur la ligne de départ, ne recule pas.',
+  move: '{who} {dist}{notes} : case {from} → {to}.',
+  notes: ' ({notes})',
+  notesSeparator: ' ; ',
+  detourBlocked: ' Couloir bloqué, se décale sur le couloir {lane}.',
+  detourOccupied: ' Case occupée, se décale sur le couloir {lane}.',
+  jump: ' Percute {souls} et saute devant.',
+  swap: ' Recule sur {soul} : échange de place ({soul} passe en {to}).',
+  crossedFinish: ` Franchit l'arrivée !`,
+} as const
+
+/** Ce qui a modifié un déplacement, cité entre parenthèses dans le journal. */
+const MOVE_NOTES: Readonly<Record<MoveNoteId, string>> = {
+  harshNegatives: 'Reculs aggravés : {value}',
+  slowWater: 'Eaux lourdes : +{value}',
+  clepsydreFlip: 'Clepsydre : {from} → +{to}',
+  clepsydreBoost: 'Clepsydre : +{from} → +{to}',
+  seal: 'Sceau du parieur : +{value}',
+  compass: 'Boussole des Limbes',
+  bite: 'Morsure',
+  riggedScales: 'Balance truquée',
+  camelPack: 'Bât de chameau',
+  cocytusChain: 'Chaîne du Cocyte',
+  magnet: 'Aimant',
+  explosive: 'Explosive',
+  explosiveSelf: 'Explosive : personne percuté',
+  stand: 'Tribune infernale',
+  trap: 'Piège',
+  boost: 'Tremplin',
+}
+
+/** Journal de la course, sous le plateau. */
+const LOG = {
+  label: 'Journal de la course',
+  title: 'Journal',
+  raceHeader: 'Cercle {circle}, course {n}/{total} — terrain « {terrain} », {souls} âmes, {columns} cases, {lanes} couloir{s}{blocked}, graine {seed}. Posez vos paris.',
+  raceHeaderBlocked: ', {n} case{s} bloquée{s}',
+  allowance: 'Le stagiaire vous avance {n} pièces pour cette course{bonus}.',
+  allowanceBonus: ' (dont {n} grâce à la {item})',
+  raceStart: 'La course commence.',
+  betPlaced: 'Pari {type} sur {souls} : mise {stake}{paid} à {mult}, rapporte {payout} si gagné.',
+  betPaid: ' (payée {cost})',
+  betCancelled: 'Pari {type} retiré : {refund} pièces rendues.',
+  betWon: 'Pari {type} ({souls}) gagné : +{net} net (mise {stake} rendue).',
+  betLost: 'Pari {type} ({souls}) perdu : −{stake}.',
+  lateBetOpen: `Œil du parieur : vous pouvez parier après avoir vu vos dés, jusqu'à la résolution.`,
+  shopOpen: 'La boutique ouvre : {n} objets en vitrine.',
+  rerolled: 'Vitrine renouvelée pour {cost} pièces.',
+  thresholdMoved: 'Seuil de pari à {pct} % dès cette course.',
+  sold: '{name} revendu : +{back} pièces.',
+  purchase: '{text} ({cost} pièces)',
+  purchaseFreeForge: `{text} — offert par le Marteau d'Héphaïstos.`,
+  holedPurse: 'Bourse percée : +{n} pièces.',
+  stand: 'Tribune infernale : +{n} pièces.',
+  standPlaced: 'Tribune infernale posée case {column}.',
+  mirrorFirst: 'Miroir de Narcisse : l’adversaire joue en premier.',
+  opponentRoll: `L'adversaire lance : {who} {dist}.`,
+  opponentReplay: `L'adversaire rejoue : {who} {dist}.`,
+  foresight: '{source} : {names}.',
+  foresightAll: 'Fouet du contremaître',
+  foresightFirst: 'Œil de Charon',
+  roll: 'Lancer : Distance {dist} — Âmes {souls}.',
+  gildedFace: 'Face dorée : +{n} pièces.',
+  tip: 'Pourboire du stagiaire : +{n} pièces.',
+  vial: 'Fiole de sang : dé n°{n} à {face} pour {cost} pièces.',
+  momentum: 'Élan : {added} ajouté, le dé n°{n} vaut {face}.',
+  lockOff: 'Verrou de Minos levé.',
+  lockOn: 'Verrou de Minos : le dé n°{n} gardera {face}.',
+  doubled: `Pièce à deux faces : mises doublées (−{cost} pièces). L'adversaire lance une paire de plus.`,
+  dieCost: '{name} : −{cost} pièces pour cette association.',
+  dieUnpaid: `{name} : pas assez d'argent, la face vaut 0.`,
+  angelReplay: `L'Ange rejoue le dernier tour.`,
+  raceEnd: `Une âme a franchi l'arrivée : fin de course au tour {turn}.`,
+  bookRefund: 'Livre des comptes : {n} pièces remboursées.',
+  balmRefund: 'Baume du perdant : {n} pièces rendues sur les mises perdues.',
+  tally: 'Bilan des paris : {net}. Argent : {money}.',
+} as const
+
 /**
- * Marque de pluriel à passer à `fill` sous la clé `s`, pour les phrases qui comptent quelque
- * chose : « recule de {n} case{s} ». Le français accorde à partir de deux, zéro reste au
- * singulier — mais aucune de ces phrases ne s'écrit avec zéro, elles ne sont affichées que
- * lorsqu'il y a quelque chose à annoncer.
+ * Libellés d'écran qui n'appartiennent à aucun des groupes ci-dessus : titres de panneaux,
+ * intitulés lus par les lecteurs d'écran, boutons. Rangés par panneau.
  */
-export function plural(n: number): string {
-  return n > 1 ? 's' : ''
+const UI = {
+  menu: { noRun: 'Aucune évasion en cours', devTitle: 'Menu développeur (Ctrl+Maj+D)' },
+  bets: {
+    panel: 'Paris',
+    placed: 'Paris posés',
+    open: 'Poser un pari',
+    submit: 'Poser le pari',
+    none: 'Aucun pari pour cette course.',
+    needOne: 'Au moins un pari pour lancer la course.',
+    lastCall: 'Dernier moment pour parier ce tour.',
+    draft: '{type} · mise {stake} à {mult}.',
+    raceOver: 'Course terminée : les paris sont réglés.',
+    rolled: 'Les dés sont lancés : les paris reprennent au prochain tour.',
+    resolving: 'Paris suspendus pendant la résolution.',
+    shopNeedsBet: 'La boutique n’ouvre sa caisse qu’après un premier pari',
+    raceNeedsBet: 'Lancer la course — pose d’abord un pari',
+    noBetYet: 'Il faut au moins un pari initial',
+    diceRolled: 'Les dés sont lancés : plus de pari avant le prochain tour.',
+    waitResolution: 'Attendez la fin de la résolution.',
+    windowClosed: 'Guichet fermé ce tour : {type} est indisponible.',
+    counterCut: 'Ce guichet prend sa part : il faut {cost} pièces pour miser {stake}.',
+    thresholdPassed: 'Une âme a dépassé le seuil de {pct} % : plus de pari.',
+    pickMore: 'Choisis encore {n} âme{s} — dans le panneau ou en cliquant les jetons du plateau.',
+    decayed: ' Cotes décotées : course à {pct} %.',
+  },
+  ticket: {
+    soul: 'Âme',
+    souls: 'Âmes',
+    soulsOrdered: 'Âmes, dans l’ordre',
+    ifWon: '+{net} si gagné',
+    won: 'gagné +{net}',
+    lost: 'perdu −{stake}',
+    turn: ' · tour {n}',
+    coins: '{n} pièces',
+    bestBet: '+{n} pièces',
+  },
+  board: { label: 'Plateau de course', start: 'Départ', finish: 'Arrivée', souls: 'Âmes en course' },
+  play: {
+    player: 'Joueur',
+    opponent: 'Adversaire',
+    soulDice: 'Dés Âme',
+    distanceDice: 'Dés Distance',
+    roll: 'Lancer les dés',
+    resolve: 'Résoudre',
+    reset: 'Réinitialiser',
+    cumul: 'cumul de {n} dés',
+    betsDone: 'Paris posés. Passez par la boutique si vous voulez, puis lancez la course.',
+    rolling: 'Les dés roulent…',
+    ordered: 'Ordre fixé. Résolvez, ou réordonnez la file (glisser, ← → ×) avant.',
+    pickDistance: 'Choisissez maintenant un dé Distance à lui associer.',
+    resolving: 'Résolution de vos combinaisons…',
+    finished: 'Course terminée.',
+    prepNoBet: 'Posez au moins un pari initial pour ouvrir la boutique et lancer la course.',
+    idle: 'Tour {n} — lancez les dés.{lastCall}',
+    idleLastCall: ' Dernier moment pour parier ce tour.',
+    pairing: `Glissez (ou cliquez) un dé Âme sur un dé Distance. L'ordre des cartes est l'ordre de résolution ({n}/{total}){unused}.`,
+    unusedOne: ' — 1 dé Âme restera inutilisé',
+    unusedMany: ' — {n} dés Âme resteront inutilisés',
+    opponentTurn: `Tour de l'adversaire…`,
+    placedCount: 'Paris posés ({n})',
+  },
+  game: { steps: 'Étapes', auto: 'auto', autoTitle: 'Mode test : enchaîne les tours tout seul', activeArtefacts: 'Artefacts actifs', noArtefact: 'Aucun artefact. La boutique en propose entre les paris et la course.' },
+  inventory: { label: 'Inventaire', distanceDice: 'Dés Distance', baseDie: 'Dé de base' },
+  ranking: { final: 'Classement final', tally: 'Bilan des paris', none: 'Aucun pari sur cette course.' },
+  shop: { closed: 'La boutique est fermée.', notInWindow: 'Objet absent de la vitrine.', notEnoughMoney: 'Pas assez d’argent.', alreadyOwned: 'Déjà possédé.', noFaceLeft: 'Plus aucune face à forger.', sellFailed: 'Revente impossible.', decapCost: 'Le décapage coûte {cost} pièces.', pickDie: 'quel dé remplacer ?', pickFace: 'quelle face forger ?', alreadyForged: 'Déjà forgée', suggested: 'Cible conseillée', slotsFull: 'Emplacements pleins', afterBets: 'Paris posés : ce qui reste est à dépenser… ou à garder.', till: 'Le stagiaire tient la caisse.' },
+  /** Refus d'un objet déclenché à la main, depuis l'écran de course. */
+  artefacts: {
+    notOwned: 'Artefact non possédé.',
+    decapFailed: 'Décapage impossible.',
+    noVial: 'Vous ne possédez pas la Fiole de sang.',
+    vialUsed: 'La Fiole a déjà servi ce tour.',
+    diePaired: 'Ce dé est déjà associé.',
+    vialCash: 'Il faut {cost} pièces comptant : la Fiole ne fait pas crédit.',
+    noMomentumFace: `Ce dé n'a pas de face d'élan.`,
+    momentumUsed: 'Élan déjà pris sur ce dé.',
+    dieNotFound: 'Dé introuvable.',
+    noLock: 'Vous ne possédez pas le Verrou de Minos.',
+    noCoin: 'Vous ne possédez pas la Pièce à deux faces.',
+    coinUsed: 'La pièce a déjà été jetée cette course.',
+    nothingToDouble: 'Aucun pari ouvert à doubler.',
+    doubleCost: 'Il faut {cost} pièces pour doubler toutes les mises.',
+    noStand: 'Vous ne possédez pas la Tribune infernale.',
+    badCell: 'Case impossible : hors départ, hors zone de fin, et libre.',
+  },
+  map: { crossed: 'Cercle traversé.' },
+  dialogue: { end: 'Terminer' },
+} as const
+
+/**
+ * Règles d'écriture du français : « 23e », pluriel à partir de deux, virgule décimale.
+ * Le zéro reste au singulier — aucune de ces phrases ne s'écrit avec zéro, elles ne sont
+ * affichées que lorsqu'il y a quelque chose à annoncer.
+ */
+const fmt: Fmt = {
+  ordinal: (n) => `${n}e`,
+  plural: (n) => (n > 1 ? 's' : ''),
+  odds: (m) => String(m).replace('.', ','),
+}
+
+export const FR = {
+  GAME_NAME,
+  SPEAKERS,
+  MENU,
+  INTRO,
+  BOSS_ANNOUNCE,
+  BOSS_ANNOUNCE_NEXT,
+  BOSS_ANNOUNCE_SELF,
+  DEMON_RANKS,
+  CIRCLES,
+  ENDINGS,
+  HUD,
+  MAP,
+  STATS,
+  COLLECTION,
+  UNLOCK,
+  DEBT,
+  OPTIONS,
+  BETS,
+  GAUGE,
+  SHOP,
+  ITEMS,
+  RACE,
+  BET_LIVE,
+  BOARD,
+  RESULTS,
+  GLOSSARY,
+  HELP,
+  DEV,
+  BOSS_EFFECTS,
+  BET_TIERS,
+  BET_TYPE_TEXTS,
+  BET_REFUSALS,
+  CANCEL_REFUSALS,
+  ITEM_KINDS,
+  RARITIES,
+  PURCHASE_LOG,
+  MOVE,
+  MOVE_NOTES,
+  LOG,
+  UI,
+  fmt,
 }

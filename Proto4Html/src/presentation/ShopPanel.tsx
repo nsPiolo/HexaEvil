@@ -6,7 +6,8 @@ import type { Inventory as Inv, PurchaseTarget } from '../core/shop/shop'
 import { FaceChip } from './Inventory'
 import { ItemArt } from './ItemArt'
 import { MoneyGauge } from './MoneyGauge'
-import { SHOP, fill } from './texts'
+import { HUD, ITEM_KINDS, RARITIES, SHOP, UI, fill } from './texts'
+import { dieName } from './messages'
 import { priceFor, rerollCostFor } from './useRace'
 
 interface Props {
@@ -36,8 +37,6 @@ interface Props {
   onClose?: () => void
 }
 
-const KIND_LABEL = { artefact: 'Artefact', die: 'Dé', forge: 'Forge' } as const
-const RARITY_LABEL = { common: 'commun', rare: 'rare', legendary: 'légendaire' } as const
 
 export function ShopPanel({ vitrine, unlocked, money, price, staked, raceIndex, inventory, forgeFree, level, onSell, onDecap, pending, onBuy, onCancel, onReroll, onLeave, onGoToBets, onClose }: Props) {
   const [error, setError] = useState<string | null>(null)
@@ -82,8 +81,8 @@ export function ShopPanel({ vitrine, unlocked, money, price, staked, raceIndex, 
   const header = (
     <header className="bp-head">
       <div>
-        <h2 className="serif">Boutique</h2>
-        <p className="muted">{unlocked ? 'Paris posés : ce qui reste est à dépenser… ou à garder.' : 'Le stagiaire tient la caisse.'}</p>
+        <h2 className="serif">{HUD.shop}</h2>
+        <p className="muted">{unlocked ? UI.shop.afterBets : UI.shop.till}</p>
       </div>
       <div className="bp-money">
         <span className="money">
@@ -92,7 +91,7 @@ export function ShopPanel({ vitrine, unlocked, money, price, staked, raceIndex, 
         <MoneyGauge money={money} price={price} staked={staked} />
       </div>
       {onClose && (
-        <button type="button" className="bp-close" onClick={onClose} aria-label="Fermer">
+        <button type="button" className="bp-close" onClick={onClose} aria-label={HUD.close}>
           ×
         </button>
       )}
@@ -101,7 +100,7 @@ export function ShopPanel({ vitrine, unlocked, money, price, staked, raceIndex, 
 
   if (!unlocked) {
     return (
-      <section className="shop" aria-label="Boutique">
+      <section className="shop" aria-label={HUD.shop}>
         {header}
         <div className="shop-empty">
           <p>{SHOP.emptyState}</p>
@@ -114,13 +113,13 @@ export function ShopPanel({ vitrine, unlocked, money, price, staked, raceIndex, 
   }
 
   return (
-    <section className="shop" aria-label="Boutique" onPointerDown={onPointerDown}>
+    <section className="shop" aria-label={HUD.shop} onPointerDown={onPointerDown}>
       {header}
 
       {pendingItem && (
         <div className="shop-target">
           <h3>
-            {pendingItem.name} — {pendingItem.kind === 'artefact' ? SHOP.replaceArtefact : pendingItem.kind === 'die' ? 'quel dé remplacer ?' : 'quelle face forger ?'}
+            {pendingItem.name} — {pendingItem.kind === 'artefact' ? SHOP.replaceArtefact : pendingItem.kind === 'die' ? UI.shop.pickDie : UI.shop.pickFace}
           </h3>
           {/* Emplacements pleins : on choisit l'artefact sacrifié. Il est détruit, pas revendu. */}
           {pendingItem.kind === 'artefact' && (
@@ -141,7 +140,7 @@ export function ShopPanel({ vitrine, unlocked, money, price, staked, raceIndex, 
             {inventory.dice.map((d, di) => (
               <div key={di} className="shop-die">
                 <span className="inv-die-name">
-                  n°{di + 1} · {d.name}
+                  n°{di + 1} · {dieName(d.kind)}
                 </span>
                 {pendingItem.kind === 'die' ? (
                   <>
@@ -172,7 +171,7 @@ export function ShopPanel({ vitrine, unlocked, money, price, staked, raceIndex, 
                         type="button"
                         className={'face-btn' + (f.value === hintValue && !f.altered ? ' face-btn-hint' : '')}
                         disabled={!!f.altered}
-                        title={f.altered ? 'Déjà forgée' : f.value === hintValue ? 'Cible conseillée' : undefined}
+                        title={f.altered ? UI.shop.alreadyForged : f.value === hintValue ? UI.shop.suggested : undefined}
                         onClick={() => attempt(pendingItem.id, { dieIndex: di, faceIndex: fi })}
                       >
                         <FaceChip face={f} />
@@ -216,7 +215,7 @@ export function ShopPanel({ vitrine, unlocked, money, price, staked, raceIndex, 
               d.faces.some((f) => f.altered) ? (
                 <div key={di} className="shop-die">
                   <span className="inv-die-name">
-                    n°{di + 1} · {d.name}
+                    n°{di + 1} · {dieName(d.kind)}
                   </span>
                   <div className="shop-faces">
                     {d.faces.map((f, fi) =>
@@ -248,8 +247,8 @@ export function ShopPanel({ vitrine, unlocked, money, price, staked, raceIndex, 
                   {SHOP.risk[risk]}
                 </div>
                 <header>
-                  <span className="shop-kind">{KIND_LABEL[item.kind]}</span>
-                  <span className={`shop-rarity rarity-${item.rarity}`}>{RARITY_LABEL[item.rarity]}</span>
+                  <span className="shop-kind">{ITEM_KINDS[item.kind]}</span>
+                  <span className={`shop-rarity rarity-${item.rarity}`}>{RARITIES[item.rarity]}</span>
                   {/* Emplacement réservé au LockBadge (déblocage par rang, à venir avec les personnalités). */}
                 </header>
                 <div className="shop-body">
@@ -278,7 +277,7 @@ export function ShopPanel({ vitrine, unlocked, money, price, staked, raceIndex, 
                     data-state={confirm ? 'confirm' : 'buy'}
                     disabled={blocked}
                     onClick={() => clickBuy(item, itemPrice)}
-                    title={item.kind === 'artefact' && artefactsFull ? 'Emplacements pleins' : confirm ? SHOP.confirmTitle : undefined}
+                    title={item.kind === 'artefact' && artefactsFull ? UI.shop.slotsFull : confirm ? SHOP.confirmTitle : undefined}
                   >
                     {confirm ? fill(SHOP.confirm, { price: itemPrice }) : SHOP.buy}
                   </button>

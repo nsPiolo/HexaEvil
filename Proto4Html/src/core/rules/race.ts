@@ -95,7 +95,11 @@ export interface Move {
   distance: number
   parts: readonly { soulDie: number; distanceDie: number; distance: number }[]
   /** Modificateurs appliqués (artefacts, faces forgées), pour le journal. */
-  notes: readonly string[]
+  /**
+   * Ce qui a modifié ce déplacement, en codes : l'écran en fait une phrase dans sa langue
+   * (`noteText`, presentation/messages.ts). Le moteur ne rédige pas.
+   */
+  notes: readonly MoveNote[]
   /**
    * Effets des faces qui composent ce déplacement et qui se résolvent contre le plateau
    * (`BOARD_EFFECTS`) : `applyMove` en a besoin, une distance seule ne les porte pas.
@@ -109,7 +113,36 @@ export interface Move {
 }
 
 /** Déplacement nu, pour les appels qui n'ont ni dés ni effets derrière eux. */
-export function simpleMove(source: MoveSource, soul: SoulId, distance: number, notes: readonly string[] = []): Move {
+/**
+ * Identifiants des mentions portées par un déplacement. `value` accompagne celles qui
+ * annoncent un chiffre ; `from`/`to` la Clepsydre, qui dit la face avant et après.
+ */
+export type MoveNoteId =
+  | 'harshNegatives'
+  | 'slowWater'
+  | 'clepsydreFlip'
+  | 'clepsydreBoost'
+  | 'seal'
+  | 'compass'
+  | 'bite'
+  | 'riggedScales'
+  | 'camelPack'
+  | 'cocytusChain'
+  | 'magnet'
+  | 'explosive'
+  | 'explosiveSelf'
+  | 'stand'
+  | 'trap'
+  | 'boost'
+
+export interface MoveNote {
+  id: MoveNoteId
+  value?: number
+  from?: number
+  to?: number
+}
+
+export function simpleMove(source: MoveSource, soul: SoulId, distance: number, notes: readonly MoveNote[] = []): Move {
   return { source, soul, distance, parts: [], notes, effects: [] }
 }
 
@@ -209,7 +242,7 @@ function resolveRollFaces(faces: readonly Face[], dice: readonly DistanceDie[], 
     if (face.effect !== 'willOWisp') return face
     const die = dice[i]
     if (!die) return face
-    const again = at(die.faces, rng.int(die.faces.length), `faces du ${die.name}`)
+    const again = at(die.faces, rng.int(die.faces.length), `faces du dé ${die.kind}`)
     return again.effect === 'willOWisp' ? { ...again, value: 2 } : again
   })
   return rolled.map((face, i) => {
@@ -237,7 +270,7 @@ export interface RollOptions {
 
 /** Lancer du joueur avec ses propres dés Distance (forgés ou spéciaux). */
 export function rollPlayerDice(config: RaceConfig, soulCount: number, rng: Rng, dice: readonly DistanceDie[], options: RollOptions = {}): Roll {
-  const raw: Face[] = dice.map((d, i) => options.locked?.[i] ?? at(d.faces, rng.int(d.faces.length), `faces du ${d.name}`))
+  const raw: Face[] = dice.map((d, i) => options.locked?.[i] ?? at(d.faces, rng.int(d.faces.length), `faces du dé ${d.kind}`))
   const faces = resolveRollFaces(raw, dice, rng)
   const count = options.soulDice ?? config.dice.soulDice
   const drawSouls = (): SoulId[] => Array.from({ length: count }, () => rng.int(soulCount))
@@ -306,29 +339,29 @@ export function bossDistanceMods(effects: readonly BossEffect[]): { harshNegativ
   return mods
 }
 
-function effectiveDistance(face: Face, soul: SoulId, ctx: MoveContext | undefined, notes: string[]): number {
+function effectiveDistance(face: Face, soul: SoulId, ctx: MoveContext | undefined, notes: MoveNote[]): number {
   let d = face.value
   if (!ctx) return d
   // Pouvoir de boss d'abord : il pèse sur la face sortie, avant tout ce que le joueur y ajoute.
   if (ctx.boss?.harshNegatives && d < 0) {
     d -= ctx.boss.harshNegatives
-    notes.push(`Reculs aggravés : ${d}`)
+    notes.push({ id: 'harshNegatives', value: d })
   }
   if (ctx.boss?.slowWater && d > 0) {
     d = Math.max(0, d - ctx.boss.slowWater)
-    notes.push(`Eaux lourdes : +${d}`)
+    notes.push({ id: 'slowWater', value: d })
   }
   if (ctx.clepsydre && ctx.turn === 1) {
     if (d < 0) {
-      notes.push(`Clepsydre : ${d} → +${-d}`)
+      notes.push({ id: 'clepsydreFlip', from: d, to: -d })
       d = -d
     } else if (d > 0) {
-      notes.push(`Clepsydre : +${d} → +${d + 1}`)
+      notes.push({ id: 'clepsydreBoost', from: d, to: d + 1 })
       d += 1
     }
   }
   if (face.effect === 'betSeal' && ctx.bettedSouls.has(soul)) {
-    notes.push(`Sceau du parieur : +${ctx.sealBonus}`)
+    notes.push({ id: 'seal', value: ctx.sealBonus })
     d += ctx.sealBonus
   }
   return d
@@ -344,7 +377,7 @@ export function buildMoves(roll: Roll, combinations: readonly Combination[], sou
   for (const c of combinations) {
     const soul = at(roll.soul, c.soulDie, 'dé Âme')
     const face = roll.faces[c.distanceDie] ?? plainFace(at(roll.distance, c.distanceDie, 'dé Distance'))
-    const notes: string[] = []
+    const notes: MoveNote[] = []
     const distance = effectiveDistance(face, soul, ctx, notes)
     const part = { soulDie: c.soulDie, distanceDie: c.distanceDie, distance }
     const effects = face.effect && BOARD_EFFECTS.includes(face.effect) ? [face.effect] : []
@@ -365,7 +398,7 @@ export function buildMoves(roll: Roll, combinations: readonly Combination[], sou
 export function unusedSoulMoves(roll: Roll, combinations: readonly Combination[]): Move[] {
   const used = new Set(combinations.map((c) => c.soulDie))
   return roll.soul.flatMap((soul, idx) =>
-    used.has(idx) ? [] : [{ source: 'artefact' as const, soul, distance: 1, parts: [{ soulDie: idx, distanceDie: -1, distance: 1 }], notes: ['Boussole des Limbes'], effects: [] }],
+    used.has(idx) ? [] : [{ source: 'artefact' as const, soul, distance: 1, parts: [{ soulDie: idx, distanceDie: -1, distance: 1 }], notes: [{ id: 'compass' }], effects: [] }],
   )
 }
 
@@ -577,7 +610,7 @@ export function applyMove(state: RaceState, move: Move, rules: MoveRules = {}): 
       collision = { kind: 'jump', over }
       if (!move.induced) {
         // Boss Cerbère : la percutée est mordue et recule après le saut.
-        if (rules.bite) for (const id of over) follow.push({ ...simpleMove('artefact', id, -rules.bite, ['Morsure']), induced: true })
+        if (rules.bite) for (const id of over) follow.push({ ...simpleMove('artefact', id, -rules.bite, [{ id: 'bite', value: rules.bite }]), induced: true })
         // Boss Le Porte-chaînes : la percutée est immobilisée pour les tours suivants.
         if (rules.chainTurns) chained = [...chained, ...over.map((id) => ({ soul: id, untilTurn: state.turn + rules.chainTurns! }))]
       }
@@ -609,7 +642,7 @@ export function applyMove(state: RaceState, move: Move, rules: MoveRules = {}): 
           other.lane = fromLane
         }
         // Balance truquée : l'âme échangée gagne une case de plus.
-        if (rules.balance && !move.induced) follow.push({ ...simpleMove('artefact', other.id, 1, ['Balance truquée']), induced: true })
+        if (rules.balance && !move.induced) follow.push({ ...simpleMove('artefact', other.id, 1, [{ id: 'riggedScales' }]), induced: true })
         // Chaîne du Coccyte : les deux âmes restent liées jusqu'à la fin du tour.
         if (rules.chaine) links = [...links, [mover.id, other.id] as const]
       }
@@ -631,29 +664,29 @@ export function applyMove(state: RaceState, move: Move, rules: MoveRules = {}): 
     // Partenaires liés ou fusionnés : ils suivent de la même distance.
     for (const id of partnersOf(state, move.soul)) {
       if (id === move.soul || distance === 0) continue
-      follow.push({ ...simpleMove('artefact', id, distance, [state.fusion ? 'Bât de chameau' : 'Chaîne du Cocyte']), induced: true })
+      follow.push({ ...simpleMove('artefact', id, distance, [{ id: state.fusion ? 'camelPack' : 'cocytusChain' }]), induced: true })
     }
     // Face Aimant : l'âme juste derrière prend la case libérée.
     if (move.effects.includes('magnet') && to > from) {
       const behind = soulBehind(state, from, move.soul)
-      if (behind) follow.push({ ...simpleMove('artefact', behind.id, 1, ['Aimant']), induced: true })
+      if (behind) follow.push({ ...simpleMove('artefact', behind.id, 1, [{ id: 'magnet' }]), induced: true })
     }
     // Face Explosive : souffle les voisines de la case d'arrivée, ou l'âme elle-même si elle n'a percuté personne.
     if (move.effects.includes('explosive')) {
       if (collision) {
         for (const s of state.souls) {
           if (s.id === move.soul || s.position === 0) continue
-          if (s.position === to - 1 || s.position === to + 1) follow.push({ ...simpleMove('artefact', s.id, -1, ['Explosive']), induced: true })
+          if (s.position === to - 1 || s.position === to + 1) follow.push({ ...simpleMove('artefact', s.id, -1, [{ id: 'explosive' }]), induced: true })
         }
       } else {
-        follow.push({ ...simpleMove('artefact', move.soul, -1, ['Explosive : personne percuté']), induced: true })
+        follow.push({ ...simpleMove('artefact', move.soul, -1, [{ id: 'explosiveSelf' }]), induced: true })
       }
     }
     // Tribune infernale : l'âme qui s'y arrête paie le spectacle et repart poussée.
     const tribune = state.tribune
     if (rules.tribune && tribune && to === tribune.column && toLane === tribune.lane) {
       coins += rules.tribune.coins
-      if (rules.tribune.push > 0) follow.push({ ...simpleMove('artefact', move.soul, rules.tribune.push, ['Tribune infernale']), induced: true })
+      if (rules.tribune.push > 0) follow.push({ ...simpleMove('artefact', move.soul, rules.tribune.push, [{ id: 'stand' }]), induced: true })
     }
     // Cases spéciales du terrain (GDD §2.2) : elles n'agissent qu'à l'arrêt, pas au passage.
     const cell = specialAt(track, to, toLane)
@@ -661,8 +694,8 @@ export function applyMove(state: RaceState, move: Move, rules: MoveRules = {}): 
       // La case payante ne verse que sur une âme pariée : on encaisse sur son propre ticket,
       // pas sur la course des autres.
       if (cell.kind === 'gold' && rules.bettedSouls?.has(move.soul)) coins += cell.value
-      if (cell.kind === 'trap') follow.push({ ...simpleMove('artefact', move.soul, -cell.value, ['Piège']), induced: true })
-      if (cell.kind === 'boost') follow.push({ ...simpleMove('artefact', move.soul, cell.value, ['Tremplin']), induced: true })
+      if (cell.kind === 'trap') follow.push({ ...simpleMove('artefact', move.soul, -cell.value, [{ id: 'trap', value: cell.value }]), induced: true })
+      if (cell.kind === 'boost') follow.push({ ...simpleMove('artefact', move.soul, cell.value, [{ id: 'boost', value: cell.value }]), induced: true })
     }
   }
 

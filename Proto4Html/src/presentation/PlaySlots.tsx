@@ -6,7 +6,8 @@ import { opponentRolls, type Phase, type RaceUi } from './useRace'
 import { dieTilt, distDieStyle, fmtDistance, hasDistArt, soulColor, soulDieStyle } from './souls'
 import { FaceChip } from './Inventory'
 import { BetList } from './BetPanel'
-import { GLOSSARY, HUD, RACE, fill } from './texts'
+import { GLOSSARY, HUD, RACE, UI, fill } from './texts'
+import { dieName } from './messages'
 
 function soulName(race: RaceState, id: number | undefined): string {
   return id === undefined ? '?' : (race.souls[id]?.name ?? `#${id}`)
@@ -21,7 +22,7 @@ export function OpponentSlot({ ui }: { ui: RaceUi }) {
   const pairs = opponentRolls(ui)
   const thin = phase !== 'opponent' && !opponentRoll
   return (
-    <section className={'slot slot-opponent' + (thin ? ' slot-opponent-thin' : '')} aria-label="Adversaire" data-state={thin ? 'thin' : 'full'}>
+    <section className={'slot slot-opponent' + (thin ? ' slot-opponent-thin' : '')} aria-label={UI.play.opponent} data-state={thin ? 'thin' : 'full'}>
       {/* Le nombre de paires n'est pas fixe : le Fouet, la Pièce à deux faces et certains
           pouvoirs de boss en ajoutent. L'étiquette dit ce qui va réellement tomber ce tour-ci. */}
       <span className="slot-label">
@@ -197,21 +198,21 @@ export function PlayerSlot({ ui, speed, preview, highlightSoul, onHoverSoul, onS
   const hint = (): string => {
     switch (phase) {
       case 'prep':
-        return ui.bets.length === 0 ? 'Posez au moins un pari initial pour ouvrir la boutique et lancer la course.' : 'Paris posés. Passez par la boutique si vous voulez, puis lancez la course.'
+        return ui.bets.length === 0 ? UI.play.prepNoBet : UI.play.betsDone
       case 'idle':
-        return `Tour ${race.turn} — lancez les dés.${bettingClosed(race) ? '' : ' Dernier moment pour parier ce tour.'}`
+        return fill(UI.play.idle, { n: race.turn, lastCall: bettingClosed(race) ? '' : UI.play.idleLastCall })
       case 'rolling':
-        return 'Les dés roulent…'
+        return UI.play.rolling
       case 'pairing':
-        if (complete) return 'Ordre fixé. Résolvez, ou réordonnez la file (glisser, ← → ×) avant.'
-        if (selectedSoulDie !== null) return 'Choisissez maintenant un dé Distance à lui associer.'
-        return `Glissez (ou cliquez) un dé Âme sur un dé Distance. L'ordre des cartes est l'ordre de résolution (${combinations.length}/${distCount})${unused > 0 ? ` — ${unused} dé Âme rester${unused > 1 ? 'ont' : 'a'} inutilisé${unused > 1 ? 's' : ''}` : ''}.`
+        if (complete) return UI.play.ordered
+        if (selectedSoulDie !== null) return UI.play.pickDistance
+        return fill(UI.play.pairing, { n: combinations.length, total: distCount, unused: unused === 0 ? '' : unused === 1 ? UI.play.unusedOne : fill(UI.play.unusedMany, { n: unused }) })
       case 'resolving':
-        return 'Résolution de vos combinaisons…'
+        return UI.play.resolving
       case 'opponent':
-        return "Tour de l'adversaire…"
+        return UI.play.opponentTurn
       case 'finished':
-        return 'Course terminée.'
+        return UI.play.finished
     }
     return ''
   }
@@ -219,12 +220,12 @@ export function PlayerSlot({ ui, speed, preview, highlightSoul, onHoverSoul, onS
   // Préparation : pas de dés à montrer, le panneau de paris occupe cet espace (spec 08/C2). Version courte.
   if (prep) {
     return (
-      <section className="slot slot-player slot-player-prep" aria-label="Joueur">
+      <section className="slot slot-player slot-player-prep" aria-label={UI.play.player}>
         <p className="hint">{hint()}</p>
         <div className="actions">
           {/* Même bouton que dans le pied du panneau de paris (`.bp-start`) : corne, halo et
               états sont partagés, replié ou déplié le lancement a la même tête. */}
-          <button type="button" className="btn bp-start" disabled={ui.bets.length === 0} onClick={onStart} title={ui.bets.length === 0 ? 'Il faut au moins un pari initial' : undefined}>
+          <button type="button" className="btn bp-start" disabled={ui.bets.length === 0} onClick={onStart} title={ui.bets.length === 0 ? UI.bets.noBetYet : undefined}>
             <span className="bp-start-glow" aria-hidden="true" />
             <span className="bp-start-art" aria-hidden="true" />
             <span className="bp-start-label">{HUD.toRace}</span>
@@ -235,12 +236,12 @@ export function PlayerSlot({ ui, speed, preview, highlightSoul, onHoverSoul, onS
   }
 
   return (
-    <section className="slot slot-player" aria-label="Joueur" onPointerDown={touch} onKeyDown={touch}>
+    <section className="slot slot-player" aria-label={UI.play.player} onPointerDown={touch} onKeyDown={touch}>
       <p className="hint">{hint()}</p>
       <div className="slot-body">
         <div className="slot-dice">
           <div className="dice-group">
-            <h3>Dés Âme</h3>
+            <h3>{UI.play.soulDice}</h3>
             <div className="dice-row">
               {Array.from({ length: soulCount }, (_, i) => {
                 const id = roll?.soul[i]
@@ -279,7 +280,7 @@ export function PlayerSlot({ ui, speed, preview, highlightSoul, onHoverSoul, onS
             </div>
           </div>
           <div className="dice-group">
-            <h3>Dés Distance</h3>
+            <h3>{UI.play.distanceDice}</h3>
             <div className="dice-row">
               {Array.from({ length: distCount }, (_, i) => {
                 const d = roll?.distance[i]
@@ -304,7 +305,7 @@ export function PlayerSlot({ ui, speed, preview, highlightSoul, onHoverSoul, onS
                       style={{ ...distDieStyle(die?.kind), ['--die-tilt' as string]: dieTilt(i + 50) }}
                       disabled={!pairing || selectedSoulDie === null || order >= 0}
                       onClick={() => onPickDistance(i)}
-                      title={drag?.kind === 'soul' && order < 0 ? RACE.dropHere : die?.name}
+                      title={drag?.kind === 'soul' && order < 0 ? RACE.dropHere : die ? dieName(die.kind) : undefined}
                       onDragOver={pairing && order < 0 ? allowDrop('soul', `dist-${i}`) : undefined}
                       onDragLeave={() => over === `dist-${i}` && setOver(null)}
                       onDrop={pairing && order < 0 ? dropOnDist(i) : undefined}
@@ -335,7 +336,7 @@ export function PlayerSlot({ ui, speed, preview, highlightSoul, onHoverSoul, onS
                         )}
                       </span>
                     )}
-                    {die && die.kind !== 'base' && <span className="die-name">{die.name}</span>}
+                    {die && die.kind !== 'base' && <span className="die-name">{dieName(die.kind)}</span>}
                     {die && die.kind === 'base' && die.faces.some((f) => f.altered) && (
                       <span className="die-name">
                         {die.faces.filter((f) => f.altered).map((f, k) => <FaceChip key={k} face={f} dim />)}
@@ -379,7 +380,7 @@ export function PlayerSlot({ ui, speed, preview, highlightSoul, onHoverSoul, onS
                     <span className="combo-soul" style={{ color: id !== undefined ? soulColor(id) : undefined }}>{soulName(race, id)}</span>
                     <span className="combo-dist">{fmtDistance(card.total)}</span>
                     {card.parts.length > 1 && (
-                      <span className="combo-parts" title={GLOSSARY.combinaison} aria-label={`cumul de ${card.parts.length} dés`}>
+                      <span className="combo-parts" title={GLOSSARY.combinaison} aria-label={fill(UI.play.cumul, { n: card.parts.length })}>
                         {card.parts.map((p, k) => (
                           <span key={k} className={'face face-dim' + (p < 0 ? ' face-neg' : '')}>
                             {fmtDistance(p)}
@@ -407,8 +408,8 @@ export function PlayerSlot({ ui, speed, preview, highlightSoul, onHoverSoul, onS
             </ol>
           )}
         </div>
-        <aside className="slot-bets" aria-label="Paris posés">
-          <h3>Paris posés ({ui.bets.length})</h3>
+        <aside className="slot-bets" aria-label={UI.bets.placed}>
+          <h3>{fill(UI.play.placedCount, { n: ui.bets.length })}</h3>
           <BetList race={race} bets={ui.bets} compact live />
         </aside>
       </div>
@@ -417,14 +418,14 @@ export function PlayerSlot({ ui, speed, preview, highlightSoul, onHoverSoul, onS
           <button type="button" className="btn btn-primary bp-roll" onClick={onRoll} title={fill(HUD.tabShortcut, { key: RACE.rollKey })}>
             <span className="bp-roll-art" aria-hidden="true" />
             <span className="bp-roll-label">
-              Lancer les dés <span className="key-hint" aria-hidden="true">{RACE.rollKey}</span>
+              {UI.play.roll} <span className="key-hint" aria-hidden="true">{RACE.rollKey}</span>
             </span>
           </button>
         )}
         {pairing && (
           <>
-            <button type="button" className={'btn btn-primary' + (pulse ? ' btn-pulse' : '')} data-state={pulse ? 'pulse' : 'idle'} disabled={!complete} onClick={onResolve}>Résoudre</button>
-            <button type="button" className="btn" disabled={combinations.length === 0} onClick={onReset}>Réinitialiser</button>
+            <button type="button" className={'btn btn-primary' + (pulse ? ' btn-pulse' : '')} data-state={pulse ? 'pulse' : 'idle'} disabled={!complete} onClick={onResolve}>{UI.play.resolve}</button>
+            <button type="button" className="btn" disabled={combinations.length === 0} onClick={onReset}>{UI.play.reset}</button>
           </>
         )}
       </div>

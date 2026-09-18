@@ -2,7 +2,7 @@ import { isBlocked, isInBetZone, specialAt, type MoveResult, type RaceState } fr
 import { blockedArt, cellArt } from './art'
 import { fmtDistance, soulColor } from './souls'
 import { bettingClosed } from '../core/rules/bets'
-import { BETS, BET_LIVE, BOARD, GLOSSARY, RACE, fill, plural } from './texts'
+import { BETS, BET_LIVE, BOARD, GLOSSARY, RACE, UI, fill, plural } from './texts'
 
 /** Sélection d'âmes pour le ticket de pari, depuis le plateau (spec 03/C2). */
 export interface BoardSelection {
@@ -117,11 +117,11 @@ export function Board({ race, lastResult, activeSoul, highlightSoul = null, onHo
   })
 
   return (
-    <section className={'board' + (selection ? ' board-selecting' : '')} style={{ ['--cells' as string]: track.totalCells, ['--lanes' as string]: lanes }} aria-label="Plateau de course">
+    <section className={'board' + (selection ? ' board-selecting' : '')} style={{ ['--cells' as string]: track.totalCells, ['--lanes' as string]: lanes }} aria-label={UI.board.label}>
       <div className="cells cells-head">
         {cols.map((c) => (
           <div key={c} className={cellClass(c, null) + ' head' + (c === track.betThresholdColumn && closed ? ' head-closed' : '')} title={c === track.betThresholdColumn ? (closed ? BOARD.zoneClosedTitle : GLOSSARY.zoneDeFin) : tieColumns.includes(c) ? BOARD.tieColumn : undefined}>
-            {c === 0 ? 'Départ' : c === track.betThresholdColumn ? `${Math.round(track.betThresholdRatio * 100)} %${closed ? ` · ${BOARD.zoneClosed}` : ''}` : c === track.columns ? 'Arrivée' : c}
+            {c === 0 ? UI.board.start : c === track.betThresholdColumn ? `${Math.round(track.betThresholdRatio * 100)} %${closed ? ` · ${BOARD.zoneClosed}` : ''}` : c === track.columns ? UI.board.finish : c}
           </div>
         ))}
       </div>
@@ -245,7 +245,7 @@ export function Board({ race, lastResult, activeSoul, highlightSoul = null, onHo
           </>
         )}
       </div>
-      <ul className="legend" aria-label="Âmes en course">
+      <ul className="legend" aria-label={UI.board.souls}>
         {race.souls.map((soul) => {
           const { picked, canPick, why } = pickState(soul.id, soul.position)
           const hot = activeSoul === soul.id || highlightSoul === soul.id || previewSoul === soul.id

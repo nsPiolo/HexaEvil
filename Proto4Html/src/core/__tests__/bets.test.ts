@@ -61,8 +61,8 @@ describe('validité d’un pari', () => {
     const closedRace = withPositions([0, 0, 9, 0, 0]) // seuil à 9 pour 14 cases
     expect(bettingClosed(race)).toBe(false)
     expect(bettingClosed(closedRace)).toBe(true)
-    expect(betRefusal(closedRace, 'winner', [0], 10, 100)).toMatch(/seuil/)
-    expect(betRefusal(closedRace, 'winner', [2], 10, 100)).toMatch(/seuil/)
+    expect(betRefusal(closedRace, 'winner', [0], 10, 100)).toEqual({ kind: 'bettingClosed' })
+    expect(betRefusal(closedRace, 'winner', [2], 10, 100)).toEqual({ kind: 'bettingClosed' })
   })
   it('le Sablier repousse le seuil à 70 %', () => {
     const sablier = createRace({ ...cfg, souls: { ...cfg.souls, count: 5 } }, { betThresholdRatio: 0.7 })
@@ -72,24 +72,24 @@ describe('validité d’un pari', () => {
   })
   it('refuse un pari identique déjà posé', () => {
     const existing = [{ type: 'winner' as const, souls: [0] }, { type: 'twoInTop3' as const, souls: [1, 3] }, { type: 'duel' as const, souls: [0, 1] }]
-    expect(betRefusal(race, 'winner', [0], 5, 100, existing)).toMatch(/déjà/)
+    expect(betRefusal(race, 'winner', [0], 5, 100, existing)).toEqual({ kind: 'alreadyPlaced' })
     expect(betRefusal(race, 'winner', [1], 5, 100, existing)).toBeNull()
     // Non ordonné : l'ordre des âmes ne compte pas.
-    expect(betRefusal(race, 'twoInTop3', [3, 1], 5, 100, existing)).toMatch(/déjà/)
+    expect(betRefusal(race, 'twoInTop3', [3, 1], 5, 100, existing)).toEqual({ kind: 'alreadyPlaced' })
     // Ordonné : l'ordre inverse est un autre pari.
     expect(betRefusal(race, 'duel', [1, 0], 5, 100, existing)).toBeNull()
     expect(isSameBet({ type: 'duel', souls: [0, 1] }, { type: 'duel', souls: [0, 1] })).toBe(true)
     expect(isSameBet({ type: 'winner', souls: [0] }, { type: 'last', souls: [0] })).toBe(false)
   })
   it('refuse sans argent, sans mise, avec doublons ou nombre d’âmes incorrect', () => {
-    expect(betRefusal(race, 'winner', [0], 10, 5)).toMatch(/argent/)
-    expect(betRefusal(race, 'winner', [0], 0, 100)).toMatch(/mise/)
-    expect(betRefusal(race, 'duel', [0, 0], 10, 100)).toMatch(/une fois/)
-    expect(betRefusal(race, 'duel', [0], 10, 100)).toMatch(/1\/2/)
-    expect(betRefusal(race, 'fullRankingExact', [0, 1, 3, 4], 10, 100)).toMatch(/4\/5/)
+    expect(betRefusal(race, 'winner', [0], 10, 5)).toEqual({ kind: 'tooExpensive' })
+    expect(betRefusal(race, 'winner', [0], 0, 100)).toEqual({ kind: 'noStake' })
+    expect(betRefusal(race, 'duel', [0, 0], 10, 100)).toEqual({ kind: 'soulTwice' })
+    expect(betRefusal(race, 'duel', [0], 10, 100)).toEqual({ kind: 'missingSouls', given: 1, needed: 2 })
+    expect(betRefusal(race, 'fullRankingExact', [0, 1, 3, 4], 10, 100)).toEqual({ kind: 'missingSouls', given: 4, needed: 5 })
   })
   it('refuse une course terminée', () => {
-    expect(betRefusal({ ...race, finished: true }, 'winner', [0], 10, 100)).toMatch(/terminée/)
+    expect(betRefusal({ ...race, finished: true }, 'winner', [0], 10, 100)).toEqual({ kind: 'raceFinished' })
   })
   it('le classement complet exige toutes les âmes', () => {
     const def = BET_TYPES.find((t) => t.id === 'fullRankingExact')!
@@ -209,11 +209,11 @@ describe('retrait d’un pari en préparation (cancelBet)', () => {
     expect(bets).toHaveLength(2)
   })
   it('refuse dès que la course est lancée', () => {
-    expect(cancelBet(bets, 1, false)).toMatch(/lancée/)
+    expect(cancelBet(bets, 1, false)).toBe('raceStarted')
   })
   it('refuse un pari inconnu ou déjà réglé', () => {
-    expect(cancelBet(bets, 99, true)).toMatch(/introuvable/)
+    expect(cancelBet(bets, 99, true)).toBe('notFound')
     const settled: Bet[] = [{ ...bets[0]!, status: 'won', payout: 35 }]
-    expect(cancelBet(settled, 1, true)).toMatch(/réglé/)
+    expect(cancelBet(settled, 1, true)).toBe('alreadySettled')
   })
 })

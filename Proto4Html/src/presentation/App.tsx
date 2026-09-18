@@ -18,8 +18,9 @@ import { Dialogue } from './Dialogue'
 import { GameScreen } from './GameScreen'
 import { MapScreen } from './MapScreen'
 import { CollectionScreen, DebtScreen, EndScreen, Menu, OptionsScreen, Splash, StatsScreen, UnlockScreen } from './Screens'
+import { applyLanguage, startingLanguage } from './i18n'
 import { clearRun, loadOptions, loadRun, loadStats, loadUnlocks, saveOptions, saveRun, saveUnlocks, updateStats, type Options, type RunSave, type Stats } from './storage'
-import { DEV, INTRO, MENU, fill, type Line } from './texts'
+import { DEV, INTRO, MENU, UI, fill, type Line } from './texts'
 import { carryOut, circleOf, fullCharges, type RaceUi, type SessionCarry } from './useRace'
 import { e2eMode, e2eStart } from './urlParams'
 
@@ -81,7 +82,12 @@ function e2eScreen(): Screen | null {
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>(() => e2eScreen() ?? { kind: 'splash' })
-  const [options, setOptions] = useState<Options>(() => (e2eMode() ? { ...loadOptions(), speed: e2eStart().speed } : loadOptions()))
+  const [options, setOptions] = useState<Options>(() => {
+    const o = e2eMode() ? { ...loadOptions(), speed: e2eStart().speed } : loadOptions()
+    // `?lang=` l'emporte sur l'option enregistrée ; `main.tsx` a déjà appliqué la même
+    // langue avant le premier rendu, il ne reste ici qu'à la refléter dans le sélecteur.
+    return { ...o, language: startingLanguage(o.language) }
+  })
   const [stats, setStats] = useState<Stats>(loadStats)
   const [save, setSave] = useState<RunSave | null>(loadRun)
   /**
@@ -93,6 +99,16 @@ export default function App() {
   const [devOpen, setDevOpen] = useState(false)
 
   useEffect(() => saveOptions(options), [options])
+
+  /**
+   * Changement d'option. La langue est posée avant `setOptions` : les groupes de `texts` et
+   * les noms de `config` sont des liaisons vivantes, le rendu déclenché par `setOptions` les
+   * relit donc déjà traduits, sans repasser par un effet ni afficher un écran mi-français.
+   */
+  const changeOptions = useCallback((o: Options) => {
+    if (o.language !== options.language) applyLanguage(o.language)
+    setOptions(o)
+  }, [options.language])
 
   // Menu développeur : Ctrl+Maj+D (ou Cmd+Maj+D), en plus du petit bouton « dev ».
   useEffect(() => {
@@ -304,7 +320,7 @@ export default function App() {
           />
         )
       case 'options':
-        return <OptionsScreen options={options} onChange={setOptions} onBack={toMenu} />
+        return <OptionsScreen options={options} onChange={changeOptions} onBack={toMenu} />
       case 'intro':
         return null
       case 'dialogue':
@@ -348,7 +364,7 @@ export default function App() {
   const dev = (
     <>
       {screen.kind !== 'splash' && (
-        <button type="button" className="dev-open" onClick={() => setDevOpen(true)} title="Menu développeur (Ctrl+Maj+D)">
+        <button type="button" className="dev-open" onClick={() => setDevOpen(true)} title={UI.menu.devTitle}>
           {DEV.open}
         </button>
       )}

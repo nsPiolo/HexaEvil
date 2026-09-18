@@ -140,7 +140,6 @@ export function forgeFace(id: ForgeId, face: Face): Face {
 export function specialDie(item: DieItem): DistanceDie {
   return {
     kind: item.id,
-    name: item.name,
     faces: item.faces.map((v, i) => (i === item.wildFace ? { value: v, effect: null, altered: null, wild: true } : { value: v, effect: null, altered: null })),
     costPerUse: item.costPerUse,
   }
@@ -158,10 +157,24 @@ export type PurchaseTarget = {
   replaceArtefact?: ArtefactId
 }
 
+/**
+ * Ce qu'un achat a fait, à charge pour l'écran d'en faire une phrase (`purchaseLogText`,
+ * presentation/shopLog.ts). Le moteur ne rédige pas : il dirait le français à un joueur
+ * anglais, et il faudrait le retraduire à chaque langue ajoutée.
+ */
+export type PurchaseLog =
+  | { kind: 'decap'; dieKind: string; dieIndex: number; value: number }
+  | { kind: 'artefactSold'; id: ArtefactId }
+  | { kind: 'artefactReplaced'; name: string; replaced: ArtefactId }
+  | { kind: 'artefactBought'; name: string }
+  | { kind: 'dieAdded'; name: string; count: number }
+  | { kind: 'dieReplaced'; name: string; dieKind: string; dieIndex: number }
+  | { kind: 'faceForged'; name: string; dieKind: string; dieIndex: number; value: number }
+
 export interface PurchaseResult {
   inventory: Inventory
-  /** Message pour le journal. */
-  text: string
+  /** De quoi écrire la ligne de journal, dans la langue de l'écran. */
+  log: PurchaseLog
 }
 
 /**
@@ -180,13 +193,13 @@ export function decapFace(inventory: Inventory, target: { dieIndex: number; face
   if (face.original === undefined) throw new Error('valeur d’origine inconnue : cette face ne se décape pas')
   const faces = die.faces.map((f, i) => (i === target.faceIndex ? { value: face.original!, effect: null, altered: null } : f))
   const dice = inventory.dice.map((d, i) => (i === target.dieIndex ? { ...d, faces } : d))
-  return { inventory: { ...inventory, dice }, text: `Face décapée sur le ${die.name} n°${target.dieIndex + 1} : elle revaut ${face.original > 0 ? '+' : ''}${face.original}.` }
+  return { inventory: { ...inventory, dice }, log: { kind: 'decap', dieKind: die.kind, dieIndex: target.dieIndex, value: face.original } }
 }
 
 /** Revente d'un artefact (artefacts.md) : il quitte l'inventaire, la somme est rendue par l'appelant. */
 export function sellArtefact(inventory: Inventory, id: ArtefactId): PurchaseResult {
   if (!inventory.artefacts.includes(id)) throw new Error('artefact non possédé')
-  return { inventory: { ...inventory, artefacts: inventory.artefacts.filter((a) => a !== id) }, text: `Artefact revendu : ${id}.` }
+  return { inventory: { ...inventory, artefacts: inventory.artefacts.filter((a) => a !== id) }, log: { kind: 'artefactSold', id } }
 }
 
 export function applyPurchase(item: ShopItem, inventory: Inventory, target: PurchaseTarget | null, maxAltered?: number): PurchaseResult {
@@ -199,21 +212,21 @@ export function applyPurchase(item: ShopItem, inventory: Inventory, target: Purc
       if (replaced !== undefined) {
         if (!inventory.artefacts.includes(replaced)) throw new Error('artefact à remplacer introuvable')
         const artefacts = inventory.artefacts.map((a) => (a === replaced ? item.id : a))
-        return { inventory: { ...inventory, artefacts }, text: `${item.name} remplace ${replaced} — l'ancien est détruit.` }
+        return { inventory: { ...inventory, artefacts }, log: { kind: 'artefactReplaced', name: item.name, replaced } }
       }
-      return { inventory: { ...inventory, artefacts: [...inventory.artefacts, item.id] }, text: `Artefact acquis : ${item.name}.` }
+      return { inventory: { ...inventory, artefacts: [...inventory.artefacts, item.id] }, log: { kind: 'artefactBought', name: item.name } }
     }
     case 'die': {
       // Troisième dé Distance : il s'ajoute au lancer, il n'y a donc rien à désigner.
       if (item.mode === 'add') {
         const dice = [...inventory.dice, specialDie(item)]
-        return { inventory: { ...inventory, dice }, text: `${item.name} rejoint le lancer : ${dice.length} dés Distance.` }
+        return { inventory: { ...inventory, dice }, log: { kind: 'dieAdded', name: item.name, count: dice.length } }
       }
       if (!target) throw new Error('choisissez le dé à remplacer')
       const old = inventory.dice[target.dieIndex]
       if (!old) throw new Error('dé introuvable')
       const dice = inventory.dice.map((d, i) => (i === target.dieIndex ? specialDie(item) : d))
-      return { inventory: { ...inventory, dice }, text: `${item.name} remplace le ${old.name} n°${target.dieIndex + 1}.` }
+      return { inventory: { ...inventory, dice }, log: { kind: 'dieReplaced', name: item.name, dieKind: old.kind, dieIndex: target.dieIndex } }
     }
     case 'forge': {
       if (!target || target.faceIndex === undefined) throw new Error('choisissez la face à forger')
@@ -227,7 +240,7 @@ export function applyPurchase(item: ShopItem, inventory: Inventory, target: Purc
       const faces = die.faces.map((f, i) => (i === target.faceIndex ? forgeFace(item.id, f) : f))
       if (!faces.some((f) => f.value > 0)) throw new Error('un dé doit garder une face positive')
       const dice = inventory.dice.map((d, i) => (i === target.dieIndex ? { ...d, faces } : d))
-      return { inventory: { ...inventory, dice }, text: `${item.name} gravée sur le ${die.name} n°${target.dieIndex + 1}, face ${face.value > 0 ? '+' : ''}${face.value}.` }
+      return { inventory: { ...inventory, dice }, log: { kind: 'faceForged', name: item.name, dieKind: die.kind, dieIndex: target.dieIndex, value: face.value } }
     }
   }
 }

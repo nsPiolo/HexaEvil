@@ -5,6 +5,7 @@
  * Toute lecture est défensive : une valeur absente ou cassée rend la valeur par défaut.
  */
 import type { Inventory } from '../core/shop/shop'
+import { DEFAULT_LANGUAGE, isLanguage, type Language } from './texts'
 
 const KEYS = { save: 'sinnersbet.save.v1', stats: 'sinnersbet.stats.v1', options: 'sinnersbet.options.v1', unlocks: 'sinnersbet.unlocks.v1' } as const
 
@@ -97,7 +98,12 @@ export function updateStats(patch: (s: Stats) => Stats): Stats {
 
 // ---- Options ----------------------------------------------------------------
 
-export type Language = 'en' | 'fr' | 'de' | 'es'
+/**
+ * Les langues traduites sont listées une seule fois, dans `texts` : une sauvegarde qui
+ * porte autre chose (une langue retirée, un fichier bricolé) retombe sur le français à la
+ * lecture plutôt que de laisser l'interface à moitié vide.
+ */
+export type { Language } from './texts'
 
 export interface Options {
   /** 0 à 100, pas de 10. */
@@ -107,7 +113,7 @@ export interface Options {
   speed: number
 }
 
-export const DEFAULT_OPTIONS: Options = { volume: 50, language: 'fr', speed: 1 }
+export const DEFAULT_OPTIONS: Options = { volume: 50, language: DEFAULT_LANGUAGE, speed: 1 }
 
 function isOptions(v: unknown): v is Options {
   if (typeof v !== 'object' || v === null) return false
@@ -117,7 +123,7 @@ function isOptions(v: unknown): v is Options {
 
 export function loadOptions(): Options {
   const o = read<Options>(KEYS.options, DEFAULT_OPTIONS, isOptions)
-  return { ...DEFAULT_OPTIONS, ...o, speed: Math.min(4, Math.max(0.5, o.speed)) }
+  return { ...DEFAULT_OPTIONS, ...o, language: isLanguage(o.language) ? o.language : DEFAULT_LANGUAGE, speed: Math.min(4, Math.max(0.5, o.speed)) }
 }
 
 export function saveOptions(o: Options): void {

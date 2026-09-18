@@ -1,4 +1,6 @@
 import { config, shop } from '../core/config'
+import { dieName } from './messages'
+import { UI } from './texts'
 import { artefactSlotsAt } from '../core/shop/shop'
 import { fmtFace, type Face } from '../core/rules/dice'
 import type { Inventory as Inv } from '../core/shop/shop'
@@ -42,7 +44,7 @@ interface Props {
 /** Ce que le joueur possède : artefacts et dés, visible en boutique et pendant la course. */
 export function Inventory({ inventory, lateBetCharges, level, compact }: Props) {
   return (
-    <section className={'inventory' + (compact ? ' inventory-compact' : '')} aria-label="Inventaire">
+    <section className={'inventory' + (compact ? ' inventory-compact' : '')} aria-label={UI.inventory.label}>
       <div className="inv-group">
         <span className="bet-label">Artefacts ({inventory.artefacts.length}/{artefactSlotsAt(shop, level)})</span>
         <div className="inv-items">
@@ -62,11 +64,11 @@ export function Inventory({ inventory, lateBetCharges, level, compact }: Props) 
         </div>
       </div>
       <div className="inv-group">
-        <span className="bet-label">Dés Distance</span>
+        <span className="bet-label">{UI.inventory.distanceDice}</span>
         <div className="inv-items">
           {inventory.dice.map((d, i) => (
             <span key={i} className="inv-die">
-              <span className="inv-die-name">{d.name}</span>
+              <span className="inv-die-name">{dieName(d.kind)}</span>
               {d.faces.map((f, j) => (
                 <FaceChip key={j} face={f} />
               ))}

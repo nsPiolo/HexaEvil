@@ -24,35 +24,25 @@ export type BetTier = 'simple' | 'intermediate' | 'advanced'
 
 export interface BetTypeDef {
   id: BetTypeId
-  label: string
   tier: BetTier
   /** Nombre d'âmes à désigner, ou 'all' pour toutes. */
   souls: number | 'all'
   /** L'ordre des âmes désignées compte. */
   ordered: boolean
-  /** Intitulé de chaque emplacement (générique si absent). */
-  slots?: readonly string[]
-  description: string
 }
 
 export const BET_TYPES: readonly BetTypeDef[] = [
-  { id: 'winner', label: 'Vainqueur pur', tier: 'simple', souls: 1, ordered: false, description: "L'âme termine première." },
-  { id: 'top3', label: 'Top 3', tier: 'simple', souls: 1, ordered: false, description: "L'âme termine dans les trois premières." },
-  { id: 'notTop3', label: 'Pas dans le top 3', tier: 'simple', souls: 1, ordered: false, description: "L'âme ne termine pas dans les trois premières." },
-  { id: 'last', label: 'Dernière place', tier: 'simple', souls: 1, ordered: false, description: "L'âme termine dernière." },
-  { id: 'podiumAnyOrder', label: 'Top 3 dans le désordre', tier: 'intermediate', souls: 3, ordered: false, description: 'Les trois âmes occupent les trois premières places, dans un ordre quelconque.' },
-  { id: 'twoInTop3', label: 'Deux âmes dans le top 3', tier: 'intermediate', souls: 2, ordered: false, description: 'Les deux âmes terminent toutes deux dans le top 3.' },
-  { id: 'duel', label: 'Duel', tier: 'intermediate', souls: 2, ordered: true, slots: ['devant', 'derrière'], description: 'La première âme termine devant la seconde.' },
-  { id: 'podiumExact', label: 'Podium exact', tier: 'advanced', souls: 3, ordered: true, slots: ['1re', '2e', '3e'], description: 'Les trois premières places, dans cet ordre exact.' },
-  { id: 'fullRankingExact', label: 'Classement complet exact', tier: 'advanced', souls: 'all', ordered: true, description: 'Toutes les positions finales, dans cet ordre exact.' },
-  { id: 'winnerAndLast', label: 'Vainqueur + dernier', tier: 'advanced', souls: 2, ordered: true, slots: ['vainqueur', 'dernier'], description: 'La première et la dernière âme, exactement.' },
+  { id: 'winner', tier: 'simple', souls: 1, ordered: false },
+  { id: 'top3', tier: 'simple', souls: 1, ordered: false },
+  { id: 'notTop3', tier: 'simple', souls: 1, ordered: false },
+  { id: 'last', tier: 'simple', souls: 1, ordered: false },
+  { id: 'podiumAnyOrder', tier: 'intermediate', souls: 3, ordered: false },
+  { id: 'twoInTop3', tier: 'intermediate', souls: 2, ordered: false },
+  { id: 'duel', tier: 'intermediate', souls: 2, ordered: true },
+  { id: 'podiumExact', tier: 'advanced', souls: 3, ordered: true },
+  { id: 'fullRankingExact', tier: 'advanced', souls: 'all', ordered: true },
+  { id: 'winnerAndLast', tier: 'advanced', souls: 2, ordered: true },
 ]
-
-export const TIER_LABEL: Readonly<Record<BetTier, string>> = {
-  simple: 'Simples',
-  intermediate: 'Combinés',
-  advanced: 'Avancés',
-}
 
 /** Niveau du stagiaire requis par type de pari (config economy.betUnlockLevel). */
 export type BetUnlockLevels = Readonly<Record<BetTypeId, number>>
@@ -144,6 +134,22 @@ export function bettingClosed(state: RaceState): boolean {
 }
 
 /**
+ * Raison pour laquelle un pari ne peut pas être posé. Un code, pas une phrase : la phrase
+ * est écrite par langue dans le lexique (`BETS.refusal`), le moteur dit seulement ce qui
+ * cloche. `missingSouls` porte le compte, la phrase s'accorde dessus.
+ */
+export type BetRefusal =
+  | { kind: 'raceFinished' }
+  | { kind: 'bettingClosed' }
+  | { kind: 'soulTwice' }
+  | { kind: 'missingSouls'; given: number; needed: number }
+  | { kind: 'tooManySouls' }
+  | { kind: 'unknownSoul' }
+  | { kind: 'alreadyPlaced' }
+  | { kind: 'noStake' }
+  | { kind: 'tooExpensive' }
+
+/**
  * Raison pour laquelle un pari ne peut pas être posé, ou null s'il est valide.
  * `souls` peut être incomplet : la première raison renvoyée est alors le manque d'âmes.
  */
@@ -154,20 +160,20 @@ export function betRefusal(
   stake: number,
   money: number,
   existing: readonly Pick<Bet, 'type' | 'souls'>[] = [],
-): string | null {
-  if (state.finished) return 'La course est terminée.'
-  if (bettingClosed(state)) return 'Une âme a dépassé le seuil : plus de pari sur cette course.'
+): BetRefusal | null {
+  if (state.finished) return { kind: 'raceFinished' }
+  if (bettingClosed(state)) return { kind: 'bettingClosed' }
   const def = betType(type)
   const needed = slotCount(def, state.souls.length)
-  if (new Set(souls).size !== souls.length) return 'Une âme ne peut être désignée qu’une fois.'
-  if (souls.length < needed) return `Désignez ${needed} âme${needed > 1 ? 's' : ''} (${souls.length}/${needed}).`
-  if (souls.length > needed) return 'Trop d’âmes désignées.'
+  if (new Set(souls).size !== souls.length) return { kind: 'soulTwice' }
+  if (souls.length < needed) return { kind: 'missingSouls', given: souls.length, needed }
+  if (souls.length > needed) return { kind: 'tooManySouls' }
   for (const id of souls) {
-    if (!state.souls[id]) return 'Âme inconnue.'
+    if (!state.souls[id]) return { kind: 'unknownSoul' }
   }
-  if (existing.some((b) => isSameBet(b, { type, souls }))) return 'Ce pari est déjà posé.'
-  if (stake <= 0) return 'Choisissez une mise.'
-  if (stake > money) return 'Pas assez d’argent pour cette mise.'
+  if (existing.some((b) => isSameBet(b, { type, souls }))) return { kind: 'alreadyPlaced' }
+  if (stake <= 0) return { kind: 'noStake' }
+  if (stake > money) return { kind: 'tooExpensive' }
   return null
 }
 
@@ -182,11 +188,14 @@ export interface Cancellation {
  * tant que la course n'a pas commencé (`beforeStart`, la préparation côté écran) : dès que
  * les dés roulent, l'engagement fait partie du jeu. Renvoie la raison du refus sinon.
  */
-export function cancelBet(bets: readonly Bet[], id: number, beforeStart: boolean): Cancellation | string {
-  if (!beforeStart) return 'La course est lancée : un pari posé ne se retire plus.'
+/** Raison d'un retrait refusé ; la phrase est dans le lexique (`BETS.cancelRefusal`). */
+export type CancelRefusal = 'raceStarted' | 'notFound' | 'alreadySettled'
+
+export function cancelBet(bets: readonly Bet[], id: number, beforeStart: boolean): Cancellation | CancelRefusal {
+  if (!beforeStart) return 'raceStarted'
   const bet = bets.find((b) => b.id === id)
-  if (!bet) return 'Pari introuvable.'
-  if (bet.status !== 'open') return 'Ce pari est déjà réglé.'
+  if (!bet) return 'notFound'
+  if (bet.status !== 'open') return 'alreadySettled'
   return { bets: bets.filter((b) => b.id !== id), refund: bet.stake }
 }
 

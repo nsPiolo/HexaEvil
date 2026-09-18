@@ -3,7 +3,7 @@ import { config } from '../core/config'
 import { circleAt } from '../core/rules/circles'
 import { demonRankAtRace } from './demon'
 import { STEP_ART } from './art'
-import { CIRCLES, HUD, MAP, MENU, fill, ordinalOf } from './texts'
+import { CIRCLES, HUD, MAP, MENU, UI, fill, ordinalOf } from './texts'
 import { bossPowerText, circleOf, type SessionCarry } from './useRace'
 
 interface Props {
@@ -186,7 +186,7 @@ export function MapScreen({ carry, onLaunch, onMenu }: Props) {
         <aside className="map-info">
           <h2>{fill(MAP.circleOf, { n: selected, name: info.name })}</h2>
           <p className="muted small">
-            {selected < currentCircle ? 'Cercle traversé.' : selected === currentCircle ? MAP.current : MAP.locked}
+            {selected < currentCircle ? UI.map.crossed : selected === currentCircle ? MAP.current : MAP.locked}
             {' · '}
             {info.souls} âmes en course
           </p>
@@ -223,7 +223,7 @@ export function MapScreen({ carry, onLaunch, onMenu }: Props) {
             </div>
             <div>
               <dt>{MAP.price}</dt>
-              <dd>{selected <= currentCircle ? `${info.price} pièces` : <span className="muted">{MAP.priceHidden}</span>}</dd>
+              <dd>{selected <= currentCircle ? fill(UI.ticket.coins, { n: info.price }) : <span className="muted">{MAP.priceHidden}</span>}</dd>
             </div>
           </dl>
           {texts && selected < currentCircle && <p className="muted small">Payé. {MENU.continue} vers le cercle {selected + 1}.</p>}

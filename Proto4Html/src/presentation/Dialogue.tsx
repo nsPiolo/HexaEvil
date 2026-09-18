@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { MENU, SPEAKERS, type Line } from './texts'
+import { MENU, SPEAKERS, UI, type Line } from './texts'
 
 interface Props {
   lines: readonly Line[]
@@ -60,7 +60,7 @@ export function Dialogue({ lines, skipLabel, background, onDone }: Props) {
       <div className="dialogue-actions">
         <div className="dialogue-actions-inner">
           <button type="button" className="btn-stone btn-stone-orange" onClick={(e) => e.detail > 0 && next()} autoFocus>
-            {last ? 'Terminer' : MENU.next}
+            {last ? UI.dialogue.end : MENU.next}
           </button>
           {skipLabel && !last && (
             <button type="button" className="btn-stone" onClick={onDone}>

@@ -3,19 +3,17 @@ import { fmtMultiplier } from '../core/rules/bets'
 import type { ShopItem } from '../core/shop/items'
 import { LOCK_ART } from './art'
 import { ItemArt } from './ItemArt'
-import { COLLECTION, DEBT, ENDINGS, GAME_NAME, MENU, OPTIONS, STATS, UNLOCK, fill } from './texts'
+import { COLLECTION, DEBT, ENDINGS, GAME_NAME, ITEM_KINDS, LANGUAGES, MENU, OPTIONS, RARITIES, STATS, UI, UNLOCK, fill } from './texts'
 import type { Options, Stats } from './storage'
 
-const KIND_LABEL = { artefact: 'Artefact', die: 'Dé', forge: 'Forge' } as const
-const RARITY_LABEL = { common: 'commun', rare: 'rare', legendary: 'légendaire' } as const
 
 /** Carte d'objet hors boutique : ni prix, ni achat — le catalogue, pas le rayon. */
 function ItemCard({ item }: { item: ShopItem }) {
   return (
     <article className={`coll-item kind-${item.kind} rarity-${item.rarity}`}>
       <header>
-        <span>{KIND_LABEL[item.kind]}</span>
-        <span className={`shop-rarity rarity-${item.rarity}`}>{RARITY_LABEL[item.rarity]}</span>
+        <span>{ITEM_KINDS[item.kind]}</span>
+        <span className={`shop-rarity rarity-${item.rarity}`}>{RARITIES[item.rarity]}</span>
       </header>
       <div className="shop-body">
         <ItemArt id={item.id} className="shop-art" />
@@ -61,7 +59,7 @@ export function Menu({ canContinue, onContinue, onNewRun, onStats, onCollection,
           <img src="/menu/title.png" alt={GAME_NAME} width={461} height={120} />
         </h1>
         <nav className="menu-list">
-        <button type="button" className="menu-btn" disabled={!canContinue} onClick={onContinue} title={canContinue ? undefined : 'Aucune évasion en cours'}>
+        <button type="button" className="menu-btn" disabled={!canContinue} onClick={onContinue} title={canContinue ? undefined : UI.menu.noRun}>
           {MENU.continue}
         </button>
         <button type="button" className="menu-btn menu-btn-primary" onClick={onNewRun}>
@@ -88,10 +86,10 @@ export function StatsScreen({ stats, onBack }: { stats: Stats; onBack: () => voi
     [STATS.attempts, String(stats.attempts)],
     [STATS.escapes, `${stats.escapes} (${pct} %)`],
     [STATS.bestCircle, stats.bestCircle > 0 ? `${stats.bestCircle}` : STATS.none],
-    [STATS.moneyWon, `${stats.moneyWon} pièces`],
-    [STATS.moneySpent, `${stats.moneySpent} pièces`],
+    [STATS.moneyWon, fill(UI.ticket.coins, { n: stats.moneyWon })],
+    [STATS.moneySpent, fill(UI.ticket.coins, { n: stats.moneySpent })],
     [STATS.races, String(stats.races)],
-    [STATS.bestBet, stats.bestBet > 0 ? `+${stats.bestBet} pièces` : STATS.none],
+    [STATS.bestBet, stats.bestBet > 0 ? fill(UI.ticket.bestBet, { n: stats.bestBet }) : STATS.none],
   ]
   return (
     <div className="screen panel-screen">
@@ -113,13 +111,6 @@ export function StatsScreen({ stats, onBack }: { stats: Stats; onBack: () => voi
   )
 }
 
-const LANGS: { id: Options['language']; label: string }[] = [
-  { id: 'en', label: 'English' },
-  { id: 'fr', label: 'Français' },
-  { id: 'de', label: 'Deutsch' },
-  { id: 'es', label: 'Español' },
-]
-
 export function OptionsScreen({ options, onChange, onBack }: { options: Options; onChange: (o: Options) => void; onBack: () => void }) {
   return (
     <div className="screen panel-screen">
@@ -136,12 +127,12 @@ export function OptionsScreen({ options, onChange, onBack }: { options: Options;
           <input type="range" min={0} max={100} step={10} value={options.volume} disabled onChange={(e) => onChange({ ...options, volume: Number(e.target.value) })} />
           <span className="option-value">{options.volume}</span>
         </label>
-        <label className="option option-disabled" title={OPTIONS.languageDisabled}>
-          <span className="option-label">
-            {OPTIONS.language} <span className="muted small">({OPTIONS.languageDisabled})</span>
-          </span>
-          <select value={options.language} disabled onChange={(e) => onChange({ ...options, language: e.target.value as Options['language'] })}>
-            {LANGS.map((l) => (
+        <label className="option">
+          <span className="option-label">{OPTIONS.language}</span>
+          {/* Le changement prend effet au rendu suivant : c'est `App` qui applique la langue
+              puis enregistre l'option, et l'écran entier se redessine, celui-ci compris. */}
+          <select value={options.language} onChange={(e) => onChange({ ...options, language: e.target.value as Options['language'] })}>
+            {LANGUAGES.map((l) => (
               <option key={l.id} value={l.id}>
                 {l.label}
               </option>

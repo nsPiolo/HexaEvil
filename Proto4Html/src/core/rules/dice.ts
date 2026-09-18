@@ -30,9 +30,12 @@ export interface Face {
 }
 
 export interface DistanceDie {
-  /** Id de l'objet boutique dont il vient, ou 'base'. */
+  /**
+   * Id de l'objet boutique dont il vient, ou 'base'. C'est de lui que l'écran tire le nom
+   * à afficher (`dieName`, presentation/art.ts) : un dé acheté en français et regardé en
+   * anglais se lit dans la langue du moment, pas dans celle de l'achat.
+   */
   kind: string
-  name: string
   faces: Face[]
   /** Pièces prélevées à chaque association de ce dé (Dé de Prodigalité). */
   costPerUse: number
@@ -43,7 +46,7 @@ export function plainFace(value: number): Face {
 }
 
 export function baseDie(config: RaceConfig): DistanceDie {
-  return { kind: 'base', name: 'Dé de base', faces: config.dice.distanceFaces.map(plainFace), costPerUse: 0 }
+  return { kind: 'base', faces: config.dice.distanceFaces.map(plainFace), costPerUse: 0 }
 }
 
 export function defaultDice(config: RaceConfig): DistanceDie[] {

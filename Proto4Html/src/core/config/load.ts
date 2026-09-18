@@ -3,7 +3,7 @@
  * Une erreur désigne toujours le champ fautif, pour qu'un réglage cassé se voie au premier écran.
  */
 import { BET_TYPE_IDS, type BetTypeId } from '../rules/betTypes'
-import { BOSS_EFFECT_DOC, isBossEffectId, type BossEffect } from '../rules/boss'
+import { BOSS_EFFECT_FALLBACK, isBossEffectId, type BossEffect } from '../rules/boss'
 import type { BlockedCell, RaceConfig, SpecialCell, SpecialCellKind, Terrain } from './schema'
 
 const SPECIAL_KINDS: readonly SpecialCellKind[] = ['trap', 'boost', 'gold']
@@ -67,7 +67,7 @@ function bossPowers(raw: unknown, field: string): BossEffect[] {
     const o = obj(e, `${field}[${i}]`)
     const id = str(o.id, `${field}[${i}].id`)
     if (!isBossEffectId(id)) fail(`${field}[${i}].id`, `effet inconnu « ${id} » (voir BOSS_EFFECT_IDS)`)
-    const value = o.value === undefined ? BOSS_EFFECT_DOC[id].fallback : num(o.value, `${field}[${i}].value`)
+    const value = o.value === undefined ? BOSS_EFFECT_FALLBACK[id] : num(o.value, `${field}[${i}].value`)
     return { id, value }
   })
 }

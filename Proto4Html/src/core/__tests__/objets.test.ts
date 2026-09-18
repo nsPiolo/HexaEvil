@@ -233,7 +233,7 @@ describe('dés spéciaux', () => {
     const wild = die.faces.find((f) => f.wild)!
     const roll: Roll = rollPlayerDice(cfg, 5, seededRng(3), [
       { ...die, faces: [wild] },
-      { kind: 'base', name: 'B', faces: [plainFace(5)], costPerUse: 0 },
+      { kind: 'base', faces: [plainFace(5)], costPerUse: 0 },
     ])
     expect(roll.distance[0]).toBe(5)
   })

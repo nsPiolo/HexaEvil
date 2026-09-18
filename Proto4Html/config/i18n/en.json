@@ -1,0 +1,301 @@
+{
+  "_comment": "English names for everything the player reads out of config/race.json and config/shop.json. Only the words live here: prices, odds, dice faces, blocked spaces and effect ids stay in their own file, written once. src/core/config/i18n.ts lays this over the raw config before it is validated, so a missing entry falls back to the French one rather than breaking the game — config i18n.test.ts is what fails when something is missing. souls and circles are matched by position (same order as race.json), circles[].terrains too; shop items are matched by id, so their order here does not matter.",
+  "souls": ["Homer", "Virgil", "Aristotle", "Plato", "Socrates", "Ovid", "Seneca", "Euclid", "Horace", "Lucan", "Hippocrates", "Ptolemy"],
+  "circles": [
+    {
+      "name": "Limbo",
+      "boss": "Charon",
+      "power": "The ferryman rolls two pairs a turn instead of one.",
+      "terrains": ["The grey plain"]
+    },
+    {
+      "name": "Lust",
+      "boss": "Minos",
+      "power": "The eternal winds: every -1 becomes -2, for you as for him.",
+      "terrains": ["Low gust", "High gust", "Crosswinds"]
+    },
+    {
+      "name": "Gluttony",
+      "boss": "Cerberus",
+      "power": "A rammed soul is bitten: it moves back one space after the jump.",
+      "terrains": ["Potholes", "Low mire", "Ruts"]
+    },
+    {
+      "name": "Greed",
+      "boss": "Plutus",
+      "power": "Bets placed during the race cost double the stake.",
+      "terrains": ["The rocks", "The convoy", "Heaps"]
+    },
+    {
+      "name": "Wrath",
+      "boss": "Phlegyas",
+      "power": "In the Styx, moving back onto a soul pushes it back too instead of swapping.",
+      "terrains": ["The shallows", "Peat bogs", "The ford"]
+    },
+    {
+      "name": "Heresy",
+      "boss": "The Furies",
+      "power": "The betting threshold drops to 40 % of the track.",
+      "terrains": ["The tombs", "Open lids", "Necropolis"]
+    },
+    {
+      "name": "Violence",
+      "boss": "The Minotaur",
+      "power": "The opponent’s positive distances gain +1.",
+      "terrains": ["The river of blood", "The wood of the suicides", "The burning sand"]
+    },
+    {
+      "name": "Fraud",
+      "boss": "Geryon",
+      "power": "The Soul dice lie: one time in four they name the neighbouring soul.",
+      "terrains": ["The ditches", "The broken bridges", "Spiral bolgia"]
+    },
+    {
+      "name": "Treachery",
+      "boss": "Iscariot, boss of the ninth",
+      "power": "He knows your bets: his pairs go for the souls you have bet on first, to push them back.",
+      "terrains": ["The Cocytus", "Crevasses", "The traitors caught"]
+    },
+    {
+      "name": "Sea Floor",
+      "boss": "The Drowned Man",
+      "power": "Underwater, every positive distance loses 1: the race runs in slow motion.",
+      "terrains": ["The black sand", "The weeds", "The sunken ship"]
+    },
+    {
+      "name": "Cliff",
+      "boss": "The Chainbearer",
+      "power": "A rammed soul is chained: it does not move at all next turn.",
+      "terrains": ["The scree", "The chains", "The ledge"]
+    },
+    {
+      "name": "City",
+      "boss": "The Clerk",
+      "power": "He closes one counter a turn: a type of bet becomes unavailable.",
+      "terrains": ["The counters", "The crowd", "The iron balconies"]
+    },
+    {
+      "name": "Mountain",
+      "boss": "The Frost",
+      "power": "The lanes freeze: a soul can no longer pull over, it rams instead.",
+      "terrains": ["The seracs", "The frozen rope", "Night snow"]
+    },
+    {
+      "name": "Sky",
+      "boss": "The Breath",
+      "power": "At the end of every turn, all the souls move back one space.",
+      "terrains": ["The broken bridge", "The cumulonimbus", "The silent lightning"]
+    },
+    {
+      "name": "Paradise",
+      "boss": "The Angel",
+      "power": "He replays the last turn of the race a second time, opponent included.",
+      "terrains": ["The stands", "The rings of gold", "The pale marble"]
+    }
+  ],
+  "items": {
+    "lateBet": {
+      "name": "Bettor’s Eye",
+      "description": "Once per circle, place a bet after seeing your dice, before pairing them."
+    },
+    "sablier": {
+      "name": "Charon’s Hourglass",
+      "description": "The betting threshold goes from 60 % to 70 % of the track, starting this race."
+    },
+    "boussole": {
+      "name": "Limbo Compass",
+      "description": "After your combinations, the soul of each unused Soul die moves forward 1."
+    },
+    "clepsydre": {
+      "name": "Cracked Water Clock",
+      "description": "On turn 1 of every race, your negative distances turn positive (-1 → +1) and your positive distances gain +1."
+    },
+    "ferACheval": {
+      "name": "Rusty Horseshoe",
+      "description": "The odds on the plain Winner bet are multiplied by 1.5; those on Last place by 0.5.",
+      "warning": "the odds on Last place are halved"
+    },
+    "boursePercee": {
+      "name": "Holed Purse",
+      "description": "Every collision (jump or swap) earns you 2 coins, whether it came from you or the opponent."
+    },
+    "livreDesComptes": {
+      "name": "Book of Accounts",
+      "description": "Once per race, one of your losing bets, drawn at random, is refunded at 50 %."
+    },
+    "tirelire": {
+      "name": "Intern’s Piggy Bank",
+      "description": "The advance the intern pays you before every race goes up by 10 coins, for the rest of the run."
+    },
+    "limbes": {
+      "name": "Limbo Die",
+      "description": "Replaces a Distance die with a 1, 1, 2, 2 die: no going back, no great leap."
+    },
+    "colere": {
+      "name": "Wrath Die",
+      "description": "Replaces a Distance die with a -2, 0, 3, 4 die: same average, far more variance.",
+      "warning": "one face at −2: a two-space step back is possible"
+    },
+    "glace": {
+      "name": "Ice Die",
+      "description": "Replaces a Distance die with a -1, -1, 2, 5 die: the die of extremes.",
+      "warning": "two faces at −1 out of four"
+    },
+    "prodigalite": {
+      "name": "Prodigality Die",
+      "description": "Replaces a Distance die with a 2, 3, 3, 4 die. Every pairing of this die costs 3 coins; with no money, it is worth 0.",
+      "warning": "every pairing costs 3 ¤; with no money, the face is worth 0"
+    },
+    "limee": {
+      "name": "Filed Face",
+      "description": "The chosen face is worth 0: the soul is named but does not move. Suggested target: the -1."
+    },
+    "doree": {
+      "name": "Gilded Face",
+      "description": "The chosen face is worth +1 and earns 5 coins every time it comes up. Suggested target: the 1."
+    },
+    "retournee": {
+      "name": "Turned Face",
+      "description": "The chosen face is worth +1. The catch: the opponent’s -1s are worth +1 too, for the rest of the run. Suggested target: the -1.",
+      "warning": "the opponent’s −1s are worth +1 too for the rest of the run"
+    },
+    "sceau": {
+      "name": "Bettor’s Seal",
+      "description": "The chosen face is worth +1, or +3 if the soul moved is one you have a bet on. Suggested target: the 1."
+    },
+    "relanceJumelle": {
+      "name": "Twin Reroll",
+      "description": "When two or more Soul dice name the same soul, they are all rerolled once. The second result stands, even if it repeats."
+    },
+    "quatriemeTete": {
+      "name": "Cerberus’s Fourth Head",
+      "description": "The roll includes one more Soul die: more choice, and one more unused die."
+    },
+    "fioleDeSang": {
+      "name": "Vial of Blood",
+      "description": "Once per turn, pay 5 coins to add +1 to a Distance die before pairing it.",
+      "warning": "every +1 costs 5 ¤ in cash, no credit"
+    },
+    "verrouDeMinos": {
+      "name": "Minos’s Lock",
+      "description": "Before each roll, you may lock a Distance die on its face from the previous turn instead of rerolling it."
+    },
+    "semellesDePlomb": {
+      "name": "Lead Soles",
+      "description": "A soul moving back onto a soul in the finishing zone no longer swaps with it: it tucks in just behind."
+    },
+    "batDeChameau": {
+      "name": "Camel Pack",
+      "description": "Once per race, the first ram fuses the two souls: the rammed one in front, the other behind, and any move of one moves both.",
+      "warning": "the fusion lasts the whole race and you only pick it once"
+    },
+    "balanceTruquee": {
+      "name": "Rigged Scales",
+      "description": "When a soul moves back onto another and swaps places, the swapped soul moves one extra space forward."
+    },
+    "chaineDuCoccyte": {
+      "name": "Chain of the Cocytus",
+      "description": "Two souls that have swapped places stay linked until the end of the turn: if one moves, the other follows the same distance."
+    },
+    "ticketPremiereHeure": {
+      "name": "First-Hour Ticket",
+      "description": "Bets placed before the first roll pay +1 on the multiplier; those placed during the race pay −0.5, never below ×1.",
+      "warning": "bets placed during the race pay less"
+    },
+    "quatriemeMarche": {
+      "name": "Fourth Step",
+      "description": "Your “in the top 3” conditions extend to the top 4. Changes neither “Outside the top 3” nor the Exact podium."
+    },
+    "encensoirDuDernier": {
+      "name": "Censer of the Last",
+      "description": "The Last place bet pays double if the last soul finishes 5 spaces or more behind the second to last."
+    },
+    "pieceADeuxFaces": {
+      "name": "Two-Headed Coin",
+      "description": "After the first roll, you may double the stake on all your open bets. If you do, the opponent rolls one more pair for the rest of the race.",
+      "warning": "the opponent’s turn rolls one more pair until the end of the race"
+    },
+    "denierDuCercle": {
+      "name": "Penny of the Circle",
+      "description": "Your winning bets are settled as if the stake were n coins higher, n being the circle number. You only pay your own stake."
+    },
+    "baumeDuPerdant": {
+      "name": "Loser’s Balm",
+      "description": "Every losing stake is returned to you at 10 %. Stacks with the Book of Accounts, which goes first."
+    },
+    "tribuneInfernale": {
+      "name": "Infernal Stand",
+      "description": "Before every race, place a stand on a free space outside the start and outside the finishing zone. Every soul that stops there earns you 4 coins and leaves with a +1 shove."
+    },
+    "detteInfernale": {
+      "name": "Infernal Debt",
+      "description": "Once per run, if you cannot pay the circle price, borrow what you are short, capped at half the price. The next circle costs 150 % of that sum on top.",
+      "warning": "the next circle costs 150 % of the borrowed sum on top"
+    },
+    "pourboireDuStagiaire": {
+      "name": "Intern’s Tip",
+      "description": "Right after your first roll of every race, you gain 10 coins."
+    },
+    "oeilDeCharon": {
+      "name": "Charon’s Eye",
+      "description": "You see the opponent’s first pair before ordering your combinations. Does not stack with the Whip or the Mirror."
+    },
+    "fouetDuContremaitre": {
+      "name": "Foreman’s Whip",
+      "description": "The opponent rolls all his pairs before your roll; they are resolved after you, as usual.",
+      "warning": "one more opponent pair per turn as soon as a soul is in the finishing zone"
+    },
+    "miroirDeNarcisse": {
+      "name": "Narcissus’s Mirror",
+      "description": "The opponent plays before you: his pairs are rolled and resolved before your roll. You pair up knowing the board at the end of the turn.",
+      "warning": "the opponent plays before you: he has the last word on nothing, you on everything"
+    },
+    "marteauHephaistos": {
+      "name": "Hephaestus’s Hammer",
+      "description": "The first forge alteration of every circle is free; the ones after cost 20 % less."
+    },
+    "rabaisDePloutos": {
+      "name": "Plutus’s Discount",
+      "description": "Everything the shop sells costs 3 % less, restocking the window included."
+    },
+    "fraude": {
+      "name": "Fraud Die",
+      "description": "Replaces a Distance die with a 1, 2, 3, ? die — the ? face takes the value of the best other Distance face in the roll."
+    },
+    "troisiemeDe": {
+      "name": "Third Distance Die",
+      "description": "Adds a -1, 1, 2, 3 Distance die to the roll: three combinations a turn instead of two.",
+      "warning": "the unused Soul die goes: no more Compass, no more fourth head to feed"
+    },
+    "explosive": {
+      "name": "Explosive Face",
+      "description": "The face is worth +2. If the soul rams on landing, the souls on the neighbouring spaces move back 1; otherwise it is the one that moves back 1.",
+      "warning": "with no ram, the soul moves back one space afterwards"
+    },
+    "bond": {
+      "name": "Leaping Face",
+      "description": "The soul moves up to the next soul ahead of it and jumps in front. Nobody ahead: it moves forward 3. Never carries it across the line."
+    },
+    "miroir": {
+      "name": "Mirror Face",
+      "description": "The face copies the value of the other Distance die in the roll, for better or worse."
+    },
+    "feuFollet": {
+      "name": "Will-o’-the-Wisp Face",
+      "description": "When it comes up, the die is rerolled and the new result stands. If the Will-o’-the-Wisp comes up again, it is worth +2."
+    },
+    "elan": {
+      "name": "Momentum Face",
+      "description": "The face is worth +2. You may reroll this die once and add the result, whatever it is.",
+      "warning": "the reroll is added, even if it comes up −1"
+    },
+    "gel": {
+      "name": "Freezing Face",
+      "description": "The face is worth 0 and the named soul is frozen until the end of the turn: the opponent’s pairs do not move it."
+    },
+    "aimant": {
+      "name": "Magnet Face",
+      "description": "The face is worth +1 and the soul just behind moves forward 1 too, into the space it left."
+    }
+  }
+}

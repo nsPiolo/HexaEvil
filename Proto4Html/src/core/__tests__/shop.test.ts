@@ -147,7 +147,7 @@ describe('effets en course', () => {
     const ctx = { turn: 1, clepsydre: true, bettedSouls: new Set<number>(), sealBonus: 2 }
     const t1 = buildMoves(roll, [{ soulDie: 0, distanceDie: 0 }, { soulDie: 1, distanceDie: 1 }], 'player', ctx)
     expect(t1.map((m) => m.distance)).toEqual([1, 4])
-    expect(t1[0]?.notes[0]).toMatch(/Clepsydre/)
+    expect(t1[0]?.notes[0]?.id).toBe('clepsydreFlip')
     const t2 = buildMoves(roll, [{ soulDie: 0, distanceDie: 0 }, { soulDie: 1, distanceDie: 1 }], 'player', { ...ctx, turn: 2 })
     expect(t2.map((m) => m.distance)).toEqual([-1, 3])
   })

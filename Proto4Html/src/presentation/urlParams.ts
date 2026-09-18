@@ -3,11 +3,13 @@
  *
  * - `?seed=NNN` : graine de la première course ; les courses suivantes utilisent seed + index,
  *   si bien que dés, vitrine et course sont entièrement déterministes (mulberry32).
+ * - `?lang=fr|en` : force la langue, avant même l'option enregistrée.
  * - `?e2e=1` : démarrage direct d'un nouveau run sur l'écran de jeu (pas de splash, pas
  *   d'intro), vitesse ×4, sauvegarde effacée. Avec lui seulement : `?money=NNN` fixe le
  *   solde de départ, `?race=N` l'index de la première course (0 = cercle 1, course 1) et
  *   `?speed=N` la vitesse des animations (1 à 4, défaut 4).
  */
+import { isLanguage, type Language } from './texts'
 
 function params(): URLSearchParams | null {
   if (typeof window === 'undefined') return null
@@ -30,6 +32,15 @@ export function urlSeed(): number | null {
 export function seedForRace(raceIndex: number): number | null {
   const base = urlSeed()
   return base === null ? null : (base + raceIndex) >>> 0
+}
+
+/**
+ * Langue imposée par l'URL (`?lang=en`), ou null. Utile en test et pour un lien de
+ * démonstration : elle l'emporte sur l'option enregistrée sans la modifier.
+ */
+export function urlLanguage(): Language | null {
+  const raw = params()?.get('lang')
+  return isLanguage(raw) ? raw : null
 }
 
 /** Mode test de bout en bout (`?e2e=1`). */

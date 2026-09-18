@@ -17,11 +17,17 @@ dictionnaire, ils produisent des contresens. Chaque entrée ci-dessous donne don
 Le pivot anglais n'est **pas** une traduction officielle : c'est une béquille de
 désambiguïsation. Traduisez depuis le français.
 
-> **Où vivent ces chaînes.** Presque tout l'affichage est regroupé dans
-> `Proto4Html/src/presentation/texts.ts`. Le reste vient de
-> `Proto4Html/config/race.json` (noms de cercles, boss, pouvoirs, terrains, âmes),
-> `Proto4Html/config/shop.json` (objets de boutique) et
-> `Proto4Html/src/core/rules/bets.ts` (types de paris).
+> **Où vivent ces chaînes.** Tout l'affichage est regroupé dans un fichier par
+> langue, `Proto4Html/src/presentation/texts/<langue>.ts` — le français
+> (`fr.ts`) est la référence, l'anglais (`en.ts`) le premier traduit. Les noms
+> collés aux nombres (âmes, cercles, boss, pouvoirs, terrains, objets de
+> boutique) restent dans `Proto4Html/config/race.json` et
+> `Proto4Html/config/shop.json` ; leur traduction est une simple couche de mots,
+> `Proto4Html/config/i18n/<langue>.json`.
+>
+> Le mode d'emploi complet — ce qu'il faut créer, ce que le compilateur vérifie
+> tout seul, ce qui reste à la charge du traducteur — est dans
+> [i18n.md](i18n.md).
 
 ---
 
@@ -401,10 +407,14 @@ fois**, puis appliquez-la partout : leur cohérence porte la compréhension des 
 
 ## Annexe A — Chaînes à pluralisation dépendante de la langue
 
-Ces chaînes contiennent `{s}` et **ne survivront pas telles quelles** à une
-langue dont le pluriel ne se réduit pas à « ajouter un s à partir de 2 ».
-Traduisez-les en signalant à l'équipe technique qu'elles demandent un vrai
-système de pluralisation.
+Ces chaînes contiennent `{s}`, rempli par la règle de pluriel **de la langue**
+(`fmt.plural`, un par pack — voir [i18n.md](i18n.md)). Le français met un `s` à
+partir de deux, l'anglais à partir de zéro ; les deux sont écrits et testés.
+
+Elles restent listées ici parce qu'une langue à pluriels multiples (russe,
+polonais) ou sans pluriel (japonais) ne tient toujours pas dans ce gabarit :
+`{s}` ne sait poser qu'un suffixe. Traduisez-les en signalant à l'équipe
+technique si votre langue en demande davantage.
 
 | Clé | Chaîne française |
 | --- | --- |

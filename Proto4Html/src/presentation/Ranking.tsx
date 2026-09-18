@@ -4,7 +4,7 @@ import { betType, type Settlement } from '../core/rules/bets'
 import { ranking, type RaceState } from '../core/rules/race'
 import { MoneyGauge } from './MoneyGauge'
 import { soulColor } from './souls'
-import { HUD, RESULTS, fill } from './texts'
+import { BET_TYPE_TEXTS, HUD, RESULTS, UI, fill } from './texts'
 
 interface Props {
   race: RaceState
@@ -87,20 +87,20 @@ export function Ranking({ race, settlement, money, price, racesLeft, speed, anim
   return (
     <section className="ranking" aria-label={HUD.raceResult} onClick={allShown ? undefined : revealAll} title={allShown ? undefined : RESULTS.skip}>
       <h2>{HUD.raceResult}</h2>
-      <h3>Classement final</h3>
+      <h3>{UI.ranking.final}</h3>
       <p className="muted">{fill(RESULTS.subtitle, { turn: race.turn })}</p>
       <ol>{rows}</ol>
       {settlement && bets.length > 0 && (
         <div className="settlement">
-          <h3>Bilan des paris</h3>
+          <h3>{UI.ranking.tally}</h3>
           <ul>
             {bets.map((b, i) => {
               const visible = i < shown
               return (
                 <li key={b.id} data-testid={`bet-ticket-${i}`} data-state={visible ? b.status : 'hidden'} className={visible ? `bet bet-${b.status} bet-revealed` : 'bet bet-hidden'} aria-hidden={!visible}>
-                  <span className="bet-type">{betType(b.type).label}</span>
+                  <span className="bet-type">{BET_TYPE_TEXTS[b.type].label}</span>
                   <span className="bet-targets">{b.souls.map((id) => race.souls[id]?.name ?? `#${id}`).join(betType(b.type).ordered ? ' › ' : ', ')}</span>
-                  <span className="bet-status">{visible ? (b.status === 'won' ? `gagné +${b.payout - b.stake}` : `perdu −${b.stake}`) : RESULTS.hidden}</span>
+                  <span className="bet-status">{visible ? (b.status === 'won' ? fill(UI.ticket.won, { net: b.payout - b.stake }) : fill(UI.ticket.lost, { stake: b.stake })) : RESULTS.hidden}</span>
                 </li>
               )
             })}
@@ -111,7 +111,7 @@ export function Ranking({ race, settlement, money, price, racesLeft, speed, anim
           </p>
         </div>
       )}
-      {settlement && bets.length === 0 && <p className="muted small">Aucun pari sur cette course.</p>}
+      {settlement && bets.length === 0 && <p className="muted small">{UI.ranking.none}</p>}
       <div className="ranking-gauge">
         <MoneyGauge money={money} price={price} staked={0} racesLeft={racesLeft} />
       </div>

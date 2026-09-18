@@ -6,8 +6,13 @@ import { HELP, fill, oddsText, type HelpBlock } from './texts'
  * Cotes citées par l'aide. Elles ne sont pas écrites dans les textes : une recalibration
  * (`npm run odds -- --suggest`) changeait la config sans changer l'aide, qui annonçait alors
  * des gains que le guichet ne payait plus.
+ *
+ * Relues à chaque rendu et non une fois pour toutes au chargement du module : la décimale
+ * change avec la langue (2,2 / 2.2), et une valeur figée resterait à la française.
  */
-const ODDS = oddsText(config.economy.multipliers)
+function odds(): Record<string, string> {
+  return oddsText(config.economy.multipliers)
+}
 
 interface Props {
   onClose: () => void
@@ -30,7 +35,7 @@ function rich(text: string): ReactNode[] {
 
 /** Rendu d'un texte d'aide : cotes de la config d'abord, balisage inline ensuite. */
 function help(text: string): ReactNode[] {
-  return rich(fill(text, ODDS))
+  return rich(fill(text, odds()))
 }
 
 function Block({ block }: { block: HelpBlock }) {

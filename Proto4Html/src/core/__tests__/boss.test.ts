@@ -7,7 +7,7 @@ import rawConfig from '../../../config/race.json'
 import rawShop from '../../../config/shop.json'
 import { loadConfig } from '../config/load'
 import { loadShopConfig } from '../shop/load'
-import { BOSS_EFFECT_IDS, describeBossEffects, generateBossEffects, type BossEffect } from '../rules/boss'
+import { BOSS_EFFECT_IDS, generateBossEffects, type BossEffect } from '../rules/boss'
 import { plainFace } from '../rules/dice'
 import {
   applyMove,
@@ -58,7 +58,6 @@ describe('catalogue des pouvoirs', () => {
       // Les couples qui s'annulent ou s'embrouillent ne sortent jamais ensemble.
       expect(ids.includes('slowWater') && ids.includes('opponentBoost')).toBe(false)
       expect(ids.includes('frozenLanes') && ids.includes('pushBack')).toBe(false)
-      expect(describeBossEffects(e).length).toBeGreaterThan(0)
     }
     expect(generateBossEffects(seededRng(7))).toEqual(generateBossEffects(seededRng(7)))
   })

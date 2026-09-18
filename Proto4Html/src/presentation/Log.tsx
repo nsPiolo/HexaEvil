@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import type { LogEntry } from './useRace'
+import { LOG } from './texts'
 
 export function Log({ entries }: { entries: LogEntry[] }) {
   const end = useRef<HTMLDivElement>(null)
@@ -8,8 +9,8 @@ export function Log({ entries }: { entries: LogEntry[] }) {
   }, [entries.length])
   let lastTurn = 0
   return (
-    <section className="log" aria-label="Journal de la course">
-      <h3>Journal</h3>
+    <section className="log" aria-label={LOG.label}>
+      <h3>{LOG.title}</h3>
       <div className="log-scroll">
         {entries.map((e) => {
           const showTurn = e.turn !== lastTurn

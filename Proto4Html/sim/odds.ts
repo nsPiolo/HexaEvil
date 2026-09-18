@@ -174,7 +174,7 @@ function table(circle: number, races: number): void {
   for (const def of BET_TYPES) {
     const p = odds[def.id]
     const m = config.economy.multipliers[def.id]
-    const row = [def.label, pct(p), fair(p), `×${m}`, (p * m).toFixed(2)]
+    const row = [def.id, pct(p), fair(p), `×${m}`, (p * m).toFixed(2)]
     console.log(row.map((c, i) => column(c, widths[i]!, i === 0 ? 'left' : 'right')).join(' '))
   }
 }
@@ -199,7 +199,7 @@ function suggestions(circles: number, races: number, target: number): void {
     const raw = p === 0 ? 0 : target / p
     // Arrondis lisibles : une cote se lit au guichet, elle ne s'épelle pas à trois décimales.
     const proposed = raw >= 20 ? Math.round(raw / 10) * 10 : raw >= 5 ? Math.round(raw) : Math.round(raw * 20) / 20
-    const row = [def.label, `c${from}`, pct(p), fair(p), `×${config.economy.multipliers[def.id]}`, `×${proposed}`, (p * proposed).toFixed(2)]
+    const row = [def.id, `c${from}`, pct(p), fair(p), `×${config.economy.multipliers[def.id]}`, `×${proposed}`, (p * proposed).toFixed(2)]
     console.log(row.map((c, i) => column(c, widths[i]!, i === 0 ? 'left' : 'right')).join(' '))
   }
 }
