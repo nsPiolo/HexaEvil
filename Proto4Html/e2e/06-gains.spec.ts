@@ -54,7 +54,7 @@ test.describe('06 · Résultats et gains', () => {
     await start(page, { seed: RACE_SEED })
     const dialog = await autoToResults(page)
     const g = gauge(dialog)
-    await expect(g, `Graine ${RACE_SEED} : solde final inattendu — re-chercher la graine (e2e/seeds.ts).`).toContainText(`${E.finalMoney} / 200`)
+    await expect(g, `Graine ${RACE_SEED} : solde final inattendu — re-chercher la graine (e2e/seeds.ts).`).toContainText(`${E.finalMoney} / 150`)
     await expect(g).toContainText(`encore ${E.missing} ¤ à trouver en 2 courses`)
     await expect(g).toHaveAttribute('data-state', 'warn')
   })

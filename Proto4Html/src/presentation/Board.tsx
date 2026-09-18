@@ -26,6 +26,8 @@ interface Props {
   bettedSouls?: ReadonlySet<number>
   /** Colonnes à surligner brièvement (départage « même colonne, le plus bas devant »). */
   tieColumns?: readonly number[]
+  /** Tribune infernale : pose en cours ; chaque case permise devient cliquable. */
+  onPlaceTribune?: (column: number, lane: number) => void
 }
 
 /** Écart vertical entre deux jetons empilés sur la même case, en pixels ; taille d'un jeton. */
@@ -49,7 +51,7 @@ export function consequenceGlyphs(r: MoveResult): { glyph: string; title: string
  * EN BAS, au plus près du joueur. Les cases bloquées sont hachurées. Les âmes qui partagent
  * une case (départ, dernière case) s'empilent visuellement.
  */
-export function Board({ race, lastResult, activeSoul, highlightSoul = null, onHoverSoul, preview = null, selection = null, bettedSouls, tieColumns = [] }: Props) {
+export function Board({ race, lastResult, activeSoul, highlightSoul = null, onHoverSoul, preview = null, selection = null, bettedSouls, tieColumns = [], onPlaceTribune }: Props) {
   const closed = bettingClosed(race)
   const { track } = race
   const cols = Array.from({ length: track.totalCells }, (_, i) => i)
@@ -109,10 +111,20 @@ export function Board({ race, lastResult, activeSoul, highlightSoul = null, onHo
         ))}
       </div>
       <div className="cells track" style={{ height: `${trackHeight}px` }}>
+        {/* Tribune infernale : posée avant la course, elle rapporte et pousse (artefacts.md n°19). */}
+        {race.tribune && (
+          <div className="tribune" style={cellStyle(race.tribune.column, race.tribune.lane)} title={BOARD.tribuneTitle} aria-label={BOARD.tribune}>
+            ⚑
+          </div>
+        )}
         {rows.map((lane) =>
           cols.map((c) => (
             <div key={`${lane}-${c}`} className={cellClass(c, lane)} title={isBlocked(track, c, lane) ? `Case bloquée (colonne ${c}, couloir ${lane + 1})` : tieColumns.includes(c) ? BOARD.tieColumn : undefined}>
               {isBlocked(track, c, lane) && <span className="cell-blocked-mark" aria-hidden="true">✕</span>}
+              {/* Pose de la tribune : seules les cases permises sont cliquables. */}
+              {onPlaceTribune && c > 0 && c < track.betThresholdColumn && !isBlocked(track, c, lane) && (
+                <button type="button" className="cell-tribune" onClick={() => onPlaceTribune(c, lane)} aria-label={fill(BOARD.tribunePlace, { column: c })} title={fill(BOARD.tribunePlace, { column: c })} />
+              )}
             </div>
           )),
         )}

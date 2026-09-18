@@ -4,8 +4,9 @@
  */
 import type { RaceConfig } from '../config/schema'
 import { baseDie, type DistanceDie, type Face } from '../rules/dice'
+import { growWithCircle } from '../rules/growth'
 import type { Rng } from '../rules/rng'
-import type { ArtefactId, DieItem, ForgeId, ShopConfig, ShopItem } from './items'
+import type { ArtefactId, DieItem, ForgeId, Rarity, ShopConfig, ShopItem } from './items'
 
 /** Ce que le joueur emporte de course en course. */
 export interface Inventory {
@@ -14,7 +15,34 @@ export interface Inventory {
 }
 
 export function priceAtCircle(base: number, circle: number, growth: number): number {
-  return Math.round((base * (1 + growth * (circle - 1))) / 5) * 5
+  return growWithCircle(base, circle, growth)
+}
+
+/** Remises de boutique ouvertes par les artefacts (artefacts.md n°26 et n°30). */
+export interface PriceRules {
+  /** Rabais de Ploutos : part retirée de tout ce que vend la boutique, renouvellement compris. */
+  globalDiscount?: number
+  /** Marteau d'Héphaïstos : remise sur les altérations de forge. */
+  forgeDiscount?: number
+  /** Marteau d'Héphaïstos : la première forge du cercle est offerte tant que ce drapeau est faux. */
+  forgeFreeAvailable?: boolean
+}
+
+/**
+ * Prix réellement demandé pour un objet : prix du cercle, puis les remises. La forge gratuite
+ * du Marteau passe avant tout le reste — offert veut dire 0, pas « 0 moins 3 % ».
+ */
+export function effectivePrice(item: ShopItem, circle: number, growth: number, rules: PriceRules = {}): number {
+  if (item.kind === 'forge' && rules.forgeFreeAvailable) return 0
+  let price = priceAtCircle(item.price, circle, growth)
+  if (item.kind === 'forge' && rules.forgeDiscount) price *= 1 - rules.forgeDiscount
+  if (rules.globalDiscount) price *= 1 - rules.globalDiscount
+  return Math.max(0, Math.round(price))
+}
+
+/** Prix du renouvellement de vitrine, Rabais de Ploutos compris. */
+export function effectiveRerollCost(shop: ShopConfig, rules: PriceRules = {}): number {
+  return Math.max(0, Math.round(shop.rerollCost * (1 - (rules.globalDiscount ?? 0))))
 }
 
 export function findItem(shop: ShopConfig, id: string): ShopItem {
@@ -23,38 +51,68 @@ export function findItem(shop: ShopConfig, id: string): ShopItem {
   return it
 }
 
-/** Tirage pondéré par rareté, sans remise, en excluant les artefacts déjà possédés. */
-export function generateVitrine(shop: ShopConfig, inventory: Inventory, rng: Rng): ShopItem[] {
-  let pool = shop.items.filter((it) => !(it.kind === 'artefact' && inventory.artefacts.includes(it.id)))
+/**
+ * Un objet tiré dans un vivier non vide, chaque rareté pesant son poids `rarityWeights`.
+ * Partagé par la vitrine et le déblocage de fin de cercle (`shop/unlocks.ts`).
+ */
+export function weightedPick<T extends { rarity: Rarity }>(pool: readonly T[], weights: Readonly<Record<Rarity, number>>, rng: Rng): T {
+  const total = pool.reduce((s, it) => s + weights[it.rarity], 0)
+  let r = rng.next() * total
+  for (const it of pool) {
+    r -= weights[it.rarity]
+    if (r < 0) return it
+  }
+  return pool[pool.length - 1]!
+}
+
+/**
+ * Tirage pondéré par rareté, sans remise, en excluant les artefacts déjà possédés.
+ * Le vivier se limite aux objets **débloqués** (`unlocked`, voir `shop/unlocks.ts`) :
+ * le reste du catalogue n'existe pas encore pour ce joueur.
+ */
+export function generateVitrine(shop: ShopConfig, inventory: Inventory, unlocked: readonly string[], rng: Rng): ShopItem[] {
+  const open = new Set(unlocked)
+  let pool = shop.items.filter((it) => open.has(it.id) && !(it.kind === 'artefact' && inventory.artefacts.includes(it.id)))
   // Plus d'emplacement d'artefact : on n'en propose plus.
   if (inventory.artefacts.length >= shop.artefactSlots) pool = pool.filter((it) => it.kind !== 'artefact')
   const out: ShopItem[] = []
   while (out.length < shop.slots && pool.length > 0) {
-    const total = pool.reduce((s, it) => s + shop.rarityWeights[it.rarity], 0)
-    let r = rng.next() * total
-    let pick = pool[pool.length - 1]!
-    for (const it of pool) {
-      r -= shop.rarityWeights[it.rarity]
-      if (r < 0) {
-        pick = it
-        break
-      }
-    }
+    const pick = weightedPick(pool, shop.rarityWeights, rng)
     out.push(pick)
     pool = pool.filter((it) => it !== pick)
   }
   return out
 }
 
-/** Applique une altération de forge à une face. */
+/**
+ * Applique une altération de forge à une face (forge.md). La valeur est ce que la face vaut
+ * quand rien d'autre ne joue ; l'effet dit où la règle se termine — au lancer (`mirror`,
+ * `willOWisp`), à l'association (`gold`, `momentum`) ou contre le plateau (`leap`, `explosive`,
+ * `magnet`, `freeze`, `betSeal`). Voir `FaceEffect` dans `rules/dice.ts`.
+ */
 export function forgeFace(id: ForgeId, face: Face): Face {
   switch (id) {
     case 'limee':
       return { value: 0, effect: null, altered: id }
-    case 'doree':
-      return { value: 1, effect: 'gold', altered: id }
     case 'retournee':
       return { value: 1, effect: null, altered: id }
+    case 'doree':
+      return { value: 1, effect: 'gold', altered: id }
+    case 'explosive':
+      return { value: 2, effect: 'explosive', altered: id }
+    case 'bond':
+      return { value: 3, effect: 'leap', altered: id }
+    case 'miroir':
+      return { value: 1, effect: 'mirror', altered: id }
+    // Feu follet : la face est toujours relancée, sa valeur ne sert que si le Feu follet ressort.
+    case 'feuFollet':
+      return { value: 2, effect: 'willOWisp', altered: id }
+    case 'elan':
+      return { value: 2, effect: 'momentum', altered: id }
+    case 'gel':
+      return { value: 0, effect: 'freeze', altered: id }
+    case 'aimant':
+      return { value: 1, effect: 'magnet', altered: id }
     case 'sceau':
       return { value: 1, effect: 'betSeal', altered: id }
   }
@@ -65,7 +123,7 @@ export function specialDie(item: DieItem): DistanceDie {
   return {
     kind: item.id,
     name: item.name,
-    faces: item.faces.map((v) => ({ value: v, effect: null, altered: null })),
+    faces: item.faces.map((v, i) => (i === item.wildFace ? { value: v, effect: null, altered: null, wild: true } : { value: v, effect: null, altered: null })),
     costPerUse: item.costPerUse,
   }
 }
@@ -93,6 +151,11 @@ export function applyPurchase(item: ShopItem, inventory: Inventory, target: Purc
       if (inventory.artefacts.includes(item.id)) throw new Error('artefact déjà possédé')
       return { inventory: { ...inventory, artefacts: [...inventory.artefacts, item.id] }, text: `Artefact acquis : ${item.name}.` }
     case 'die': {
+      // Troisième dé Distance : il s'ajoute au lancer, il n'y a donc rien à désigner.
+      if (item.mode === 'add') {
+        const dice = [...inventory.dice, specialDie(item)]
+        return { inventory: { ...inventory, dice }, text: `${item.name} rejoint le lancer : ${dice.length} dés Distance.` }
+      }
       if (!target) throw new Error('choisissez le dé à remplacer')
       const old = inventory.dice[target.dieIndex]
       if (!old) throw new Error('dé introuvable')

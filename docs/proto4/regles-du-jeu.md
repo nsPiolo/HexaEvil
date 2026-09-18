@@ -7,7 +7,7 @@
 
 ## Le but
 
-S'évader de l'enfer. Chaque cercle a un **prix de sortie** (200 pièces pour le
+S'évader de l'enfer. Chaque cercle a un **prix de sortie** (150 pièces pour le
 premier, de plus en plus cher ensuite). Vous avez **trois courses** par cercle
 pour réunir la somme — la troisième se joue contre le boss du cercle. Si vous
 pouvez payer à la fin, vous montez. Sinon… le stagiaire a déjà choisi votre
@@ -126,6 +126,20 @@ hiérarchie : Assistant, Tourmenteur, Contremaître, Sous-directeur… Chaque
 promotion **ouvre de nouveaux paris** et garnit la boutique. Après le huitième
 cercle, il obtient même une belle promotion. Au neuvième — le cercle de la
 Trahison — devinez qui tient le guichet en face de vous.
+
+## L'avance et les jetons grandissent avec vous
+
+Avant chaque course, le stagiaire vous avance de l'argent : 20 pièces au premier
+cercle, puis **davantage à chaque cercle** — 40 au deuxième, 60 au troisième, 180 au
+neuvième. Un stagiaire qui monte en grade a plus de caisse. C'est ce qui vous permet
+de repartir après avoir payé la sortie d'un cercle, même la bourse vide.
+
+Les quatre jetons de mise valent 5, 10, 20 et 50 au premier cercle. Ensuite ils
+grossissent aussi, comme les prix de la boutique : plus vous descendez, plus vous
+pouvez risquer d'un coup — c'est ce qui permet à une bourse bien garnie de suivre
+des prix de sortie qui grimpent. Une garantie ne bouge pas : le plus petit jeton ne
+dépasse jamais l'avance du cercle. Même ruiné, vous pouvez toujours poser le pari
+minimum.
 
 ## Et après le neuvième ?
 

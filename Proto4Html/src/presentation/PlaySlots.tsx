@@ -69,6 +69,12 @@ interface PlayerProps {
   onRoll: () => void
   onPickSoul: (i: number) => void
   onPickDistance: (i: number) => void
+  /** Fiole de sang : +1 sur ce dé, une fois par tour. Absent si le joueur ne l'a pas. */
+  onFiole?: (i: number) => void
+  /** Face d'élan : relancer ce dé et ajouter le résultat. */
+  onMomentum?: (i: number) => void
+  /** Verrou de Minos : garder ce dé sur sa face pour le prochain lancer (null = lever le verrou). */
+  onLock?: (i: number | null) => void
   onReset: () => void
   onResolve: () => void
   /** Glisser-déposer : dé Âme déposé sur un dé Distance. */
@@ -114,7 +120,7 @@ export function cardsOf(roll: RaceUi['roll'], combinations: readonly Combination
 }
 
 /** Emplacement du bas : les dés du joueur, l'association et les boutons d'action. */
-export function PlayerSlot({ ui, speed, preview, highlightSoul, onHoverSoul, onStart, onRoll, onPickSoul, onPickDistance, onReset, onResolve, onPairDice, onRemoveCombinations, onSetCombinations }: PlayerProps) {
+export function PlayerSlot({ ui, speed, preview, highlightSoul, onHoverSoul, onStart, onRoll, onPickSoul, onPickDistance, onFiole, onMomentum, onLock, onReset, onResolve, onPairDice, onRemoveCombinations, onSetCombinations }: PlayerProps) {
   const { phase, roll, race, combinations, selectedSoulDie, resolvingIndex } = ui
   const pairing = phase === 'pairing'
   const rolling = phase === 'rolling'
@@ -301,7 +307,28 @@ export function PlayerSlot({ ui, speed, preview, highlightSoul, onHoverSoul, onS
                       {face?.effect === 'gold' && <span className="die-effect">✦</span>}
                       {face?.effect === 'betSeal' && <span className="die-effect">♠</span>}
                       {order >= 0 && <span className="die-order">{order + 1}</span>}
+                      {ui.lockedDie === i && <span className="die-lock" aria-hidden="true">⚿</span>}
                     </button>
+                    {/* Objets qui se déclenchent sur un dé précis, avant de l'associer (artefacts.md, forge.md). */}
+                    {pairing && order < 0 && (onFiole || onMomentum || onLock) && (
+                      <span className="die-tools">
+                        {onFiole && ui.fioleTurn !== race.turn && (
+                          <button type="button" className="die-tool" onClick={() => onFiole(i)} title={RACE.fioleTitle}>
+                            {RACE.fiole}
+                          </button>
+                        )}
+                        {onMomentum && face?.effect === 'momentum' && !ui.momentumUsed.includes(i) && (
+                          <button type="button" className="die-tool" onClick={() => onMomentum(i)} title={RACE.momentumTitle}>
+                            {RACE.momentum}
+                          </button>
+                        )}
+                        {onLock && (
+                          <button type="button" className={'die-tool' + (ui.lockedDie === i ? ' die-tool-on' : '')} onClick={() => onLock(ui.lockedDie === i ? null : i)} title={RACE.lockTitle}>
+                            {RACE.lock}
+                          </button>
+                        )}
+                      </span>
+                    )}
                     {die && die.kind !== 'base' && <span className="die-name">{die.name}</span>}
                     {die && die.kind === 'base' && die.faces.some((f) => f.altered) && (
                       <span className="die-name">

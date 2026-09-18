@@ -15,10 +15,10 @@
  * - tour 2 : le joueur provoque une collision (05-F) ;
  * - après le tour 4 : une âme est dans la zone de fin, la course continue (03-C) ;
  * - course en 7 tours ; le pari auto « Vainqueur pur · Homère » est gagné : 80 + 20 d'avance − 5 + 18
- *   = 113 pièces, donc « encore 87 ¤ à trouver en 2 courses » (06-B).
+ *   = 113 pièces, donc « encore 37 ¤ à trouver en 2 courses » avec un cercle 1 à 150 (06-B).
  */
 export const RACE_SEED = 97
-export const RACE_SEED_EXPECT = { firstMove: { soul: 'Socrate', to: 2 }, collisionTurn: 2, zoneTurn: 4, finalMoney: 113, missing: 87 }
+export const RACE_SEED_EXPECT = { firstMove: { soul: 'Socrate', to: 2 }, collisionTurn: 2, zoneTurn: 4, finalMoney: 113, missing: 37 }
 
 /** Avance versée par le stagiaire au début de chaque course (`economy.raceAllowance`) : 80 de capital + 20 → 100 à la table. */
 export const ALLOWANCE = 20
@@ -34,14 +34,19 @@ export const TIE_RACE_INDEX = 3
 
 /**
  * Vitrine du cercle 1, inventaire de départ (la vitrine est tirée à la première ouverture de la
- * boutique, avant tout lancer) : Tirelire du stagiaire 45 (sûr), Dé des Limbes 30 (sûr), Œil du
- * parieur 80 (ambitieux, ≥ seuil de confirmation), Dé de la Colère 55 (danger ⚠). Tous les prix
- * dépassent 15 : à 0 pièce apportée (20 d'avance − 5 de mise), tout est trop cher (04-D).
+ * boutique, avant tout lancer) : Face de gel 40 (sûr), Dé des Limbes 30 (sûr), Œil du parieur 80
+ * (ambitieux, ≥ seuil de confirmation), Bât de chameau 95 (danger ⚠). Tous les prix dépassent
+ * 15 : à 0 pièce apportée (20 d'avance − 5 de mise), tout est trop cher (04-D).
+ *
+ * Re-cherchée après l'élargissement du catalogue (16 → 47 objets), qui a invalidé la graine 171.
+ * Contraintes à retrouver si elle saute à son tour : quatre objets triés sûr, sûr, ambitieux,
+ * danger ; un dé à remplacer, sûr, sous le seuil de confirmation et payable à 67 ; un artefact
+ * ambitieux entre 68 et 95 (achetable à 95, refusé à 67) ; un objet à contrepartie ; rien sous 16.
  */
-export const SHOP_SEED = 171
+export const SHOP_SEED = 210
 export const SHOP_SEED_EXPECT = {
   order: ['Sûr', 'Sûr', 'Ambitieux', 'Danger ⚠'],
-  danger: { name: 'Dé de la Colère', warning: 'une face à −2 : un recul de deux cases est possible', impact: 'moyen' },
+  danger: { name: 'Bât de chameau', warning: "la fusion dure toute la course et vous ne la choisissez qu'une fois", impact: 'fort' },
   confirm: { name: 'Œil du parieur', price: 80 },
   die: { name: 'Dé des Limbes', price: 30, faces: ['+1', '+1', '+2', '+2'] },
   cheapest: 30,

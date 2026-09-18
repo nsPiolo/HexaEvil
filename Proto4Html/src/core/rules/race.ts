@@ -12,7 +12,7 @@
  * Avec un seul couloir, on retrouve les règles d'origine : une case par colonne.
  */
 import type { BlockedCell, RaceConfig } from '../config/schema'
-import { plainFace, type DistanceDie, type Face } from './dice'
+import { BOARD_EFFECTS, plainFace, type DistanceDie, type Face, type FaceEffect } from './dice'
 import type { Rng } from './rng'
 
 export type SoulId = number
@@ -44,6 +44,12 @@ export interface Track {
   blocked: readonly BlockedCell[]
 }
 
+/** Deux âmes fusionnées par le Bât de chameau : tout déplacement de l'une déplace l'autre. */
+export interface Fusion {
+  front: SoulId
+  back: SoulId
+}
+
 export interface RaceState {
   track: Track
   souls: readonly Soul[]
@@ -51,6 +57,14 @@ export interface RaceState {
   turn: number
   finished: boolean
   nextFinishOrder: number
+  /** Face Gel : âmes que le tour adverse ne déplace pas, jusqu'à la fin du tour. */
+  frozen: readonly SoulId[]
+  /** Chaîne du Coccyte : paires liées par un échange, jusqu'à la fin du tour. */
+  links: readonly (readonly [SoulId, SoulId])[]
+  /** Bât de chameau : la fusion en cours, une seule par course. */
+  fusion: Fusion | null
+  /** Tribune infernale : case qui rapporte et pousse, posée avant la course. */
+  tribune: { column: number; lane: number } | null
 }
 
 /** Un lancer : valeurs des dés Distance (avec la face sortie), et âme désignée par chaque dé Âme. */
@@ -77,6 +91,21 @@ export interface Move {
   parts: readonly { soulDie: number; distanceDie: number; distance: number }[]
   /** Modificateurs appliqués (artefacts, faces forgées), pour le journal. */
   notes: readonly string[]
+  /**
+   * Effets des faces qui composent ce déplacement et qui se résolvent contre le plateau
+   * (`BOARD_EFFECTS`) : `applyMove` en a besoin, une distance seule ne les porte pas.
+   */
+  effects: readonly FaceEffect[]
+  /**
+   * Déplacement provoqué par un autre (lien, aimant, souffle, poussée) : il n'en provoque
+   * pas à son tour. Sans ce garde-fou, Bât + Chaîne + Aimant s'entraînent sans fin.
+   */
+  induced?: boolean
+}
+
+/** Déplacement nu, pour les appels qui n'ont ni dés ni effets derrière eux. */
+export function simpleMove(source: MoveSource, soul: SoulId, distance: number, notes: readonly string[] = []): Move {
+  return { source, soul, distance, parts: [], notes, effects: [] }
 }
 
 export type Collision =
@@ -98,6 +127,8 @@ export interface MoveResult {
   blockedAtStart: boolean
   collision: Collision | null
   crossedFinish: boolean
+  /** Face Gel, ou tour adverse sur une âme gelée : l'âme n'a pas bougé et ne bougera plus du tour. */
+  frozen: boolean
 }
 
 // ---------------------------------------------------------------------------
@@ -146,14 +177,57 @@ export function createRace(config: RaceConfig, options: RaceOptions = {}): RaceS
   for (let i = 0; i < count; i++) {
     souls.push({ id: i, name: at(config.souls.names, i, 'souls.names'), position: 0, lane: i % track.lanes, finishOrder: null })
   }
-  return { track, souls, turn: 1, finished: false, nextFinishOrder: 1 }
+  return { track, souls, turn: 1, finished: false, nextFinishOrder: 1, frozen: [], links: [], fusion: null, tribune: null }
+}
+
+/**
+ * Faces qui se résolvent au moment même du lancer (forge.md) :
+ *
+ * - **Feu follet** : le dé est relancé une fois et le nouveau résultat s'impose ; s'il ressort
+ *   Feu follet, il vaut +2 — on ne relance pas indéfiniment ;
+ * - **Miroir** : la face prend la valeur d'un autre dé Distance du lancer. On ignore les autres
+ *   Miroirs pour qu'aucune paire de miroirs ne se regarde ; sans autre dé, la face garde la sienne.
+ *
+ * Le Dé de Fraude (`?`, valeur 0 sur la face `wild`) suit la même logique que le Miroir mais copie
+ * la **meilleure** face visible : c'est un dé qui triche, pas un dé qui reflète.
+ */
+function resolveRollFaces(faces: readonly Face[], dice: readonly DistanceDie[], rng: Rng): Face[] {
+  const rolled = faces.map((face, i) => {
+    if (face.effect !== 'willOWisp') return face
+    const die = dice[i]
+    if (!die) return face
+    const again = at(die.faces, rng.int(die.faces.length), `faces du ${die.name}`)
+    return again.effect === 'willOWisp' ? { ...again, value: 2 } : again
+  })
+  return rolled.map((face, i) => {
+    const others = rolled.filter((f, j) => j !== i && f.effect !== 'mirror' && !f.wild)
+    if (face.effect === 'mirror') return others.length === 0 ? face : { ...face, value: at(others, 0, 'autre dé Distance').value }
+    // Face `?` du Dé de Fraude : elle copie la plus forte des autres faces visibles.
+    if (face.wild) return others.length === 0 ? face : { ...face, value: Math.max(...others.map((f) => f.value)) }
+    return face
+  })
+}
+
+export interface RollOptions {
+  /** Dés Âme du lancer (Quatrième tête de Cerbère en ajoute un) ; `config.dice.soulDice` par défaut. */
+  soulDice?: number
+  /** Verrou de Minos : faces gardées du tour précédent, par index de dé. */
+  locked?: Readonly<Record<number, Face>>
+  /**
+   * Relance jumelle : quand deux dés Âme ou plus désignent la même âme, tous sont relancés
+   * une fois. Le second tirage est gardé tel quel, même s'il répète (artefacts.md n°1).
+   */
+  rerollTwins?: boolean
 }
 
 /** Lancer du joueur avec ses propres dés Distance (forgés ou spéciaux). */
-export function rollPlayerDice(config: RaceConfig, soulCount: number, rng: Rng, dice: readonly DistanceDie[]): Roll {
-  const faces: Face[] = dice.map((d) => at(d.faces, rng.int(d.faces.length), `faces du ${d.name}`))
-  const soul: SoulId[] = []
-  for (let i = 0; i < config.dice.soulDice; i++) soul.push(rng.int(soulCount))
+export function rollPlayerDice(config: RaceConfig, soulCount: number, rng: Rng, dice: readonly DistanceDie[], options: RollOptions = {}): Roll {
+  const raw: Face[] = dice.map((d, i) => options.locked?.[i] ?? at(d.faces, rng.int(d.faces.length), `faces du ${d.name}`))
+  const faces = resolveRollFaces(raw, dice, rng)
+  const count = options.soulDice ?? config.dice.soulDice
+  const drawSouls = (): SoulId[] => Array.from({ length: count }, () => rng.int(soulCount))
+  let soul = drawSouls()
+  if (options.rerollTwins && new Set(soul).size < soul.length) soul = drawSouls()
   return { distance: faces.map((f) => f.value), faces, soul }
 }
 
@@ -212,13 +286,15 @@ export function buildMoves(roll: Roll, combinations: readonly Combination[], sou
     const notes: string[] = []
     const distance = effectiveDistance(face, soul, ctx, notes)
     const part = { soulDie: c.soulDie, distanceDie: c.distanceDie, distance }
+    const effects = face.effect && BOARD_EFFECTS.includes(face.effect) ? [face.effect] : []
     const existing = moves.find((m) => m.soul === soul)
     if (existing) {
       existing.distance += distance
       existing.parts = [...existing.parts, part]
       existing.notes = [...existing.notes, ...notes]
+      existing.effects = [...existing.effects, ...effects]
     } else {
-      moves.push({ source, soul, distance, parts: [part], notes })
+      moves.push({ source, soul, distance, parts: [part], notes, effects })
     }
   }
   return moves
@@ -227,7 +303,9 @@ export function buildMoves(roll: Roll, combinations: readonly Combination[], sou
 /** Boussole des Limbes : l'âme du premier dés Âme inutilisés (un déplacement de +1 par dé, dans l'ordre des dés) avance de 1. Null si tous les dés Âme ont servi. */
 export function unusedSoulMoves(roll: Roll, combinations: readonly Combination[]): Move[] {
   const used = new Set(combinations.map((c) => c.soulDie))
-  return roll.soul.flatMap((soul, idx) => (used.has(idx) ? [] : [{ source: 'artefact' as const, soul, distance: 1, parts: [{ soulDie: idx, distanceDie: -1, distance: 1 }], notes: ['Boussole des Limbes'] }]))
+  return roll.soul.flatMap((soul, idx) =>
+    used.has(idx) ? [] : [{ source: 'artefact' as const, soul, distance: 1, parts: [{ soulDie: idx, distanceDie: -1, distance: 1 }], notes: ['Boussole des Limbes'], effects: [] }],
+  )
 }
 
 /**
@@ -271,25 +349,110 @@ export function chooseCell(track: Track, souls: readonly Soul[], column: number,
   return { lane, occupant: occupantOf(lane), detour: preferredOpen ? null : 'blocked' }
 }
 
-/** Applique un déplacement, son choix de case et ses collisions (§2.6). */
-export function applyMove(state: RaceState, move: Move): { state: RaceState; result: MoveResult } {
+/** Règles de déplacement ouvertes par les artefacts et la forge (artefacts.md, forge.md). */
+export interface MoveRules {
+  /** Semelles de plomb : reculer sur une âme en zone de fin fait sauter derrière au lieu d'échanger. */
+  semelles?: boolean
+  /** Balance truquée : l'âme échangée avance d'une case de plus. */
+  balance?: boolean
+  /** Chaîne du Coccyte : un échange lie les deux âmes jusqu'à la fin du tour. */
+  chaine?: boolean
+  /** Bât de chameau : la première percussion de la course fusionne les deux âmes. */
+  bat?: boolean
+  /** Tribune infernale : pièces versées et poussée quand une âme s'arrête sur la case. */
+  tribune?: { coins: number; push: number }
+}
+
+/** Distance réelle de la face Bond : jusqu'à l'âme suivante, sinon la valeur de la face. */
+function leapDistance(state: RaceState, soul: SoulId, fallback: number): number {
+  const from = at(state.souls, soul, 'âme').position
+  const ahead = state.souls.filter((s) => s.id !== soul && s.position > from).map((s) => s.position)
+  if (ahead.length === 0) return fallback
+  const next = Math.min(...ahead)
+  // L'arrivée ne se franchit pas par un Bond : on s'arrête sur la dernière case avant.
+  const target = next >= state.track.columns ? state.track.columns - 1 : next
+  return Math.max(0, target - from)
+}
+
+/** L'âme immédiatement derrière une colonne, ou null (face Aimant). */
+function soulBehind(state: RaceState, column: number, except: SoulId): Soul | null {
+  const behind = state.souls.filter((s) => s.id !== except && s.position < column)
+  if (behind.length === 0) return null
+  return behind.reduce((best, s) => (s.position > best.position ? s : best))
+}
+
+/** Partenaire lié à une âme : fusion du Bât, ou chaîne du Coccyte. */
+function partnersOf(state: RaceState, soul: SoulId): SoulId[] {
+  const out: SoulId[] = []
+  if (state.fusion) {
+    if (state.fusion.front === soul) out.push(state.fusion.back)
+    if (state.fusion.back === soul) out.push(state.fusion.front)
+  }
+  for (const [a, b] of state.links) {
+    if (a === soul) out.push(b)
+    if (b === soul) out.push(a)
+  }
+  return [...new Set(out)]
+}
+
+export interface MoveOutcome {
+  state: RaceState
+  result: MoveResult
+  /**
+   * Déplacements induits, à résoudre juste après celui-ci : partenaire lié ou fusionné,
+   * âme aspirée par l'Aimant, âmes soufflées par la face Explosive, poussée de la Tribune.
+   * Ils portent `induced` : ils n'en induisent pas d'autres, un déplacement induit par âme
+   * et par tour (artefacts.md § Combinaisons à surveiller).
+   */
+  follow: Move[]
+  /** Pièces gagnées par ce déplacement (Tribune infernale). */
+  coins: number
+}
+
+/** Applique un déplacement, son choix de case et ses collisions (§2.6), règles d'objets comprises. */
+export function applyMove(state: RaceState, move: Move, rules: MoveRules = {}): MoveOutcome {
   const { track } = state
   const maxCell = track.totalCells - 1
   const mover = at(state.souls, move.soul, 'âme')
   const from = mover.position
   const fromLane = mover.lane
 
+  // Face Gel : l'âme désignée ne bouge pas et devient intouchable par le tour adverse.
+  if (move.effects.includes('freeze')) {
+    const frozen = state.frozen.includes(move.soul) ? state.frozen : [...state.frozen, move.soul]
+    return {
+      state: { ...state, frozen },
+      result: { move, from, to: from, fromLane, toLane: fromLane, detour: null, blockedAtStart: false, collision: null, crossedFinish: false, frozen: true },
+      follow: [],
+      coins: 0,
+    }
+  }
+  // Le tour adverse ne déplace pas une âme gelée.
+  if (move.source === 'opponent' && state.frozen.includes(move.soul)) {
+    return {
+      state,
+      result: { move, from, to: from, fromLane, toLane: fromLane, detour: null, blockedAtStart: false, collision: null, crossedFinish: false, frozen: true },
+      follow: [],
+      coins: 0,
+    }
+  }
+
+  const distance = move.effects.includes('leap') ? leapDistance(state, move.soul, move.distance) : move.distance
+
   let to = from
   let toLane = fromLane
   let detour: Detour = null
   let collision: Collision | null = null
   let blockedAtStart = false
+  let fusion = state.fusion
+  let links = state.links
   const souls = state.souls.map((s) => ({ ...s }))
+  const follow: Move[] = []
 
-  if (move.distance < 0 && from === 0) {
+  if (distance < 0 && from === 0) {
     blockedAtStart = true
-  } else if (move.distance > 0) {
-    to = Math.min(maxCell, from + move.distance)
+  } else if (distance > 0) {
+    to = Math.min(maxCell, from + distance)
     // Colonne pleine : on percute et on saute devant, en cascade, en rechoisissant la case
     // à chaque colonne. La dernière case du plateau se partage (les arrivées s'y empilent).
     const over: SoulId[] = []
@@ -298,23 +461,43 @@ export function applyMove(state: RaceState, move: Move): { state: RaceState; res
       toLane = choice.lane
       detour = choice.detour
       if (!choice.occupant || to >= maxCell) break
+      // Bât de chameau : la première percussion de la course fusionne au lieu de faire sauter.
+      // L'âme percutée reste devant, la percutante se range juste derrière.
+      if (rules.bat && fusion === null && !move.induced) {
+        fusion = { front: choice.occupant.id, back: mover.id }
+        to = Math.max(0, to - 1)
+        const behind = chooseCell(track, souls, to, fromLane, mover.id)
+        toLane = behind.lane
+        detour = behind.detour
+        break
+      }
       over.push(choice.occupant.id)
       to += 1
     }
     if (over.length > 0) collision = { kind: 'jump', over }
-  } else if (move.distance < 0) {
-    to = Math.max(0, from + move.distance)
+  } else if (distance < 0) {
+    to = Math.max(0, from + distance)
     if (to > 0) {
       // Colonne pleine en reculant : échange de place avec l'occupante de la case retenue.
       // La ligne de départ se partage.
-      const choice = chooseCell(track, souls, to, fromLane, mover.id)
+      let choice = chooseCell(track, souls, to, fromLane, mover.id)
+      // Semelles de plomb : on n'échange plus avec une âme en zone de fin, on se range derrière,
+      // tant qu'on y reste. Dès qu'on sort de la zone, la règle normale (échange) reprend.
+      while (rules.semelles && choice.occupant && isInBetZone(track, to) && to > 0) {
+        to -= 1
+        choice = chooseCell(track, souls, to, fromLane, mover.id)
+      }
       toLane = choice.lane
       detour = choice.detour
-      if (choice.occupant) {
+      if (choice.occupant && to > 0) {
         collision = { kind: 'swap', with: choice.occupant.id, otherFrom: to, otherTo: from }
         const other = at(souls, choice.occupant.id, 'âme')
         other.position = from
         other.lane = fromLane
+        // Balance truquée : l'âme échangée gagne une case de plus.
+        if (rules.balance && !move.induced) follow.push({ ...simpleMove('artefact', other.id, 1, ['Balance truquée']), induced: true })
+        // Chaîne du Coccyte : les deux âmes restent liées jusqu'à la fin du tour.
+        if (rules.chaine) links = [...links, [mover.id, other.id] as const]
       }
     }
   }
@@ -329,9 +512,42 @@ export function applyMove(state: RaceState, move: Move): { state: RaceState; res
     nextFinishOrder += 1
   }
 
+  let coins = 0
+  if (!move.induced) {
+    // Partenaires liés ou fusionnés : ils suivent de la même distance.
+    for (const id of partnersOf(state, move.soul)) {
+      if (id === move.soul || distance === 0) continue
+      follow.push({ ...simpleMove('artefact', id, distance, [state.fusion ? 'Bât de chameau' : 'Chaîne du Coccyte']), induced: true })
+    }
+    // Face Aimant : l'âme juste derrière prend la case libérée.
+    if (move.effects.includes('magnet') && to > from) {
+      const behind = soulBehind(state, from, move.soul)
+      if (behind) follow.push({ ...simpleMove('artefact', behind.id, 1, ['Aimant']), induced: true })
+    }
+    // Face Explosive : souffle les voisines de la case d'arrivée, ou l'âme elle-même si elle n'a percuté personne.
+    if (move.effects.includes('explosive')) {
+      if (collision) {
+        for (const s of state.souls) {
+          if (s.id === move.soul || s.position === 0) continue
+          if (s.position === to - 1 || s.position === to + 1) follow.push({ ...simpleMove('artefact', s.id, -1, ['Explosive']), induced: true })
+        }
+      } else {
+        follow.push({ ...simpleMove('artefact', move.soul, -1, ['Explosive : personne percuté']), induced: true })
+      }
+    }
+    // Tribune infernale : l'âme qui s'y arrête paie le spectacle et repart poussée.
+    const tribune = state.tribune
+    if (rules.tribune && tribune && to === tribune.column && toLane === tribune.lane) {
+      coins = rules.tribune.coins
+      if (rules.tribune.push > 0) follow.push({ ...simpleMove('artefact', move.soul, rules.tribune.push, ['Tribune infernale']), induced: true })
+    }
+  }
+
   return {
-    state: { ...state, souls, nextFinishOrder },
-    result: { move, from, to, fromLane, toLane, detour, blockedAtStart, collision, crossedFinish },
+    state: { ...state, souls, nextFinishOrder, frozen: state.frozen, links, fusion },
+    result: { move, from, to, fromLane, toLane, detour, blockedAtStart, collision, crossedFinish, frozen: false },
+    follow,
+    coins,
   }
 }
 
@@ -342,14 +558,27 @@ export function applyMove(state: RaceState, move: Move): { state: RaceState; res
  * et on jette l'état produit : deux appels successifs donnent le même résultat, et résoudre
  * ensuite donne ce qui a été montré.
  */
-export function previewMove(state: RaceState, soul: SoulId, distance: number): MoveResult {
-  return applyMove(state, { source: 'player', soul, distance, parts: [], notes: [] }).result
+export function previewMove(state: RaceState, soul: SoulId, distance: number, effects: readonly FaceEffect[] = [], rules: MoveRules = {}): MoveResult {
+  return applyMove(state, { ...simpleMove('player', soul, distance), effects }, rules).result
 }
 
-/** Clôture le tour : la course est finie dès qu'une âme a franchi l'arrivée (§2.7). */
+/**
+ * Clôture le tour : la course est finie dès qu'une âme a franchi l'arrivée (§2.7). Le gel et
+ * les chaînes ne durent qu'un tour et tombent ici ; la fusion du Bât tient toute la course.
+ */
 export function endTurn(state: RaceState): RaceState {
   const finished = state.souls.some((s) => s.position >= state.track.columns)
-  return { ...state, finished, turn: finished ? state.turn : state.turn + 1 }
+  return { ...state, finished, turn: finished ? state.turn : state.turn + 1, frozen: [], links: [] }
+}
+
+/**
+ * Pose la tribune (artefact Tribune infernale) sur une case libre hors départ et hors zone de
+ * fin. Renvoie l'état inchangé si la case ne convient pas : c'est l'appelant qui choisit.
+ */
+export function placeTribune(state: RaceState, column: number, lane: number): RaceState {
+  if (column <= 0 || column >= state.track.betThresholdColumn) return state
+  if (lane < 0 || lane >= state.track.lanes || isBlocked(state.track, column, lane)) return state
+  return { ...state, tribune: { column, lane } }
 }
 
 export interface Ranked {

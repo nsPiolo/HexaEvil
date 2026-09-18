@@ -1,7 +1,33 @@
 import { useEffect, useState } from 'react'
 import { fmtMultiplier } from '../core/rules/bets'
-import { ENDINGS, GAME_NAME, MENU, OPTIONS, STATS, fill } from './texts'
+import type { ShopItem } from '../core/shop/items'
+import { LOCK_ART } from './art'
+import { ItemArt } from './ItemArt'
+import { COLLECTION, DEBT, ENDINGS, GAME_NAME, MENU, OPTIONS, STATS, UNLOCK, fill } from './texts'
 import type { Options, Stats } from './storage'
+
+const KIND_LABEL = { artefact: 'Artefact', die: 'Dé', forge: 'Forge' } as const
+const RARITY_LABEL = { common: 'commun', rare: 'rare', legendary: 'légendaire' } as const
+
+/** Carte d'objet hors boutique : ni prix, ni achat — le catalogue, pas le rayon. */
+function ItemCard({ item }: { item: ShopItem }) {
+  return (
+    <article className={`coll-item kind-${item.kind} rarity-${item.rarity}`}>
+      <header>
+        <span>{KIND_LABEL[item.kind]}</span>
+        <span className={`shop-rarity rarity-${item.rarity}`}>{RARITY_LABEL[item.rarity]}</span>
+      </header>
+      <div className="shop-body">
+        <ItemArt id={item.id} className="shop-art" />
+        <div className="shop-text">
+          <h3>{item.name}</h3>
+          <p className="small">{item.description}</p>
+        </div>
+      </div>
+      {item.warning && <p className="small shop-warning">⚠ {item.warning}</p>}
+    </article>
+  )
+}
 
 /** Écran de chargement : le logo peint (public/menu/splash.jpg) pendant 5 secondes, puis le menu. Un clic abrège l'attente. */
 export function Splash({ onDone, durationMs = 5000 }: { onDone: () => void; durationMs?: number }) {
@@ -23,10 +49,11 @@ interface MenuProps {
   onContinue: () => void
   onNewRun: () => void
   onStats: () => void
+  onCollection: () => void
   onOptions: () => void
 }
 
-export function Menu({ canContinue, onContinue, onNewRun, onStats, onOptions }: MenuProps) {
+export function Menu({ canContinue, onContinue, onNewRun, onStats, onCollection, onOptions }: MenuProps) {
   return (
     <div className="screen menu">
       <div className="menu-panel">
@@ -42,6 +69,9 @@ export function Menu({ canContinue, onContinue, onNewRun, onStats, onOptions }: 
         </button>
         <button type="button" className="menu-btn" onClick={onStats}>
           {MENU.stats}
+        </button>
+        <button type="button" className="menu-btn" onClick={onCollection}>
+          {MENU.collection}
         </button>
         <button type="button" className="menu-btn" onClick={onOptions}>
           {MENU.options}
@@ -160,6 +190,114 @@ export function EndScreen({ kind, price, money, onContinue, onBack }: EndProps) 
         )}
         <button type="button" className={escape && onContinue ? 'btn' : 'btn btn-primary'} onClick={onBack}>
           {ENDINGS.backToMenu}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+interface CollectionProps {
+  /** Objets débloqués, dans l'ordre du catalogue. */
+  items: readonly ShopItem[]
+  /** Nombre de scellés : on les compte, on ne les nomme pas. */
+  lockedCount: number
+  onBack: () => void
+}
+
+/**
+ * Collection (accueil) : ce que la boutique peut proposer aujourd'hui, et combien d'objets
+ * restent sous scellé. Les scellés apparaissent en cartes anonymes — assez pour mesurer ce
+ * qu'il reste à jouer, pas assez pour gâcher la révélation de fin de cercle.
+ */
+export function CollectionScreen({ items, lockedCount, onBack }: CollectionProps) {
+  const total = items.length + lockedCount
+  return (
+    <div className="screen panel-screen collection-screen">
+      <button type="button" className="btn btn-stone back" onClick={onBack}>
+        ← {MENU.back}
+      </button>
+      <h1>{COLLECTION.title}</h1>
+      <p className="coll-count">{fill(COLLECTION.count, { n: items.length, total })}</p>
+      <p className="coll-hint muted small">{COLLECTION.hint}</p>
+      <div className="coll-scroll">
+        <div className="collection">
+          {items.length === 0 && <p className="muted">{COLLECTION.empty}</p>}
+          {items.map((item) => (
+            <ItemCard key={item.id} item={item} />
+          ))}
+        </div>
+        <p className="coll-locked-line small">
+          {lockedCount === 0 ? COLLECTION.complete : fill(COLLECTION.locked, { n: lockedCount, s: lockedCount > 1 ? 's' : '' })}
+        </p>
+        {/* Rack de cadenas : des tuiles serrées, jamais des cartes pleines — dix scellés ne
+            doivent pas peser plus lourd à l'écran que les objets réellement en rayon. */}
+        <div className="sealed-rack">
+          {Array.from({ length: lockedCount }, (_, i) => (
+            <span key={`locked-${i}`} className="coll-sealed" title={COLLECTION.lockedTitle} role="img" aria-label={COLLECTION.lockedCard}>
+              <img className="coll-seal" src={LOCK_ART} alt="" aria-hidden="true" width={230} height={320} />
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Révélation de fin de cercle : le cercle est payé, un objet sort de la réserve. Écran
+ * plein, un seul bouton — c'est une récompense, pas un choix (App.tsx, `onRaceFinished`).
+ */
+export function UnlockScreen({ item, remaining, onDone }: { item: ShopItem; remaining: number; onDone: () => void }) {
+  const [shown, setShown] = useState(false)
+  useEffect(() => {
+    const t = setTimeout(() => setShown(true), 50)
+    return () => clearTimeout(t)
+  }, [])
+  return (
+    <div className={'screen panel-screen unlock-screen' + (shown ? ' unlock-shown' : '')}>
+      <h1>{UNLOCK.title}</h1>
+      <p className="unlock-intro">{UNLOCK.intro}</p>
+      <div className="unlock-card">
+        <ItemCard item={item} />
+      </div>
+      <p className="unlock-added small">{UNLOCK.added}</p>
+      <p className="muted small">{remaining === 0 ? UNLOCK.last : fill(UNLOCK.remaining, { n: remaining, s: remaining > 1 ? 's' : '' })}</p>
+      <div className="end-actions">
+        <button type="button" className="btn btn-primary" onClick={onDone}>
+          {UNLOCK.next}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+interface DebtProps {
+  price: number
+  money: number
+  borrow: number
+  /** Ce que la dette ajoutera au prix du cercle suivant. */
+  interest: number
+  onBorrow: () => void
+  onRefuse: () => void
+}
+
+/**
+ * Dette infernale (artefacts.md n°20) : le seul écran où une fin de run se refuse. Le montant et
+ * l'intérêt sont affichés avant le choix — c'est un marché, pas un sauvetage.
+ */
+export function DebtScreen({ price, money, borrow, interest, onBorrow, onRefuse }: DebtProps) {
+  return (
+    <div className="screen panel-screen debt-screen">
+      <h1>{DEBT.title}</h1>
+      <p className="debt-lead">{fill(DEBT.lead, { price, money, missing: price - money })}</p>
+      <p className="debt-offer">{fill(DEBT.offer, { borrow })}</p>
+      <p className="debt-cost small">{fill(DEBT.cost, { interest })}</p>
+      <div className="end-actions">
+        <button type="button" className="btn btn-primary" onClick={onBorrow}>
+          {fill(DEBT.accept, { borrow })}
+        </button>
+        <button type="button" className="btn" onClick={onRefuse}>
+          {DEBT.refuse}
         </button>
       </div>
     </div>

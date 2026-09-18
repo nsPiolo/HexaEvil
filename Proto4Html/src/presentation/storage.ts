@@ -1,11 +1,12 @@
 /**
  * Persistance locale (interface.md : « dans la version web, on garde ces
- * informations dans le localstorage »). Trois clés : sauvegarde du run, statistiques, options.
+ * informations dans le localstorage »). Quatre clés : sauvegarde du run, statistiques, options,
+ * objets débloqués.
  * Toute lecture est défensive : une valeur absente ou cassée rend la valeur par défaut.
  */
 import type { Inventory } from '../core/shop/shop'
 
-const KEYS = { save: 'sinnersbet.save.v1', stats: 'sinnersbet.stats.v1', options: 'sinnersbet.options.v1' } as const
+const KEYS = { save: 'sinnersbet.save.v1', stats: 'sinnersbet.stats.v1', options: 'sinnersbet.options.v1', unlocks: 'sinnersbet.unlocks.v1' } as const
 
 function read<T>(key: string, fallback: T, check: (v: unknown) => v is T): T {
   try {
@@ -121,4 +122,20 @@ export function loadOptions(): Options {
 
 export function saveOptions(o: Options): void {
   write(KEYS.options, o)
+}
+
+// ---- Objets débloqués -------------------------------------------------------
+
+/**
+ * Méta-progression : les ids d'objets de boutique débloqués par les cercles payés
+ * (`core/shop/unlocks.ts`). Volontairement hors de `RunSave` — ils survivent à la mort du
+ * run, et `clearRun` ne les efface pas. Les ids absents du catalogue actuel sont filtrés à
+ * la lecture par `unlockedIds`, pas ici : le stockage reste brut.
+ */
+export function loadUnlocks(): string[] {
+  return read<string[]>(KEYS.unlocks, [], (v): v is string[] => Array.isArray(v) && v.every((x) => typeof x === 'string'))
+}
+
+export function saveUnlocks(ids: readonly string[]): void {
+  write(KEYS.unlocks, ids)
 }

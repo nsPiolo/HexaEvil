@@ -1,76 +1,567 @@
 {
   "_comment": "Boutique (GDD §6). Accessible après les paris initiaux, avant la course. Les prix sont ceux du cercle 1 et grandissent de priceGrowthPerCircle par cercle. Les effets sont implémentés dans src/core/shop/shop.ts, indexés par id : changer un prix ou un texte ici suffit, ajouter un id demande du code. Chaque objet peut porter `impact` (faible | moyen | fort | extreme ; sinon déduit de la rareté : common→faible, rare→moyen, legendary→fort) et `warning` (contrepartie explicite, affichée en rouge : l'objet est alors marqué DANGER et demande une confirmation). confirmThreshold = prix effectif à partir duquel un achat demande deux clics (« Confirmer {prix} ¤ ») ; confirmResetMs = délai avant que le bouton redevienne « Acheter » sans second clic.",
-
   "slots": 4,
   "rerollCost": 10,
   "priceGrowthPerCircle": 0.25,
   "artefactSlots": 5,
-  "rarityWeights": { "common": 6, "rare": 3, "legendary": 1 },
+  "rarityWeights": {
+    "common": 6,
+    "rare": 3,
+    "legendary": 1
+  },
   "confirmThreshold": 60,
   "confirmResetMs": 3000,
-
+  "_unlocks": "Déblocage (src/core/shop/unlocks.ts) : seuls les objets listés dans unlockedAtStart sont en rayon au premier lancement ; chaque cercle payé en débloque un de plus, tiré au sort parmi les scellés (pondéré par rarityWeights), et ce déblocage est définitif — il survit à la mort du run. Le menu Collection de l'accueil montre les objets ouverts et le nombre de scellés. Le socle doit compter au moins `slots` objets, sinon la première vitrine serait incomplète. Retirer un id d'unlockedAtStart ne le rend pas scellé pour un joueur qui l'a déjà débloqué.",
+  "unlockedAtStart": [
+    "clepsydre",
+    "boursePercee",
+    "limbes",
+    "colere",
+    "limee",
+    "doree"
+  ],
   "items": [
-    { "id": "lateBet", "kind": "artefact", "rarity": "rare", "price": 80, "impact": "fort",
+    {
+      "id": "lateBet",
+      "kind": "artefact",
+      "rarity": "rare",
+      "price": 80,
+      "impact": "fort",
       "name": "Œil du parieur",
-      "description": "Une fois par cercle, poser un pari après avoir vu ses dés, avant de les associer." },
-    { "id": "sablier", "kind": "artefact", "rarity": "common", "price": 55, "impact": "moyen",
+      "description": "Une fois par cercle, poser un pari après avoir vu ses dés, avant de les associer."
+    },
+    {
+      "id": "sablier",
+      "kind": "artefact",
+      "rarity": "common",
+      "price": 55,
+      "impact": "moyen",
       "name": "Sablier de Charon",
-      "description": "Le seuil de pari passe de 60 % à 70 % du parcours, dès cette course." },
-    { "id": "boussole", "kind": "artefact", "rarity": "common", "price": 50, "impact": "moyen",
+      "description": "Le seuil de pari passe de 60 % à 70 % du parcours, dès cette course."
+    },
+    {
+      "id": "boussole",
+      "kind": "artefact",
+      "rarity": "common",
+      "price": 50,
+      "impact": "moyen",
       "name": "Boussole des Limbes",
-      "description": "Après vos combinaisons, l'âme de chaque dé Âme inutilisé avance de 1." },
-    { "id": "clepsydre", "kind": "artefact", "rarity": "common", "price": 40, "impact": "moyen",
+      "description": "Après vos combinaisons, l'âme de chaque dé Âme inutilisé avance de 1."
+    },
+    {
+      "id": "clepsydre",
+      "kind": "artefact",
+      "rarity": "common",
+      "price": 40,
+      "impact": "moyen",
       "name": "Clepsydre fêlée",
-      "description": "Au tour 1 de chaque course, vos distances négatives deviennent positives (-1 → +1) et vos distances positives gagnent +1." },
-    { "id": "ferACheval", "kind": "artefact", "rarity": "common", "price": 50, "impact": "moyen", "warning": "la cote de Dernière place est divisée par deux",
+      "description": "Au tour 1 de chaque course, vos distances négatives deviennent positives (-1 → +1) et vos distances positives gagnent +1."
+    },
+    {
+      "id": "ferACheval",
+      "kind": "artefact",
+      "rarity": "common",
+      "price": 50,
+      "impact": "moyen",
+      "warning": "la cote de Dernière place est divisée par deux",
       "name": "Fer à cheval rouillé",
       "description": "La cote du pari Vainqueur pur est multipliée par 1,5 ; celle de Dernière place par 0,5.",
-      "params": { "winnerFactor": 1.5, "lastFactor": 0.5 } },
-    { "id": "boursePercee", "kind": "artefact", "rarity": "common", "price": 50, "impact": "faible",
+      "params": {
+        "winnerFactor": 1.5,
+        "lastFactor": 0.5
+      }
+    },
+    {
+      "id": "boursePercee",
+      "kind": "artefact",
+      "rarity": "common",
+      "price": 50,
+      "impact": "faible",
       "name": "Bourse percée",
       "description": "Chaque collision (saut ou échange) vous rapporte 2 pièces, qu'elle vienne de vous ou de l'adversaire.",
-      "params": { "coinsPerCollision": 2 } },
-    { "id": "livreDesComptes", "kind": "artefact", "rarity": "common", "price": 60, "impact": "moyen",
+      "params": {
+        "coinsPerCollision": 2
+      }
+    },
+    {
+      "id": "livreDesComptes",
+      "kind": "artefact",
+      "rarity": "common",
+      "price": 60,
+      "impact": "moyen",
       "name": "Livre des comptes",
       "description": "Une fois par course, un de vos paris perdus, tiré au sort, est remboursé à 50 %.",
-      "params": { "refundRatio": 0.5 } },
-    { "id": "tirelire", "kind": "artefact", "rarity": "common", "price": 45, "impact": "moyen",
+      "params": {
+        "refundRatio": 0.5
+      }
+    },
+    {
+      "id": "tirelire",
+      "kind": "artefact",
+      "rarity": "common",
+      "price": 45,
+      "impact": "moyen",
       "name": "Tirelire du stagiaire",
       "description": "L'avance que le stagiaire vous verse avant chaque course augmente de 10 pièces, pour le reste du run.",
-      "params": { "bonus": 10 } },
-
-    { "id": "limbes", "kind": "die", "rarity": "common", "price": 30, "impact": "moyen",
+      "params": {
+        "bonus": 10
+      }
+    },
+    {
+      "id": "limbes",
+      "kind": "die",
+      "rarity": "common",
+      "price": 30,
+      "impact": "moyen",
       "name": "Dé des Limbes",
       "description": "Remplace un dé Distance par un dé 1, 1, 2, 2 : ni recul, ni grand bond.",
-      "faces": [1, 1, 2, 2] },
-    { "id": "colere", "kind": "die", "rarity": "common", "price": 55, "impact": "moyen", "warning": "une face à −2 : un recul de deux cases est possible",
+      "faces": [
+        1,
+        1,
+        2,
+        2
+      ]
+    },
+    {
+      "id": "colere",
+      "kind": "die",
+      "rarity": "common",
+      "price": 55,
+      "impact": "moyen",
+      "warning": "une face à −2 : un recul de deux cases est possible",
       "name": "Dé de la Colère",
       "description": "Remplace un dé Distance par un dé -2, 0, 3, 4 : même moyenne, bien plus de variance.",
-      "faces": [-2, 0, 3, 4] },
-    { "id": "glace", "kind": "die", "rarity": "rare", "price": 60, "impact": "fort", "warning": "deux faces à −1 sur quatre",
+      "faces": [
+        -2,
+        0,
+        3,
+        4
+      ]
+    },
+    {
+      "id": "glace",
+      "kind": "die",
+      "rarity": "rare",
+      "price": 60,
+      "impact": "fort",
+      "warning": "deux faces à −1 sur quatre",
       "name": "Dé de Glace",
       "description": "Remplace un dé Distance par un dé -1, -1, 2, 5 : le dé des extrêmes.",
-      "faces": [-1, -1, 2, 5] },
-    { "id": "prodigalite", "kind": "die", "rarity": "rare", "price": 80, "impact": "fort", "warning": "chaque association coûte 3 ¤ ; sans argent, la face vaut 0",
+      "faces": [
+        -1,
+        -1,
+        2,
+        5
+      ]
+    },
+    {
+      "id": "prodigalite",
+      "kind": "die",
+      "rarity": "rare",
+      "price": 80,
+      "impact": "fort",
+      "warning": "chaque association coûte 3 ¤ ; sans argent, la face vaut 0",
       "name": "Dé de Prodigalité",
       "description": "Remplace un dé Distance par un dé 2, 3, 3, 4. Chaque association de ce dé coûte 3 pièces ; sans argent, il vaut 0.",
-      "faces": [2, 3, 3, 4], "costPerUse": 3 },
-
-    { "id": "limee", "kind": "forge", "rarity": "common", "price": 15, "impact": "faible",
+      "faces": [
+        2,
+        3,
+        3,
+        4
+      ],
+      "costPerUse": 3
+    },
+    {
+      "id": "limee",
+      "kind": "forge",
+      "rarity": "common",
+      "price": 15,
+      "impact": "faible",
       "name": "Face limée",
       "description": "La face choisie vaut 0 : l'âme est désignée mais ne bouge pas. Cible conseillée : le -1.",
-      "target": -1 },
-    { "id": "doree", "kind": "forge", "rarity": "common", "price": 30, "impact": "faible",
+      "target": -1
+    },
+    {
+      "id": "doree",
+      "kind": "forge",
+      "rarity": "common",
+      "price": 30,
+      "impact": "faible",
       "name": "Face dorée",
       "description": "La face choisie vaut +1 et rapporte 5 pièces à chaque sortie. Cible conseillée : le 1.",
-      "target": 1, "params": { "coins": 5 } },
-    { "id": "retournee", "kind": "forge", "rarity": "common", "price": 35, "impact": "moyen", "warning": "les −1 de l'adversaire valent aussi +1 pour le reste du run",
+      "target": 1,
+      "params": {
+        "coins": 5
+      }
+    },
+    {
+      "id": "retournee",
+      "kind": "forge",
+      "rarity": "common",
+      "price": 35,
+      "impact": "moyen",
+      "warning": "les −1 de l'adversaire valent aussi +1 pour le reste du run",
       "name": "Face retournée",
       "description": "La face choisie vaut +1. Contrepartie : les -1 de l'adversaire valent aussi +1 pour le reste du run. Cible conseillée : le -1.",
-      "target": -1 },
-    { "id": "sceau", "kind": "forge", "rarity": "rare", "price": 55, "impact": "moyen",
+      "target": -1
+    },
+    {
+      "id": "sceau",
+      "kind": "forge",
+      "rarity": "rare",
+      "price": 55,
+      "impact": "moyen",
       "name": "Sceau du parieur",
       "description": "La face choisie vaut +1, ou +3 si l'âme déplacée fait l'objet d'un de vos paris. Cible conseillée : le 1.",
-      "target": 1 }
+      "target": 1
+    },
+    {
+      "kind": "artefact",
+      "id": "relanceJumelle",
+      "rarity": "common",
+      "price": 45,
+      "impact": "moyen",
+      "name": "Relance jumelle",
+      "description": "Quand deux dés Âme ou plus désignent la même âme, ils sont tous relancés une fois. Le second résultat est gardé, même s'il répète."
+    },
+    {
+      "kind": "artefact",
+      "id": "quatriemeTete",
+      "rarity": "rare",
+      "price": 90,
+      "impact": "fort",
+      "name": "Quatrième tête de Cerbère",
+      "description": "Le lancer comporte un dé Âme de plus : plus de choix, et un dé inutilisé supplémentaire.",
+      "params": {
+        "soulDice": 1
+      }
+    },
+    {
+      "kind": "artefact",
+      "id": "fioleDeSang",
+      "rarity": "rare",
+      "price": 70,
+      "impact": "fort",
+      "warning": "chaque +1 coûte 5 ¤ comptant, pas de crédit",
+      "name": "Fiole de sang",
+      "description": "Une fois par tour, payez 5 pièces pour ajouter +1 à un dé Distance avant de l'associer.",
+      "params": {
+        "cost": 5,
+        "bonus": 1
+      }
+    },
+    {
+      "kind": "artefact",
+      "id": "verrouDeMinos",
+      "rarity": "rare",
+      "price": 85,
+      "impact": "fort",
+      "name": "Verrou de Minos",
+      "description": "Avant chaque lancer, vous pouvez verrouiller un dé Distance sur sa face du tour précédent au lieu de le relancer."
+    },
+    {
+      "kind": "artefact",
+      "id": "semellesDePlomb",
+      "rarity": "common",
+      "price": 45,
+      "impact": "moyen",
+      "name": "Semelles de plomb",
+      "description": "Une âme qui recule sur une âme en zone de fin ne l'échange plus : elle se range juste derrière."
+    },
+    {
+      "kind": "artefact",
+      "id": "batDeChameau",
+      "rarity": "rare",
+      "price": 95,
+      "impact": "fort",
+      "warning": "la fusion dure toute la course et vous ne la choisissez qu'une fois",
+      "name": "Bât de chameau",
+      "description": "Une fois par course, la première percussion fusionne les deux âmes : la percutée devant, l'autre derrière, et tout déplacement de l'une déplace les deux."
+    },
+    {
+      "kind": "artefact",
+      "id": "balanceTruquee",
+      "rarity": "common",
+      "price": 40,
+      "impact": "moyen",
+      "name": "Balance truquée",
+      "description": "Quand une âme recule sur une autre et échange sa place, l'âme échangée avance d'une case de plus."
+    },
+    {
+      "kind": "artefact",
+      "id": "chaineDuCoccyte",
+      "rarity": "rare",
+      "price": 80,
+      "impact": "fort",
+      "name": "Chaîne du Coccyte",
+      "description": "Deux âmes qui ont échangé leur place restent liées jusqu'à la fin du tour : si l'une se déplace, l'autre suit de la même distance."
+    },
+    {
+      "kind": "artefact",
+      "id": "ticketPremiereHeure",
+      "rarity": "rare",
+      "price": 90,
+      "impact": "fort",
+      "warning": "les paris posés en course paient moins",
+      "name": "Ticket de la première heure",
+      "description": "Les paris posés avant le premier lancer paient +1 au multiplicateur ; ceux posés en course paient −0,5, jamais sous ×1.",
+      "params": {
+        "before": 1,
+        "during": 0.5
+      }
+    },
+    {
+      "kind": "artefact",
+      "id": "quatriemeMarche",
+      "rarity": "common",
+      "price": 30,
+      "impact": "moyen",
+      "name": "Quatrième marche",
+      "description": "Vos conditions « dans le top 3 » s'étendent au top 4. Ne change ni « Pas dans le top 3 » ni le Podium exact.",
+      "params": {
+        "bonus": 1
+      }
+    },
+    {
+      "kind": "artefact",
+      "id": "encensoirDuDernier",
+      "rarity": "common",
+      "price": 45,
+      "impact": "moyen",
+      "name": "Encensoir du dernier",
+      "description": "Le pari Dernière place paie double si l'âme dernière finit à 5 cases ou plus de l'avant-dernière.",
+      "params": {
+        "cells": 5,
+        "factor": 2
+      }
+    },
+    {
+      "kind": "artefact",
+      "id": "pieceADeuxFaces",
+      "rarity": "rare",
+      "price": 75,
+      "impact": "fort",
+      "warning": "le tour adverse lance une paire de plus jusqu'à la fin de la course",
+      "name": "Pièce à deux faces",
+      "description": "Après le premier lancer, vous pouvez doubler la mise de tous vos paris ouverts. Si vous le faites, l'adversaire lance une paire de plus pour le reste de la course."
+    },
+    {
+      "kind": "artefact",
+      "id": "denierDuCercle",
+      "rarity": "common",
+      "price": 60,
+      "impact": "moyen",
+      "name": "Denier du cercle",
+      "description": "Vos paris gagnants sont réglés comme si la mise valait n pièces de plus, n étant le numéro du cercle. Vous ne payez que votre mise."
+    },
+    {
+      "kind": "artefact",
+      "id": "baumeDuPerdant",
+      "rarity": "common",
+      "price": 50,
+      "impact": "moyen",
+      "name": "Baume du perdant",
+      "description": "Toute mise perdue vous est rendue à 10 %. Se cumule avec le Livre des comptes, qui passe en premier.",
+      "params": {
+        "relief": 0.1
+      }
+    },
+    {
+      "kind": "artefact",
+      "id": "tribuneInfernale",
+      "rarity": "rare",
+      "price": 85,
+      "impact": "fort",
+      "name": "Tribune infernale",
+      "description": "Avant chaque course, posez une tribune sur une case libre hors départ et hors zone de fin. Chaque âme qui s'y arrête vous rapporte 4 pièces et repart poussée de +1.",
+      "params": {
+        "coins": 4,
+        "push": 1
+      }
+    },
+    {
+      "kind": "artefact",
+      "id": "detteInfernale",
+      "rarity": "legendary",
+      "price": 150,
+      "impact": "extreme",
+      "warning": "le cercle suivant coûte 150 % de la somme empruntée en plus",
+      "name": "Dette infernale",
+      "description": "Une fois par run, si vous ne pouvez pas payer le prix du cercle, empruntez le manquant, plafonné à la moitié du prix. Le cercle suivant coûte 150 % de cette somme en plus.",
+      "params": {
+        "maxRatio": 0.5,
+        "interest": 1.5
+      }
+    },
+    {
+      "kind": "artefact",
+      "id": "pourboireDuStagiaire",
+      "rarity": "common",
+      "price": 35,
+      "impact": "faible",
+      "name": "Pourboire du stagiaire",
+      "description": "Juste après votre premier lancer de chaque course, vous gagnez 10 pièces.",
+      "params": {
+        "coins": 10
+      }
+    },
+    {
+      "kind": "artefact",
+      "id": "oeilDeCharon",
+      "rarity": "rare",
+      "price": 95,
+      "impact": "fort",
+      "name": "Œil de Charon",
+      "description": "Vous voyez la première paire de l'adversaire avant d'ordonner vos combinaisons. Ne se cumule pas avec le Fouet ni le Miroir."
+    },
+    {
+      "kind": "artefact",
+      "id": "fouetDuContremaitre",
+      "rarity": "rare",
+      "price": 90,
+      "impact": "fort",
+      "warning": "une paire adverse de plus par tour dès qu'une âme est en zone de fin",
+      "name": "Fouet du contremaître",
+      "description": "L'adversaire lance toutes ses paires avant votre lancer ; elles sont résolues après vous, comme d'habitude."
+    },
+    {
+      "kind": "artefact",
+      "id": "miroirDeNarcisse",
+      "rarity": "legendary",
+      "price": 180,
+      "impact": "extreme",
+      "warning": "l'adversaire joue avant vous : il a le dernier mot sur rien, vous sur tout",
+      "name": "Miroir de Narcisse",
+      "description": "L'adversaire joue avant vous : ses paires sont lancées et résolues avant votre lancer. Vous combinez en connaissant le plateau final du tour."
+    },
+    {
+      "kind": "artefact",
+      "id": "marteauHephaistos",
+      "rarity": "common",
+      "price": 50,
+      "impact": "moyen",
+      "name": "Marteau d'Héphaïstos",
+      "description": "La première altération de forge de chaque cercle est offerte ; les suivantes coûtent 20 % de moins.",
+      "params": {
+        "discount": 0.2
+      }
+    },
+    {
+      "kind": "artefact",
+      "id": "rabaisDePloutos",
+      "rarity": "common",
+      "price": 30,
+      "impact": "faible",
+      "name": "Rabais de Ploutos",
+      "description": "Tout ce que vend la boutique coûte 3 % de moins, renouvellement de vitrine compris.",
+      "params": {
+        "discount": 0.03
+      }
+    },
+    {
+      "kind": "die",
+      "id": "fraude",
+      "rarity": "rare",
+      "price": 90,
+      "impact": "fort",
+      "name": "Dé de Fraude",
+      "description": "Remplace un dé Distance par un dé 1, 2, 3, ? — la face ? prend la valeur de la meilleure autre face Distance du lancer.",
+      "faces": [
+        1,
+        2,
+        3,
+        0
+      ],
+      "wildFace": 3
+    },
+    {
+      "kind": "die",
+      "id": "troisiemeDe",
+      "rarity": "rare",
+      "price": 100,
+      "impact": "fort",
+      "warning": "le dé Âme inutilisé disparaît : plus de Boussole, plus de quatrième tête à nourrir",
+      "name": "Troisième dé Distance",
+      "description": "Ajoute un dé Distance -1, 1, 2, 3 au lancer : trois combinaisons par tour au lieu de deux.",
+      "faces": [
+        -1,
+        1,
+        2,
+        3
+      ],
+      "mode": "add"
+    },
+    {
+      "kind": "forge",
+      "id": "explosive",
+      "rarity": "rare",
+      "price": 55,
+      "impact": "fort",
+      "warning": "sans percussion, l'âme recule d'une case après coup",
+      "name": "Face explosive",
+      "target": 2,
+      "description": "La face vaut +2. Si l'âme percute en atterrissant, les âmes des cases voisines reculent de 1 ; sinon c'est elle qui recule de 1."
+    },
+    {
+      "kind": "forge",
+      "id": "bond",
+      "rarity": "rare",
+      "price": 60,
+      "impact": "fort",
+      "name": "Face de bond",
+      "target": 3,
+      "description": "L'âme avance jusqu'à la prochaine âme devant elle et saute devant. Personne devant : elle avance de 3. Ne fait jamais franchir l'arrivée."
+    },
+    {
+      "kind": "forge",
+      "id": "miroir",
+      "rarity": "common",
+      "price": 40,
+      "impact": "moyen",
+      "name": "Face miroir",
+      "target": 1,
+      "description": "La face copie la valeur de l'autre dé Distance du lancer, en bien comme en mal."
+    },
+    {
+      "kind": "forge",
+      "id": "feuFollet",
+      "rarity": "common",
+      "price": 45,
+      "impact": "moyen",
+      "name": "Face feu follet",
+      "target": -1,
+      "description": "Quand elle sort, le dé est relancé et le nouveau résultat s'impose. Si le Feu follet ressort, il vaut +2."
+    },
+    {
+      "kind": "forge",
+      "id": "elan",
+      "rarity": "rare",
+      "price": 50,
+      "impact": "fort",
+      "warning": "la relance s'ajoute, même si elle sort −1",
+      "name": "Face d'élan",
+      "target": 2,
+      "description": "La face vaut +2. Vous pouvez relancer ce dé une fois et ajouter le résultat, quel qu'il soit."
+    },
+    {
+      "kind": "forge",
+      "id": "gel",
+      "rarity": "common",
+      "price": 40,
+      "impact": "moyen",
+      "name": "Face de gel",
+      "target": -1,
+      "description": "La face vaut 0 et l'âme désignée est gelée jusqu'à la fin du tour : les paires de l'adversaire ne la déplacent pas."
+    },
+    {
+      "kind": "forge",
+      "id": "aimant",
+      "rarity": "common",
+      "price": 45,
+      "impact": "moyen",
+      "name": "Face aimant",
+      "target": 1,
+      "description": "La face vaut +1 et l'âme juste derrière avance de 1 aussi, dans la case libérée."
+    }
   ]
 }

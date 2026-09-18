@@ -9,9 +9,9 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { config, shop } from '../core/config'
-import { betRefusal, betType, betUnlocked, cancelBet as cancelBetRule, currentMultiplier, effectiveBase, fmtMultiplier, potentialPayout, raceProgress, settleBets, type BaseModifiers, type Bet, type BetTypeId, type Settlement } from '../core/rules/bets'
-import { fmtFace, type DistanceDie } from '../core/rules/dice'
-import { raceAllowance } from '../core/rules/allowance'
+import { betRefusal, betType, betUnlocked, cancelBet as cancelBetRule, currentMultiplier, effectiveBase, fmtMultiplier, potentialPayout, raceProgress, settleBets, ticketMultiplier, type BaseModifiers, type Bet, type BetTypeId, type SettleOptions, type Settlement } from '../core/rules/bets'
+import { fmtFace, type DistanceDie, type Face } from '../core/rules/dice'
+import { allowanceAtCircle, raceAllowance } from '../core/rules/allowance'
 import {
   applyMove,
   buildMoves,
@@ -19,24 +19,29 @@ import {
   createTrack,
   endTurn,
   isPairingComplete,
+  isInBetZone,
   naturalCombinations,
+  placeTribune,
   previewMove,
   ranking,
   rollOpponentPair,
   rollPlayerDice,
   unusedSoulMoves,
   type Combination,
+  type Move,
   type MoveContext,
   type MoveResult,
+  type MoveRules,
   type RaceOptions,
   type RaceState,
   type Roll,
 } from '../core/rules/race'
 import { randomSeed, seededRng, type Rng } from '../core/rules/rng'
+import { stakesAtCircle } from '../core/rules/stakes'
 import { terrainFor } from '../core/rules/terrain'
 import type { Terrain } from '../core/config/schema'
-import type { ShopItem } from '../core/shop/items'
-import { applyPurchase, findItem, generateVitrine, opponentNegativesFlipped, priceAtCircle, type Inventory, type PurchaseTarget } from '../core/shop/shop'
+import type { ArtefactId, ShopItem } from '../core/shop/items'
+import { applyPurchase, effectivePrice, effectiveRerollCost, findItem, generateVitrine, opponentNegativesFlipped, type Inventory, type PriceRules, type PurchaseTarget } from '../core/shop/shop'
 import { demonLevelAtRace, rankOfLevel } from './demon'
 import { seedForRace } from './urlParams'
 import { BETS, fill } from './texts'
@@ -87,6 +92,24 @@ export interface RaceUi {
   pendingPurchase: string | null
   /** Compteurs de la course pour les statistiques. */
   tally: RaceTally
+  /** Marteau d'Héphaïstos : la forge offerte du cercle a-t-elle déjà servi ? */
+  forgeFreeUsed: boolean
+  /** Fiole de sang : tour où le +1 a été acheté (0 = jamais ce tour-ci), une fois par tour. */
+  fioleTurn: number
+  /** Fiole de sang : bonus en attente sur chaque dé Distance, appliqué au lancer courant. */
+  fioleBonus: readonly number[]
+  /** Verrou de Minos : dé Distance gardé sur sa face du tour précédent (index), ou null. */
+  lockedDie: number | null
+  /** Faces du lancer précédent, pour le Verrou de Minos. */
+  lastFaces: readonly Face[] | null
+  /** Face d'élan : dés dont la relance a déjà été prise ce tour. */
+  momentumUsed: readonly number[]
+  /** Pièce à deux faces : les mises ont été doublées, l'adversaire lance une paire de plus. */
+  doubledStakes: boolean
+  /** Œil de Charon / Fouet du contremaître : paires adverses connues avant d'ordonner. */
+  opponentPreview: readonly Roll[] | null
+  /** Tribune infernale : la tribune de cette course est-elle posée ? */
+  tribunePlaced: boolean
 }
 
 export interface RaceTally {
@@ -101,10 +124,18 @@ export interface SessionCarry {
   inventory: Inventory
   raceIndex: number
   lateBetCharges: number
+  /** Marteau d'Héphaïstos : la forge offerte de ce cercle a-t-elle servi ? Remis à faux au cercle suivant. */
+  forgeFreeUsed?: boolean
+  /** Dette infernale : somme empruntée, à ajouter au prix du cercle suivant. Absente = aucune dette. */
+  debt?: number
+  /** Dette infernale : l'emprunt unique du run a-t-il déjà été fait ? */
+  debtUsed?: boolean
 }
 
 export interface UseRaceProps {
   carry: SessionCarry
+  /** Ids des objets débloqués : la vitrine ne tire que là-dedans (core/shop/unlocks.ts). */
+  unlocked: readonly string[]
   /** Nombre d'âmes en course pour ce cercle. */
   soulCount: number
   /** Couloirs du cercle et ses variantes de terrain (GDD §2.2) ; une est tirée par course. */
@@ -135,6 +166,74 @@ export function itemName(id: string): string {
   return findItem(shop, id).name
 }
 
+/** Raccourci de lecture : le joueur possède-t-il cet artefact ? */
+export function has(inventory: Inventory, id: ArtefactId): boolean {
+  return inventory.artefacts.includes(id)
+}
+
+/**
+ * Règles de déplacement ouvertes par les artefacts de collision (artefacts.md n°7 à n°10) et
+ * par la Tribune infernale (n°19). Un seul endroit les rassemble : la résolution et la
+ * prévisualisation lisent la même chose, sinon le fantôme mentirait.
+ */
+export function moveRules(inventory: Inventory): MoveRules {
+  const r: MoveRules = {}
+  if (has(inventory, 'semellesDePlomb')) r.semelles = true
+  if (has(inventory, 'balanceTruquee')) r.balance = true
+  if (has(inventory, 'chaineDuCoccyte')) r.chaine = true
+  if (has(inventory, 'batDeChameau')) r.bat = true
+  if (has(inventory, 'tribuneInfernale')) r.tribune = { coins: param('tribuneInfernale', 'coins', 4), push: param('tribuneInfernale', 'push', 1) }
+  return r
+}
+
+/** Règlement des paris : tous les artefacts d'argent, dans l'ordre documenté par `settleBets`. */
+export function settleOptions(inventory: Inventory, circle: number, pickLost: (n: number) => number): SettleOptions {
+  const o: SettleOptions = {}
+  if (has(inventory, 'livreDesComptes')) {
+    o.refundRatio = param('livreDesComptes', 'refundRatio', 0.5)
+    o.pickLost = pickLost
+  }
+  if (has(inventory, 'quatriemeMarche')) o.topBonus = param('quatriemeMarche', 'bonus', 1)
+  if (has(inventory, 'denierDuCercle')) o.stakeBonus = circle
+  if (has(inventory, 'baumeDuPerdant')) o.lossRelief = param('baumeDuPerdant', 'relief', 0.1)
+  if (has(inventory, 'encensoirDuDernier')) o.lastGap = { cells: param('encensoirDuDernier', 'cells', 5), factor: param('encensoirDuDernier', 'factor', 2) }
+  return o
+}
+
+/** Remises de boutique (artefacts.md n°26 et n°30). `forgeFree` : la forge offerte du cercle est encore disponible. */
+export function priceRules(inventory: Inventory, forgeFree: boolean): PriceRules {
+  const r: PriceRules = {}
+  if (has(inventory, 'rabaisDePloutos')) r.globalDiscount = param('rabaisDePloutos', 'discount', 0.03)
+  if (has(inventory, 'marteauHephaistos')) {
+    r.forgeDiscount = param('marteauHephaistos', 'discount', 0.2)
+    r.forgeFreeAvailable = forgeFree
+  }
+  return r
+}
+
+/** Nombre de dés Âme du lancer : celui de la config, plus la Quatrième tête de Cerbère. */
+export function soulDiceCount(inventory: Inventory): number {
+  return config.dice.soulDice + (has(inventory, 'quatriemeTete') ? param('quatriemeTete', 'soulDice', 1) : 0)
+}
+
+/**
+ * Paires lancées par l'adversaire à ce tour : la base, plus celle qu'a réveillée la Pièce à deux
+ * faces, plus celle que coûte le Fouet du contremaître dès qu'une âme entre en zone de fin.
+ */
+export function opponentRolls(u: Pick<RaceUi, 'inventory' | 'doubledStakes' | 'race'>): number {
+  const whipped = has(u.inventory, 'fouetDuContremaitre') && u.race.souls.some((so) => isInBetZone(u.race.track, so.position))
+  return config.opponent.rollsPerTurn + (u.doubledStakes ? 1 : 0) + (whipped ? 1 : 0)
+}
+
+/** Le joueur voit-il le tour adverse avant d'ordonner, et jusqu'où ? */
+export function opponentSight(inventory: Inventory): 'none' | 'first' | 'all' | 'resolved' {
+  // Le Miroir rend l'Œil et le Fouet inutiles, le Fouet rend l'Œil inutile : on garde le plus fort.
+  if (has(inventory, 'miroirDeNarcisse')) return 'resolved'
+  if (has(inventory, 'fouetDuContremaitre')) return 'all'
+  if (has(inventory, 'oeilDeCharon')) return 'first'
+  return 'none'
+}
+
 /** Fer à cheval : facteurs sur la cote de base. */
 export function baseModifiers(inventory: Inventory): BaseModifiers {
   if (!inventory.artefacts.includes('ferACheval')) return {}
@@ -146,8 +245,19 @@ export function betBase(type: BetTypeId, inventory: Inventory): number {
   return effectiveBase(type, config.economy.multipliers[type], baseModifiers(inventory))
 }
 
-export function priceFor(item: ShopItem, raceIndex: number): number {
-  return priceAtCircle(item.price, circleOf(raceIndex).circle, shop.priceGrowthPerCircle)
+/**
+ * Prix demandé pour un objet : celui du cercle, puis les remises du joueur. `forgeFree` dit si
+ * la forge offerte du Marteau d'Héphaïstos est encore disponible dans ce cercle.
+ */
+export function priceFor(item: ShopItem, raceIndex: number, inventory?: Inventory, forgeFree = false): number {
+  const circle = circleOf(raceIndex).circle
+  const rules = inventory ? priceRules(inventory, forgeFree) : {}
+  return effectivePrice(item, circle, shop.priceGrowthPerCircle, rules)
+}
+
+/** Prix du renouvellement de vitrine, Rabais de Ploutos compris. */
+export function rerollCostFor(inventory: Inventory): number {
+  return effectiveRerollCost(shop, priceRules(inventory, false))
 }
 
 /** Options de piste : celles du cercle, plus les artefacts qui changent le plateau. */
@@ -217,7 +327,8 @@ export function previewNext(u: RaceUi): MoveResult | null {
   const { roll } = applyProdigality(u.roll, u.combinations, u.inventory.dice, u.money)
   const first = buildMoves(roll, u.combinations, 'player', moveContext(u))[0]
   if (!first) return null
-  const result = previewMove(u.race, first.soul, first.distance)
+  // Mêmes règles qu'à la résolution (Bond, Semelles, Bât…) : le fantôme ne doit jamais mentir.
+  const result = previewMove(u.race, first.soul, first.distance, first.effects, moveRules(u.inventory))
   return { ...result, move: first }
 }
 
@@ -227,7 +338,7 @@ function initial(seed: number, carry: SessionCarry, terrain: Terrain, base: Race
   const lanes = race.track.lanes
   const blocked = race.track.blocked.length
   // Avance de course : versée avant les paris initiaux, racontée dans le journal (visible sous le plateau).
-  const allowance = raceAllowance(config.economy.raceAllowance, carry.inventory, shop)
+  const allowance = raceAllowance(allowanceAtCircle(config.economy, circle), carry.inventory, shop)
   const log: LogEntry[] = [{ id: 0, turn: 1, source: 'system', text: `Cercle ${circle}, course ${raceInCircle}/${config.run.racesPerCircle} — terrain « ${terrain.name} », ${race.souls.length} âmes, ${config.track.columns} cases, ${lanes} couloir${lanes > 1 ? 's' : ''}${blocked > 0 ? `, ${blocked} case${blocked > 1 ? 's' : ''} bloquée${blocked > 1 ? 's' : ''}` : ''}, graine ${seed}. Posez vos paris initiaux.` }]
   if (allowance.total > 0) log.push({ id: 1, turn: 1, source: 'system', text: `Le stagiaire vous avance ${allowance.total} pièces pour cette course${allowance.bonus > 0 ? ` (dont ${allowance.bonus} grâce à la ${itemName('tirelire')})` : ''}.` })
   return {
@@ -252,15 +363,24 @@ function initial(seed: number, carry: SessionCarry, terrain: Terrain, base: Race
     vitrine: null,
     pendingPurchase: null,
     tally: { spent: 0, bestBet: 0 },
+    forgeFreeUsed: carry.forgeFreeUsed ?? false,
+    fioleTurn: 0,
+    fioleBonus: [],
+    lockedDie: null,
+    lastFaces: null,
+    momentumUsed: [],
+    doubledStakes: false,
+    opponentPreview: null,
+    tribunePlaced: false,
   }
 }
 
 /** Ce que la rencontre rend à la session quand elle est finie. */
 export function carryOut(ui: RaceUi): SessionCarry {
-  return { money: ui.money, inventory: ui.inventory, raceIndex: ui.raceIndex + 1, lateBetCharges: ui.lateBetCharges }
+  return { money: ui.money, inventory: ui.inventory, raceIndex: ui.raceIndex + 1, lateBetCharges: ui.lateBetCharges, forgeFreeUsed: ui.forgeFreeUsed }
 }
 
-export function useRace({ carry, soulCount, lanes, terrains, speed }: UseRaceProps) {
+export function useRace({ carry, unlocked, soulCount, lanes, terrains, speed }: UseRaceProps) {
   // Graine au hasard, sauf `?seed=NNN` dans l'URL (tests e2e) : course, dés et vitrine deviennent déterministes.
   const [seed] = useState(() => seedForRace(carry.raceIndex) ?? randomSeed())
   // Le terrain se tire sur la graine, à part du hasard de la course (terrain.ts).
@@ -317,8 +437,13 @@ export function useRace({ carry, soulCount, lanes, terrains, speed }: UseRacePro
     if (!betUnlocked(type, level, config.economy.betUnlockLevel)) return fill(BETS.locked, { rank: rankOfLevel(config.economy.betUnlockLevel[type]).name })
     const refusal = betRefusal(u.race, type, souls, stake, u.money, u.bets)
     if (refusal) return refusal
-    const multiplier = currentMultiplier(betBase(type, u.inventory), raceProgress(u.race), config.economy.decay)
-    const bet: Bet = { id: betId.current++, type, souls: [...souls], stake, multiplier, turn: u.phase === 'prep' ? 0 : u.race.turn, status: 'open', payout: 0 }
+    const initial = u.phase === 'prep'
+    let multiplier = currentMultiplier(betBase(type, u.inventory), raceProgress(u.race), config.economy.decay)
+    // Ticket de la première heure : la cote monte avant le premier lancer, descend en course.
+    if (has(u.inventory, 'ticketPremiereHeure')) {
+      multiplier = ticketMultiplier(multiplier, initial, { before: param('ticketPremiereHeure', 'before', 1), during: param('ticketPremiereHeure', 'during', 0.5) })
+    }
+    const bet: Bet = { id: betId.current++, type, souls: [...souls], stake, multiplier, turn: initial ? 0 : u.race.turn, status: 'open', payout: 0 }
     const names = souls.map((id) => u.race.souls[id]?.name ?? `#${id}`).join(betType(type).ordered ? ' > ' : ', ')
     commit(pushLog({ ...u, money: u.money - stake, bets: [...u.bets, bet] }, 'bet', `Pari ${betType(type).label} sur ${names} : mise ${stake} à ${fmtMultiplier(multiplier)}, rapporte ${potentialPayout(stake, multiplier)} si gagné.`))
     return null
@@ -351,23 +476,24 @@ export function useRace({ carry, soulCount, lanes, terrains, speed }: UseRacePro
     const u = uiRef.current
     if (!shopUnlocked(u)) return false
     if (u.vitrine === null) {
-      const vitrine = generateVitrine(shop, u.inventory, rngRef.current)
+      const vitrine = generateVitrine(shop, u.inventory, unlocked, rngRef.current)
       commit(pushLog({ ...u, vitrine, pendingPurchase: null }, 'shop', `La boutique ouvre : ${vitrine.length} objets en vitrine.`))
     }
     return true
-  }, [commit, pushLog, shopUnlocked])
+  }, [commit, pushLog, shopUnlocked, unlocked])
 
   const rerollVitrine = useCallback(() => {
     const u = uiRef.current
-    if (!shopUnlocked(u) || u.money < shop.rerollCost) return
-    const vitrine = generateVitrine(shop, u.inventory, rngRef.current)
-    commit(pushLog({ ...u, money: u.money - shop.rerollCost, vitrine, pendingPurchase: null, tally: { ...u.tally, spent: u.tally.spent + shop.rerollCost } }, 'shop', `Vitrine renouvelée pour ${shop.rerollCost} pièces.`))
-  }, [commit, pushLog, shopUnlocked])
+    const cost = rerollCostFor(u.inventory)
+    if (!shopUnlocked(u) || u.money < cost) return
+    const vitrine = generateVitrine(shop, u.inventory, unlocked, rngRef.current)
+    commit(pushLog({ ...u, money: u.money - cost, vitrine, pendingPurchase: null, tally: { ...u.tally, spent: u.tally.spent + cost } }, 'shop', `Vitrine renouvelée pour ${cost} pièces.`))
+  }, [commit, pushLog, shopUnlocked, unlocked])
 
   /** Pourquoi un objet n'est pas achetable maintenant, ou null. */
   const purchaseRefusal = useCallback((u: RaceUi, item: ShopItem): string | null => {
     if (!shopUnlocked(u)) return 'La boutique est fermée.'
-    const price = priceFor(item, u.raceIndex)
+    const price = priceFor(item, u.raceIndex, u.inventory, !u.forgeFreeUsed)
     if (u.money < price) return 'Pas assez d’argent.'
     if (item.kind === 'artefact') {
       if (u.inventory.artefacts.includes(item.id)) return 'Déjà possédé.'
@@ -387,15 +513,17 @@ export function useRace({ carry, soulCount, lanes, terrains, speed }: UseRacePro
     if (!item) return 'Objet absent de la vitrine.'
     const refusal = purchaseRefusal(u, item)
     if (refusal) return refusal
-    if (item.kind !== 'artefact' && !target) {
+    const needsTarget = item.kind === 'forge' || (item.kind === 'die' && item.mode === 'replace')
+    if (needsTarget && !target) {
       commit({ ...u, pendingPurchase: itemId })
       return null
     }
     try {
       const { inventory, text } = applyPurchase(item, u.inventory, target)
-      const price = priceFor(item, u.raceIndex)
+      const freeForge = item.kind === 'forge' && has(u.inventory, 'marteauHephaistos') && !u.forgeFreeUsed
+      const price = priceFor(item, u.raceIndex, u.inventory, !u.forgeFreeUsed)
       const lateBetCharges = item.kind === 'artefact' && item.id === 'lateBet' ? config.artefacts.lateBet.chargesPerCircle : u.lateBetCharges
-      let next = pushLog({ ...u, money: u.money - price, inventory, lateBetCharges, vitrine: (u.vitrine ?? []).filter((i) => i !== item), pendingPurchase: null, tally: { ...u.tally, spent: u.tally.spent + price } }, 'shop', `${text} (${price} pièces)`)
+      let next = pushLog({ ...u, money: u.money - price, inventory, lateBetCharges, forgeFreeUsed: u.forgeFreeUsed || freeForge, vitrine: (u.vitrine ?? []).filter((i) => i !== item), pendingPurchase: null, tally: { ...u.tally, spent: u.tally.spent + price } }, 'shop', freeForge ? `${text} — offert par le Marteau d'Héphaïstos.` : `${text} (${price} pièces)`)
       // Le Sablier change le plateau : on achète en préparation, personne n'a bougé, le plateau est refait tout de suite.
       if (item.kind === 'artefact' && item.id === 'sablier') {
         const track = createTrack(config.track, raceOptions(inventory, { lanes: u.race.track.lanes, blocked: u.race.track.blocked }))
@@ -425,18 +553,25 @@ export function useRace({ carry, soulCount, lanes, terrains, speed }: UseRacePro
   /** Résout une liste de déplacements avec animation ; renvoie false si la séquence a été annulée. */
   const resolveMoves = useCallback(
     async (id: number, moves: ReturnType<typeof buildMoves>, indexOf: (i: number) => number | null): Promise<boolean> => {
-      const coinsPerCollision = uiRef.current.inventory.artefacts.includes('boursePercee') ? param('boursePercee', 'coinsPerCollision', 2) : 0
-      for (let i = 0; i < moves.length; i++) {
-        const m = moves[i]
-        if (!m) continue
-        commit({ ...uiRef.current, resolvingIndex: indexOf(i) })
+      const inv = uiRef.current.inventory
+      const coinsPerCollision = has(inv, 'boursePercee') ? param('boursePercee', 'coinsPerCollision', 2) : 0
+      const rules = moveRules(inv)
+      // File ouverte : un déplacement peut en induire d'autres (lien, aimant, souffle, tribune).
+      // Ils sont insérés juste après lui et ne portent pas de numéro de combinaison.
+      const queue: { move: Move; index: number | null }[] = moves.map((m, i) => ({ move: m, index: indexOf(i) }))
+      for (let i = 0; i < queue.length; i++) {
+        const entry = queue[i]
+        if (!entry) continue
+        commit({ ...uiRef.current, resolvingIndex: entry.index })
         if (!(await wait(config.animation.pauseMs, id))) return false
         const u = uiRef.current
-        const { state, result } = applyMove(u.race, m)
-        let next = pushLog({ ...u, race: state, lastResult: result }, m.source, describe(u, result))
+        const { state, result, follow, coins } = applyMove(u.race, entry.move, rules)
+        let next = pushLog({ ...u, race: state, lastResult: result }, entry.move.source, describe(u, result))
         if (result.collision && coinsPerCollision > 0) next = pushLog({ ...next, money: next.money + coinsPerCollision }, 'artefact', `Bourse percée : +${coinsPerCollision} pièces.`)
+        if (coins > 0) next = pushLog({ ...next, money: next.money + coins }, 'artefact', `Tribune infernale : +${coins} pièces.`)
         commit(next)
         if (!(await wait(config.animation.stepMs, id))) return false
+        queue.splice(i + 1, 0, ...follow.map((m) => ({ move: m, index: null })))
       }
       return true
     },
@@ -447,20 +582,127 @@ export function useRace({ carry, soulCount, lanes, terrains, speed }: UseRacePro
     const id = runId.current
     const u = uiRef.current
     if (u.phase !== 'idle') return
-    commit({ ...u, phase: 'rolling', roll: null, combinations: [], selectedSoulDie: null, lastResult: null, opponentRoll: null })
-    const roll = rollPlayerDice(config, u.race.souls.length, rngRef.current, u.inventory.dice)
+    commit({ ...u, phase: 'rolling', roll: null, combinations: [], selectedSoulDie: null, lastResult: null, opponentRoll: null, opponentPreview: null })
+
+    // Tour adverse connu d'avance (artefacts.md n°21, 22, 23). Les paires sont tirées ici, une
+    // fois pour toutes : ce que le joueur voit est exactement ce qui sera résolu.
+    const sight = opponentSight(u.inventory)
+    if (sight !== 'none') {
+      const flipNow = opponentNegativesFlipped(u.inventory)
+      const pairs = Array.from({ length: opponentRolls(u) }, () => rollOpponentPair(config, u.race.souls.length, rngRef.current, { flipNegatives: flipNow }))
+      if (sight === 'resolved') {
+        // Miroir de Narcisse : l'adversaire joue et se résout avant le lancer du joueur.
+        commit(pushLog({ ...uiRef.current, phase: 'opponent', opponentPreview: pairs }, 'artefact', 'Miroir de Narcisse : l’adversaire joue en premier.'))
+        for (const pair of pairs) {
+          const w = uiRef.current
+          const who = w.race.souls[pair.soul[0] ?? 0]?.name ?? '?'
+          commit(pushLog({ ...w, opponentRoll: pair }, 'opponent', `L'adversaire lance : ${who} ${fmt(pair.distance[0] ?? 0)}.`))
+          if (!(await resolveMoves(id, buildMoves(pair, naturalCombinations(pair), 'opponent'), () => null))) return
+        }
+        commit({ ...uiRef.current, phase: 'rolling', opponentRoll: null, opponentPreview: [] })
+      } else {
+        const shown = sight === 'first' ? pairs.slice(0, 1) : pairs
+        const names = shown.map((pr) => `${u.race.souls[pr.soul[0] ?? 0]?.name ?? '?'} ${fmt(pr.distance[0] ?? 0)}`)
+        commit(pushLog({ ...uiRef.current, opponentPreview: pairs }, 'artefact', `${sight === 'all' ? 'Fouet du contremaître' : 'Œil de Charon'} : ${names.join(', ')}.`))
+      }
+    }
+
+    // Verrou de Minos : le dé verrouillé garde sa face du tour précédent au lieu d'être relancé.
+    const locked = u.lockedDie !== null && u.lastFaces?.[u.lockedDie] ? { [u.lockedDie]: u.lastFaces[u.lockedDie]! } : undefined
+    const roll = rollPlayerDice(config, u.race.souls.length, rngRef.current, u.inventory.dice, {
+      soulDice: soulDiceCount(u.inventory),
+      rerollTwins: has(u.inventory, 'relanceJumelle'),
+      ...(locked ? { locked } : {}),
+    })
     if (!(await wait(config.animation.diceMs, id))) return
     const v = uiRef.current
     const names = roll.soul.map((s) => v.race.souls[s]?.name ?? `#${s}`)
-    let next = pushLog({ ...v, phase: 'pairing', roll }, 'player', `Lancer : Distance ${roll.faces.map(fmtFace).join(' / ')} — Âmes ${names.join(' / ')}.`)
+    let next = pushLog({ ...v, phase: 'pairing', roll, lastFaces: roll.faces, lockedDie: null, momentumUsed: [], fioleBonus: [] }, 'player', `Lancer : Distance ${roll.faces.map(fmtFace).join(' / ')} — Âmes ${names.join(' / ')}.`)
     // Face dorée : pièces à chaque sortie, associée ou non.
     const gold = roll.faces.filter((f) => f.effect === 'gold').length
     if (gold > 0) {
       const coins = gold * param('doree', 'coins', 5)
       next = pushLog({ ...next, money: next.money + coins }, 'artefact', `Face dorée : +${coins} pièces.`)
     }
+    // Pourboire du stagiaire : versé juste après le lancer, une fois par course (tour 1).
+    if (has(next.inventory, 'pourboireDuStagiaire') && next.race.turn === 1) {
+      const coins = param('pourboireDuStagiaire', 'coins', 10)
+      next = pushLog({ ...next, money: next.money + coins }, 'artefact', `Pourboire du stagiaire : +${coins} pièces.`)
+    }
     commit(next)
-  }, [commit, pushLog, wait])
+  }, [commit, pushLog, resolveMoves, wait])
+
+  // ---- Objets à déclencher pendant l'appariement ---------------------------
+
+  /** Fiole de sang : +1 sur un dé Distance, une fois par tour, 5 pièces comptant. */
+  const useFiole = useCallback((distanceDie: number): string | null => {
+    const u = uiRef.current
+    if (!has(u.inventory, 'fioleDeSang')) return 'Vous ne possédez pas la Fiole de sang.'
+    if (u.phase !== 'pairing' || !u.roll) return 'Seulement après le lancer, avant de résoudre.'
+    if (u.fioleTurn === u.race.turn) return 'La Fiole a déjà servi ce tour.'
+    if (u.combinations.some((c) => c.distanceDie === distanceDie)) return 'Ce dé est déjà associé.'
+    const cost = param('fioleDeSang', 'cost', 5)
+    if (u.money < cost) return `Il faut ${cost} pièces comptant : la Fiole ne fait pas crédit.`
+    const bonus = param('fioleDeSang', 'bonus', 1)
+    const faces = u.roll.faces.map((f, i) => (i === distanceDie ? { ...f, value: f.value + bonus } : f))
+    const roll = { ...u.roll, faces, distance: faces.map((f) => f.value) }
+    commit(pushLog({ ...u, roll, money: u.money - cost, fioleTurn: u.race.turn }, 'artefact', `Fiole de sang : dé n°${distanceDie + 1} à ${fmtFace(faces[distanceDie]!)} pour ${cost} pièces.`))
+    return null
+  }, [commit, pushLog])
+
+  /** Face d'élan : relance le dé et ajoute le résultat, une seule fois par dé et par tour. */
+  const useMomentum = useCallback((distanceDie: number): string | null => {
+    const u = uiRef.current
+    if (u.phase !== 'pairing' || !u.roll) return 'Seulement après le lancer.'
+    const face = u.roll.faces[distanceDie]
+    if (!face || face.effect !== 'momentum') return "Ce dé n'a pas de face d'élan."
+    if (u.momentumUsed.includes(distanceDie)) return 'Élan déjà pris sur ce dé.'
+    if (u.combinations.some((c) => c.distanceDie === distanceDie)) return 'Ce dé est déjà associé.'
+    const die = u.inventory.dice[distanceDie]
+    if (!die) return 'Dé introuvable.'
+    const again = die.faces[rngRef.current.int(die.faces.length)]!
+    const faces = u.roll.faces.map((f, i) => (i === distanceDie ? { ...f, value: f.value + again.value } : f))
+    const roll = { ...u.roll, faces, distance: faces.map((f) => f.value) }
+    commit(pushLog({ ...u, roll, momentumUsed: [...u.momentumUsed, distanceDie] }, 'artefact', `Élan : ${fmtFace(again)} ajouté, le dé n°${distanceDie + 1} vaut ${fmtFace(faces[distanceDie]!)}.`))
+    return null
+  }, [commit, pushLog])
+
+  /** Verrou de Minos : garde un dé sur sa face actuelle pour le prochain lancer. */
+  const lockDie = useCallback((distanceDie: number | null): string | null => {
+    const u = uiRef.current
+    if (!has(u.inventory, 'verrouDeMinos')) return 'Vous ne possédez pas le Verrou de Minos.'
+    if (u.phase !== 'pairing') return 'Verrouillez pendant votre tour, pour le lancer suivant.'
+    if (distanceDie !== null && !u.roll?.faces[distanceDie]) return 'Dé introuvable.'
+    const face = distanceDie === null ? null : u.roll!.faces[distanceDie]!
+    commit(pushLog({ ...u, lockedDie: distanceDie }, 'artefact', distanceDie === null ? 'Verrou de Minos levé.' : `Verrou de Minos : le dé n°${distanceDie + 1} gardera ${fmtFace(face!)}.`))
+    return null
+  }, [commit, pushLog])
+
+  /** Pièce à deux faces : double les mises ouvertes, au prix d'une paire adverse de plus. */
+  const doubleStakes = useCallback((): string | null => {
+    const u = uiRef.current
+    if (!has(u.inventory, 'pieceADeuxFaces')) return 'Vous ne possédez pas la Pièce à deux faces.'
+    if (u.doubledStakes) return 'La pièce a déjà été jetée cette course.'
+    if (u.race.turn !== 1 || u.phase !== 'pairing') return 'Seulement après le premier lancer de la course.'
+    const open = u.bets.filter((b) => b.status === 'open')
+    if (open.length === 0) return 'Aucun pari ouvert à doubler.'
+    const extra = open.reduce((sum, b) => sum + b.stake, 0)
+    if (u.money < extra) return `Il faut ${extra} pièces pour doubler toutes les mises.`
+    const bets = u.bets.map((b) => (b.status === 'open' ? { ...b, stake: b.stake * 2 } : b))
+    commit(pushLog({ ...u, bets, money: u.money - extra, doubledStakes: true }, 'artefact', `Pièce à deux faces : mises doublées (−${extra} pièces). L'adversaire lance une paire de plus.`))
+    return null
+  }, [commit, pushLog])
+
+  /** Tribune infernale : pose la tribune avant la course, sur une case libre hors zone de fin. */
+  const putTribune = useCallback((column: number, lane: number): string | null => {
+    const u = uiRef.current
+    if (!has(u.inventory, 'tribuneInfernale')) return 'Vous ne possédez pas la Tribune infernale.'
+    if (u.phase !== 'prep') return 'La tribune se pose avant la course.'
+    const race = placeTribune(u.race, column, lane)
+    if (race === u.race) return 'Case impossible : hors départ, hors zone de fin, et libre.'
+    commit(pushLog({ ...u, race, tribunePlaced: true }, 'artefact', `Tribune infernale posée case ${column}.`))
+    return null
+  }, [commit, pushLog])
 
   const pickSoulDie = useCallback((i: number) => {
     const u = uiRef.current
@@ -570,11 +812,13 @@ export function useRace({ carry, soulCount, lanes, terrains, speed }: UseRacePro
       }
     }
 
-    // Tour de l'adversaire (§2.5.2).
+    // Tour de l'adversaire (§2.5.2). Avec le Miroir de Narcisse il a déjà joué (liste vide) ;
+    // avec l'Œil ou le Fouet, ses paires ont été tirées au lancer et sont rejouées telles quelles.
     commit({ ...uiRef.current, phase: 'opponent', resolvingIndex: null })
     const flip = opponentNegativesFlipped(uiRef.current.inventory)
-    for (let k = 0; k < config.opponent.rollsPerTurn; k++) {
-      const pair = rollOpponentPair(config, uiRef.current.race.souls.length, rngRef.current, { flipNegatives: flip })
+    const preview = uiRef.current.opponentPreview
+    const pairs = preview ?? Array.from({ length: opponentRolls(uiRef.current) }, () => rollOpponentPair(config, uiRef.current.race.souls.length, rngRef.current, { flipNegatives: flip }))
+    for (const pair of pairs) {
       commit({ ...uiRef.current, opponentRoll: null, lastResult: null })
       if (!(await wait(config.animation.diceMs, id))) return
       const u = uiRef.current
@@ -586,17 +830,17 @@ export function useRace({ carry, soulCount, lanes, terrains, speed }: UseRacePro
     const u = uiRef.current
     const ended = endTurn(u.race)
     if (!ended.finished) {
-      commit({ ...u, race: ended, phase: 'idle', resolvingIndex: null, roll: null, combinations: [], opponentRoll: null })
+      commit({ ...u, race: ended, phase: 'idle', resolvingIndex: null, roll: null, combinations: [], opponentRoll: null, opponentPreview: null })
       return
     }
     let done = pushLog({ ...u, race: ended, phase: 'finished', resolvingIndex: null }, 'system', `Une âme a franchi l'arrivée : fin de course au tour ${ended.turn}.`)
-    const refundRatio = u.inventory.artefacts.includes('livreDesComptes') ? param('livreDesComptes', 'refundRatio', 0.5) : 0
-    const settlement = settleBets(done.bets, ranking(ended), refundRatio > 0 ? { refundRatio, pickLost: (n) => rngRef.current.int(n) } : {})
+    const settlement = settleBets(done.bets, ranking(ended), settleOptions(u.inventory, circleOf(u.raceIndex).circle, (n) => rngRef.current.int(n)))
     for (const b of settlement.bets) {
       const names = b.souls.map((id) => ended.souls[id]?.name ?? `#${id}`).join(betType(b.type).ordered ? ' > ' : ', ')
       done = pushLog(done, 'bet', b.status === 'won' ? `Pari ${betType(b.type).label} (${names}) gagné : +${b.payout - b.stake} net (mise ${b.stake} rendue).` : `Pari ${betType(b.type).label} (${names}) perdu : −${b.stake}.`)
     }
     if (settlement.refund > 0) done = pushLog(done, 'artefact', `Livre des comptes : ${settlement.refund} pièces remboursées.`)
+    if (settlement.relief > 0) done = pushLog(done, 'artefact', `Baume du perdant : ${settlement.relief} pièces rendues sur les mises perdues.`)
     const net = settlement.returned - settlement.staked
     done = pushLog(done, 'system', `Bilan des paris : ${net >= 0 ? '+' : '−'}${Math.abs(net)}. Argent : ${done.money + settlement.returned}.`)
     const bestBet = settlement.bets.reduce((m, b) => Math.max(m, b.payout - b.stake), 0)
@@ -607,7 +851,7 @@ export function useRace({ carry, soulCount, lanes, terrains, speed }: UseRacePro
   useEffect(() => {
     if (!auto) return
     if (ui.phase === 'prep') {
-      if (ui.bets.length === 0 && placeBet('winner', [0], config.economy.stakes[0] ?? 0) !== null) {
+      if (ui.bets.length === 0 && placeBet('winner', [0], stakesAtCircle(config.economy, circleOf(ui.raceIndex).circle)[0] ?? 0) !== null) {
         setAuto(false)
         return
       }
@@ -625,6 +869,11 @@ export function useRace({ carry, soulCount, lanes, terrains, speed }: UseRacePro
     setAuto,
     shopUnlocked: shopUnlocked(ui),
     level,
-    actions: { openShop, startRace, buy, cancelPurchase, rerollVitrine, placeBet, cancelBet, useLateBet, rollDice, pickSoulDie, pickDistanceDie, pairDice, resetPairing, removeCombination, removeCombinations, moveCombination, moveCombinationTo, setCombinations, autoPair, resolve },
+    actions: {
+      openShop, startRace, buy, cancelPurchase, rerollVitrine, placeBet, cancelBet, useLateBet, rollDice,
+      pickSoulDie, pickDistanceDie, pairDice, resetPairing, removeCombination, removeCombinations,
+      moveCombination, moveCombinationTo, setCombinations, autoPair, resolve,
+      useFiole, useMomentum, lockDie, doubleStakes, putTribune,
+    },
   }
 }

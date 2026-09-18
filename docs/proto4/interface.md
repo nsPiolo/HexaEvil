@@ -10,6 +10,7 @@ PUIS
     - `Continuer` (pour reprendre un run en cours, grisé si aucun run est en cours).
     - `Commencer une nouvelle évasion` (pour lancer un nouveau run)
     - `Statistiques` (affiche des stats sur les parties)
+    - `Collection` (affiche les objets de boutique débloqués)
     - `Option` (affiche le menu d'option)
 
 ### Statistique
@@ -25,6 +26,24 @@ Affiche les statistiques suivantes :
 * `Meilleur pari` (valeur nette la plus haute remportée)
 
 > Dans la version web, on garde ces informations dans le localstorage.
+
+### Collection
+
+Un écran avec un bouton pour revenir en arrière sur le menu principal. Il montre
+le catalogue de la boutique tel que le joueur l'a ouvert (voir
+[`boutique-README.md`](boutique-README.md) § Déblocage d'un run à l'autre) :
+
+* un compteur `N objets sur M en rayon` ;
+* une carte par objet **descellé** — vignette, famille, rareté, effet, contrepartie —
+  sans prix ni bouton d'achat : c'est un catalogue, pas un rayon ;
+* sous une ligne qui les compte, un **rack de cadenas** : une tuile carrée par objet
+  scellé, illustrée par le cadenas peint (`raw/lock.png`, détouré et réduit en
+  `public/menu/lock.webp`). Des tuiles serrées plutôt que des cartes pleines, pour
+  que dix scellés ne pèsent pas plus lourd à l'écran que les objets en rayon. Le nom
+  et l'effet ne sont jamais montrés : la révélation appartient à la fin de cercle.
+
+> Les objets débloqués vivent dans le localstorage, sous une clé à part de la
+> sauvegarde du run : la mort d'un run ne les efface pas.
 
 ### Option
 
@@ -138,7 +157,7 @@ cercle ; `{boss}` et `{price}` y sont remplacés à l'affichage.
 * Charon — `Alors c'est vous. Le mort qui joue aux dés au lieu de descendre.`
 * Le stagiaire — `Charon, monsieur. Il a payé son passage, techniquement…`
 * Charon — `Techniquement. J'ai passé neuf mille ans à compter des pièces, petit. Je sais ce que veut dire techniquement.`
-* Charon — `Une course, alors. Si vous sortez d'ici avec 200 pièces, je vous laisse la barque. Sinon, je vous mets à la rame.`
+* Charon — `Une course, alors. Si vous sortez d'ici avec 150 pièces, je vous laisse la barque. Sinon, je vous mets à la rame.`
 * Vous — `Et si je gagne, c'est vous qui ramez ?`
 * Charon — `Personne n'a jamais vécu assez longtemps pour me poser la question.`
 

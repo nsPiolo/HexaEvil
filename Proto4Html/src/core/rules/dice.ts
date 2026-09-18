@@ -4,14 +4,27 @@
  */
 import type { RaceConfig } from '../config/schema'
 
-/** Effet spécial d'une face forgée, en plus de sa valeur. */
-export type FaceEffect = 'gold' | 'betSeal'
+/**
+ * Effet spécial d'une face forgée, en plus de sa valeur (forge.md). Trois moments de résolution,
+ * qui décident où chaque effet est câblé :
+ *
+ * - **au lancer** (`rollPlayerDice`) : `mirror` copie l'autre dé, `willOWisp` relance le dé ;
+ * - **à l'association** (`useRace`) : `gold` verse des pièces, `momentum` propose une relance ;
+ * - **à la résolution** (`applyMove`) : `betSeal`, `leap`, `explosive`, `magnet`, `freeze`
+ *   dépendent du plateau ou des paris et ne se réduisent pas à une valeur.
+ */
+export type FaceEffect = 'gold' | 'betSeal' | 'mirror' | 'willOWisp' | 'momentum' | 'leap' | 'explosive' | 'magnet' | 'freeze'
+
+/** Effets qui se résolvent contre le plateau, dans `applyMove` : leur valeur de face ne suffit pas. */
+export const BOARD_EFFECTS: readonly FaceEffect[] = ['leap', 'explosive', 'magnet', 'freeze']
 
 export interface Face {
   value: number
   effect: FaceEffect | null
   /** Id de l'altération de forge, pour l'affichage ; null pour une face d'origine. */
   altered: string | null
+  /** Face « ? » du Dé de Fraude : elle copie la meilleure autre face du lancer (des.md n°5). */
+  wild?: boolean
 }
 
 export interface DistanceDie {

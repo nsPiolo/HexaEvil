@@ -18,11 +18,17 @@ Les faces des dés spéciaux peuvent ensuite être forgées (voir [`forge.md`](f
 | 2 | Dé de la Colère ✔ | Distance | `-2, 0, 3, 4` | remplace | Moyen | 55 | 0 |
 | 3 | Dé de Glace ✔ | Distance | `-1, -1, 2, 5` | remplace | Moyen | 60 | 2 |
 | 4 | Dé de Prodigalité ⚠ ✔ | Distance | `2, 3, 3, 4` | remplace | Fort | 80 | 2 |
-| 5 | Dé de Fraude | Distance | `1, 2, 3, ?` | remplace | Fort | 90 | 2 |
-| 6 | Troisième dé Distance | Distance | `-1, 1, 2, 3` | ajoute | Fort | 100 | 2 |
+| 5 | Dé de Fraude ✔ | Distance | `1, 2, 3, ?` | remplace | Fort | 90 | 2 |
+| 6 | Troisième dé Distance ✔ | Distance | `-1, 1, 2, 3` | ajoute | Fort | 100 | 2 |
 | 7 | Dé Âme pipé | Âme | 2 faces d'une âme choisie | remplace | Moyen | 50 | 0 |
 | 8 | Dé du Meneur | Âme | meneur / traînard / 3 âmes | remplace | Fort | 85 | 2 |
 | 9 | Dé de Cerbère ⚠ | Âme + Distance | dé à 6 faces mixte | ajoute | Extrême | 160 | 4 |
+
+**État du proto** : les six dés **Distance** (n° 1 à 6) sont implémentés. Les
+trois dés **Âme** (n° 7 à 9) ne le sont pas : `rollPlayerDice` tire aujourd'hui
+une âme au hasard (`rng.int(soulCount)`) sans objet « dé Âme » derrière. Les
+modéliser est un chantier à part, qui débloquerait d'un coup ces trois dés et les
+trois faces de dé Âme de [`forge.md`](forge.md).
 
 ## Fiches
 

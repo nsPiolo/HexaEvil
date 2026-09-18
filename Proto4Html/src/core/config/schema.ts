@@ -57,9 +57,14 @@ export interface RaceConfig {
   }
   economy: {
     startingMoney: number
-    /** Avance versée au joueur au début de chaque course (avant les paris initiaux). */
+    /** Avance versée au joueur au début de chaque course du cercle 1 (avant les paris initiaux). */
     raceAllowance: number
+    /** Croissance de l'avance par cercle (0,5 = +50 % de celle du cercle 1 à chaque cercle). Voir `allowanceAtCircle`. */
+    allowanceGrowthPerCircle: number
+    /** Mises proposées au cercle 1, croissantes. Voir `stakesAtCircle` (rules/stakes.ts) pour les suivants. */
     stakes: readonly number[]
+    /** Croissance de l'échelle des mises par cercle (0,25 = +25 % du cercle 1 à chaque cercle). */
+    stakeGrowthPerCircle: number
     multipliers: Readonly<Record<BetTypeId, number>>
     /** Niveau du stagiaire (index de grade, 0 au départ) à partir duquel chaque type de pari est ouvert. */
     betUnlockLevel: Readonly<Record<BetTypeId, number>>

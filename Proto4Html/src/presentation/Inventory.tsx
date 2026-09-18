@@ -4,7 +4,18 @@ import type { Inventory as Inv } from '../core/shop/shop'
 import { ItemArt } from './ItemArt'
 import { itemName } from './useRace'
 
-const EFFECT_ICON: Record<NonNullable<Face['effect']>, string> = { gold: '✦', betSeal: '♠' }
+/** Un signe par effet de face forgée : il se lit sur le dé, au lancer comme dans l'inventaire. */
+const EFFECT_ICON: Record<NonNullable<Face['effect']>, string> = {
+  gold: '✦',
+  betSeal: '♠',
+  mirror: '⧉',
+  willOWisp: '✧',
+  momentum: '»',
+  leap: '⤴',
+  explosive: '✸',
+  magnet: '⊃',
+  freeze: '❄',
+}
 
 export function FaceChip({ face, dim }: { face: Face; dim?: boolean }) {
   const cls = ['face']

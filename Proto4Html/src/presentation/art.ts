@@ -33,3 +33,10 @@ export const bossPortrait = (circle: number): string => `/circles/${circleArt(ci
  * `ItemArt` se passe de l'image tant que le fichier manque, il n'y a donc rien à déclarer ici.
  */
 export const itemArt = (id: string): string => `/objets/${id}.webp`
+
+/**
+ * Cadenas peint (docs/proto4/raw/lock.png, détouré et réduit) : il illustre les objets encore
+ * scellés dans la Collection. Une image plutôt qu'un emoji 🔒, dont le rendu change d'un
+ * système à l'autre et jure avec les cartes peintes.
+ */
+export const LOCK_ART = '/menu/lock.webp'

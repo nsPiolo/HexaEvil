@@ -28,17 +28,27 @@ cible recommandée, avec un supplément si l'on choisit une autre face.
 | 1 | Limée ✔ | -1 | correction | Faible | 15 |
 | 2 | Retournée ⚠ ✔ | -1 | correction risquée | Moyen | 35 |
 | 3 | Dorée ✔ | 1 | argent | Moyen | 30 |
-| 4 | Explosive ⚠ | 2 | collision | Fort | 55 |
-| 5 | Bond | 3 | position | Fort | 60 |
-| 6 | Miroir | 1 | dés | Moyen | 40 |
-| 7 | Feu follet | -1 | dés | Moyen | 45 |
-| 8 | Élan ⚠ | 2 | risque | Fort | 50 |
-| 9 | Gel | -1 | tour adverse | Moyen | 40 |
-| 10 | Aimant | 1 | position | Moyen | 45 |
+| 4 | Explosive ⚠ ✔ | 2 | collision | Fort | 55 |
+| 5 | Bond ✔ | 3 | position | Fort | 60 |
+| 6 | Miroir ✔ | 1 | dés | Moyen | 40 |
+| 7 | Feu follet ✔ | -1 | dés | Moyen | 45 |
+| 8 | Élan ⚠ ✔ | 2 | risque | Fort | 50 |
+| 9 | Gel ✔ | -1 | tour adverse | Moyen | 40 |
+| 10 | Aimant ✔ | 1 | position | Moyen | 45 |
 | 11 | Sceau du parieur ✔ | 1 | paris | Fort | 55 |
 | 12 | Face vide (dé Âme) | une âme | choix | Fort | 60 |
 | 13 | Face double (dé Âme) | une âme | cumul | Moyen | 40 |
 | 14 | Face du meneur (dé Âme) | une âme | position | Fort | 65 |
+
+**État du proto** : les onze faces de **dé Distance** (n° 1 à 11) sont
+implémentées. Les trois faces de **dé Âme** (n° 12 à 14) attendent la
+modélisation des dés Âme, voir [`des.md`](des.md).
+
+Chaque effet se résout à l'un de trois moments, ce qui décide où il vit dans le
+code (`FaceEffect`, `src/core/rules/dice.ts`) : **au lancer** (Miroir, Feu
+follet, dans `rollPlayerDice`), **à l'association** (Dorée, Élan, dans
+`useRace`), **contre le plateau** (Sceau, Bond, Explosive, Aimant, Gel, dans
+`applyMove`).
 
 ## Faces de dé Distance
 

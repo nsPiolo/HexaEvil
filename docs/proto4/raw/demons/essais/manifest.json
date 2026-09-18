@@ -1,0 +1,13 @@
+{
+  "1_limbes": {
+    "cle": "6620d73a7be27445",
+    "modele": "gemini-3-pro-image",
+    "taille": "2K",
+    "ratio": "4:5",
+    "fichier": "1_limbes.jpg",
+    "mime": "image/jpeg",
+    "octets": 2316989,
+    "genereLe": "2026-09-18T13:42:54.421Z",
+    "prompt": "Clean digital character illustration for a dark fantasy game, semi-realistic painted style, smooth blended rendering with visible brushwork only in the hair and the cloth, warm muted earthy palette, soft directional light from the upper left. Bust portrait of Charon the ferryman, an ageing horned demon with a weathered lined face and a short grey beard, long braided grey-brown dreadlocks, heavy ram horns curling back, glowing amber eyes, wearing a ragged layered brown robe hung with bone charms, old coins and a small bronze eye amulet, facing the viewer, cut at the chest, the head in the upper third of the frame and nothing touching the borders, the lower edge of the clothing dissolving into loose ragged brush strokes. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the character and the background; a subtle cool edge light along the shoulders and the hair so the silhouette separates cleanly; no violet, purple or magenta anywhere on the character, and no pure black either — the darkest folds stay a deep warm brown or blue-grey, lighter than the background. Everything painted in the image belongs to that one character — no detached brush strokes, specks or floating fragments anywhere in the background. No text, no letters, no numbers, no logo, no user interface."
+  }
+}

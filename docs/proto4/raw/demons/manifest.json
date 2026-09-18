@@ -1,0 +1,156 @@
+{
+  "1_limbes": {
+    "cle": "6620d73a7be27445",
+    "modele": "gemini-3-pro-image",
+    "taille": "2K",
+    "ratio": "4:5",
+    "fichier": "1_limbes.jpg",
+    "mime": "image/jpeg",
+    "octets": 2480330,
+    "genereLe": "2026-09-18T13:52:45.264Z",
+    "prompt": "Clean digital character illustration for a dark fantasy game, semi-realistic painted style, smooth blended rendering with visible brushwork only in the hair and the cloth, warm muted earthy palette, soft directional light from the upper left. Bust portrait of Charon the ferryman, an ageing horned demon with a weathered lined face and a short grey beard, long braided grey-brown dreadlocks, heavy ram horns curling back, glowing amber eyes, wearing a ragged layered brown robe hung with bone charms, old coins and a small bronze eye amulet, facing the viewer, cut at the chest, the head in the upper third of the frame and nothing touching the borders, the lower edge of the clothing dissolving into loose ragged brush strokes. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the character and the background; a subtle cool edge light along the shoulders and the hair so the silhouette separates cleanly; no violet, purple or magenta anywhere on the character, and no pure black either — the darkest folds stay a deep warm brown or blue-grey, lighter than the background. Everything painted in the image belongs to that one character — no detached brush strokes, specks or floating fragments anywhere in the background. No text, no letters, no numbers, no logo, no user interface."
+  },
+  "2_luxure": {
+    "cle": "e33afbd8ca301581",
+    "modele": "gemini-3-pro-image",
+    "taille": "2K",
+    "ratio": "4:5",
+    "fichier": "2_luxure.jpg",
+    "mime": "image/jpeg",
+    "octets": 2069649,
+    "genereLe": "2026-09-18T13:59:34.682Z",
+    "prompt": "Clean digital character illustration for a dark fantasy game, semi-realistic painted style, smooth blended rendering with visible brushwork only in the hair and the cloth, warm muted earthy palette, soft directional light from the upper left. Bust portrait of Minos, judge of the lustful, a lean severe demon, unmistakably not human: two short sharp black horns rising clearly from his slicked-back black hair, pointed ears, grey-tinged skin and cold glowing amber eyes, wearing the dark tailored coat of a magistrate over a wind-torn collar, his long scaled tail coiled once over his own shoulder like a measuring rope, facing the viewer, cut at the chest, the head in the upper third of the frame and nothing touching the borders, the lower edge of the clothing dissolving into loose ragged brush strokes. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the character and the background; a subtle cool edge light along the shoulders and the hair so the silhouette separates cleanly; no violet, purple or magenta anywhere on the character, and no pure black either — the darkest folds stay a deep warm brown or blue-grey, lighter than the background. Everything painted in the image belongs to that one character — no detached brush strokes, specks or floating fragments anywhere in the background. No text, no letters, no numbers, no logo, no user interface."
+  },
+  "3_gourmandise": {
+    "cle": "087c192b8238306e",
+    "modele": "gemini-3-pro-image",
+    "taille": "2K",
+    "ratio": "4:5",
+    "fichier": "3_gourmandise.jpg",
+    "mime": "image/jpeg",
+    "octets": 2228956,
+    "genereLe": "2026-09-18T13:53:34.897Z",
+    "prompt": "Clean digital character illustration for a dark fantasy game, semi-realistic painted style, smooth blended rendering with visible brushwork only in the hair and the cloth, warm muted earthy palette, soft directional light from the upper left. Bust portrait of Cerberus, a hulking three-headed hound-demon, three broad snouted heads crowded shoulder to shoulder, heavy dripping jowls, six small yellow eyes, matted grey-brown fur, a thick studded iron collar biting into the neck, facing the viewer, cut at the chest, the head in the upper third of the frame and nothing touching the borders, the lower edge of the clothing dissolving into loose ragged brush strokes. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the character and the background; a subtle cool edge light along the shoulders and the hair so the silhouette separates cleanly; no violet, purple or magenta anywhere on the character, and no pure black either — the darkest folds stay a deep warm brown or blue-grey, lighter than the background. Everything painted in the image belongs to that one character — no detached brush strokes, specks or floating fragments anywhere in the background. No text, no letters, no numbers, no logo, no user interface."
+  },
+  "4_avarice": {
+    "cle": "fd4761e0ae8d942f",
+    "modele": "gemini-3-pro-image",
+    "taille": "2K",
+    "ratio": "4:5",
+    "fichier": "4_avarice.jpg",
+    "mime": "image/jpeg",
+    "octets": 2452971,
+    "genereLe": "2026-09-18T13:53:59.051Z",
+    "prompt": "Clean digital character illustration for a dark fantasy game, semi-realistic painted style, smooth blended rendering with visible brushwork only in the hair and the cloth, warm muted earthy palette, soft directional light from the upper left. Bust portrait of Plutus, a bloated demon of wealth, a wide swollen face with sagging jowls and small greedy eyes lit cold gold, thin horns half sunk into the flesh, wearing a straining brocade waistcoat hung with chains of tarnished coins, his thick fingers heavy with rings, facing the viewer, cut at the chest, the head in the upper third of the frame and nothing touching the borders, the lower edge of the clothing dissolving into loose ragged brush strokes. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the character and the background; a subtle cool edge light along the shoulders and the hair so the silhouette separates cleanly; no violet, purple or magenta anywhere on the character, and no pure black either — the darkest folds stay a deep warm brown or blue-grey, lighter than the background. Everything painted in the image belongs to that one character — no detached brush strokes, specks or floating fragments anywhere in the background. No text, no letters, no numbers, no logo, no user interface."
+  },
+  "5_colere": {
+    "cle": "5e4e200adc04070c",
+    "modele": "gemini-3-pro-image",
+    "taille": "2K",
+    "ratio": "4:5",
+    "fichier": "5_colere.jpg",
+    "mime": "image/jpeg",
+    "octets": 2236190,
+    "genereLe": "2026-09-18T13:54:20.840Z",
+    "prompt": "Clean digital character illustration for a dark fantasy game, semi-realistic painted style, smooth blended rendering with visible brushwork only in the hair and the cloth, warm muted earthy palette, soft directional light from the upper left. Bust portrait of Phlegyas, the boatman of the Styx marsh, a gaunt furious demon with sunken cheeks and a shaved skull, long back-swept horns, eyes burning a dull red, bare wiry shoulders streaked with black marsh mud, a frayed rope harness across his chest, facing the viewer, cut at the chest, the head in the upper third of the frame and nothing touching the borders, the lower edge of the clothing dissolving into loose ragged brush strokes. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the character and the background; a subtle cool edge light along the shoulders and the hair so the silhouette separates cleanly; no violet, purple or magenta anywhere on the character, and no pure black either — the darkest folds stay a deep warm brown or blue-grey, lighter than the background. Everything painted in the image belongs to that one character — no detached brush strokes, specks or floating fragments anywhere in the background. No text, no letters, no numbers, no logo, no user interface."
+  },
+  "6_heresie": {
+    "cle": "34d3714133a42ff9",
+    "modele": "gemini-3-pro-image",
+    "taille": "2K",
+    "ratio": "4:5",
+    "fichier": "6_heresie.jpg",
+    "mime": "image/jpeg",
+    "octets": 2286500,
+    "genereLe": "2026-09-18T13:54:43.967Z",
+    "prompt": "Clean digital character illustration for a dark fantasy game, semi-realistic painted style, smooth blended rendering with visible brushwork only in the hair and the cloth, warm muted earthy palette, soft directional light from the upper left. Bust portrait of the three Furies crowded shoulder to shoulder into a single bust, three lean sisters with identical hollow faces and white burning eyes, live snakes coiling through their dark hair, wearing torn grey mourning cloth, their pale skin lit from below by a chalk-white ember, facing the viewer, cut at the chest, the head in the upper third of the frame and nothing touching the borders, the lower edge of the clothing dissolving into loose ragged brush strokes. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the character and the background; a subtle cool edge light along the shoulders and the hair so the silhouette separates cleanly; no violet, purple or magenta anywhere on the character, and no pure black either — the darkest folds stay a deep warm brown or blue-grey, lighter than the background. Everything painted in the image belongs to that one character — no detached brush strokes, specks or floating fragments anywhere in the background. No text, no letters, no numbers, no logo, no user interface."
+  },
+  "7_violence": {
+    "cle": "8611cab3deba01d6",
+    "modele": "gemini-3-pro-image",
+    "taille": "2K",
+    "ratio": "4:5",
+    "fichier": "7_violence.jpg",
+    "mime": "image/jpeg",
+    "octets": 2265451,
+    "genereLe": "2026-09-18T13:55:11.358Z",
+    "prompt": "Clean digital character illustration for a dark fantasy game, semi-realistic painted style, smooth blended rendering with visible brushwork only in the hair and the cloth, warm muted earthy palette, soft directional light from the upper left. Bust portrait of the Minotaur, a massive bull-headed demon, broad black muzzle and heavy curved horns scarred and chipped, small furious orange eyes, a thick neck of corded muscle, a torn leather harness across the chest, hot ash caught in the coarse fur, facing the viewer, cut at the chest, the head in the upper third of the frame and nothing touching the borders, the lower edge of the clothing dissolving into loose ragged brush strokes. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the character and the background; a subtle cool edge light along the shoulders and the hair so the silhouette separates cleanly; no violet, purple or magenta anywhere on the character, and no pure black either — the darkest folds stay a deep warm brown or blue-grey, lighter than the background. Everything painted in the image belongs to that one character — no detached brush strokes, specks or floating fragments anywhere in the background. No text, no letters, no numbers, no logo, no user interface."
+  },
+  "8_fraude": {
+    "cle": "01beee475713fc04",
+    "modele": "gemini-3-pro-image",
+    "taille": "2K",
+    "ratio": "4:5",
+    "fichier": "8_fraude.jpg",
+    "mime": "image/jpeg",
+    "octets": 2033513,
+    "genereLe": "2026-09-18T13:55:42.942Z",
+    "prompt": "Clean digital character illustration for a dark fantasy game, semi-realistic painted style, smooth blended rendering with visible brushwork only in the hair and the cloth, warm muted earthy palette, soft directional light from the upper left. Bust portrait of Geryon, a young clean-shaven demon in a modern grey pinstripe office shirt and a dark patterned tie, slicked dark hair, tall ridged horns, a thin knowing smile and glowing orange eyes, holding a blank white playing card between two fingers at chest height, facing the viewer, cut at the chest, the head in the upper third of the frame and nothing touching the borders, the lower edge of the clothing dissolving into loose ragged brush strokes. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the character and the background; a subtle cool edge light along the shoulders and the hair so the silhouette separates cleanly; no violet, purple or magenta anywhere on the character, and no pure black either — the darkest folds stay a deep warm brown or blue-grey, lighter than the background. Everything painted in the image belongs to that one character — no detached brush strokes, specks or floating fragments anywhere in the background. No text, no letters, no numbers, no logo, no user interface."
+  },
+  "10_mer": {
+    "cle": "ddaeb55bf29dfae3",
+    "modele": "gemini-3-pro-image",
+    "taille": "2K",
+    "ratio": "4:5",
+    "fichier": "10_mer.jpg",
+    "mime": "image/jpeg",
+    "octets": 2310501,
+    "genereLe": "2026-09-18T13:56:09.027Z",
+    "prompt": "Clean digital character illustration for a dark fantasy game, semi-realistic painted style, smooth blended rendering with visible brushwork only in the hair and the cloth, warm muted earthy palette, soft directional light from the upper left. Bust portrait of the Drowned One, a waterlogged demon risen from the sea floor, pale swollen grey-green skin, long black hair plastered flat and still streaming water, blank milky eyes, a rusted anchor chain looped around the neck, strands of dark kelp caught on the shoulders, facing the viewer, cut at the chest, the head in the upper third of the frame and nothing touching the borders, the lower edge of the clothing dissolving into loose ragged brush strokes. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the character and the background; a subtle cool edge light along the shoulders and the hair so the silhouette separates cleanly; no violet, purple or magenta anywhere on the character, and no pure black either — the darkest folds stay a deep warm brown or blue-grey, lighter than the background. Everything painted in the image belongs to that one character — no detached brush strokes, specks or floating fragments anywhere in the background. No text, no letters, no numbers, no logo, no user interface."
+  },
+  "11_falaise": {
+    "cle": "6fd7130e0c177900",
+    "modele": "gemini-3-pro-image",
+    "taille": "2K",
+    "ratio": "4:5",
+    "fichier": "11_falaise.jpg",
+    "mime": "image/jpeg",
+    "octets": 2360799,
+    "genereLe": "2026-09-18T13:56:31.539Z",
+    "prompt": "Clean digital character illustration for a dark fantasy game, semi-realistic painted style, smooth blended rendering with visible brushwork only in the hair and the cloth, warm muted earthy palette, soft directional light from the upper left. Bust portrait of the Chain-bearer, a broad-shouldered demon quarryman with cracked basalt-grey skin, short blunt horns and deep-set amber eyes, a heavy iron collar at the throat and several lengths of thick chain slung across the chest and hanging from the shoulders, facing the viewer, cut at the chest, the head in the upper third of the frame and nothing touching the borders, the lower edge of the clothing dissolving into loose ragged brush strokes. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the character and the background; a subtle cool edge light along the shoulders and the hair so the silhouette separates cleanly; no violet, purple or magenta anywhere on the character, and no pure black either — the darkest folds stay a deep warm brown or blue-grey, lighter than the background. Everything painted in the image belongs to that one character — no detached brush strokes, specks or floating fragments anywhere in the background. No text, no letters, no numbers, no logo, no user interface."
+  },
+  "12_villes": {
+    "cle": "187df35e220b01bf",
+    "modele": "gemini-3-pro-image",
+    "taille": "2K",
+    "ratio": "4:5",
+    "fichier": "12_villes.jpg",
+    "mime": "image/jpeg",
+    "octets": 2155299,
+    "genereLe": "2026-09-18T13:56:54.478Z",
+    "prompt": "Clean digital character illustration for a dark fantasy game, semi-realistic painted style, smooth blended rendering with visible brushwork only in the hair and the cloth, warm muted earthy palette, soft directional light from the upper left. Bust portrait of the Ticket Clerk, a narrow pinched demon in a worn ticket-office waistcoat with black sleeve garters, small round spectacles over yellow eyes, thinning hair combed flat over two stubby horns, one hand at chest height resting on a small wooden shutter he is about to pull closed, the shutter held low and entirely inside the frame, facing the viewer, cut at the chest, the head in the upper third of the frame and nothing touching the borders, the lower edge of the clothing dissolving into loose ragged brush strokes. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the character and the background; a subtle cool edge light along the shoulders and the hair so the silhouette separates cleanly; no violet, purple or magenta anywhere on the character, and no pure black either — the darkest folds stay a deep warm brown or blue-grey, lighter than the background. Everything painted in the image belongs to that one character — no detached brush strokes, specks or floating fragments anywhere in the background. No text, no letters, no numbers, no logo, no user interface."
+  },
+  "13_neige": {
+    "cle": "77882fe8f0e53356",
+    "modele": "gemini-3-pro-image",
+    "taille": "2K",
+    "ratio": "4:5",
+    "fichier": "13_neige.jpg",
+    "mime": "image/jpeg",
+    "octets": 2193994,
+    "genereLe": "2026-09-18T13:57:16.498Z",
+    "prompt": "Clean digital character illustration for a dark fantasy game, semi-realistic painted style, smooth blended rendering with visible brushwork only in the hair and the cloth, warm muted earthy palette, soft directional light from the upper left. Bust portrait of the Frost, a tall gaunt demon of the high mountain, skin pale blue-grey and rimed with frost, long white hair stiff with ice, thin translucent horns like icicles, eyes a cold pale glow, wearing a frozen fur-lined coat gone stiff, his breath crystallising at his lips, facing the viewer, cut at the chest, the head in the upper third of the frame and nothing touching the borders, the lower edge of the clothing dissolving into loose ragged brush strokes. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the character and the background; a subtle cool edge light along the shoulders and the hair so the silhouette separates cleanly; no violet, purple or magenta anywhere on the character, and no pure black either — the darkest folds stay a deep warm brown or blue-grey, lighter than the background. Everything painted in the image belongs to that one character — no detached brush strokes, specks or floating fragments anywhere in the background. No text, no letters, no numbers, no logo, no user interface."
+  },
+  "14_vent": {
+    "cle": "65c137fe6e6cc907",
+    "modele": "gemini-3-pro-image",
+    "taille": "2K",
+    "ratio": "4:5",
+    "fichier": "14_vent.jpg",
+    "mime": "image/jpeg",
+    "octets": 2165147,
+    "genereLe": "2026-09-18T13:57:39.944Z",
+    "prompt": "Clean digital character illustration for a dark fantasy game, semi-realistic painted style, smooth blended rendering with visible brushwork only in the hair and the cloth, warm muted earthy palette, soft directional light from the upper left. Bust portrait of the Breath, a lean demon of the storm, hollow-cheeked with wind-scoured grey skin, long hair and torn cloth streaming back as if blown, swept-back horns, white pupil-less eyes, a ragged high-collared coat snapping open at one shoulder, facing the viewer, cut at the chest, the head in the upper third of the frame and nothing touching the borders, the lower edge of the clothing dissolving into loose ragged brush strokes. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the character and the background; a subtle cool edge light along the shoulders and the hair so the silhouette separates cleanly; no violet, purple or magenta anywhere on the character, and no pure black either — the darkest folds stay a deep warm brown or blue-grey, lighter than the background. Everything painted in the image belongs to that one character — no detached brush strokes, specks or floating fragments anywhere in the background. No text, no letters, no numbers, no logo, no user interface."
+  },
+  "15_ange": {
+    "cle": "f88357d3a670d645",
+    "modele": "gemini-3-pro-image",
+    "taille": "2K",
+    "ratio": "4:5",
+    "fichier": "15_ange.jpg",
+    "mime": "image/jpeg",
+    "octets": 2177778,
+    "genereLe": "2026-09-18T13:58:03.170Z",
+    "prompt": "Clean digital character illustration for a dark fantasy game, semi-realistic painted style, smooth blended rendering with visible brushwork only in the hair and the cloth, warm muted earthy palette, soft directional light from the upper left. Bust portrait of the winged intern, a young tired-looking man with untidy brown hair and pale blind white eyes, a thin brass halo floating above his head and small pale feathered wings behind his shoulders, wearing a plain cream office shirt with a loosened gold tie, facing the viewer, cut at the chest, the head in the upper third of the frame and nothing touching the borders, the lower edge of the clothing dissolving into loose ragged brush strokes. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the character and the background; a subtle cool edge light along the shoulders and the hair so the silhouette separates cleanly; no violet, purple or magenta anywhere on the character, and no pure black either — the darkest folds stay a deep warm brown or blue-grey, lighter than the background. Everything painted in the image belongs to that one character — no detached brush strokes, specks or floating fragments anywhere in the background. No text, no letters, no numbers, no logo, no user interface."
+  }
+}

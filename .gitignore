@@ -12,6 +12,7 @@ UnityProject/[Uu]ser[Ss]ettings/
 UnityProject/[Mm]emoryCaptures/
 UnityProject/[Rr]ecordings/
 *.log
+*.env
 
 *.blend1
 *.blend1.meta

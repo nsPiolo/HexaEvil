@@ -8,7 +8,7 @@ test.describe('01 · Jauge des trois usages', () => {
     await start(page, { seed: RACE_SEED })
     const hudGauge = gauge(hud(page))
     await expect(hudGauge).toBeVisible()
-    await expect(hudGauge).toContainText(`${START_MONEY} / 200`)
+    await expect(hudGauge).toContainText(`${START_MONEY} / 150`)
     // L'avance du stagiaire est versée avant les paris et racontée sous le plateau.
     await expect(page.locator('.last-event')).toContainText(`Le stagiaire vous avance ${ALLOWANCE} pièces`)
     await expect(hudGauge).toContainText('solde')
@@ -28,17 +28,17 @@ test.describe('01 · Jauge des trois usages', () => {
     expect(await gaugeValues(gauge(dialog))).toBe(await gaugeValues(hudGauge))
   })
 
-  test('E2E-01-B : à 87/200, « encore 113 ¤ à trouver » ; une mise de 20 fait passer à 67', async ({ page }) => {
+  test('E2E-01-B : à 87/150, « encore 63 ¤ à trouver » ; une mise de 20 fait passer à 67', async ({ page }) => {
     // 01/AC2 — 67 apportés + 20 d'avance = 87 à la table.
     await start(page, { seed: RACE_SEED, money: 87 - ALLOWANCE })
     const g = gauge(hud(page))
-    await expect(g).toContainText('87 / 200')
-    await expect(g).toContainText('encore 113 ¤ à trouver')
+    await expect(g).toContainText('87 / 150')
+    await expect(g).toContainText('encore 63 ¤ à trouver')
     await expect(g).toHaveAttribute('data-state', 'warn')
     await placeBet(page, { souls: [1], stake: 20 })
-    await expect(g).toContainText('67 / 200')
-    await expect(g).toContainText('encore 133 ¤ à trouver')
-    await expect(gauge(betsPanel(page))).toContainText('67 / 200')
+    await expect(g).toContainText('67 / 150')
+    await expect(g).toContainText('encore 83 ¤ à trouver')
+    await expect(gauge(betsPanel(page))).toContainText('67 / 150')
   })
 
   test('E2E-01-C : l’avertissement ne bloque rien, miser et acheter restent possibles', async ({ page }) => {

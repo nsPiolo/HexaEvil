@@ -6,7 +6,7 @@ import { FaceChip } from './Inventory'
 import { ItemArt } from './ItemArt'
 import { MoneyGauge } from './MoneyGauge'
 import { SHOP, fill } from './texts'
-import { priceFor } from './useRace'
+import { priceFor, rerollCostFor } from './useRace'
 
 interface Props {
   vitrine: readonly ShopItem[]
@@ -18,6 +18,8 @@ interface Props {
   staked: number
   raceIndex: number
   inventory: Inv
+  /** Marteau d'Héphaïstos : la forge offerte du cercle est-elle encore disponible ? */
+  forgeFree: boolean
   pending: string | null
   onBuy: (id: string, target?: PurchaseTarget) => string | null
   onCancel: () => void
@@ -30,13 +32,14 @@ interface Props {
 const KIND_LABEL = { artefact: 'Artefact', die: 'Dé', forge: 'Forge' } as const
 const RARITY_LABEL = { common: 'commun', rare: 'rare', legendary: 'légendaire' } as const
 
-export function ShopPanel({ vitrine, unlocked, money, price, staked, raceIndex, inventory, pending, onBuy, onCancel, onReroll, onLeave, onGoToBets, onClose }: Props) {
+export function ShopPanel({ vitrine, unlocked, money, price, staked, raceIndex, inventory, forgeFree, pending, onBuy, onCancel, onReroll, onLeave, onGoToBets, onClose }: Props) {
   const [error, setError] = useState<string | null>(null)
   /** Objet dont le bouton affiche « Confirmer » (spec 04/C4) ; retombe seul après confirmResetMs. */
   const [confirming, setConfirming] = useState<string | null>(null)
   const pendingItem = pending ? vitrine.find((i) => i.id === pending) ?? null : null
   const hintValue = pendingItem?.kind === 'forge' ? pendingItem.target : null
   const artefactsFull = inventory.artefacts.length >= shop.artefactSlots
+  const rerollCost = rerollCostFor(inventory)
   const sorted = sortByRisk(vitrine)
 
   useEffect(() => {
@@ -167,7 +170,7 @@ export function ShopPanel({ vitrine, unlocked, money, price, staked, raceIndex, 
         <div className="vitrine">
           {sorted.length === 0 && <p className="muted shop-empty-vitrine">{SHOP.emptyVitrine}</p>}
           {sorted.map((item) => {
-            const itemPrice = priceFor(item, raceIndex)
+            const itemPrice = priceFor(item, raceIndex, inventory, forgeFree)
             const blocked = money < itemPrice || (item.kind === 'artefact' && artefactsFull)
             const risk = riskOf(item)
             const confirm = confirming === item.id
@@ -224,8 +227,8 @@ export function ShopPanel({ vitrine, unlocked, money, price, staked, raceIndex, 
         <button type="button" className="btn btn-primary" onClick={onLeave}>
           Retour aux paris
         </button>
-        <button type="button" className="btn" disabled={money < shop.rerollCost || !!pendingItem} onClick={onReroll}>
-          Renouveler la vitrine ({shop.rerollCost})
+        <button type="button" className="btn" disabled={money < rerollCost || !!pendingItem} onClick={onReroll}>
+          Renouveler la vitrine ({rerollCost})
         </button>
       </div>
     </section>

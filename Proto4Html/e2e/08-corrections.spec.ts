@@ -106,7 +106,7 @@ test.describe('08 · Corrections post-test', () => {
     await start(page, { seed: RACE_SEED, race: 15 })
     await expect(board(page).locator('.legend li')).toHaveCount(8)
     await expect(page.getByTestId('drawer-bets')).toHaveAttribute('data-state', 'open')
-    await placeBet(page, { souls: [0], stake: 5 })  // déverrouille la boutique
+    await placeBet(page, { souls: [0] })  // déverrouille la boutique ; mise par défaut : au cercle 6 les jetons ont grandi, « 5 » n’existe plus
     await openShop(page)
     await expect(page.getByTestId('drawer-shop')).toHaveAttribute('data-state', 'open')
     await expect(page.getByTestId('drawer-bets')).toHaveCount(0)
@@ -221,7 +221,7 @@ test.describe('08 · Corrections post-test', () => {
     const g = hud(page).getByTestId('money-gauge')
     const opacity = () => g.evaluate((el) => parseFloat(getComputedStyle(el).opacity))
     await expect.poll(opacity).toBeLessThan(0.6)
-    await expect(g).toContainText(`${START_MONEY} / 200`)
+    await expect(g).toContainText(`${START_MONEY} / 150`)
     await betsPanel(page).getByRole('button', { name: 'Fermer' }).click()
     await expect.poll(opacity).toBe(1)
   })

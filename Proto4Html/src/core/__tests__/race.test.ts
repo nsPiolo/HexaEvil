@@ -30,7 +30,7 @@ function withPositions(positions: number[]): RaceState {
 }
 
 function move(soul: number, distance: number): Move {
-  return { source: 'player', soul, distance, parts: [{ soulDie: 0, distanceDie: 0, distance }], notes: [] }
+  return { source: 'player', soul, distance, parts: [{ soulDie: 0, distanceDie: 0, distance }], notes: [], effects: [] }
 }
 
 describe('config', () => {

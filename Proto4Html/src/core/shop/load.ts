@@ -64,11 +64,33 @@ function item(raw: unknown, field: string): ShopItem {
       const faces = o.faces.map((f, i) => int(f, `${field}.faces[${i}]`, Number.NEGATIVE_INFINITY))
       if (!faces.some((f) => f > 0)) fail(`${field}.faces`, 'au moins une face positive')
       const costPerUse = o.costPerUse === undefined ? 0 : int(o.costPerUse, `${field}.costPerUse`, 0)
-      return { ...base, kind, id, faces, costPerUse }
+      const mode = o.mode === undefined ? 'replace' : str(o.mode, `${field}.mode`)
+      if (mode !== 'replace' && mode !== 'add') fail(`${field}.mode`, 'replace ou add attendu')
+      const wildFace = o.wildFace === undefined ? null : int(o.wildFace, `${field}.wildFace`, 0)
+      if (wildFace !== null && wildFace >= faces.length) fail(`${field}.wildFace`, `index de face hors du dé (${faces.length} faces)`)
+      return { ...base, kind, id, faces, costPerUse, mode, wildFace }
     }
     default:
       return fail(`${field}.kind`, 'artefact, die ou forge attendu')
   }
+}
+
+/**
+ * Socle débloqué au premier lancement. Il doit remplir une vitrine entière (`slots`), sinon
+ * la boutique ouvrirait à moitié vide tant qu'aucun cercle n'a été payé (`shop/unlocks.ts`).
+ */
+function startIds(raw: unknown, known: ReadonlySet<string>, slots: number): string[] {
+  const field = 'shop.unlockedAtStart'
+  if (!Array.isArray(raw)) fail(field, 'tableau d’identifiants attendu')
+  const out: string[] = []
+  raw.forEach((v, i) => {
+    const id = str(v, `${field}[${i}]`)
+    if (!known.has(id)) fail(`${field}[${i}]`, `objet « ${id} » absent de shop.items`)
+    if (out.includes(id)) fail(`${field}[${i}]`, `id « ${id} » en double`)
+    out.push(id)
+  })
+  if (out.length < slots) fail(field, `au moins ${slots} objets attendus (shop.slots)`)
+  return out
 }
 
 export function loadShopConfig(raw: unknown): ShopConfig {
@@ -90,5 +112,6 @@ export function loadShopConfig(raw: unknown): ShopConfig {
     if (ids.has(it.id)) fail('shop.items', `id « ${it.id} » en double`)
     ids.add(it.id)
   }
-  return { slots, rerollCost, priceGrowthPerCircle, artefactSlots, rarityWeights, confirmThreshold, confirmResetMs, items }
+  const unlockedAtStart = startIds(root.unlockedAtStart, ids, slots)
+  return { slots, rerollCost, priceGrowthPerCircle, artefactSlots, rarityWeights, confirmThreshold, confirmResetMs, unlockedAtStart, items }
 }

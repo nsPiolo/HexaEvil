@@ -1,8 +1,29 @@
 /** Types des objets de boutique. Les données (noms, prix, textes) vivent dans config/shop.json. */
-export const ARTEFACT_IDS = ['lateBet', 'sablier', 'boussole', 'clepsydre', 'ferACheval', 'boursePercee', 'livreDesComptes', 'tirelire'] as const
+/**
+ * Artefacts implémentés, numérotés comme dans docs/proto4/artefacts.md. Un id ne peut entrer
+ * dans `config/shop.json` que s'il figure ici : le chargeur refuse un objet sans code derrière.
+ * Manque encore le Sceau du stagiaire (n°25), qui porte sur les personnalités — système absent
+ * du proto — et les objets qui demandent des dés Âme modélisés.
+ */
+export const ARTEFACT_IDS = [
+  // Dés et combinaisons
+  'relanceJumelle', 'quatriemeTete', 'boussole', 'clepsydre', 'fioleDeSang', 'verrouDeMinos',
+  // Collisions
+  'semellesDePlomb', 'batDeChameau', 'balanceTruquee', 'chaineDuCoccyte',
+  // Paris
+  'ferACheval', 'sablier', 'ticketPremiereHeure', 'livreDesComptes', 'quatriemeMarche',
+  'encensoirDuDernier', 'pieceADeuxFaces', 'lateBet', 'denierDuCercle', 'baumeDuPerdant',
+  // Argent
+  'boursePercee', 'tribuneInfernale', 'detteInfernale', 'tirelire', 'pourboireDuStagiaire',
+  // Information et tour adverse
+  'oeilDeCharon', 'fouetDuContremaitre', 'miroirDeNarcisse',
+  // Boutique
+  'marteauHephaistos', 'rabaisDePloutos',
+] as const
 export type ArtefactId = (typeof ARTEFACT_IDS)[number]
 
-export const FORGE_IDS = ['limee', 'doree', 'retournee', 'sceau'] as const
+/** Altérations de forge implémentées, numérotées comme dans docs/proto4/forge.md. */
+export const FORGE_IDS = ['limee', 'retournee', 'doree', 'explosive', 'bond', 'miroir', 'feuFollet', 'elan', 'gel', 'aimant', 'sceau'] as const
 export type ForgeId = (typeof FORGE_IDS)[number]
 
 export type Rarity = 'common' | 'rare' | 'legendary'
@@ -39,6 +60,14 @@ export interface DieItem extends ItemBase {
   id: string
   faces: readonly number[]
   costPerUse: number
+  /**
+   * `replace` : le dé prend la place d'un dé Distance existant (le cas courant).
+   * `add` : il s'ajoute au lancer (Troisième dé Distance, des.md n°6) — une combinaison de plus
+   * par tour, et le dé Âme inutilisé disparaît.
+   */
+  mode: 'replace' | 'add'
+  /** Index de la face « ? » du Dé de Fraude : elle copie la meilleure autre face du lancer. */
+  wildFace: number | null
 }
 
 export interface ForgeItem extends ItemBase {
@@ -60,6 +89,11 @@ export interface ShopConfig {
   confirmThreshold: number
   /** Délai avant que le bouton « Confirmer » redevienne « Acheter » sans second clic. */
   confirmResetMs: number
+  /**
+   * Objets en rayon au tout premier lancement. Les autres sont scellés : un cercle payé en
+   * débloque un, définitivement, d'un run à l'autre (`shop/unlocks.ts`).
+   */
+  unlockedAtStart: readonly string[]
   items: readonly ShopItem[]
 }
 

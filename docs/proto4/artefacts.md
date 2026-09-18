@@ -16,39 +16,46 @@ information, tour adverse, boutique.
 
 | # | Artefact | Famille | Rareté | Impact | Prix |
 |---:|---|---|:-:|---|---:|
-| 1 | Relance jumelle | dés | C | Moyen | 45 |
-| 2 | Quatrième tête de Cerbère | dés | R | Fort | 90 |
+| 1 | Relance jumelle ✔ | dés | C | Moyen | 45 |
+| 2 | Quatrième tête de Cerbère ✔ | dés | R | Fort | 90 |
 | 3 | Boussole des Limbes ✔ | dés | C | Moyen | 50 |
 | 4 | Clepsydre fêlée ✔ | dés | C | Moyen | 40 |
-| 5 | Fiole de sang | dés / argent | R | Fort | 70 |
-| 6 | Verrou de Minos | dés | R | Fort | 85 |
-| 7 | Semelles de plomb | collisions | C | Moyen | 45 |
-| 8 | Bât de chameau | collisions | R | Fort | 95 |
-| 9 | Balance truquée | collisions | C | Moyen | 40 |
-| 10 | Chaîne du Coccyte | collisions | R | Fort | 80 |
+| 5 | Fiole de sang ✔ | dés / argent | R | Fort | 70 |
+| 6 | Verrou de Minos ✔ | dés | R | Fort | 85 |
+| 7 | Semelles de plomb ✔ | collisions | C | Moyen | 45 |
+| 8 | Bât de chameau ✔ | collisions | R | Fort | 95 |
+| 9 | Balance truquée ✔ | collisions | C | Moyen | 40 |
+| 10 | Chaîne du Coccyte ✔ | collisions | R | Fort | 80 |
 | 11 | Fer à cheval rouillé ✔ | paris | C | Moyen | 50 |
 | 12 | Sablier de Charon ✔ | paris | C | Moyen | 55 |
-| 13 | Ticket de la première heure | paris | R | Fort | 90 |
+| 13 | Ticket de la première heure ✔ | paris | R | Fort | 90 |
 | 14 | Livre des comptes ✔ | paris | C | Moyen | 60 |
-| 15 | Quatrième marche | paris | C | Moyen | 30 |
-| 16 | Encensoir du dernier | paris | C | Moyen | 45 |
-| 17 | Pièce à deux faces ⚠ | paris | R | Fort | 75 |
+| 15 | Quatrième marche ✔ | paris | C | Moyen | 30 |
+| 16 | Encensoir du dernier ✔ | paris | C | Moyen | 45 |
+| 17 | Pièce à deux faces ⚠ ✔ | paris | R | Fort | 75 |
 | 18 | Bourse percée ✔ | argent | C | Moyen | 50 |
-| 19 | Tribune infernale | argent / plateau | R | Fort | 85 |
-| 20 | Dette infernale ⚠ | argent | L | Extrême | 150 |
-| 21 | Œil de Charon | information | R | Fort | 95 |
-| 22 | Fouet du contremaître | tour adverse | R | Fort | 90 |
-| 23 | Miroir de Narcisse | tour adverse | L | Extrême | 180 |
+| 19 | Tribune infernale ✔ | argent / plateau | R | Fort | 85 |
+| 20 | Dette infernale ⚠ ✔ | argent | L | Extrême | 150 |
+| 21 | Œil de Charon ✔ | information | R | Fort | 95 |
+| 22 | Fouet du contremaître ✔ | tour adverse | R | Fort | 90 |
+| 23 | Miroir de Narcisse ✔ | tour adverse | L | Extrême | 180 |
 | 25 | Sceau du stagiaire | boutique | C | Moyen | 55 |
-| 26 | Marteau d'Héphaïstos | boutique / forge | C | Moyen | 50 |
+| 26 | Marteau d'Héphaïstos ✔ | boutique / forge | C | Moyen | 50 |
 | 27 | Œil du parieur ✔ | paris / information | R | Fort | 80 |
-| 28 | Pourboire du stagiaire | argent | C | Faible | 35 |
-| 29 | Denier du cercle | paris / argent | C | Moyen | 60 |
-| 30 | Rabais de Ploutos | boutique | C | Faible | 30 |
-| 31 | Baume du perdant | paris / argent | C | Moyen | 50 |
+| 28 | Pourboire du stagiaire ✔ | argent | C | Faible | 35 |
+| 29 | Denier du cercle ✔ | paris / argent | C | Moyen | 60 |
+| 30 | Rabais de Ploutos ✔ | boutique | C | Faible | 30 |
+| 31 | Baume du perdant ✔ | paris / argent | C | Moyen | 50 |
+| 32 | Tirelire du stagiaire ✔ | argent | C | Moyen | 45 |
 
 Le n° 24 (Filet du pêcheur) est retiré, voir [Retirés](#retirés). Les numéros
 restent stables pour que les autres documents puissent y renvoyer.
+
+**État du proto** : 29 des 30 artefacts actifs sont implémentés. Seul le **n° 25
+(Sceau du stagiaire)** ne l'est pas : il porte sur le prix et le retrait des
+**personnalités**, système qui n'existe pas encore dans `Proto4Html`. Il entrera
+avec elles. Le n° 32 (Tirelire du stagiaire) a été fiché après coup : il était
+déjà en boutique sans figurer ici.
 
 ## Fiches
 
@@ -176,6 +183,11 @@ tribune pousse toujours vers l'avant.*
 cercle, vous pouvez une fois par run emprunter le manquant, plafonné à 50 % du
 prix. Le prix du cercle suivant augmente de 150 % de la somme empruntée. *Repousse
 la fin de run sans l'annuler : c'est une course contre la dette.*
+
+**32. Tirelire du stagiaire — 45, C.** L'avance que le stagiaire verse avant
+chaque course augmente de 10 pièces, pour le reste du run. *Le revenu qui ne
+dépend pas de la bourse (`rules/allowance.ts`) : il grandit déjà avec le cercle,
+la Tirelire le décale vers le haut une fois pour toutes.* ✔ Implémenté dans le proto.
 
 **28. Pourboire du stagiaire — 35, C.** Au début de chaque course, juste après
 votre premier lancer de dés, vous gagnez 10 pièces. *Garantit de quoi poser un

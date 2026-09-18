@@ -37,6 +37,7 @@ export const MENU = {
   continue: 'Continuer',
   newRun: 'Commencer une nouvelle évasion',
   stats: 'Statistiques',
+  collection: 'Collection',
   options: 'Option',
   back: 'Retour',
   next: 'Suite',
@@ -55,7 +56,7 @@ export const INTRO: readonly Line[] = [
   D("Non !? Je comprends que vous ne soyez pas d'humeur, mais je m'ennuie ferme ici. Je vous prête un peu d'argent et vous pourrez conserver vos gains.", 'degout'),
   P("Bon, d'accord, mais pas d'entourloupe."),
   D('Parfait, on a un pacte !', 'fier'),
-  D("Ici on mise sur une course d'âmes damnées, donc voilà {money} pièces pour commencer. Et avant chaque course, je vous avancerai {allowance} pièces de plus : il faut bien que le guichet tourne.", 'neutre'),
+  D("Ici on mise sur une course d'âmes damnées, donc voilà {money} pièces pour commencer. Et avant chaque course, je vous avancerai {allowance} pièces de plus — davantage à chaque cercle, un stagiaire qui monte en grade a plus de caisse : il faut bien que le guichet tourne.", 'neutre'),
   D("Ah, et je n'ai le droit de prendre que les paris simples : vainqueur, top 3, dernier, un duel. Les gros tickets, c'est au-dessus de mon grade. Pour l'instant.", 'doute'),
 ]
 
@@ -471,6 +472,41 @@ export const STATS = {
   none: '—',
 } as const
 
+/**
+ * Collection : les objets de boutique débloqués d'un run à l'autre (core/shop/unlocks.ts).
+ * Les scellés se comptent mais ne se nomment pas — c'est la surprise de fin de cercle.
+ */
+export const COLLECTION = {
+  title: 'Collection',
+  count: '{n} objets sur {total} en rayon',
+  hint: 'Chaque cercle payé descelle un objet, pour toutes tes évasions à venir.',
+  locked: '{n} objet{s} encore scellé{s}. Le stagiaire refuse d’en dire le nom.',
+  complete: 'Le catalogue est entier. Le stagiaire n’a plus rien à cacher.',
+  lockedCard: 'Scellé',
+  lockedTitle: 'Objet encore scellé : franchis un cercle pour en desceller un.',
+  empty: 'Rien en rayon. Ce n’est pas normal : vérifie shop.unlockedAtStart.',
+} as const
+
+/** Révélation de fin de cercle : l'objet que le cercle payé vient de desceller. */
+export const UNLOCK = {
+  title: 'La réserve s’entrouvre',
+  intro: 'Le stagiaire disparaît sous le guichet, remonte poussiéreux, et pose ça devant toi.',
+  added: 'Descellé pour de bon : cet objet peut désormais sortir en vitrine, dans cette évasion comme dans les suivantes.',
+  next: 'Continuer',
+  remaining: 'Encore {n} objet{s} sous scellé.',
+  last: 'C’était le dernier. Le catalogue est entier.',
+} as const
+
+/** Dette infernale : le marché proposé quand le prix du cercle est hors d'atteinte. */
+export const DEBT = {
+  title: 'Le stagiaire sort un registre',
+  lead: 'Le cercle coûte {price} pièces. Vous en avez {money}. Il en manque {missing}.',
+  offer: '« Je peux avancer {borrow} pièces. Une seule fois, et je ne fais pas ça par bonté. »',
+  cost: 'Le prix du cercle suivant montera de {interest} pièces.',
+  accept: 'Emprunter {borrow} pièces',
+  refuse: 'Refuser et rester ici',
+} as const
+
 export const OPTIONS = {
   title: 'Option',
   volume: 'Volume',
@@ -536,7 +572,20 @@ export const SHOP = {
 } as const
 
 /** Écran de course : frise de sous-phases, file de combinaisons, prévisualisation (spec 05). */
+/** Objets que le joueur déclenche lui-même depuis l'écran de course. */
+export const ITEMS = {
+  tribuneHint: 'Tribune infernale : choisissez une case libre, hors départ et hors zone de fin.',
+  double: 'Pièce à deux faces : doubler {stake} ¤ de mises',
+} as const
+
 export const RACE = {
+  /** Objets déclenchés sur un dé précis pendant l'appariement (Fiole, Élan, Verrou). */
+  fiole: '+1',
+  fioleTitle: 'Fiole de sang : +1 sur ce dé, une fois par tour, payé comptant.',
+  momentum: '»',
+  momentumTitle: 'Élan : relancer ce dé et ajouter le résultat, quel qu’il soit.',
+  lock: '⚿',
+  lockTitle: 'Verrou de Minos : garder ce dé sur sa face pour le prochain lancer.',
   phases: ['préparer', 'lancer', 'ordonner', 'résoudre', 'adversaire'] as const,
   phasesLabel: 'Étapes du tour',
   queue: 'File de combinaisons',
@@ -569,6 +618,9 @@ export const BET_LIVE = {
 
 /** Plateau. */
 export const BOARD = {
+  tribune: 'Tribune infernale',
+  tribuneTitle: 'Tribune infernale : l’âme qui s’arrête ici vous paie et repart poussée.',
+  tribunePlace: 'Poser la tribune sur la case {column}',
   zoneClosed: 'plus de pari',
   zoneClosedTitle: 'Une âme a franchi le seuil : plus aucun pari sur cette course.',
   tieColumn: 'Même colonne : le couloir le plus bas devant.',
@@ -633,7 +685,7 @@ export const HELP = {
       title: 'Le but',
       icon: '⛓️',
       blocks: [
-        { kind: 'p', text: 'S’évader de l’enfer. Chaque cercle a un **prix de sortie** (200 pièces pour le premier, de plus en plus cher ensuite). Vous avez **trois courses** par cercle pour réunir la somme — la troisième se joue contre le boss du cercle.' },
+        { kind: 'p', text: 'S’évader de l’enfer. Chaque cercle a un **prix de sortie** (150 pièces pour le premier, de plus en plus cher ensuite). Vous avez **trois courses** par cercle pour réunir la somme — la troisième se joue contre le boss du cercle.' },
         { kind: 'p', text: 'Si vous pouvez payer à la fin, vous montez. Sinon… le stagiaire a déjà choisi votre punition éternelle.' },
         { kind: 'p', text: 'Perdre une course n’est jamais la fin : c’est la caisse vide à la fin du cercle qui vous condamne.' },
       ],

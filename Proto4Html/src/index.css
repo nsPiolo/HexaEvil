@@ -1699,3 +1699,58 @@ p { margin: 0; }
   .help-nav-btn { border-left: 0; border-bottom: 2px solid transparent; border-radius: 8px; padding: 5px 10px; }
   .help-nav-btn[aria-current='true'] { border-left-color: transparent; border-bottom-color: var(--gold); }
 }
+
+/* ---- Collection / déblocage d'objets ---- */
+/* Collection (accueil) et révélation de fin de cercle : cartes du catalogue hors boutique,
+   ni prix ni bouton. Elles réutilisent le corps des cartes de vitrine (.shop-body, .shop-art,
+   .shop-text) pour qu'un objet se reconnaisse du menu au rayon. */
+.collection-screen, .unlock-screen { max-width: 900px; gap: 6px; }
+.coll-count { margin: 0; text-align: center; color: var(--gold); font-weight: 700; font-variant-numeric: tabular-nums; }
+.coll-hint, .coll-locked-line { margin: 0; text-align: center; }
+.coll-locked-line { color: var(--muted); font-style: italic; margin-bottom: 10px; }
+.coll-scroll { overflow-y: auto; padding-bottom: 24px; display: flex; flex-direction: column; gap: 12px; }
+.collection { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; }
+.coll-item { display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 10px; background: var(--panel-2); border: 1px solid var(--line); border-top: 3px solid var(--line); }
+.coll-item header { display: flex; justify-content: space-between; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.coll-item h3 { font-size: 0.95rem; text-transform: none; letter-spacing: 0; color: var(--ink); }
+.coll-item p { color: var(--muted); }
+/* Rack de scellés : on montre qu'il en reste et combien, jamais lesquels. Des tuiles carrées
+   et serrées plutôt que des cartes pleines — sur mobile, dix cartes feraient un couloir sans fin. */
+.sealed-rack { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; }
+.coll-sealed { display: flex; align-items: center; justify-content: center; aspect-ratio: 1; padding: 8px; border: 1px dashed var(--line); border-radius: 10px; background: rgba(0, 0, 0, 0.25); }
+/* Cadenas peint (public/menu/lock.webp), assombri et désaturé : l'œil doit aller d'abord aux
+   objets réellement descellés, le rack n'est qu'une promesse. */
+.coll-seal { width: auto; height: 100%; max-height: 64px; object-fit: contain; opacity: 0.72; filter: saturate(0.7) brightness(0.85) drop-shadow(0 3px 6px rgba(0, 0, 0, 0.55)); }
+
+/* Révélation : une seule carte, centrée, qui monte à l'ouverture. */
+.unlock-screen { justify-content: center; align-items: center; text-align: center; }
+.unlock-screen > * { opacity: 0; transform: translateY(10px); transition: opacity 400ms ease-out, transform 400ms ease-out; }
+.unlock-shown > * { opacity: 1; transform: none; }
+.unlock-intro { max-width: 46ch; color: var(--muted); font-style: italic; }
+.unlock-card { width: min(360px, 100%); transition-delay: 150ms; }
+/* La carte garde la mise en page du rayon (texte à gauche) dans un écran centré. */
+.unlock-card .coll-item { border-color: var(--gold); box-shadow: 0 0 24px rgba(224, 168, 60, 0.28); text-align: left; padding: 14px; }
+.unlock-added { max-width: 46ch; color: var(--gold); }
+
+/* ---- Dette infernale ---- */
+.debt-screen { justify-content: center; align-items: center; text-align: center; gap: 10px; }
+.debt-lead { max-width: 46ch; }
+.debt-offer { max-width: 46ch; font-family: 'Cormorant Garamond', Georgia, serif; font-size: 1.3rem; color: var(--gold); font-style: italic; }
+.debt-cost { max-width: 46ch; color: #ff7b72; }
+
+/* ---- Objets déclenchés à la main ---- */
+/* Petits boutons collés sous un dé Distance (Fiole de sang, face d'Élan, Verrou de Minos) :
+   ils agissent sur CE dé, ils doivent donc vivre à côté de lui et pas dans une barre lointaine. */
+.die-tools { display: flex; gap: 3px; justify-content: center; margin-top: 2px; }
+.die-tool { padding: 0 5px; min-width: 20px; height: 18px; font-size: 0.7rem; line-height: 1; border-radius: 5px; border: 1px solid var(--line); background: var(--panel-2); color: var(--muted); cursor: pointer; }
+.die-tool:hover { color: var(--ink); border-color: var(--gold); }
+.die-tool-on { background: var(--gold); border-color: var(--gold); color: var(--bg); }
+.die-lock { position: absolute; top: 2px; left: 4px; font-size: 0.7rem; color: var(--gold); }
+/* Bandeau sous le plateau : pose de tribune, pièce à deux faces, refus du dernier déclenchement. */
+.item-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; margin: 6px 0 0; font-size: 0.85rem; }
+.item-hint { color: var(--gold); font-style: italic; }
+.item-error { color: #ff7b72; }
+/* Tribune posée : un fanion sur la case, et les cases permises deviennent cliquables pendant la pose. */
+.tribune { position: absolute; width: calc(100% / var(--cells)); height: calc(100% / var(--lanes)); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; color: var(--gold); pointer-events: none; text-shadow: 0 0 6px rgba(224, 168, 60, 0.7); }
+.cell-tribune { position: absolute; inset: 2px; border: 1px dashed rgba(224, 168, 60, 0.5); border-radius: 4px; background: rgba(224, 168, 60, 0.08); cursor: pointer; }
+.cell-tribune:hover { background: rgba(224, 168, 60, 0.28); border-color: var(--gold); }

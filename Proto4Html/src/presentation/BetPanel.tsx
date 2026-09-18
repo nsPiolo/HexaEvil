@@ -26,6 +26,8 @@ export function toggleDraftSoul(draft: BetDraft, id: number, slots: number): Bet
 interface Props {
   race: RaceState
   money: number
+  /** Échelle des mises du cercle en cours (`stakesAtCircle`), croissante. */
+  stakes: readonly number[]
   /** Prix du cercle, pour la jauge. */
   price: number
   bets: readonly Bet[]
@@ -60,26 +62,29 @@ const TIERS: readonly BetTier[] = ['simple', 'intermediate', 'advanced']
 const NUMERALS = ['I', 'II', 'III'] as const
 
 /**
- * Jetons peints (`public/table/chips/`), un par palier de mise. `economy.stakes` est libre :
- * au-delà de quatre mises, les visuels se répètent — la valeur reste portée par le chiffre.
+ * Jetons peints (`public/table/chips/`), un par palier de mise. L'échelle du cercle est libre :
+ * au-delà de quatre mises, les visuels se répètent — la valeur reste portée par le chiffre. Le
+ * jeton est choisi par **position** dans l'échelle, pas par valeur : quand les mises grandissent
+ * avec le cercle (`stakesAtCircle`), les quatre jetons restent les mêmes, seuls les chiffres changent.
  */
 const CHIP_ART = ['/table/chips/chip-1.webp', '/table/chips/chip-2.webp', '/table/chips/chip-3.webp', '/table/chips/chip-4.webp'] as const
-const chipArt = (v: number): string => CHIP_ART[Math.max(0, config.economy.stakes.indexOf(v)) % CHIP_ART.length] as string
-/** La mise la plus forte, la seule qui prenne feu dans le logement. */
-const HOTTEST_STAKE = Math.max(...config.economy.stakes)
+const chipArtIn = (stakes: readonly number[], v: number): string => CHIP_ART[Math.max(0, stakes.indexOf(v)) % CHIP_ART.length] as string
 const STAKE_MIME = 'application/x-sinnersbet-stake'
 function readStake(e: DragEvent): number | null {
   const raw = e.dataTransfer.getData(STAKE_MIME)
   return /^\d+$/.test(raw) ? Number(raw) : null
 }
 
-export function BetPanel({ race, money, price, bets, open, phase, level, roll = null, lateBet, onUseLateBet, onPlace, onCancel, baseFor, draft, onDraftChange, highlightSoul, onHoverSoul, onStart, onOpenShop, onClose }: Props) {
+export function BetPanel({ race, money, stakes, price, bets, open, phase, level, roll = null, lateBet, onUseLateBet, onPlace, onCancel, baseFor, draft, onDraftChange, highlightSoul, onHoverSoul, onStart, onOpenShop, onClose }: Props) {
   const [localDraft, setLocalDraft] = useState<BetDraft>(EMPTY_DRAFT)
   const d = draft ?? localDraft
   const setDraft = onDraftChange ?? setLocalDraft
   const { type, souls } = d
   const [tier, setTier] = useState<BetTier>('simple')
-  const [stake, setStake] = useState<number>(config.economy.stakes[0] ?? 5)
+  const [stake, setStake] = useState<number>(stakes[0] ?? 5)
+  const chipArt = (v: number): string => chipArtIn(stakes, v)
+  /** La mise la plus forte du cercle, la seule qui prenne feu dans le logement. */
+  const hottest = Math.max(...stakes)
   const [error, setError] = useState<string | null>(null)
   /** Liste des paris posés : accordéon au-dessus du pied, ouvert par défaut (spec 08/C4). */
   const [listOpen, setListOpen] = useState(true)
@@ -311,13 +316,13 @@ export function BetPanel({ race, money, price, bets, open, phase, level, roll = 
               onDrop={open ? dropStake : undefined}
             >
               {/* Les flammes ne saluent que le tapis maximum : le feu dit « tu joues gros », pas « tu as choisi ». */}
-              {stake === HOTTEST_STAKE && <span className="stake-flames" aria-hidden="true" />}
+              {stake === hottest && <span className="stake-flames" aria-hidden="true" />}
               <span key={stake} className="stake-chip stake-chip-active" style={{ backgroundImage: `url(${chipArt(stake)})` }} aria-hidden="true">
                 {stake}
               </span>
             </div>
             <div className="stake-tray" role="group" aria-label={BETS.trayLabel}>
-              {config.economy.stakes.map((v) => {
+              {stakes.map((v) => {
                 const chosen = v === stake
                 const tooRich = v > money
                 return (

@@ -116,6 +116,16 @@ export function currentMultiplier(base: number, progress: number, decay: Decay):
   return Math.round(Math.max(decay.minMultiplier, m) * 100) / 100
 }
 
+/**
+ * Ticket de la première heure (artefacts.md n°13) : les paris posés avant le premier lancer
+ * paient plus, ceux posés en course paient moins, sans jamais descendre sous ×1 — un pari gagné
+ * ne peut pas être déficitaire. S'applique après la décote, sur la cote figée du ticket.
+ */
+export function ticketMultiplier(multiplier: number, initial: boolean, mods: { before: number; during: number }): number {
+  const m = multiplier + (initial ? mods.before : -mods.during)
+  return Math.round(Math.max(1, m) * 100) / 100
+}
+
 export function fmtMultiplier(m: number): string {
   return `×${m.toFixed(2).replace(/\.?0+$/, '')}`
 }
@@ -186,8 +196,14 @@ function rankOf(ranked: readonly Ranked[], id: SoulId): number {
   return r.rank
 }
 
-/** Vrai si le pari est gagné contre ce classement définitif. */
-export function evaluateBet(bet: Pick<Bet, 'type' | 'souls'>, ranked: readonly Ranked[]): boolean {
+/**
+ * Vrai si le pari est gagné contre ce classement définitif. `topBonus` élargit les conditions
+ * « dans le top 3 » (Quatrième marche, artefacts.md n°15) : elles réussissent aussi avec une 4e
+ * place. Ni « Pas dans le top 3 » ni le Podium exact ne bougent — l'artefact ne doit pas rendre
+ * un pari négatif plus facile à gagner, ni relâcher un ordre exact.
+ */
+export function evaluateBet(bet: Pick<Bet, 'type' | 'souls'>, ranked: readonly Ranked[], topBonus = 0): boolean {
+  const top = 3 + Math.max(0, topBonus)
   const s = bet.souls
   const last = ranked.reduce((m, r) => Math.max(m, r.rank), 0)
   const at = (i: number): SoulId => {
@@ -203,15 +219,15 @@ export function evaluateBet(bet: Pick<Bet, 'type' | 'souls'>, ranked: readonly R
     case 'winner':
       return rankOf(ranked, at(0)) === 1
     case 'top3':
-      return rankOf(ranked, at(0)) <= 3
+      return rankOf(ranked, at(0)) <= top
     case 'notTop3':
       return rankOf(ranked, at(0)) > 3
     case 'last':
       return rankOf(ranked, at(0)) === last
     case 'podiumAnyOrder':
-      return s.length === 3 && s.every((id) => rankOf(ranked, id) <= 3)
+      return s.length === 3 && s.every((id) => rankOf(ranked, id) <= top)
     case 'twoInTop3':
-      return s.length === 2 && s.every((id) => rankOf(ranked, id) <= 3)
+      return s.length === 2 && s.every((id) => rankOf(ranked, id) <= top)
     case 'duel':
       return rankOf(ranked, at(0)) < rankOf(ranked, at(1))
     case 'podiumExact':
@@ -231,6 +247,8 @@ export interface Settlement {
   returned: number
   /** Livre des comptes : remboursement partiel d'un pari perdu tiré au sort (0 sinon). */
   refund: number
+  /** Baume du perdant : part des mises perdues rendue (0 sinon). */
+  relief: number
 }
 
 export interface SettleOptions {
@@ -238,6 +256,28 @@ export interface SettleOptions {
   refundRatio?: number
   /** Tirage parmi les n paris perdus : renvoie un index dans [0, n). Le premier par défaut. */
   pickLost?: (count: number) => number
+  /** Quatrième marche : les conditions « top 3 » s'étendent au top 3 + n. */
+  topBonus?: number
+  /** Denier du cercle : mise virtuelle ajoutée au règlement d'un pari gagné, sans rien coûter. */
+  stakeBonus?: number
+  /** Baume du perdant : part de la mise rendue sur chaque pari perdu (appliquée après le Livre des comptes). */
+  lossRelief?: number
+  /** Encensoir du dernier : facteur sur « Dernière place » quand l'écart avec l'avant-dernière est assez grand. */
+  lastGap?: { cells: number; factor: number }
+}
+
+/**
+ * Encensoir du dernier : l'écart, en cases, entre la dernière âme et l'avant-dernière. Zéro
+ * quand elles sont à égalité ou qu'il n'y a pas deux rangs distincts.
+ */
+export function lastGapCells(ranked: readonly Ranked[]): number {
+  const last = ranked.reduce((m, r) => Math.max(m, r.rank), 0)
+  const tail = ranked.filter((r) => r.rank === last)
+  if (tail.length !== 1) return 0
+  const others = ranked.filter((r) => r.rank !== last)
+  if (others.length === 0) return 0
+  const before = Math.min(...others.map((r) => r.soul.position))
+  return Math.max(0, before - (tail[0]?.soul.position ?? 0))
 }
 
 /** Fer à cheval : facteurs appliqués à la cote de base selon le type. */
@@ -254,8 +294,17 @@ export function effectiveBase(type: BetTypeId, base: number, mods: BaseModifiers
   return Math.round(m * 100) / 100
 }
 
-/** Règle tous les paris ouverts contre le classement définitif, à la cote figée de chaque pari. */
+/**
+ * Règle tous les paris ouverts contre le classement définitif, à la cote figée de chaque pari.
+ *
+ * Ordre des artefacts d'argent, qui compte : le gain se calcule sur `mise + stakeBonus`
+ * (Denier du cercle), l'Encensoir multiplie ensuite le seul pari Dernière place, puis le Livre
+ * des comptes rembourse un perdant tiré au sort, et le Baume du perdant s'applique en dernier
+ * sur ce qui reste perdu — les deux filets se cumulent sans jamais rendre plus que la mise.
+ */
 export function settleBets(bets: readonly Bet[], ranked: readonly Ranked[], options: SettleOptions = {}): Settlement {
+  const stakeBonus = Math.max(0, options.stakeBonus ?? 0)
+  const gap = options.lastGap && lastGapCells(ranked) >= options.lastGap.cells ? options.lastGap.factor : 1
   let staked = 0
   let returned = 0
   const settled = bets.map((b) => {
@@ -264,20 +313,29 @@ export function settleBets(bets: readonly Bet[], ranked: readonly Ranked[], opti
       returned += b.payout
       return b
     }
-    const won = evaluateBet(b, ranked)
-    const payout = won ? potentialPayout(b.stake, b.multiplier) : 0
+    const won = evaluateBet(b, ranked, options.topBonus)
+    const factor = b.type === 'last' ? gap : 1
+    const payout = won ? Math.round(potentialPayout(b.stake + stakeBonus, b.multiplier) * factor) : 0
     returned += payout
     return { ...b, status: won ? 'won' : 'lost', payout } as Bet
   })
   let refund = 0
-  if (options.refundRatio) {
-    const lost = settled.filter((b) => b.status === 'lost')
-    if (lost.length > 0) {
-      const pick = options.pickLost ? options.pickLost(lost.length) : 0
-      const chosen = lost[Math.min(Math.max(0, Math.floor(pick)), lost.length - 1)]!
-      refund = Math.round(chosen.stake * options.refundRatio)
-      returned += refund
-    }
+  const lost = settled.filter((b) => b.status === 'lost')
+  let refunded: Bet | null = null
+  if (options.refundRatio && lost.length > 0) {
+    const pick = options.pickLost ? options.pickLost(lost.length) : 0
+    refunded = lost[Math.min(Math.max(0, Math.floor(pick)), lost.length - 1)]!
+    refund = Math.round(refunded.stake * options.refundRatio)
+    returned += refund
   }
-  return { bets: settled, staked, returned, refund }
+  let relief = 0
+  if (options.lossRelief) {
+    for (const b of lost) {
+      // Le Baume ne porte que sur la perte restante : ce que le Livre a déjà rendu n'est plus perdu.
+      const already = b === refunded ? refund : 0
+      relief += Math.round(Math.max(0, b.stake - already) * options.lossRelief)
+    }
+    returned += relief
+  }
+  return { bets: settled, staked, returned, refund, relief }
 }

@@ -7,6 +7,7 @@ import { buildMoves, createRace, createTrack, rollOpponentPair, rollPlayerDice, 
 import { seededRng } from '../rules/rng'
 import { loadShopConfig } from '../shop/load'
 import { riskOf, sortByRisk } from '../shop/items'
+import { allIds } from '../shop/unlocks'
 import { applyPurchase, defaultInventory, findItem, forgeFace, generateVitrine, opponentNegativesFlipped, priceAtCircle } from '../shop/shop'
 
 const cfg = loadConfig(rawConfig)
@@ -61,10 +62,11 @@ describe('impact et contrepartie (spec 04/C1)', () => {
 })
 
 describe('vitrine', () => {
+  const all = allIds(shop)
   it('propose `slots` objets distincts, sans artefact déjà possédé', () => {
     const inv = { ...defaultInventory(cfg), artefacts: ['lateBet' as const] }
     for (let seed = 1; seed < 50; seed++) {
-      const v = generateVitrine(shop, inv, seededRng(seed))
+      const v = generateVitrine(shop, inv, all, seededRng(seed))
       expect(v).toHaveLength(shop.slots)
       expect(new Set(v.map((i) => i.id)).size).toBe(shop.slots)
       expect(v.some((i) => i.id === 'lateBet')).toBe(false)
@@ -72,8 +74,19 @@ describe('vitrine', () => {
   })
   it("n'offre plus d'artefact quand les emplacements sont pleins", () => {
     const inv = { ...defaultInventory(cfg), artefacts: ['lateBet', 'sablier', 'boussole', 'clepsydre', 'ferACheval'] as const }
-    const v = generateVitrine(shop, { artefacts: [...inv.artefacts], dice: inv.dice }, seededRng(3))
+    const v = generateVitrine(shop, { artefacts: [...inv.artefacts], dice: inv.dice }, all, seededRng(3))
     expect(v.every((i) => i.kind !== 'artefact')).toBe(true)
+  })
+  it('ne tire que parmi les objets débloqués', () => {
+    const inv = defaultInventory(cfg)
+    for (let seed = 1; seed < 50; seed++) {
+      const v = generateVitrine(shop, inv, shop.unlockedAtStart, seededRng(seed))
+      expect(v.every((i) => shop.unlockedAtStart.includes(i.id))).toBe(true)
+    }
+  })
+  it('se réduit au vivier quand il est plus petit que la vitrine', () => {
+    const v = generateVitrine(shop, defaultInventory(cfg), ['limee', 'doree'], seededRng(7))
+    expect(v.map((i) => i.id).sort()).toEqual(['doree', 'limee'])
   })
 })
 

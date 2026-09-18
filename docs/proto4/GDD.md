@@ -226,6 +226,8 @@ Les valeurs numériques sont indicatives :
 
 L'argent est gagné ou perdu via les paris. Le joueur doit gérer son capital pendant les trois courses, acheter avec prudence et conserver assez de ressources pour payer le prix annoncé.
 
+**Dans le proto** : l'échelle des mises (`economy.stakes`, 5 · 10 · 20 · 50 au cercle 1) grandit avec le cercle de `economy.stakeGrowthPerCircle` (0,5 = +50 % de l'échelle du cercle 1 par cercle, arrondi à 5), par la même règle que les prix de la boutique. C'est le revenu qui suit les prix de sortie : mesuré (`docs/proto4/equilibrage.md`), c'est ce qui permet à une bourse qui a pris de l'avance de composer jusqu'à l'évasion. L'avance de course grandit de la même façon (`economy.allowanceGrowthPerCircle`, 1,0 : 20 au cercle 1, 40 au deuxième, 180 au neuvième) — le revenu indépendant de la bourse qui permet de repartir après avoir payé un cercle. Le plus petit jeton reste plafonné à l'avance du cercle : elle seule permet toujours le pari minimum.
+
 **Règle impérative : perdre une course isolée ne met pas fin au run.** Une course peut être déficitaire et le joueur peut poursuivre les deux courses restantes du cercle. Le run se termine uniquement si, à la fin des trois courses, le joueur est incapable de payer le prix du cercle.
 
 Lorsque le prix est payable, il est débité, le cercle est terminé et le joueur passe au suivant. Les détails de récompense liés à la victoire du boss, à la narration ou à l'excédent d'argent restent compatibles avec cette règle et devront être équilibrés séparément.

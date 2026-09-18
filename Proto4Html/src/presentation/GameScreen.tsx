@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { config, shop } from '../core/config'
 import { circleAt } from '../core/rules/circles'
+import { stakesAtCircle } from '../core/rules/stakes'
 import { circleArt } from './art'
 import { betType, bettingClosed, slotCount } from '../core/rules/bets'
 import { ranking } from '../core/rules/race'
@@ -13,11 +14,13 @@ import { MoneyGauge } from './MoneyGauge'
 import { Ranking } from './Ranking'
 import { ShopPanel } from './ShopPanel'
 import { OpponentSlot, PhaseStrip, PlayerSlot } from './PlaySlots'
-import { HELP, HUD, RACE, fill, ordinalOf } from './texts'
-import { betBase, canBetNow, circleOf, itemName, previewNext, stakedOpen, useRace, type RaceUi, type SessionCarry } from './useRace'
+import { HELP, HUD, ITEMS, RACE, fill, ordinalOf } from './texts'
+import { betBase, canBetNow, circleOf, has, itemName, previewNext, stakedOpen, useRace, type RaceUi, type SessionCarry } from './useRace'
 
 interface Props {
   carry: SessionCarry
+  /** Objets débloqués, vivier de la vitrine (core/shop/unlocks.ts). */
+  unlocked: readonly string[]
   speed: number
   onFinished: (ui: RaceUi) => void
   onMenu: () => void
@@ -44,10 +47,12 @@ function typing(): boolean {
  * préparation), plateau, zone basse (dés du joueur, ou panneau de paris). Les panneaux sont dans
  * le flux : ils ne recouvrent jamais le plateau ni le HUD.
  */
-export function GameScreen({ carry, speed, onFinished, onMenu }: Props) {
+export function GameScreen({ carry, unlocked, speed, onFinished, onMenu }: Props) {
   const { circle, raceInCircle } = circleOf(carry.raceIndex)
   const circleCfg = circleAt(config.run, circle)
-  const { ui, auto, setAuto, shopUnlocked, level, actions } = useRace({ carry, soulCount: circleCfg.souls, lanes: circleCfg.lanes, terrains: circleCfg.terrains, speed })
+  // Les jetons grandissent avec le cercle, le premier restant à portée de l'avance (rules/stakes.ts).
+  const stakes = useMemo(() => stakesAtCircle(config.economy, circle), [circle])
+  const { ui, auto, setAuto, shopUnlocked, level, actions } = useRace({ carry, unlocked, soulCount: circleCfg.souls, lanes: circleCfg.lanes, terrains: circleCfg.terrains, speed })
   const [betsOpen, setBetsOpen] = useState(true)
   const [shopOpen, setShopOpen] = useState(false)
   const [artefactsOpen, setArtefactsOpen] = useState(false)
@@ -55,6 +60,12 @@ export function GameScreen({ carry, speed, onFinished, onMenu }: Props) {
   const [helpOpen, setHelpOpen] = useState(false)
   /** Récapitulatif du dernier tour (le journal a été retiré : on garde de quoi reconstituer une cause). */
   const [recapOpen, setRecapOpen] = useState(false)
+  /** Refus du dernier objet déclenché à la main (Fiole, Élan, Verrou, Pièce, Tribune). */
+  const [itemError, setItemError] = useState<string | null>(null)
+  /** Tribune infernale : la pose est ouverte tant qu'elle n'a pas eu lieu, en préparation. */
+  const placingTribune = ui.phase === 'prep' && has(ui.inventory, 'tribuneInfernale') && !ui.tribunePlaced
+  /** Pièce à deux faces : jetable une fois, après le premier lancer, sur des paris ouverts. */
+  const canDouble = ui.phase === 'pairing' && ui.race.turn === 1 && has(ui.inventory, 'pieceADeuxFaces') && !ui.doubledStakes && ui.bets.some((b) => b.status === 'open')
   const [resultsOpen, setResultsOpen] = useState(false)
   /** La séquence de révélation des gains ne se joue qu'à la première ouverture de la modale. */
   const [resultsSeen, setResultsSeen] = useState(false)
@@ -227,6 +238,7 @@ export function GameScreen({ carry, speed, onFinished, onMenu }: Props) {
                 staked={staked}
                 raceIndex={ui.raceIndex}
                 inventory={ui.inventory}
+                forgeFree={!ui.forgeFreeUsed}
                 pending={ui.pendingPurchase}
                 onBuy={(id, target) => actions.buy(id, target ?? null)}
                 onCancel={actions.cancelPurchase}
@@ -245,7 +257,30 @@ export function GameScreen({ carry, speed, onFinished, onMenu }: Props) {
             `display: none` laisse les boutons dans l'ordre de tabulation. */}
         {!shopShown && (
         <div className="board-wrap">
-          <Board race={ui.race} lastResult={ui.lastResult} activeSoul={activeSoul} highlightSoul={hoverSoul} onHoverSoul={setHoverSoul} preview={preview} selection={selection} bettedSouls={bettedSouls} tieColumns={tieColumns} />
+          <Board
+            race={ui.race}
+            lastResult={ui.lastResult}
+            activeSoul={activeSoul}
+            highlightSoul={hoverSoul}
+            onHoverSoul={setHoverSoul}
+            preview={preview}
+            selection={selection}
+            bettedSouls={bettedSouls}
+            tieColumns={tieColumns}
+            {...(placingTribune ? { onPlaceTribune: (c: number, l: number) => setItemError(actions.putTribune(c, l)) } : {})}
+          />
+          {/* Bandeau des objets à déclencher soi-même : pose de la tribune, pièce à deux faces, refus. */}
+          {(placingTribune || canDouble || itemError) && (
+            <p className="item-bar" aria-live="polite">
+              {placingTribune && <span className="item-hint">{ITEMS.tribuneHint}</span>}
+              {canDouble && (
+                <button type="button" className="btn btn-artefact" onClick={() => setItemError(actions.doubleStakes())}>
+                  {fill(ITEMS.double, { stake: stakedOpen(ui.bets) })}
+                </button>
+              )}
+              {itemError && <span className="item-error">{itemError}</span>}
+            </p>
+          )}
           <p className="last-event" aria-live="polite">
             <span>{lastEvent}</span>
             {recap.turn !== null && (
@@ -275,6 +310,7 @@ export function GameScreen({ carry, speed, onFinished, onMenu }: Props) {
               <BetPanel
                 race={ui.race}
                 money={ui.money}
+                stakes={stakes}
                 price={price}
                 bets={ui.bets}
                 open={betOpen}
@@ -306,6 +342,9 @@ export function GameScreen({ carry, speed, onFinished, onMenu }: Props) {
               onRoll={() => void actions.rollDice()}
               onPickSoul={actions.pickSoulDie}
               onPickDistance={actions.pickDistanceDie}
+              {...(has(ui.inventory, 'fioleDeSang') ? { onFiole: (i: number) => setItemError(actions.useFiole(i)) } : {})}
+              {...(ui.inventory.dice.some((d) => d.faces.some((f) => f.effect === 'momentum')) ? { onMomentum: (i: number) => setItemError(actions.useMomentum(i)) } : {})}
+              {...(has(ui.inventory, 'verrouDeMinos') ? { onLock: (i: number | null) => setItemError(actions.lockDie(i)) } : {})}
               onReset={actions.resetPairing}
               onResolve={() => void actions.resolve()}
               onPairDice={actions.pairDice}

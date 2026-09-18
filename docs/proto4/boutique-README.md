@@ -4,20 +4,25 @@ Ces fichiers listent le contenu achetable du proto 4 (GDD §6). Ils servent de
 réservoir : tout n'a pas vocation à être implémenté d'un coup, et chaque chiffre
 est un point de départ pour la configuration du POC (GDD §9.1).
 
-| Fichier | Contenu | Minimum demandé | Fourni |
-|---|---|---:|---:|
-| [`personnalites.md`](personnalites.md) | Personnalités à donner aux âmes | 10 | 14 |
-| [`artefacts.md`](artefacts.md) | Passifs permanents du run | 20 | 30 |
-| [`forge.md`](forge.md) | Altérations de face de dé | 10 | 14 |
-| [`des.md`](des.md) | Dés spéciaux | 4 | 9 |
-| [`cartes.md`](cartes.md) | Cartes action consommables | 50 | 60 |
+| Fichier | Contenu | Minimum demandé | Fourni | Implémenté |
+|---|---|---:|---:|---:|
+| [`personnalites.md`](personnalites.md) | Personnalités à donner aux âmes | 10 | 14 | 0 |
+| [`artefacts.md`](artefacts.md) | Passifs permanents du run | 20 | 31 | 30 |
+| [`forge.md`](forge.md) | Altérations de face de dé | 10 | 14 | 11 |
+| [`des.md`](des.md) | Dés spéciaux | 4 | 9 | 6 |
+| [`cartes.md`](cartes.md) | Cartes action consommables | 50 | 60 | 0 |
+
+Reste à faire, et pourquoi : le **Sceau du stagiaire** (artefact n° 25) attend les
+personnalités ; les trois **dés Âme** et les trois **faces de dé Âme** attendent que
+les dés Âme soient modélisés — aujourd'hui `rollPlayerDice` tire une âme au hasard
+sans objet derrière.
 
 Les objets marqués ✔ dans les listes sont implémentés dans `Proto4Html`
 (catalogue et prix dans `Proto4Html/config/shop.json`). Dans le proto, la boutique
 ouvre **après les paris initiaux** (au moins un) et avant la course, conformément
 au cycle macro révisé du GDD §2.1.
 
-Les **vignettes** des seize objets du proto (leur emplacement dans la carte de
+Les **vignettes** des objets du proto (leur emplacement dans la carte de
 vitrine et dans l'inventaire, et les prompts pour les générer) sont décrites dans
 [`prompts-objets.md`](prompts-objets.md).
 
@@ -50,6 +55,36 @@ Chaque objet porte une étiquette d'impact qui justifie son prix :
 | Moyen | Change une lecture ou un comportement de course | 20 à 60 |
 | Fort | Change la façon de jouer un cercle entier | 60 à 150 |
 | Extrême | Casse une règle fondamentale, à charges limitées | 150 à 250 |
+
+## Déblocage d'un run à l'autre
+
+Le catalogue n'est pas ouvert d'un bloc. Au tout premier lancement, seuls les
+objets listés dans `shop.unlockedAtStart` (`Proto4Html/config/shop.json`) sont en
+rayon ; les autres sont **scellés**. **Chaque cercle payé descelle un objet**,
+tiré au sort parmi les scellés, révélé sur un écran dédié juste après le dialogue
+de fin de cercle.
+
+- Le tirage est pondéré par `rarityWeights` : un commun sort plus souvent qu'un
+  rare, un rare plus souvent qu'un légendaire. Les objets qui changent le plus la
+  partie arrivent donc dans les runs tardifs — même intention que le déblocage par
+  grade décrit plus bas, mais à l'échelle du joueur et non du run.
+- Le déblocage est **définitif et hors run** : il survit à la mort du joueur, et
+  la sauvegarde du run (`clearRun`) n'y touche pas. Un cercle raté (prix
+  impayable) ne descelle rien.
+- La vitrine ne tire que parmi les objets descellés. Le socle de départ doit donc
+  compter au moins `slots` objets, sinon la première vitrine ouvrirait incomplète
+  — le chargeur de configuration le refuse.
+- Le menu `Collection` de l'accueil liste les objets descellés et compte les
+  scellés **sans les nommer** (voir [`interface.md`](interface.md) § Collection).
+
+Socle livré aujourd'hui (6 objets sur 47) : Clepsydre fêlée, Bourse percée, Dé
+des Limbes, Dé de la Colère, Face limée, Face dorée. Un run complet jusqu'au
+neuvième cercle descelle donc 9 objets. Avec 41 objets scellés, il faut désormais
+cinq runs complets pour ouvrir tout le catalogue : c'est le chiffre à surveiller si
+le rythme paraît trop lent — il se règle par `unlockedAtStart`, sans toucher au code.
+
+Code : `Proto4Html/src/core/shop/unlocks.ts` (tirage et partage descellé/scellé),
+`storage.ts` (clé `sinnersbet.unlocks.v1`), `App.tsx` (révélation de fin de cercle).
 
 ## Trois options par vitrine
 
