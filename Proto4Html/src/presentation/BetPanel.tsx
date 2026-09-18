@@ -99,8 +99,6 @@ export function BetPanel({ race, money, stakes, price, bets, open, phase, level,
   /** La mise la plus forte du cercle, la seule qui prenne feu dans le logement. */
   const hottest = Math.max(...stakes)
   const [error, setError] = useState<string | null>(null)
-  /** Liste des paris posés : accordéon au-dessus du pied, ouvert par défaut (spec 08/C4). */
-  const [listOpen, setListOpen] = useState(true)
 
   const prep = phase === 'prep'
   const closed = bettingClosed(race)
@@ -204,13 +202,9 @@ export function BetPanel({ race, money, stakes, price, bets, open, phase, level,
           </p>
           {roll && phase === 'pairing' && <p className="small bp-dice">{fill(BETS.diceSeen, { souls: roll.soul.map((id) => soulName(id)).join(' · '), dist: roll.distance.map(fmtDistance).join(' / ') })}</p>}
         </div>
-        <button type="button" className="bp-count-btn" onClick={() => setListOpen((o) => !o)} aria-expanded={listOpen} aria-controls="bp-placed" title={BETS.placedToggle} data-testid="bets-count">
-          <span key={bets.length} className="bp-count-pop">{fill(BETS.placedCount, { n: bets.length })}</span>
-        </button>
+        {/* Le solde n'est pas répété ici : la jauge juste en dessous l'écrit déjà, en regard
+            du prix du cercle, qui est la seule lecture utile au moment de miser. */}
         <div className="bp-money">
-          <span className="money">
-            {money} <span className="money-unit">pièces</span>
-          </span>
           <MoneyGauge money={money} price={price} staked={staked} />
         </div>
         {onClose && (
@@ -364,10 +358,13 @@ export function BetPanel({ race, money, stakes, price, bets, open, phase, level,
         </div>
       </div>
 
-      {/* Paris posés : accordéon au-dessus du pied, piloté par le compteur de l'en-tête. */}
-      <section id="bp-placed" className="bp-placed" hidden={!listOpen} aria-label="Paris posés">
-        <BetList race={race} bets={bets} live={!prep} {...(onCancel ? { onCancel } : {})} />
-      </section>
+      {/* Paris posés : la liste apparaît dès le premier ticket et reste ouverte. Elle remplace
+          le compteur repliable de l'en-tête — à zéro pari il n'y avait rien à replier. */}
+      {bets.length > 0 && (
+        <section id="bp-placed" className="bp-placed" aria-label="Paris posés">
+          <BetList race={race} bets={bets} live={!prep} {...(onCancel ? { onCancel } : {})} />
+        </section>
+      )}
 
       <footer className="bp-foot">
         <div className="bp-actions">

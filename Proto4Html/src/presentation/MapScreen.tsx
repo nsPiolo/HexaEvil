@@ -28,9 +28,9 @@ const BRAZIER_BOSS = 42
  * (public/map/bg.jpg) reçoit donc la spirale au pixel près, quel que soit le format de la
  * fenêtre — le placement en pourcentage est dans `.map-svg` (index.css).
  *
- * Le nombre d'anneaux n'est pas fixe : au-delà du dernier cercle écrit, le jeu continue
- * (circles.ts) et la spirale gagne un tour par cercle. Comme la boîte est calée sur l'anneau
- * extérieur, tout est simplement redessiné plus serré à l'intérieur du même rocher.
+ * Le nombre d'anneaux n'est pas fixe : la spirale part à neuf et gagne un tour à chaque cercle
+ * franchi au-delà (circles.ts). Comme la boîte est calée sur l'anneau extérieur, tout est
+ * simplement redessiné plus serré à l'intérieur du même rocher.
  */
 function geometry(rings: number): { size: number; center: number } {
   const size = (R0 + STEP * rings + PAD) * 2
@@ -76,12 +76,22 @@ function spiralPath(center: number, fromRace: number, toRace: number): string {
   return parts.join(' ')
 }
 
-/** Écran entre deux courses : les neuf cercles, la progression, le boss et le prix du cercle en cours. */
+/**
+ * Écran entre deux courses : les cercles ouverts, la progression, le boss et le prix du cercle
+ * en cours. « Ouverts » et non « écrits » : voir `rings` ci-dessous, la carte ne révèle pas
+ * l'après-neuvième avant que le joueur y soit.
+ */
 export function MapScreen({ carry, onLaunch, onMenu }: Props) {
   const next = carry.raceIndex
   const { circle: currentCircle } = circleOf(next)
-  // Au-delà des cercles écrits, la spirale s'allonge jusqu'où le joueur est monté.
-  const rings = Math.max(config.run.circles.length, currentCircle)
+  /**
+   * La carte ne montre que **neuf cercles** : ceux de l'enfer de Dante, et la promesse d'en
+   * sortir. Que le jeu continue au-delà est le twist de la fin (GDD §5.3, §8.1) — l'annoncer
+   * sur la carte dès la première course le désamorcerait. La spirale ne gagne donc un anneau
+   * que lorsque le joueur y met les pieds : il découvre le dixième en y arrivant, puis le
+   * onzième, un par un, jusqu'à ce qu'il ne puisse plus payer.
+   */
+  const rings = Math.max(config.run.escapeCircle, currentCircle)
   const { size: SIZE, center: CENTER } = geometry(rings)
   const total = rings * config.run.racesPerCircle
   const [selected, setSelected] = useState<number>(currentCircle)

@@ -145,28 +145,23 @@ test.describe('08 · Corrections post-test', () => {
     await expect(ghost).toHaveCount(0)
   })
 
-  test('C4 · poser un pari se voit : compteur en en-tête et liste repliable, sans défilement', async ({ page }) => {
+  test('C4 · poser un pari se voit : la liste apparaît au premier ticket, sans défilement', async ({ page }) => {
     // 08/C4 — à 1440×900, sans défilement.
     await start(page, { seed: RACE_SEED })
     const panel = betsPanel(page)
-    const counter = page.getByTestId('bets-count')
-    await expect(counter).toHaveText('Paris posés (0)')
-    await placeBet(page, { souls: [1], stake: 20 })
-    // La confirmation « ✓ Pari posé » du pied a été retirée avec la ligne d'état : ce qui
-    // atteste la pose est désormais le compteur de l'en-tête et la ligne qui s'ajoute à la
-    // liste, tous deux visibles sans défilement.
-    await expect(counter).toHaveText('Paris posés (1)')
-    const b = await boxOf(counter)
-    expect(b.y + b.height, 'visible sans défilement').toBeLessThanOrEqual(900)
-    // Le compteur replie et rouvre la liste des paris posés.
     const list = panel.locator('#bp-placed')
+    // Le compteur repliable « Paris posés (n) » a été retiré : à zéro pari il n'y avait rien à
+    // replier, et il répétait une information que la liste porte déjà. Ce qui atteste la pose
+    // est donc la liste elle-même, qui n'existe qu'à partir du premier ticket.
+    await expect(list).toHaveCount(0)
+    await placeBet(page, { souls: [1], stake: 20 })
     await expect(list).toBeVisible()
     await expect(list.getByRole('listitem')).toHaveCount(1)
-    await counter.click()
-    await expect(list).toBeHidden()
-    await expect(counter).toHaveAttribute('aria-expanded', 'false')
-    await counter.click()
-    await expect(list).toBeVisible()
+    const b = await boxOf(list)
+    expect(b.y + b.height, 'visible sans défilement').toBeLessThanOrEqual(900)
+    // Un deuxième ticket s'ajoute à la suite, la liste reste ouverte.
+    await placeBet(page, { souls: [2], stake: 20 })
+    await expect(list.getByRole('listitem')).toHaveCount(2)
   })
 
   test('C5 · le slot d’âme rempli est aussi lisible que la chip sélectionnée', async ({ page }) => {

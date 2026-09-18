@@ -25,7 +25,10 @@ export interface Line {
 }
 
 /** Noms par défaut des locuteurs dans les bulles ; le boss prend le sien dans `config/race.json`. */
-export const SPEAKERS: Record<Speaker, string> = { demon: 'Démon stagiaire', player: 'Vous', boss: 'Le boss du cercle' }
+/** Nom du démon qui vous coache. Judas Iscariote : le traître, qui finira boss du neuvième cercle. */
+export const DEMON_NAME = 'Iscariote'
+
+export const SPEAKERS: Record<Speaker, string> = { demon: `${DEMON_NAME}, stagiaire`, player: 'Vous', boss: 'Le boss du cercle' }
 
 const D = (text: string, face?: Face): Line => (face ? { who: 'demon', text, face } : { who: 'demon', text })
 const P = (text: string): Line => ({ who: 'player', text })
@@ -48,7 +51,7 @@ export const MENU = {
 export const INTRO: readonly Line[] = [
   D('Félicitations, vous êtes mort !', 'fier'),
   D('On a étudié votre dossier, et sans grande surprise, vous avez fini ici.', 'neutre'),
-  D("Je suis en stage, et je n'ai pas les accréditations nécessaires pour vous affecter à la bonne punition. En plus elle est actuellement en réfection…", 'normal'),
+  D("Iscariote, démon stagiaire. Je n'ai pas les accréditations nécessaires pour vous affecter à la bonne punition, et en plus elle est actuellement en réfection…", 'normal'),
   D('…on va devoir attendre le boss…', 'doute'),
   D('…voilà, voilà… désolé…', 'normal'),
   D('Ça vous tente un petit pari pour tuer le temps ?', 'fier'),
@@ -69,7 +72,7 @@ export const BOSS_ANNOUNCE: readonly Line[] = [
  * Grades du démon (boutique-README.md « Déblocage par la hiérarchie du stagiaire »).
  * Un grade est obtenu quand le boss du cercle `afterCircle` est battu et le prix payé ;
  * ses `lines` sont dites dans le dialogue de fin de ce cercle, juste avant l'annonce du
- * cercle suivant. `label` remplace « Démon stagiaire » dans les bulles à partir de là, et
+ * cercle suivant. `label` — le nom du démon suivi de son grade — change dans les bulles à partir de là, et
  * `portrait` le costume affiché — cinq dessins pour six grades : les deux derniers partagent
  * le costume du boss, le sixième n'étant atteint qu'à l'évasion.
  * Pas encore d'effet sur la boutique : le grade est narratif pour l'instant.
@@ -94,10 +97,10 @@ export function portraitSrc(rank: DemonRank, face?: Face): string {
 }
 
 export const DEMON_RANKS: readonly DemonRank[] = [
-  { name: 'Stagiaire', label: 'Démon stagiaire', afterCircle: 0, lines: [], portrait: 'stagiaire_0', faces: true },
+  { name: 'Stagiaire', label: `${DEMON_NAME}, stagiaire`, afterCircle: 0, lines: [], portrait: 'stagiaire_0', faces: true },
   {
     name: 'Assistant',
-    label: 'Démon assistant',
+    label: `${DEMON_NAME}, assistant`,
     // Le premier grade se gagne au bout de DEUX cercles : un seul ne prouve rien, et
     // l'administration infernale ne promeut pas sur un coup de chance.
     afterCircle: 2,
@@ -110,7 +113,7 @@ export const DEMON_RANKS: readonly DemonRank[] = [
   },
   {
     name: 'Tourmenteur',
-    label: 'Démon tourmenteur',
+    label: `${DEMON_NAME}, tourmenteur`,
     afterCircle: 3,
     portrait: 'stagiaire_2_souschef',
     lines: [
@@ -123,7 +126,7 @@ export const DEMON_RANKS: readonly DemonRank[] = [
   },
   {
     name: 'Contremaître',
-    label: 'Démon contremaître',
+    label: `${DEMON_NAME}, contremaître`,
     afterCircle: 5,
     portrait: 'stagiaire_3_chef',
     lines: [
@@ -136,7 +139,7 @@ export const DEMON_RANKS: readonly DemonRank[] = [
   },
   {
     name: 'Sous-directeur',
-    label: 'Démon sous-directeur',
+    label: `${DEMON_NAME}, sous-directeur`,
     afterCircle: 7,
     portrait: 'stagiaire_4_boss',
     lines: [
@@ -147,7 +150,7 @@ export const DEMON_RANKS: readonly DemonRank[] = [
       D("Et le grand livre s'ouvre : le « Classement complet exact », ×{fullRankingExact}. Personne ne l'a jamais touché. Ce serait amusant que ce soit contre moi."),
     ],
   },
-  { name: 'Boss du neuvième', label: 'Le stagiaire promu', afterCircle: 8, lines: [], portrait: 'stagiaire_4_boss' },
+  { name: 'Boss du neuvième', label: `${DEMON_NAME}, boss du neuvième`, afterCircle: 8, lines: [], portrait: 'stagiaire_4_boss' },
 ]
 
 export interface CircleTexts {
@@ -532,8 +535,6 @@ export const BETS = {
   pickOnBoard: 'Cliquer pour désigner cette âme',
   unpickOnBoard: 'Cliquer pour la retirer du ticket',
   placed: 'Pari posé : {type} · {souls} · {stake} ¤ → +{net} si gagné',
-  placedCount: 'Paris posés ({n})',
-  placedToggle: 'Afficher ou replier la liste des paris posés',
   diceSeen: 'Dés lancés : {souls} — {dist}',
   trayLabel: 'Jetons de mise',
   chipHint: 'Glissez ce jeton dans le logement, ou cliquez-le',
@@ -590,6 +591,8 @@ export const ITEMS = {
 } as const
 
 export const RACE = {
+  /** Touche qui lance les dés : la plus grande du clavier pour le geste le plus répété. */
+  rollKey: 'Espace',
   /** Objets déclenchés sur un dé précis pendant l'appariement (Fiole, Élan, Verrou). */
   fiole: '+1',
   fioleTitle: 'Fiole de sang : +1 sur ce dé, une fois par tour, payé comptant.',

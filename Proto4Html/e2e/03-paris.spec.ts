@@ -85,7 +85,8 @@ test.describe('03 · Écran Paris (le ticket de guichet)', () => {
     await expect(panel.getByRole('button', { name: 'Retirer' })).toHaveCount(1)
     await panel.getByRole('button', { name: 'Retirer' }).click()
     await expect(hudMoney(page)).toHaveText('100 Pièces')
-    await expect(panel.getByText('Aucun pari pour cette course.')).toBeVisible()
+    // Plus aucun ticket : la liste disparaît au lieu d'afficher un état vide.
+    await expect(panel.locator('#bp-placed')).toHaveCount(0)
     await placeBet(page, { souls: [1], stake: 20 })
     await startRace(page)
     await page.getByTestId('tab-bets').click()

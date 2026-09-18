@@ -1597,9 +1597,11 @@ p { margin: 0; }
 .tier-on .tier-range { color: #2e220c; }
 .tier:disabled { opacity: 0.45; filter: grayscale(0.5); }
 
-.types { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr; gap: 6px; }
+/* `grid-auto-rows: 1fr` aligne toutes les options sur la plus haute : la liste garde un pas
+   régulier quelle que soit la longueur des descriptions, et sans en tronquer aucune. */
+.types { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr; grid-auto-rows: 1fr; gap: 6px; }
 @media (min-width: 1200px) { .types { grid-template-columns: 1fr 1fr; } }
-.types li { min-width: 0; }
+.types li { min-width: 0; display: flex; }
 /*
  * Cartes de pari sans bordure : le fond suffit à les détacher du panneau, et six filets
  * empilés faisaient grille. La sélection se dit donc par le fond plus un filet de braise à
@@ -1607,18 +1609,22 @@ p { margin: 0; }
  * `align-items: flex-start` : la cote appartient à l'intitulé du pari, elle se cale sur sa
  * ligne et ne flotte plus au milieu d'une description de hauteur variable.
  */
-.type { width: 100%; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; text-align: left; padding: 9px 13px; border-radius: 10px; border: 0; background: var(--panel); transition: background 150ms, box-shadow 150ms; }
+/* Une option de pari : hauteur identique pour toutes, quel que soit le nombre de lignes de sa
+   description — une liste de guichets se parcourt à la verticale, elle ne doit pas onduler. */
+.type { width: 100%; height: 100%; min-height: 58px; display: flex; align-items: center; justify-content: space-between; gap: 12px; text-align: left; padding: 9px 13px; border-radius: 10px; border: 0; background: var(--panel); transition: background 150ms, box-shadow 150ms; }
 .type:hover:not(:disabled) { background: var(--panel-2); }
 .type:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
 .type-on { background: #2c1a12; box-shadow: inset 3px 0 0 var(--ember); }
 .type-on:hover:not(:disabled) { background: #34201a; }
 .type:disabled { opacity: 0.5; }
-.type-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.type-text { display: flex; flex-direction: column; justify-content: center; gap: 2px; min-width: 0; }
 .type-name { font-weight: 700; font-size: 0.95rem; }
 .type-desc { font-size: 0.8rem; color: var(--muted); }
 /* Largeur fixe et chiffres à chasse constante : ×2 et ×3.5 occupent la même pastille, donc
    les cotes forment une colonne franche d'une carte à l'autre au lieu de se décaler. */
-.mult-badge { flex: none; align-self: flex-start; margin-top: 1px; min-width: 3.5em; padding: 3px 0; text-align: center; border-radius: 999px; border: 1px solid var(--gold); color: var(--gold); font-size: 0.95rem; font-weight: 700; font-variant: normal; font-variant-numeric: tabular-nums; }
+/* La cote est l'information qu'on compare d'une ligne à l'autre : elle est grosse et centrée
+   en hauteur, pour se lire en colonne sans suivre le texte à côté. */
+.mult-badge { flex: none; align-self: center; min-width: 3.2em; padding: 5px 10px; text-align: center; border-radius: 999px; border: 1px solid var(--gold); color: var(--gold); font-size: 1.25rem; line-height: 1.1; font-weight: 700; font-variant: normal; font-variant-numeric: tabular-nums; }
 .type-on .mult-badge { border-color: var(--ember); color: var(--ember); }
 .type-locked { opacity: 0.55; background: repeating-linear-gradient(135deg, var(--panel) 0 8px, var(--panel-2) 8px 10px); }
 .lock-badge { flex: none; align-self: flex-start; padding: 4px 10px; border-radius: 999px; border: 1px dashed var(--muted); color: var(--muted); font-size: 0.8rem; white-space: nowrap; }
@@ -1877,3 +1883,6 @@ p { margin: 0; }
 .shop-workshop summary:hover { color: var(--ink); }
 .shop-workshop > *:not(summary) { margin-top: 10px; }
 .shop-artefacts { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* Rappel de raccourci clavier collé à un libellé de bouton (« Lancer les dés Espace »). */
+.key-hint { margin-left: 8px; padding: 1px 7px; border-radius: 5px; border: 1px solid currentColor; opacity: 0.65; font-size: 0.72em; font-weight: 600; letter-spacing: 0.04em; vertical-align: middle; }

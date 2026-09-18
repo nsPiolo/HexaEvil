@@ -6,7 +6,7 @@ import { opponentRolls, type Phase, type RaceUi } from './useRace'
 import { dieTilt, distDieStyle, fmtDistance, hasDistArt, soulColor, soulDieStyle } from './souls'
 import { FaceChip } from './Inventory'
 import { BetList } from './BetPanel'
-import { GLOSSARY, HUD, RACE } from './texts'
+import { GLOSSARY, HUD, RACE, fill } from './texts'
 
 function soulName(race: RaceState, id: number | undefined): string {
   return id === undefined ? '?' : (race.souls[id]?.name ?? `#${id}`)
@@ -414,9 +414,11 @@ export function PlayerSlot({ ui, speed, preview, highlightSoul, onHoverSoul, onS
       </div>
       <div className="actions">
         {phase === 'idle' && (
-          <button type="button" className="btn btn-primary bp-roll" onClick={onRoll}>
+          <button type="button" className="btn btn-primary bp-roll" onClick={onRoll} title={fill(HUD.tabShortcut, { key: RACE.rollKey })}>
             <span className="bp-roll-art" aria-hidden="true" />
-            <span className="bp-roll-label">Lancer les dés</span>
+            <span className="bp-roll-label">
+              Lancer les dés <span className="key-hint" aria-hidden="true">{RACE.rollKey}</span>
+            </span>
           </button>
         )}
         {pairing && (

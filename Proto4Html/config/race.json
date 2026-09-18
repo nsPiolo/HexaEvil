@@ -916,7 +916,7 @@
         "price": 700,
         "souls": 10,
         "lanes": 6,
-        "boss": "Le stagiaire promu",
+        "boss": "Iscariote, promu",
         "power": "Il connaît vos paris : ses paires visent d'abord vos âmes pariées pour les faire reculer.",
         "terrains": [
           {
@@ -1956,7 +1956,7 @@
         "price": 1600,
         "souls": 12,
         "lanes": 8,
-        "boss": "Le stagiaire ailé",
+        "boss": "Iscariote, ailé",
         "power": "Il rejoue le dernier tour de la course une seconde fois, adversaire compris.",
         "terrains": [
           {

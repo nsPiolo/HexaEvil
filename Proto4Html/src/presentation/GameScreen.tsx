@@ -146,6 +146,11 @@ export function GameScreen({ carry, unlocked, speed, onFinished, onMenu }: Props
         e.preventDefault()
         if (shopOpen) setShopOpen(false)
         else openShop()
+      } else if (e.key === ' ' && ui.phase === 'idle') {
+        // Espace = lancer les dés. Le geste le plus répété de la course mérite la plus grande
+        // touche ; on n'agit qu'en phase `idle`, le seul moment où le lancer a un sens.
+        e.preventDefault()
+        void actions.rollDice()
       }
     }
     window.addEventListener('keydown', onKey)

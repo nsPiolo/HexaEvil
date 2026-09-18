@@ -274,6 +274,12 @@ Le boss du neuvième cercle est le **démon stagiare qui a été promu**, cohér
 
 ### 5.2 Le stagiaire et le coaching
 
+Le démon stagiaire s'appelle **Iscariote**. Il se présente par son nom dès l'introduction ;
+son grade le suit partout où il parle (« Iscariote, stagiaire », puis « Iscariote,
+assistant »…), si bien qu'une promotion se voit au-dessus de la bulle sans qu'on ait
+à l'annoncer. Le nom est un indice posé d'entrée sur la fin : le traître par excellence
+finit boss du neuvième cercle, celui de la Trahison (§5.1).
+
 Au début, le stagiaire cherche simplement à occuper son temps avant l'affectation du joueur. Après les premières victoires, il reconnaît les compétences du joueur et propose un coaching. Il l'aide à se préparer aux boss des cercles et présente son poulain aux supérieurs.
 
 La sous-intrigue suit deux progressions liées :
