@@ -1,5 +1,29 @@
-/** Couleurs des jetons, une par âme (indice = id). */
-export const SOUL_COLORS = ['#e0a83c', '#6fa8d8', '#4ea86a', '#d0453c', '#b07cd8', '#e07a9c', '#5cc8c0', '#c9a27a'] as const
+/**
+ * Couleurs des jetons, une par âme (indice = id). Il en faut au moins autant que de noms
+ * dans `souls.names` : les cercles les plus peuplés alignent 12 âmes, et `soulColor` boucle
+ * sur la palette, donc une palette trop courte redonne la même couleur à deux concurrentes
+ * de la même course. Le test `souls.test.ts` tient cette règle.
+ *
+ * Les huit premières sont la palette d'origine, gardée telle quelle ; les quatre suivantes
+ * se logent dans les trous de la roue chromatique (citron, jade, indigo, os) et restent dans
+ * la bande de l'habillage — ardoise froide, accents chauds : écart d'au moins 24 en ΔE et
+ * contraste d'au moins 4,6:1 sur `--bg`. Chacune a sa face de dé peinte, dont le nom de
+ * fichier EST le code hexadécimal sans le croisillon (voir SOUL_DICE).
+ */
+export const SOUL_COLORS = [
+  '#e0a83c', // or
+  '#6fa8d8', // bleu ciel
+  '#4ea86a', // vert
+  '#d0453c', // rouge brique
+  '#b07cd8', // violet
+  '#e07a9c', // rose
+  '#5cc8c0', // turquoise
+  '#c9a27a', // beige cuir
+  '#a9c93a', // citron
+  '#3fc45c', // jade
+  '#6b80cf', // indigo
+  '#c5ccd2', // os
+] as const
 
 export function soulColor(id: number): string {
   return SOUL_COLORS[id % SOUL_COLORS.length] ?? '#ffffff'
@@ -12,10 +36,20 @@ export function soulColor(id: number): string {
  * (`background-blend-mode: color` garde le modelé de la céramique et n'en change que la
  * teinte) plutôt que de lui prêter le dé d'une autre âme.
  *
- * Toutes les faces mesurées tiennent entre 5,1:1 et 7,1:1 avec l'encre sombre : il n'y a pas
- * de cas qui demande une encre claire, le CSS en pose donc une seule.
+ * Cet ensemble liste les faces réellement peintes, pas la palette : c'est volontairement une
+ * liste à la main, pour qu'un fichier absent se voie ici plutôt que de se deviner à
+ * l'exécution. Les douze y sont, `scripts/install-art.py des` les fabrique depuis
+ * `docs/proto4/raw/des`.
+ *
+ * Toutes les faces mesurées tiennent entre 4,7:1 et 7,3:1 avec l'encre sombre, au pixel le
+ * plus sombre de la zone de texte : il n'y a pas de cas qui demande une encre claire, le CSS
+ * en pose donc une seule. L'os (`c5ccd2`) est la plus claire des couleurs mais sa céramique
+ * rend un gris moyen, pas un aplat — elle tombe à 4,9:1, dans le lot.
  */
-const SOUL_DICE: ReadonlySet<string> = new Set(['e0a83c', '6fa8d8', '4ea86a', 'd0453c', 'b07cd8', 'e07a9c', '5cc8c0', 'c9a27a'])
+export const SOUL_DICE: ReadonlySet<string> = new Set([
+  'e0a83c', '6fa8d8', '4ea86a', 'd0453c', 'b07cd8', 'e07a9c',
+  '5cc8c0', 'c9a27a', 'a9c93a', '3fc45c', '6b80cf', 'c5ccd2',
+])
 
 /**
  * Variables CSS d'un dé Âme : `--soul` (reprise par le halo de survol) et la face peinte si
