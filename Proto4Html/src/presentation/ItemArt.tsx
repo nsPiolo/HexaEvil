@@ -24,10 +24,11 @@ function choisir(src: string): string | null {
 }
 
 /**
- * Vignette d'un objet achetable. Les seize dessins arrivent au fur et à mesure : tant qu'un
- * fichier manque, la carte montre le point d'interrogation (`public/objets/qmark.webp`)
- * plutôt qu'un trou, pour que toutes les cartes aient la même silhouette. Il suffit de poser
- * le `.webp` dans `public/objets/` pour qu'il remplace le repli — rien à déclarer dans le code.
+ * Vignette d'un objet achetable. Les quarante-sept sont peintes ; le repli reste pour les
+ * objets à venir : tant qu'un fichier manque, la carte montre le point d'interrogation
+ * (`public/objets/qmark.webp`) plutôt qu'un trou, pour que toutes les cartes gardent la même
+ * silhouette. Il suffit de poser le `.webp` dans `public/objets/` pour qu'il remplace le repli
+ * — rien à déclarer dans le code, et `itemArt.test.ts` signale celui qu'on aurait oublié.
  * Purement décoratif : le nom de l'objet est juste à côté.
  */
 export function ItemArt({ id, className }: Props) {

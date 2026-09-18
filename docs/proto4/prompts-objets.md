@@ -3,7 +3,8 @@
 Les quarante-sept objets de la boutique (`Proto4Html/config/shop.json`) : trente
 artefacts, six dés et onze opérations de forge. Chacun reçoit une **vignette carrée**
 posée à gauche de son nom dans la carte de vitrine, et en réduction dans la
-pastille d'inventaire. Le code est en place ; il ne manque que les dessins.
+pastille d'inventaire. **Les quarante-sept sont peintes et installées** (2026-09-18) ; ce
+fichier reste la référence pour en ajouter une, ou en refaire une qui ne tient pas à 18 px.
 
 | Où | Sélecteur | Taille affichée |
 |---|---|---|
