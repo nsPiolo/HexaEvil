@@ -1,5 +1,13 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { HELP, type HelpBlock } from './texts'
+import { config } from '../core/config'
+import { HELP, fill, oddsText, type HelpBlock } from './texts'
+
+/**
+ * Cotes citées par l'aide. Elles ne sont pas écrites dans les textes : une recalibration
+ * (`npm run odds -- --suggest`) changeait la config sans changer l'aide, qui annonçait alors
+ * des gains que le guichet ne payait plus.
+ */
+const ODDS = oddsText(config.economy.multipliers)
 
 interface Props {
   onClose: () => void
@@ -20,6 +28,11 @@ function rich(text: string): ReactNode[] {
     })
 }
 
+/** Rendu d'un texte d'aide : cotes de la config d'abord, balisage inline ensuite. */
+function help(text: string): ReactNode[] {
+  return rich(fill(text, ODDS))
+}
+
 function Block({ block }: { block: HelpBlock }) {
   const items = block.items ?? []
   switch (block.kind) {
@@ -29,7 +42,7 @@ function Block({ block }: { block: HelpBlock }) {
       return (
         <ul>
           {items.map((item, i) => (
-            <li key={i}>{rich(item)}</li>
+            <li key={i}>{help(item)}</li>
           ))}
         </ul>
       )
@@ -37,12 +50,12 @@ function Block({ block }: { block: HelpBlock }) {
       return (
         <ol>
           {items.map((item, i) => (
-            <li key={i}>{rich(item)}</li>
+            <li key={i}>{help(item)}</li>
           ))}
         </ol>
       )
     default:
-      return <p>{rich(block.text ?? '')}</p>
+      return <p>{help(block.text ?? '')}</p>
   }
 }
 
@@ -67,7 +80,7 @@ export function HelpPanel({ onClose }: Props) {
       <h1 className="help-title">{HELP.title}</h1>
       <div className="help-intro">
         {HELP.intro.map((text, i) => (
-          <p key={i}>{rich(text)}</p>
+          <p key={i}>{help(text)}</p>
         ))}
       </div>
 

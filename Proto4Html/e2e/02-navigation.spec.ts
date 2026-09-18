@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test'
 import { autoToResults, betsPanel, board, openShop, phaseStrip, placeBet, rollDice, shopPanel, slot, start, startRace, tokenButton } from './helpers'
 import { RACES_PER_CIRCLE, RACE_SEED, SHOP_SEED, SHOP_SLOTS } from './seeds'
 
-const EMPTY_STATE = 'Pose d’abord un pari, le stagiaire n’ouvre pas la caisse aux indécis.'
+const EMPTY_STATE = 'Posez d’abord un pari, le stagiaire n’ouvre pas la caisse aux indécis.'
 
 test.describe('02 · Navigation Pari ↔ Boutique', () => {
   test('E2E-02-A : la poignée repliée résume les paris : « Paris (2) · 30 ¤ misés »', async ({ page }) => {

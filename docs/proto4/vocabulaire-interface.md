@@ -223,20 +223,23 @@ Champ lexical **des courses hippiques et du guichet de paris**. Tenez-le.
 
 Ce sont des **noms de tickets**. Ils apparaissent tels quels au guichet.
 
+Les cotes citées ci-dessous sont celles de `config/race.json` au 18 septembre 2026 ;
+la source de vérité reste la config, jamais ce tableau.
+
 | Terme | Sens exact | Note de traduction |
 | --- | --- | --- |
 | **Simples** | Famille 1 : un seul nom d'âme sur le ticket. | Pivot : *simple / straight bets*. |
 | **Combinés** | Famille 2 : deux ou trois âmes sur le même ticket. | Pivot : *combination bets*. Terme consacré des paris sportifs. |
 | **Avancés** / **gros tickets** | Famille 3 : les paris à très gros multiplicateur, débloqués tard. | Pivot : *advanced / big-ticket bets*. |
-| **Vainqueur pur** | L'âme termine **première**. ×3,5 | « Pur » = sans condition annexe, le pari le plus simple. Pivot : *straight win*. |
+| **Vainqueur pur** | L'âme termine **première**. ×2,2 | « Pur » = sans condition annexe, le pari le plus simple. Pivot : *straight win*. |
 | **Top 3** | L'âme termine **dans les trois premières**. ×1,5 | Pivot : *place / top 3*. L'anglicisme « Top 3 » est employé tel quel en français : décidez s'il passe dans votre langue. |
-| **Pas dans le top 3** | L'âme **ne** termine **pas** dans les trois premières. ×2 | Attention à la négation, qui porte sur tout le groupe. |
-| **Dernière place** | L'âme termine **dernière**. ×3,5 | Pivot : *last place*. |
-| **Top 3 dans le désordre** | Trois âmes désignées occupent les trois premières places, **dans n'importe quel ordre**. ×7 | « Dans le désordre » = *in any order*, **pas** « en pagaille ». |
-| **Deux âmes dans le top 3** | Les deux âmes désignées terminent toutes deux dans les trois premières. ×2,5 | |
-| **Duel** | La première âme désignée termine **devant** la seconde. Emplacements : **devant** / **derrière**. ×1,8 | Pivot : *head-to-head / match bet*. Pas un duel au pistolet. |
-| **Podium exact** | Les trois premières places **dans cet ordre exact**. Emplacements : **1re / 2e / 3e**. ×40 | Pivot : *exact trifecta*. « Podium » au sens sportif des trois premiers. |
-| **Vainqueur + dernier** | Le premier **et** le dernier, exactement. Emplacements : **vainqueur** / **dernier**. ×14 | |
+| **Pas dans le top 3** | L'âme **ne** termine **pas** dans les trois premières. ×1,35 | Attention à la négation, qui porte sur tout le groupe. |
+| **Dernière place** | L'âme termine **dernière**. ×1,65 | Pivot : *last place*. |
+| **Top 3 dans le désordre** | Trois âmes désignées occupent les trois premières places, **dans n'importe quel ordre**. ×3,4 | « Dans le désordre » = *in any order*, **pas** « en pagaille ». |
+| **Deux âmes dans le top 3** | Les deux âmes désignées terminent toutes deux dans les trois premières. ×2,05 | |
+| **Duel** | La première âme désignée termine **devant** la seconde. Emplacements : **devant** / **derrière**. ×1,35 | Pivot : *head-to-head / match bet*. Pas un duel au pistolet. |
+| **Podium exact** | Les trois premières places **dans cet ordre exact**. Emplacements : **1re / 2e / 3e**. ×22 | Pivot : *exact trifecta*. « Podium » au sens sportif des trois premiers. |
+| **Vainqueur + dernier** | Le premier **et** le dernier, exactement. Emplacements : **vainqueur** / **dernier**. ×3,15 | |
 | **Classement complet exact** | **Toutes** les positions finales dans l'ordre exact. ×80 | Le pari mythique, débloqué au dernier grade. |
 | **Devant** / **derrière** | Étiquettes des deux emplacements du Duel. | Position dans la course, pas dans l'espace physique. |
 | **1re / 2e / 3e** | Ordinaux abrégés (première, deuxième, troisième). | Abréviations françaises avec exposant : adaptez à votre langue (*1st, 2nd, 3rd*…). |

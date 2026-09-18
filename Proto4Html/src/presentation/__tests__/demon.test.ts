@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { config } from '../../core/config'
 import { bossAnnounce, bossIntro, circleFailure, circleSuccess, demonLevel, demonLevelAtRace, demonRank, demonRankAtRace, rankOfLevel } from '../demon'
-import { CIRCLES, DEMON_RANKS, ordinalOf } from '../texts'
+import { CIRCLES, DEMON_RANKS, oddsText, ordinalOf } from '../texts'
 
 const per = config.run.racesPerCircle
+const odds = oddsText(config.economy.multipliers)
 
 describe('grades du démon', () => {
   it('commence stagiaire et monte après les cercles 2, 3, 5, 7 et 8', () => {
@@ -45,7 +46,7 @@ describe('grades du démon', () => {
       const opened = (Object.keys(unlock) as (keyof typeof unlock)[]).filter((id) => unlock[id] === level)
       expect(opened.length).toBeGreaterThan(0)
       const text = circleSuccess(DEMON_RANKS[level]!.afterCircle).map((l) => l.text).join('\n')
-      for (const id of opened) expect(text).toContain(`×${config.economy.multipliers[id]}`)
+      for (const id of opened) expect(text).toContain(`×${odds[id]}`)
       expect(text).not.toMatch(/\{\w+\}/)
     }
   })
@@ -70,7 +71,7 @@ describe('dialogues de transition', () => {
     // Les lignes de promotion, dites par l'assistant, cotes remplies.
     promo.lines.forEach((l, k) => {
       const line = lines[success.length - 1 + k]!
-      expect(line.text).toBe(l.text.replace(/\{(\w+)\}/g, (_, key: string) => String(config.economy.multipliers[key as keyof typeof config.economy.multipliers])))
+      expect(line.text).toBe(l.text.replace(/\{(\w+)\}/g, (_, key: string) => odds[key]!))
       if (l.who === 'demon') expect(line.label).toBe(promo.label)
       else expect(line.label).toBeUndefined()
     })

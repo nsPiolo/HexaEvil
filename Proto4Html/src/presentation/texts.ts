@@ -51,16 +51,16 @@ export const MENU = {
 export const INTRO: readonly Line[] = [
   D('Félicitations, vous êtes mort !', 'fier'),
   D('On a étudié votre dossier, et sans grande surprise, vous avez fini ici.', 'neutre'),
-  D("Iscariote, démon stagiaire. Je n'ai pas les accréditations nécessaires pour vous affecter à la bonne punition, et en plus elle est actuellement en réfection…", 'normal'),
-  D('…on va devoir attendre le boss…', 'doute'),
-  D('…voilà, voilà… désolé…', 'normal'),
-  D('Ça vous tente un petit pari pour tuer le temps ?', 'fier'),
-  P('Non merci, sans plus.'),
-  D("Non !? Je comprends que vous ne soyez pas d'humeur, mais je m'ennuie ferme ici. Je vous prête un peu d'argent et vous pourrez conserver vos gains.", 'degout'),
-  P("Bon, d'accord, mais pas d'entourloupe."),
-  D('Parfait, on a un pacte !', 'fier'),
+  D("Iscariote, démon stagiaire. Je n'ai pas les accréditations pour vous affecter à la bonne punition — et de toute façon, elle est en réfection.", 'normal'),
+  D('…on va devoir attendre le boss. Désolé.', 'doute'),
+  D("Ça vous tente un petit pari en attendant ? Vous avez l'éternité devant vous, autant en perdre un morceau.", 'fier'),
+  P("Non merci. J'ai déjà tout perdu une fois."),
+  D("Justement, vous connaissez la procédure. Et moi je m'ennuie ferme : je vous prête de quoi miser, vous gardez vos gains.", 'doute'),
+  P("Bon, d'accord. Mais pas d'entourloupe."),
+  D("Aucune. Vous avez ma parole — et sur ce point, croyez-moi, j'ai une réputation.", 'fier'),
   D("Ici on mise sur une course d'âmes damnées, donc voilà {money} pièces pour commencer. Et avant chaque course, je vous avancerai {allowance} pièces de plus.", 'neutre'),
   D("Ah, et je n'ai le droit de prendre que les paris simples : vainqueur, top 3, pas dans le top 3, dernier. Tout ce qui met deux âmes sur le même ticket, c'est au-dessus de mon grade. Pour l'instant.", 'doute'),
+  D("Une dernière chose, vous en ferez ce que vous voudrez : ici, tout se paie. Les punitions, les passages… les portes. Gagnez assez, et vous ne resterez peut-être pas.", 'neutre'),
 ]
 
 /**
@@ -68,7 +68,8 @@ export const INTRO: readonly Line[] = [
  * ferme chaque cercle, on le lui apprend ici.
  */
 export const BOSS_ANNOUNCE: readonly Line[] = [
-  D("Mon boss est de retour, il nous a vus jouer. Il vous propose de parier avec lui, et si vous avez {price} pièces à la fin, il veut bien vous autoriser à continuer de parier.", 'normal'),
+  D("Mon boss est de retour, il nous a vus jouer. Il veut sa part : {price} pièces à la fin du cercle, et il tiendra lui-même la dernière course.", 'normal'),
+  D("Vous payez, il vous laisse monter d'un cercle. Vous ne payez pas, il vous garde — c'est son métier, il le fait bien.", 'doute'),
 ]
 
 /**
@@ -82,10 +83,22 @@ export const BOSS_ANNOUNCE_NEXT: readonly (readonly Line[])[] = [
   [D("Vous connaissez la maison, maintenant : la dernière course du cercle, c'est le boss qui la tient. {price} pièces en poche à l'arrivée, et on passe.", 'neutre')],
   [D("Prochaine course, dernière du cercle. Le patron d'ici descend tenir le guichet lui-même, et il faudra {price} pièces pour qu'il ouvre la porte.", 'normal')],
   [D("Encore une, et c'est celle du boss. Je vous le dis franchement : sans {price} pièces au bout, on ne sort pas de ce cercle.", 'doute')],
-  [D("Le boss a réservé la dernière course. Moi je tiens les comptes : {price} pièces à la fin, pas une de moins.", 'neutre')],
+  [D("Le boss a réservé la dernière course. Il réserve toujours — il n'y a jamais personne. {price} pièces à la fin, pas une de moins : c'est moi qui tiens les comptes.", 'neutre')],
   [D("Dernière course du cercle, donc dernière chance de réunir les {price} pièces. Le boss, lui, n'accepte pas les acomptes.", 'normal')],
   [D("La suivante est pour le boss — ils y tiennent tous, c'est leur seul moment de gloire. {price} pièces et on file au cercle d'après.", 'fier')],
   [D("On arrive au bout du cercle, et le bout d'un cercle, c'est toujours un boss. {price} pièces à l'arrivée, sinon on reste.", 'neutre')],
+]
+
+/**
+ * Dernier cercle avant l'évasion : le boss de la Trahison, c'est le stagiaire lui-même, promu
+ * au cercle précédent. La variante générique gâcherait le seul retournement de la partie — il
+ * annonce donc un boss qu'il connaît bien, sans se nommer, et `bossIntro` fait le reste.
+ */
+export const BOSS_ANNOUNCE_SELF: readonly Line[] = [
+  D("Dernière course du dernier cercle. {price} pièces, et la porte s'ouvre. Pour de bon."),
+  D("C'est le boss de la Trahison qui tient le guichet. Je le connais bien."),
+  P('Il est comment ?'),
+  D('Ponctuel.'),
 ]
 
 /**
@@ -128,7 +141,8 @@ export const DEMON_RANKS: readonly DemonRank[] = [
     lines: [
       D("Et… il y a mieux. Minos a enroulé sa queue deux fois autour de mon dossier : je suis assistant. Assistant ! Mon premier grade en trois siècles de stage.", 'fier'),
       P('Félicitations. Ça change quoi ?'),
-      D("Pour moi, une chaise avec un dossier. Pour vous, trois tickets de plus au guichet : le « Duel » à ×{duel}, « Deux âmes dans le top 3 » à ×{twoInTop3}, et « Top 3 dans le désordre » à ×{podiumAnyOrder}. Un assistant a le droit de mettre deux âmes sur le même ticket."),
+      D("Pour moi, une chaise avec un dossier. Pour vous, le droit de mettre deux âmes sur le même ticket : le « Duel » à ×{duel}, « Deux âmes dans le top 3 » à ×{twoInTop3}, « Top 3 dans le désordre » à ×{podiumAnyOrder}."),
+      D("Ne regardez pas que la cote. Un vainqueur, ça se devine. Un duel, ça se lit. Ce n'est pas le même métier, et vous allez avoir besoin du second."),
     ],
   },
   {
@@ -137,11 +151,11 @@ export const DEMON_RANKS: readonly DemonRank[] = [
     afterCircle: 3,
     portrait: 'stagiaire_2_souschef',
     lines: [
-      D("Pendant que Cerbère cherchait sa balle, on m'a remis un grade : tourmenteur. Deuxième échelon."),
+      D("Cerbère a signé mon évaluation. Avec trois gueules, ça compte triple : tourmenteur, deuxième échelon."),
       D("J'ai le droit de tourmenter, maintenant. Officiellement. Je vais commencer par mon ancien chef de service."),
       P("Et moi, je suis sur la liste ?"),
       D("Vous ? Vous me rapportez trop. Tant que vous gagnez, je ne tourmente que vos adversaires."),
-      D("Et j'ai un tampon de plus : le pari « Vainqueur + dernier » vous est ouvert. ×{winnerAndLast} si vous lisez les deux bouts de la course."),
+      D("Et j'ai un tampon de plus : le pari « Vainqueur + dernier » vous est ouvert, à ×{winnerAndLast}. Deux paris en un, et il se joue au fond du classement — là où personne ne regarde jamais."),
     ],
   },
   {
@@ -191,6 +205,10 @@ export interface CircleTexts {
  * Un bloc par cercle : les neuf de Dante, puis la montée du mode démon (GDD §8.1). Au-delà du
  * dernier, `circleTexts` (demon.ts) rejoue ce dernier bloc — le quinzième est donc écrit pour
  * être redit à chaque tour de paradis, sans promettre de suite.
+ *
+ * Le « Bye. » qui clôt les `failure` s'arrête au neuvième : c'est la signature du stagiaire tant
+ * qu'il est chez lui. Au-dessus de l'enfer il n'est plus en terrain connu et ne congédie plus
+ * personne — l'absence est voulue, ne pas « compléter » les cercles 10 à 15.
  */
 export const CIRCLES: readonly CircleTexts[] = [
   {
@@ -201,14 +219,14 @@ export const CIRCLES: readonly CircleTexts[] = [
       D("J'ai bien tenté de faire remonter votre nom. On m'a répondu qu'un cercle, ça arrive à n'importe quel mort. Tenez-en deux et ça devient un dossier.", 'doute'),
       D('Prochain arrêt : la Luxure. Des vents éternels y bousculent les âmes, il y en aura {souls} au départ, une de plus. Et le tarif de sortie monte à {price} pièces.'),
     ],
-    failure: [D("Bon, vous êtes nul en fait !! Finalement, j'ai trouvé quelle punition éternelle vous allez subir. Bye.", 'degout')],
+    failure: [D("Bon. Les travaux sont finis, j'ai récupéré mes accréditations ce matin — et votre punition éternelle avec. Dommage, on s'amusait bien. Bye.", 'degout')],
     bossIntro: [
       B('Alors c\'est vous. Le mort qui joue aux dés au lieu de descendre.'),
       D('Charon, monsieur. Il a payé son passage, techniquement…', 'normal'),
       B("Techniquement. J'ai passé neuf mille ans à compter des pièces, petit. Je sais ce que veut dire techniquement."),
       B('Une course, alors. Si vous sortez d\'ici avec {price} pièces, je vous laisse la barque. Sinon, je vous mets à la rame.'),
       P('Et si je gagne, c\'est vous qui ramez ?'),
-      B('Personne n\'a jamais vécu assez longtemps pour me poser la question.'),
+      B("Vous êtes le premier à la poser. Les autres, je les entends surtout ramer."),
     ],
   },
   {
@@ -236,8 +254,8 @@ export const CIRCLES: readonly CircleTexts[] = [
       D('Alors. {boss} ne parle pas. Il a trois gueules et aucune n\'a jamais servi à ça.'),
       B('GRRRR.'),
       D('Ce qu\'il veut dire, c\'est que la boue ralentit tout le monde et qu\'il mord ce qui traîne.'),
-      P('Et {price} pièces pour ressortir.'),
-      D('Vous apprenez vite. Ne lui tendez pas la main.'),
+      P('Il a dit tout ça ?'),
+      D("Il a surtout dit {price} pièces. Le reste, c'est du contexte. Ne lui tendez pas la main."),
     ],
   },
   {
@@ -272,7 +290,7 @@ export const CIRCLES: readonly CircleTexts[] = [
   {
     ordinal: '6e',
     success: [
-      D("Six cercles. On me laisse remplacer des âmes en course, maintenant. Coach titulaire, presque."),
+      D("Six cercles. On m'a donné un casier, un badge, et le droit de dire « nous » en réunion. Coach titulaire, presque."),
       D("La Violence est en trois sous-cercles : fleuve de sang, buissons, sable brûlant. Toujours {souls} âmes, mais {price} pièces pour passer."),
     ],
     failure: [D("Les tombes de l'Hérésie ont une place libre, ça tombe bien. Bye.")],
@@ -303,7 +321,7 @@ export const CIRCLES: readonly CircleTexts[] = [
     ordinal: '8e',
     success: [
       D("Huit cercles. Il ne reste que la Trahison. Et… on m'a promu. Je dirige le neuvième."),
-      D("Ce n'est pas un problème, hein ? Un pacte, c'est un pacte. Il y aura {souls} âmes au départ, gelées dans le Cocyte, et il faudra {price} pièces pour sortir. Pour de bon."),
+      D("Ce n'est pas un problème, hein ? Un pacte, c'est un pacte. Il y aura {souls} âmes au départ, une de plus, gelées dans le Cocyte, et il faudra {price} pièces pour sortir. Pour de bon."),
     ],
     failure: [D("Les faussaires vous ont eu à votre propre jeu. Une fosse vous attend au fond des Malebolge. Bye.")],
     bossIntro: [
@@ -327,9 +345,11 @@ export const CIRCLES: readonly CircleTexts[] = [
     failure: [D("À une pièce près. C'est le cercle de la Trahison, vous vous attendiez à quoi ? Bienvenue dans la glace. Bye.")],
     bossIntro: [
       B('Vous voilà. Dernier cercle, dernier guichet — et de mon côté du comptoir, cette fois.'),
-      P('Vous m\'avez coaché pendant huit cercles.'),
-      B('Et j\'ai appris en vous regardant. Je connais vos paris avant que vous les posiez.'),
-      B('{price} pièces. Un pacte, c\'est un pacte : je ne triche pas. Je gagne, c\'est différent.'),
+      P("Vous aviez donné votre parole."),
+      B("Et je l'ai tenue. Huit cercles, pas une entourloupe. Vous ne m'avez jamais demandé ce qu'il y avait au neuvième."),
+      P("Iscariote. J'aurais dû me méfier d'un nom pareil."),
+      B("Tout le monde le dit après. Personne ne le dit avant : c'est tout le métier."),
+      B("{price} pièces. Je ne triche pas, je n'ai jamais triché. Je gagne — ce n'est pas la même chose."),
     ],
   },
   {
@@ -383,10 +403,12 @@ export const CIRCLES: readonly CircleTexts[] = [
     ],
     failure: [D("La corde a gelé, vos mains aussi, et votre bourse est vide. La montagne vous garde debout, au moins.")],
     bossIntro: [
-      B("…"),
-      D("{boss} ne dit jamais rien. Il attend que vous ayez froid."),
-      B("…"),
-      D("Voilà. Il attend. {price} pièces, et il vous laisse passer avant que vos doigts ne tombent."),
+      B("{boss}. Je ne gèle personne. J'attends, et les âmes gèlent toutes seules. C'est le même résultat en moins fatigant."),
+      P("Et la course ?"),
+      B("La course attend aussi. {price} pièces, avant que vos doigts ne tombent."),
+      D("…"),
+      P("Vous n'avez rien à dire, pour une fois ?"),
+      D("Il fait trop froid pour être drôle."),
     ],
   },
   {
@@ -414,7 +436,7 @@ export const CIRCLES: readonly CircleTexts[] = [
     bossIntro: [
       B("Des dés, des tickets, des âmes qui courent. On y joue encore, en bas. C'est primitif."),
       P("Et vous descendez pour ça ?"),
-      B("J'aime bien ces jeux primitifs. C'est la façon la plus confortable de garder un œil sur les activités d'en bas : tout le monde y passe, et personne ne se sait regardé."),
+      B("J'aime bien ces jeux primitifs. Tout le monde y passe, et personne ne lève les yeux. C'est la meilleure place de la maison."),
       B("{price} pièces. Et cette fois, c'est moi qui lis la course avant vous."),
     ],
   },
@@ -507,18 +529,18 @@ export const STATS = {
 export const COLLECTION = {
   title: 'Collection',
   count: '{n} objets sur {total} en rayon',
-  hint: 'Chaque cercle payé descelle un objet, pour toutes tes évasions à venir.',
+  hint: 'Chaque cercle payé descelle un objet, pour toutes vos évasions à venir.',
   locked: '{n} objet{s} encore scellé{s}. Le stagiaire refuse d’en dire le nom.',
   complete: 'Le catalogue est entier. Le stagiaire n’a plus rien à cacher.',
   lockedCard: 'Scellé',
-  lockedTitle: 'Objet encore scellé : franchis un cercle pour en desceller un.',
+  lockedTitle: 'Objet encore scellé : franchissez un cercle pour en desceller un.',
   empty: 'Rien en rayon. Ce n’est pas normal : vérifie shop.unlockedAtStart.',
 } as const
 
 /** Révélation de fin de cercle : l'objet que le cercle payé vient de desceller. */
 export const UNLOCK = {
   title: 'La réserve s’entrouvre',
-  intro: 'Le stagiaire disparaît sous le guichet, remonte poussiéreux, et pose ça devant toi.',
+  intro: 'Le stagiaire disparaît sous le guichet, remonte poussiéreux, et pose ça devant vous.',
   added: 'Descellé pour de bon : cet objet peut désormais sortir en vitrine, dans cette évasion comme dans les suivantes.',
   next: 'Continuer',
   remaining: 'Encore {n} objet{s} sous scellé.',
@@ -579,14 +601,14 @@ export const GAUGE = {
 
 /** Boutique : état vide, triade de risque, confirmation (specs 02/C2 et 04). */
 export const SHOP = {
-  emptyState: 'Pose d’abord un pari, le stagiaire n’ouvre pas la caisse aux indécis.',
+  emptyState: 'Posez d’abord un pari, le stagiaire n’ouvre pas la caisse aux indécis.',
   goToBets: 'Aller aux paris',
   emptyVitrine: 'Rien en rayon aujourd’hui. Le stagiaire hausse les épaules.',
   risk: { safe: 'Sûr', bold: 'Ambitieux', danger: 'Danger ⚠' } as const,
   riskTitle: {
     safe: 'Sans contrepartie, impact au plus moyen.',
     bold: 'Impact fort ou extrême : change la façon de jouer le cercle.',
-    danger: 'Cet objet a une contrepartie : lis-la avant d’acheter.',
+    danger: 'Cet objet a une contrepartie : lisez-la avant d’acheter.',
   } as const,
   impact: 'Impact : {impact}',
   impactLabel: { faible: 'faible', moyen: 'moyen', fort: 'fort', extreme: 'extrême' } as const,
@@ -746,7 +768,7 @@ export const HELP = {
         {
           kind: 'ol',
           items: [
-            '**Lancez les dés.** Deux dés **Distance** (de −1 à +3) et trois dés **Âme** (chacun désigne une coureuse).',
+            '**Lancez les dés.** Deux dés **Distance** (−1, +1, +2, +3) et trois dés **Âme** (chacun désigne une coureuse).',
             '**Associez.** Collez un dé Âme sur un dé Distance : ça fait une combinaison « Platon avance de +2 ». Un dé Âme restera toujours sur le carreau — à vous de choisir lequel.',
             '**Ordonnez.** L’ordre de résolution, c’est VOTRE décision, et c’est là que tout se joue : avancer Platon avant ou après Virgile ne raconte pas la même course.',
             '**Résolvez, puis subissez.** Vos combinaisons s’appliquent une à une… puis l’adversaire lance sa propre paire de dés. Lui ne vous demande pas votre avis.',
@@ -806,9 +828,9 @@ export const HELP = {
         {
           kind: 'ul',
           items: [
-            '**Simples** — lisibles, petits gains : vainqueur (×3,5), top 3 (×1,5), pas dans le top 3 (×2), dernière place (×3,5).',
-            '**Combinés** — un duel (« A finit devant B »), deux âmes dans le top 3, le podium dans le désordre. Plus risqué, mieux payé.',
-            '**Gros tickets** — podium exact (×40), vainqueur ET dernier (×14), classement complet (×80). De quoi payer un cercle entier d’un coup… si vous lisez la course comme un livre ouvert.',
+            '**Simples** — une seule âme sur le ticket, lisibles et ouverts dès le départ : vainqueur (×{winner}), top 3 (×{top3}), pas dans le top 3 (×{notTop3}), dernière place (×{last}).',
+            '**Combinés** — **deux âmes sur le même ticket** : le duel « A finit devant B » (×{duel}), deux âmes dans le top 3 (×{twoInTop3}), le podium dans le désordre (×{podiumAnyOrder}). La cote n’est pas toujours plus grosse — ce qui change, c’est qu’un duel se **lit** quand un vainqueur se devine.',
+            '**Gros tickets** — le podium exact (×{podiumExact}) et le classement complet (×{fullRankingExact}) : de quoi payer un cercle entier d’un coup, si vous lisez la course comme un livre ouvert. Entre les deux, « vainqueur ET dernier » (×{winnerAndLast}) ne demande que de regarder les deux bouts — presque personne ne regarde le fond du classement.',
           ],
         },
         { kind: 'p', text: 'Deux choses à savoir sur les cotes : elles **fondent** à mesure que la course avance (parier tard, c’est parier sûr, donc parier petit), et tout ticket qui met **deux âmes ou plus** est **verrouillé au début** — le stagiaire n’a pas le grade pour les encaisser. Les combinés s’ouvrent à son premier grade, au bout de deux cercles ; les gros tickets bien plus tard.' },
@@ -887,6 +909,16 @@ export const DEV = {
  */
 export function ordinalOf(circle: number): string {
   return CIRCLES[circle - 1]?.ordinal ?? `${circle}e`
+}
+
+/**
+ * Cotes prêtes à citer dans un texte : virgule décimale française (2.2 → « 2,2 »). Tout
+ * texte qui annonce une cote — lignes de promotion, page d'aide — passe par ici plutôt que
+ * d'écrire le chiffre en dur : les cotes se recalibrent (`npm run odds -- --suggest`) et les
+ * textes suivent d'eux-mêmes.
+ */
+export function oddsText(multipliers: Readonly<Record<string, number>>): Record<string, string> {
+  return Object.fromEntries(Object.entries(multipliers).map(([id, m]) => [id, String(m).replace('.', ',')]))
 }
 
 /** Remplace les {clés} d'un texte. */

@@ -83,13 +83,21 @@ le guichet est fermé pour elle : trop facile, même pour un démon.
 
 Trois familles de tickets :
 
-- **Simples** — lisibles, petits gains : vainqueur (×3,5), top 3 (×1,5),
-  pas dans le top 3 (×2), dernière place (×3,5).
-- **Combinés** — un duel (« A finit devant B »), deux âmes dans le top 3, le
-  podium dans le désordre. Plus risqué, mieux payé.
-- **Gros tickets** — podium exact (×40), vainqueur ET dernier (×14), classement
-  complet (×80). De quoi payer un cercle entier d'un coup… si vous lisez la
-  course comme un livre ouvert.
+- **Simples** — une seule âme sur le ticket, ouverts dès le départ : vainqueur
+  (×2,2), top 3 (×1,5), pas dans le top 3 (×1,35), dernière place (×1,65).
+- **Combinés** — deux âmes sur le même ticket : le duel « A finit devant B »
+  (×1,35), deux âmes dans le top 3 (×2,05), le podium dans le désordre (×3,4).
+  La cote n'est pas toujours plus grosse — ce qui change, c'est qu'un duel se
+  **lit** quand un vainqueur se devine.
+- **Gros tickets** — le podium exact (×22) et le classement complet (×80) : de
+  quoi payer un cercle entier d'un coup, si vous lisez la course comme un livre
+  ouvert. Entre les deux, « vainqueur ET dernier » (×3,15) ne demande que de
+  regarder les deux bouts.
+
+> Les cotes ci-dessus sont celles de `config/race.json` au 18 septembre 2026.
+> La page d'aide du jeu ne les recopie pas : elle les interpole depuis la config
+> (`oddsText`, `texts.ts`). Après un `npm run odds -- --suggest`, l'aide suit
+> toute seule — ce paragraphe, non. Le remettre à jour à la main.
 
 Deux choses à savoir sur les cotes : elles **fondent** à mesure que la course
 avance (parier tard, c'est parier sûr, donc parier petit), et les gros tickets

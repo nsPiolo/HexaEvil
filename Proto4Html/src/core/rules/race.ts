@@ -631,7 +631,7 @@ export function applyMove(state: RaceState, move: Move, rules: MoveRules = {}): 
     // Partenaires liés ou fusionnés : ils suivent de la même distance.
     for (const id of partnersOf(state, move.soul)) {
       if (id === move.soul || distance === 0) continue
-      follow.push({ ...simpleMove('artefact', id, distance, [state.fusion ? 'Bât de chameau' : 'Chaîne du Coccyte']), induced: true })
+      follow.push({ ...simpleMove('artefact', id, distance, [state.fusion ? 'Bât de chameau' : 'Chaîne du Cocyte']), induced: true })
     }
     // Face Aimant : l'âme juste derrière prend la case libérée.
     if (move.effects.includes('magnet') && to > from) {

@@ -7,7 +7,7 @@
 import { config } from '../core/config'
 import { circleAt } from '../core/rules/circles'
 import { bossPortrait } from './art'
-import { BOSS_ANNOUNCE, BOSS_ANNOUNCE_NEXT, CIRCLES, DEMON_RANKS, fill, portraitSrc, type DemonRank, type Line } from './texts'
+import { BOSS_ANNOUNCE, BOSS_ANNOUNCE_NEXT, BOSS_ANNOUNCE_SELF, CIRCLES, DEMON_RANKS, fill, oddsText, portraitSrc, type DemonRank, type Line } from './texts'
 
 /** Niveau (index dans DEMON_RANKS) atteint après `circlesPaid` cercles payés (0 au départ). */
 export function demonLevel(circlesPaid: number): number {
@@ -40,7 +40,7 @@ export function demonRankAtRace(raceIndex: number): DemonRank {
 
 /** Lignes de promotion : les {clés} sont les cotes de base des paris (config economy.multipliers). */
 function promotionLines(rank: DemonRank): Line[] {
-  return rank.lines.map((l) => ({ ...l, text: fill(l.text, config.economy.multipliers) }))
+  return rank.lines.map((l) => ({ ...l, text: fill(l.text, oddsText(config.economy.multipliers)) }))
 }
 
 /** Donne au démon le nom et le portrait de son grade dans chaque ligne (le joueur garde le sien). */
@@ -73,7 +73,8 @@ export function bossIntro(circle: number): Line[] {
  */
 export function bossAnnounce(circle: number): Line[] {
   const price = circleAt(config.run, circle).price
-  const variants = circle <= 1 ? BOSS_ANNOUNCE : BOSS_ANNOUNCE_NEXT[(circle - 2) % BOSS_ANNOUNCE_NEXT.length]!
+  // Le dernier cercle avant l'évasion a son annonce : le boss qu'elle tait, c'est le stagiaire.
+  const variants = circle <= 1 ? BOSS_ANNOUNCE : circle === config.run.escapeCircle ? BOSS_ANNOUNCE_SELF : BOSS_ANNOUNCE_NEXT[(circle - 2) % BOSS_ANNOUNCE_NEXT.length]!
   const lines = variants.map((l) => ({ ...l, text: fill(l.text, { price }) }))
   return spokenBy(lines, demonRank(circle - 1))
 }
