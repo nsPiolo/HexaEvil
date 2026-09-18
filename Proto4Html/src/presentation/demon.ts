@@ -7,7 +7,7 @@
 import { config } from '../core/config'
 import { circleAt } from '../core/rules/circles'
 import { bossPortrait } from './art'
-import { BOSS_ANNOUNCE, CIRCLES, DEMON_RANKS, fill, portraitSrc, type DemonRank, type Line } from './texts'
+import { BOSS_ANNOUNCE, BOSS_ANNOUNCE_NEXT, CIRCLES, DEMON_RANKS, fill, portraitSrc, type DemonRank, type Line } from './texts'
 
 /** Niveau (index dans DEMON_RANKS) atteint après `circlesPaid` cercles payés (0 au départ). */
 export function demonLevel(circlesPaid: number): number {
@@ -66,10 +66,15 @@ export function bossIntro(circle: number): Line[] {
   return spokenBy(lines, demonRank(circle - 1)).map((l) => (l.who === 'boss' ? { ...l, label, portrait } : l))
 }
 
-/** Annonce du boss à la fin de la deuxième course du cercle. */
+/**
+ * Annonce du boss à la fin de l'avant-dernière course du cercle. Le premier cercle a la sienne —
+ * c'est là qu'on apprend qu'un boss existe ; les suivants tournent sur les variantes, qui ne
+ * présentent personne : chaque boss se présente lui-même avant sa course (`bossIntro`).
+ */
 export function bossAnnounce(circle: number): Line[] {
   const price = circleAt(config.run, circle).price
-  const lines = BOSS_ANNOUNCE.map((l) => ({ ...l, text: fill(l.text, { price }) }))
+  const variants = circle <= 1 ? BOSS_ANNOUNCE : BOSS_ANNOUNCE_NEXT[(circle - 2) % BOSS_ANNOUNCE_NEXT.length]!
+  const lines = variants.map((l) => ({ ...l, text: fill(l.text, { price }) }))
   return spokenBy(lines, demonRank(circle - 1))
 }
 

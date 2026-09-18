@@ -1,11 +1,10 @@
 import { useState } from 'react'
 import { config } from '../core/config'
-import { circleAt, isBeyondWritten } from '../core/rules/circles'
+import { circleAt } from '../core/rules/circles'
 import { demonRankAtRace } from './demon'
 import { STEP_ART } from './art'
 import { CIRCLES, HUD, MAP, MENU, fill, ordinalOf } from './texts'
-import { describeBossEffects } from '../core/rules/boss'
-import { bossEffectsFor, circleOf, type SessionCarry } from './useRace'
+import { bossPowerText, circleOf, type SessionCarry } from './useRace'
 
 interface Props {
   carry: SessionCarry
@@ -97,10 +96,9 @@ export function MapScreen({ carry, onLaunch, onMenu }: Props) {
   const [selected, setSelected] = useState<number>(currentCircle)
   const per = config.run.racesPerCircle
   const info = circleAt(config.run, selected)
-  // Au-delà des cercles écrits, le boss est assemblé (GDD §8.1) : on annonce ses effets tirés,
-  // pas le texte du dernier cercle écrit, qui ne décrit plus rien.
-  const generated = isBeyondWritten(config.run, selected)
-  const powerText = generated ? describeBossEffects(bossEffectsFor((selected - 1) * config.run.racesPerCircle + config.run.racesPerCircle - 1)) : info.power
+  // Au-delà des cercles écrits, le boss est assemblé (GDD §8.1) : `bossPowerText` annonce ses
+  // effets tirés, pas le texte du dernier cercle écrit, qui ne décrit plus rien.
+  const powerText = bossPowerText(selected)
   const texts = CIRCLES[selected - 1]
   const path = spiralPath(CENTER, 0, total - 1)
 

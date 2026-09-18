@@ -23,6 +23,8 @@ export type Betting =
   | 'etale'
   /** La plus grosse cote ouverte par son grade, grosse mise : le joueur qui vise le jackpot. */
   | 'gourmand'
+  /** Un seul ticket, celui qu'il sait porter, et toute la course jouée pour lui. */
+  | 'focalise'
 
 /** Ce que le joueur achète en boutique. */
 export type Shopping =
@@ -49,11 +51,19 @@ export interface Profile {
   stakeShare: number
 }
 
-/** Les trois profils du rapport : un plancher, un milieu, un plafond. */
+/**
+ * Les profils du rapport : un plancher, un milieu, un plafond — et l'affûté, celui qui casse
+ * l'économie. L'affûté ne pose **qu'un** ticket et joue toute la course pour lui : c'est le seul
+ * profil dont les chances réelles sont celles que mesure `npm run odds`, parce que les autres
+ * étalent leurs tickets et ne peuvent pas jouer pour tous à la fois. C'est lui qu'il faut
+ * regarder pour savoir si une cote est tenable ; les trois autres disent si le jeu reste
+ * franchissable quand on le joue moins bien.
+ */
 export const PROFILES: readonly Profile[] = [
   { name: 'débutant', pairing: 'naturelle', betting: 'prudent', shopping: 'rien', lateBets: 'aucun', stakeShare: 0.15 },
   { name: 'appliqué', pairing: 'favorite', betting: 'etale', shopping: 'prudent', lateBets: 'opportuniste', stakeShare: 0.3 },
   { name: 'joueur', pairing: 'favorite', betting: 'gourmand', shopping: 'prudent', lateBets: 'opportuniste', stakeShare: 0.7 },
+  { name: 'affûté', pairing: 'favorite', betting: 'focalise', shopping: 'prudent', lateBets: 'opportuniste', stakeShare: 0.5 },
 ]
 
 /** Types de paris que chaque style essaie, du plus sûr au plus rentable. */
@@ -61,6 +71,9 @@ export const BETTING_ORDER: Readonly<Record<Betting, readonly BetTypeId[]>> = {
   prudent: ['top3', 'notTop3', 'winner'],
   etale: ['top3', 'notTop3', 'last', 'winner'],
   gourmand: ['fullRankingExact', 'podiumExact', 'winnerAndLast', 'podiumAnyOrder', 'twoInTop3', 'duel', 'winner'],
+  // L'affûté vise le meilleur retour mesuré, pas la plus grosse cote : « Vainqueur + dernier »
+  // quand son grade l'ouvre, sinon le vainqueur, qu'il sait porter.
+  focalise: ['winnerAndLast', 'winner', 'top3'],
 }
 
 /**
@@ -68,4 +81,4 @@ export const BETTING_ORDER: Readonly<Record<Betting, readonly BetTypeId[]>> = {
  * profil qui se retient. « gourmand » en pose autant qu'il peut payer, pour que le rapport
  * mesure bien le plafond de revenu du jeu et pas celui du modèle.
  */
-export const TICKETS: Readonly<Record<Betting, number>> = { prudent: 1, etale: 3, gourmand: 8 }
+export const TICKETS: Readonly<Record<Betting, number>> = { prudent: 1, etale: 3, gourmand: 8, focalise: 1 }

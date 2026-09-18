@@ -32,7 +32,7 @@ Trois constantes lues sur les quinze portraits :
 
 Le registre glisse le long des cercles : mythologique aux premiers (Charon, Cerbère,
 le Minotaure), **administratif** à partir de la Fraude — Géryon est en chemise et
-cravate, le Guichetier en manches de lustrine, le stagiaire ailé en chemise de bureau.
+cravate, le Guichetier en manches de lustrine, l'Ange en chemise de bureau.
 C'est le fil du jeu : l'enfer est une agence de paris.
 
 ## Fond violet, même raison que les objets
@@ -106,7 +106,7 @@ phrase le dit explicitement quand il est encombrant.
 | `12_villes.png` | Ville | Le Guichetier | the Ticket Clerk, a narrow pinched demon in a worn ticket-office waistcoat with black sleeve garters, small round spectacles over yellow eyes, thinning hair combed flat over two stubby horns, one hand at chest height resting on a small wooden shutter he is about to pull closed, the shutter held low and entirely inside the frame |
 | `13_neige.png` | Montagne | Le Givre | the Frost, a tall gaunt demon of the high mountain, skin pale blue-grey and rimed with frost, long white hair stiff with ice, thin translucent horns like icicles, eyes a cold pale glow, wearing a frozen fur-lined coat gone stiff, his breath crystallising at his lips |
 | `14_vent.png` | Ciel | Le Souffle | the Breath, a lean demon of the storm, hollow-cheeked with wind-scoured grey skin, long hair and torn cloth streaming back as if blown, swept-back horns, white pupil-less eyes, a ragged high-collared coat snapping open at one shoulder |
-| `15_ange.png` | Paradis | Le stagiaire ailé | the winged intern, a young tired-looking man with untidy brown hair and pale blind white eyes, a thin brass halo floating above his head and small pale feathered wings behind his shoulders, wearing a plain cream office shirt with a loosened gold tie |
+| `15_ange.png` | Paradis | L'Ange | the Angel, a serene older official of the heavens with a smooth shaven head and blank white eyes, a thin brass halo floating above his head and small pale feathered wings behind his shoulders, wearing an immaculate cream office shirt with a neatly knotted gold tie |
 
 ## Générer
 

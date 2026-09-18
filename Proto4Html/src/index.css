@@ -1336,6 +1336,22 @@ p { margin: 0; }
   .steps { grid-column: 1 / -1; order: 3; justify-self: center; }
 }
 
+/*
+ * Bandeau de la course du boss : son pouvoir change les règles de cette course seule. Il est
+ * annoncé sur la carte, mais c'est ici qu'il s'applique — il reste donc lisible tout du long,
+ * sous la rangée haute et au-dessus de la table, sans rien recouvrir.
+ */
+.boss-bar {
+  max-width: 1400px; margin: 0 auto 10px;
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px;
+  padding: 6px 14px; border-radius: 10px;
+  background: rgba(58, 14, 12, 0.82); border: 1px solid #7a2f22;
+  font-size: 0.85rem;
+}
+.boss-bar-name { font-weight: 700; color: var(--gold); white-space: nowrap; }
+.boss-bar-power { flex: 1; min-width: 12ch; }
+.boss-bar-hint { white-space: nowrap; }
+
 /* Jauge des trois usages (spec 01) : même composant dans le HUD, les panneaux et la modale. */
 .gauge { display: flex; flex-direction: column; gap: 2px; min-width: 200px; font-size: 0.75rem; transition: opacity 250ms; }
 .gauge-row { display: flex; align-items: center; gap: 8px; }

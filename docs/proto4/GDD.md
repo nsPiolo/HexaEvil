@@ -86,7 +86,7 @@ Chaque course utilise un circuit linéaire ressemblant à un plateau de jeu de s
 | Cases après l'arrivée | Permettent de classer plusieurs arrivées du même tour | 2 à 4 |
 | Départage dans une colonne | Deux âmes dans la même colonne : la plus **en bas** est devant | — |
 | Zones de pari | Signalent la limite de prise de paris | seuil à 60 % du parcours |
-| Cases spéciales | Pièges, bonus et cases payantes ; elles n'agissent qu'à l'arrêt | 0 aux cercles 1-2, 1 au 3, 2 au 6, 3 au 10 |
+| Cases spéciales | Pièges, bonus et cases payantes ; elles n'agissent qu'à l'arrêt, et la payante seulement sur une âme pariée | 0 aux cercles 1-2, 1 au 3, 2 au 6, 3 au 10 |
 
 La piste est représentée par un ou plusieurs **couloirs** parallèles. Au premier cercle il n'y en a qu'un, pour 5 âmes. À partir du second cercle, chaque fois qu'une âme est ajoutée au départ (cercles 2, 4, 6, 8, 9, voir §4.1), un couloir est ajouté aussi : 6 âmes et 2 couloirs au cercle 2, 7 âmes et 3 couloirs au cercle 4, etc. Le nombre de couloirs est donc `âmes − 4`, une valeur de configuration.
 

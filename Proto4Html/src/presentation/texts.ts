@@ -59,13 +59,33 @@ export const INTRO: readonly Line[] = [
   D("Non !? Je comprends que vous ne soyez pas d'humeur, mais je m'ennuie ferme ici. Je vous prête un peu d'argent et vous pourrez conserver vos gains.", 'degout'),
   P("Bon, d'accord, mais pas d'entourloupe."),
   D('Parfait, on a un pacte !', 'fier'),
-  D("Ici on mise sur une course d'âmes damnées, donc voilà {money} pièces pour commencer. Et avant chaque course, je vous avancerai {allowance} pièces de plus — davantage à chaque cercle, un stagiaire qui monte en grade a plus de caisse : il faut bien que le guichet tourne.", 'neutre'),
+  D("Ici on mise sur une course d'âmes damnées, donc voilà {money} pièces pour commencer. Et avant chaque course, je vous avancerai {allowance} pièces de plus.", 'neutre'),
   D("Ah, et je n'ai le droit de prendre que les paris simples : vainqueur, top 3, pas dans le top 3, dernier. Tout ce qui met deux âmes sur le même ticket, c'est au-dessus de mon grade. Pour l'instant.", 'doute'),
 ]
 
-/** Fin de la deuxième course : le boss du cercle arrive. */
+/**
+ * Fin de l'avant-dernière course du **premier** cercle : le joueur ignore encore qu'un boss
+ * ferme chaque cercle, on le lui apprend ici.
+ */
 export const BOSS_ANNOUNCE: readonly Line[] = [
   D("Mon boss est de retour, il nous a vus jouer. Il vous propose de parier avec lui, et si vous avez {price} pièces à la fin, il veut bien vous autoriser à continuer de parier.", 'normal'),
+]
+
+/**
+ * Même moment, aux cercles suivants. La règle est acquise : le stagiaire rappelle seulement que
+ * la prochaine course est celle du boss et ce qu'elle coûte. Il n'en présente aucun — le boss du
+ * cercle se présente lui-même juste avant sa course (`bossIntro`), et le doubler ici le
+ * dépouillerait de son entrée. Une variante par cercle, rejouées en boucle au-delà de la liste :
+ * la même phrase neuf fois de suite ne s'entendrait plus.
+ */
+export const BOSS_ANNOUNCE_NEXT: readonly (readonly Line[])[] = [
+  [D("Vous connaissez la maison, maintenant : la dernière course du cercle, c'est le boss qui la tient. {price} pièces en poche à l'arrivée, et on passe.", 'neutre')],
+  [D("Prochaine course, dernière du cercle. Le patron d'ici descend tenir le guichet lui-même, et il faudra {price} pièces pour qu'il ouvre la porte.", 'normal')],
+  [D("Encore une, et c'est celle du boss. Je vous le dis franchement : sans {price} pièces au bout, on ne sort pas de ce cercle.", 'doute')],
+  [D("Le boss a réservé la dernière course. Moi je tiens les comptes : {price} pièces à la fin, pas une de moins.", 'neutre')],
+  [D("Dernière course du cercle, donc dernière chance de réunir les {price} pièces. Le boss, lui, n'accepte pas les acomptes.", 'normal')],
+  [D("La suivante est pour le boss — ils y tiennent tous, c'est leur seul moment de gloire. {price} pièces et on file au cercle d'après.", 'fier')],
+  [D("On arrive au bout du cercle, et le bout d'un cercle, c'est toujours un boss. {price} pièces à l'arrivée, sinon on reste.", 'neutre')],
 ]
 
 /**
@@ -392,9 +412,9 @@ export const CIRCLES: readonly CircleTexts[] = [
     ],
     failure: [D("Au paradis aussi, on ferme le guichet quand la bourse est vide. Asseyez-vous dans les gradins, vous regarderez les autres.")],
     bossIntro: [
-      B("Vous m'avez reconnu ? Je vous ai coaché pendant neuf cercles, et j'avais un badge en plastique."),
-      P("Vous avez des ailes."),
-      B("On me les a données en haut. Personne ne m'a expliqué pourquoi, et je n'ai pas posé la question."),
+      B("Des dés, des tickets, des âmes qui courent. On y joue encore, en bas. C'est primitif."),
+      P("Et vous descendez pour ça ?"),
+      B("J'aime bien ces jeux primitifs. C'est la façon la plus confortable de garder un œil sur les activités d'en bas : tout le monde y passe, et personne ne se sait regardé."),
       B("{price} pièces. Et cette fois, c'est moi qui lis la course avant vous."),
     ],
   },
@@ -429,6 +449,9 @@ export const HUD = {
   price: 'Prix du cercle : {price} pièces',
   demon: 'Coach : {rank}',
   terrain: 'Terrain : {name}',
+  /** Bandeau de la course du boss : son pouvoir ne vaut que sur cette course (GDD §5.1). */
+  bossPowerTitle: 'Pouvoir de {boss}',
+  bossPowerHint: 'Actif sur cette course uniquement',
   results: 'Gains',
   raceResult: 'Résultat de la course',
   seeTable: 'Voir la table',
@@ -637,7 +660,7 @@ export const BOARD = {
   special: {
     // `{s}` porte le pluriel (voir `fill`) : ces phrases sont désormais affichées telles
     // quelles dans la bulle de survol, où « 1 case(s) » se verrait.
-    gold: 'Case payante : l’âme qui s’y arrête vous rapporte {n} pièce{s}.',
+    gold: 'Case payante : l’âme qui s’y arrête vous rapporte {n} pièce{s}, à condition que vous ayez un pari ouvert sur elle.',
     trap: 'Piège : l’âme qui s’y arrête recule de {n} case{s}.',
     boost: 'Tremplin : l’âme qui s’y arrête avance de {n} case{s} de plus.',
   } as const,

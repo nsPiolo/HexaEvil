@@ -144,7 +144,7 @@ C'est ici que se concentrent les contresens les plus probables.
 | **Zone de fin** | Les cases **à partir du seuil de pari**, où le guichet est fermé. | Pivot : *closed zone*. |
 | **Plus de pari** *(étiquette)* | Marqueur affiché sur le seuil quand le guichet s'est fermé. | Lire « il n'est plus possible de parier », pas « davantage de paris ». **Ambiguïté réelle en français** : levez-la dans votre langue. |
 | **Case bloquée** | Une case où **aucune âme ne peut s'arrêter** (éboulis, chaînes…). Crée des embouteillages. | Pivot : *blocked square*. |
-| **Case payante** | Case spéciale : l'âme qui **s'y arrête** rapporte des pièces au joueur. Marque `¤`. | Pivot : *paying / gold square*. « Payante » = qui rapporte de l'argent, pas « à péage ». |
+| **Case payante** | Case spéciale : l'âme qui **s'y arrête** rapporte des pièces au joueur, à condition qu'il ait un pari ouvert sur elle. Marque `¤`. | Pivot : *paying / gold square*. « Payante » = qui rapporte de l'argent, pas « à péage ». |
 | **Piège** | Case spéciale : l'âme qui **s'y arrête recule** de n cases. Marque `✷`. | Pivot : *trap square*. |
 | **Tremplin** | Case spéciale : l'âme qui **s'y arrête avance** de n cases de plus. Marque `▲`. | Pivot : *boost / springboard*. Objet de gymnastique ou de saut à ski, employé au figuré. |
 | **S'y arrête** | Formule cruciale : les cases spéciales n'agissent **que sur l'âme qui termine son déplacement dessus**, jamais au passage. | Traduisez sans ambiguïté : *lands on*, pas *passes over*. |
@@ -362,9 +362,11 @@ votre langue.
 
 Au-delà du neuvième, le jeu continue avec des cercles inventés — **Fonds marins,
 Falaise, Ville, Montagne, Ciel, Paradis** — et leurs boss : **Le Noyé, Le
-Porte-chaînes, Le Guichetier, Le Givre, Le Souffle, Le stagiaire ailé**.
+Porte-chaînes, Le Guichetier, Le Givre, Le Souffle, L'Ange**.
 *Le Guichetier* renvoie au **guichet de paris** (§5). *Le Givre* est le gel, pas
-une personne nommée Givre.
+une personne nommée Givre. *L'Ange* est un anonyme du paradis qui descend parier
+pour surveiller l'enfer — **ce n'est pas le stagiaire**, qui coache toujours le
+joueur à ce cercle-là.
 
 **Les terrains** portent aussi des noms propres, à traduire en gardant l'image
 (« La plaine grise », « Rafale basse », « Rafale haute », « Bourrasques croisées »,
@@ -410,7 +412,7 @@ système de pluralisation.
 | `COLLECTION.locked` | {n} objet{s} encore scellé{s}. Le stagiaire refuse d'en dire le nom. |
 | `UNLOCK.remaining` | Encore {n} objet{s} sous scellé. |
 | `GAUGE.missingIn` | encore {missing} ¤ à trouver en {n} course{s} |
-| `BOARD.special.gold` | Case payante : l'âme qui s'y arrête vous rapporte {n} pièce{s}. |
+| `BOARD.special.gold` | Case payante : l'âme qui s'y arrête vous rapporte {n} pièce{s}, à condition que vous ayez un pari ouvert sur elle. |
 | `BOARD.special.trap` | Piège : l'âme qui s'y arrête recule de {n} case{s}. |
 | `BOARD.special.boost` | Tremplin : l'âme qui s'y arrête avance de {n} case{s} de plus. |
 | *(BetPanel)* | Œil du parieur : parier après le lancer ({n} charge{s}) |

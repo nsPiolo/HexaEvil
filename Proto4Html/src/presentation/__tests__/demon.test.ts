@@ -14,8 +14,8 @@ describe('grades du démon', () => {
     expect(demonRank(3).name).toBe('Tourmenteur')
     expect(demonRank(5).name).toBe('Contremaître')
     expect(demonRank(7).name).toBe('Sous-directeur')
-    expect(demonRank(8).label).toBe('Le stagiaire promu')
-    expect(demonRank(9).label).toBe('Le stagiaire promu')
+    expect(demonRank(8).label).toBe(DEMON_RANKS[5]!.label)
+    expect(demonRank(9).label).toBe(DEMON_RANKS[5]!.label)
   })
 
   it('se déduit de la course en cours', () => {
@@ -34,7 +34,7 @@ describe('grades du démon', () => {
     expect(demonLevel(8)).toBe(5)
     expect(demonLevelAtRace(3 * per + 1)).toBe(2)
     expect(rankOfLevel(2).name).toBe('Tourmenteur')
-    expect(rankOfLevel(99).label).toBe('Le stagiaire promu')
+    expect(rankOfLevel(99).label).toBe(DEMON_RANKS[5]!.label)
   })
 
   it('chaque type de pari se débloque à un niveau qui existe, et chaque promotion en ouvre au moins un', () => {
@@ -65,7 +65,7 @@ describe('dialogues de transition', () => {
     // Avant la promotion : ancien nom.
     for (let i = 0; i < success.length - 1; i++) {
       expect(lines[i]!.text).toBe(success[i]!.text.replace('{souls}', String(config.run.circles[2]!.souls)).replace('{price}', String(config.run.circles[2]!.price)))
-      if (lines[i]!.who === 'demon') expect(lines[i]!.label).toBe('Démon stagiaire')
+      if (lines[i]!.who === 'demon') expect(lines[i]!.label).toBe(DEMON_RANKS[0]!.label)
     }
     // Les lignes de promotion, dites par l'assistant, cotes remplies.
     promo.lines.forEach((l, k) => {
@@ -85,29 +85,42 @@ describe('dialogues de transition', () => {
     // Le premier cercle ne promeut plus : son texte est dit par le stagiaire, sans coupure.
     const lines = circleSuccess(1)
     expect(lines).toHaveLength(CIRCLES[0]!.success.length)
-    expect(lines.every((l) => l.who !== 'demon' || l.label === 'Démon stagiaire')).toBe(true)
+    expect(lines.every((l) => l.who !== 'demon' || l.label === DEMON_RANKS[0]!.label)).toBe(true)
   })
 
   it('le cercle 8 promeut sans lignes propres : le texte du cercle suffit, le nom change', () => {
     const lines = circleSuccess(8)
     expect(lines).toHaveLength(CIRCLES[7]!.success.length)
-    expect(lines[0]!.label).toBe('Le stagiaire promu')
+    expect(lines[0]!.label).toBe(DEMON_RANKS[5]!.label)
   })
 
   it("l'évasion (cercle 9) garde le texte complet", () => {
     const lines = circleSuccess(9)
     expect(lines.map((l) => l.text)).toEqual(CIRCLES[8]!.success.map((l) => l.text))
-    expect(lines.every((l) => l.who !== 'demon' || l.label === 'Le stagiaire promu')).toBe(true)
+    expect(lines.every((l) => l.who !== 'demon' || l.label === DEMON_RANKS[5]!.label)).toBe(true)
   })
 
   it("l'échec et l'annonce du boss gardent le grade d'avant le cercle", () => {
-    expect(circleFailure(1)[0]!.label).toBe('Démon stagiaire')
-    expect(circleFailure(4)[0]!.label).toBe('Démon tourmenteur')
+    expect(circleFailure(1)[0]!.label).toBe(DEMON_RANKS[0]!.label)
+    expect(circleFailure(4)[0]!.label).toBe(DEMON_RANKS[2]!.label)
     // Le boss du deuxième cercle est annoncé par le stagiaire : il n'est promu qu'après l'avoir battu.
     const boss = bossAnnounce(2)
-    expect(boss[0]!.label).toBe('Démon stagiaire')
+    expect(boss[0]!.label).toBe(DEMON_RANKS[0]!.label)
     expect(boss[0]!.text).toContain(String(config.run.circles[1]!.price))
-    expect(bossAnnounce(3)[0]!.label).toBe('Démon assistant')
+    expect(bossAnnounce(3)[0]!.label).toBe(DEMON_RANKS[1]!.label)
+  })
+
+  it("n'apprend l'existence du boss qu'au premier cercle, puis varie sans présenter personne", () => {
+    // Le premier cercle est le seul où le stagiaire découvre son boss au joueur.
+    expect(bossAnnounce(1)[0]!.text).toContain('Mon boss est de retour')
+    const others = Array.from({ length: CIRCLES.length - 1 }, (_, k) => bossAnnounce(k + 2).map((l) => l.text).join(' '))
+    for (const text of others) {
+      expect(text).not.toContain('Mon boss est de retour')
+      // Le boss du cercle se présente lui-même dans `bossIntro` : l'annonce ne le double pas.
+      for (const c of config.run.circles) expect(text).not.toContain(c.boss)
+    }
+    // Deux cercles qui se suivent ne redisent pas la même phrase.
+    for (let i = 1; i < others.length; i++) expect(others[i]).not.toBe(others[i - 1])
   })
 })
 

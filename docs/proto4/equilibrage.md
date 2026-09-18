@@ -70,6 +70,11 @@ qui apparie au hasard et **×1,26 à ×1,45** à celui qui apparie bien. La cote
 placée — elle punit la négligence et récompense le geste de jeu. **Ne pas y toucher** sans
 refaire cette mesure.
 
+> **Périmé — voir « 18 septembre 2026 : les cotes étaient fausses » plus bas.** Ce « ×1,26 à
+> ×1,45 » est le retour d'un **run entier**, tickets perdants compris, pas celui d'un ticket
+> joué. Mesuré ticket par ticket (`npm run odds`), le « Vainqueur pur » à ×3,5 rendait **×2,15**,
+> et neuf paris sur dix étaient gagnants à long terme. La cote est passée à ×2,2.
+
 ### Le run n'est pas franchissable
 
 | Profil | Passe le cercle 1 | Passe le cercle 2 | Évasion (cercle 9) |
@@ -236,6 +241,135 @@ Ce qu'il reste à trancher n'est plus une valeur mais une **intention** : veut-o
 appliqué s'évade une fois sur cinquante (état actuel) ou une fois sur cinq ? Dans le second cas,
 chaque passage doit monter vers 80 %, ce qui se règle en descendant les prix de 15 à 20 % sur
 toute la courbe — l'outil le mesure en un nombre.
+
+## 18 septembre 2026 — les cotes étaient fausses, et c'est ce qui cassait la fin de partie
+
+Symptôme rapporté en jouant : **plus de 2000 pièces au quatrième cercle**, et tous les cercles
+suivants sans enjeu. Le tableau « levier de jeu » plus haut disait pourtant que les cotes étaient
+bien placées. Il mesurait la mauvaise chose : le retour moyen d'un run entier, tous tickets
+confondus, et non **ce que rapporte un ticket que le joueur joue vraiment**.
+
+### L'outil qui manquait : `npm run odds`
+
+`sim/odds.ts` mesure, type de pari par type de pari et cercle par cercle, la probabilité qu'un
+ticket passe **quand le joueur joue toute la course pour lui** : il pousse les âmes qu'il a
+désignées, il freine celles qui les gênent. C'est le joueur réel, pas un modèle prudent.
+
+```
+npm run odds                          # le tableau complet, cercle par cercle
+npm run odds -- --suggest=130         # les cotes qui donneraient un retour de ×1,30
+npm run odds -- --races=20000         # moins de bruit sur les paris rares
+```
+
+Ce qu'il a montré (4000 courses par cercle et par type) :
+
+| Pari | p (cercle 4) | Cote équitable | Cote d'alors | Retour par pièce misée |
+|---|---:|---:|---:|---:|
+| Vainqueur pur | 61 % | ×1,6 | ×3,5 | **2,15** |
+| Dernière place | 79 % | ×1,3 | ×3,5 | **2,76** |
+| Pas dans le top 3 | 97 % | ×1,0 | ×2 | **1,94** |
+| Duel | 98 % | ×1,0 | ×1,8 | **1,76** |
+| Top 3 | 88 % | ×1,1 | ×1,5 | 1,32 |
+| Deux âmes dans le top 3 | 68 % | ×1,5 | ×2,5 | 1,71 |
+| Top 3 dans le désordre | 43 % | ×2,3 | ×7 | **3,02** |
+| Podium exact | 9 % | ×11 | ×40 | **3,59** |
+| Vainqueur + dernier | 44 % | ×2,3 | ×14 | **6,17** |
+| Classement complet exact | 0,3 % | ×364 | ×80 | 0,22 |
+
+**Neuf paris sur dix rapportaient plus qu'ils ne coûtaient.** La cause est structurelle : le
+joueur lance 2 dés Distance et 3 dés Âme par tour quand l'adversaire n'en lance qu'une paire, et
+il choisit qui avance. Il désigne le vainqueur **52 à 62 %** du temps selon le cercle (contre
+20 % au hasard à cinq âmes), et il place une âme dernière **76 à 80 %** du temps — couler une âme
+est encore plus facile que d'en porter une. Une cote calculée sur 1/N paie une quasi-certitude.
+
+### Ce qui a été fait : les dix cotes recalibrées sur la mesure
+
+Cible retenue : un retour de **×1,30** par pièce misée pour le joueur qui joue pour son ticket.
+Pas ×1 — il faut que parier fasse gagner, sinon rien ne finance des prix qui montent ; pas ×2 —
+c'était le trou par lequel la bourse fuyait.
+
+| Pari | Avant | Après |
+|---|---:|---:|
+| Vainqueur pur | ×3,5 | **×2,2** |
+| Top 3 | ×1,5 | ×1,5 |
+| Pas dans le top 3 | ×2 | **×1,35** |
+| Dernière place | ×3,5 | **×1,65** |
+| Top 3 dans le désordre | ×7 | **×3,4** |
+| Deux âmes dans le top 3 | ×2,5 | **×2,05** |
+| Duel | ×1,8 | **×1,35** |
+| Podium exact | ×40 | **×22** |
+| Classement complet exact | ×80 | ×80 *(voir ci-dessous)* |
+| Vainqueur + dernier | ×14 | **×3,15** |
+
+Chaque cote est calibrée sur la **moyenne** de ses probabilités aux cercles où son guichet est
+ouvert, pas sur le premier : calibrée sur son cercle d'ouverture, une cote serait juste à ses
+débuts et ruineuse ensuite, puisque les âmes se multiplient.
+
+**`fullRankingExact` est un cas à part, et il n'est pas réglé.** Il s'ouvre au cercle 8, à neuf
+âmes, où il passe **une fois sur 20 000** (mesuré sur 40 000 courses) : aucune cote ne le rend
+défendable, ×80 est un billet perdant et ×5000 serait illisible. Aux cercles 1 à 3, il passe 1 à
+2 % du temps — c'est là qu'il aurait un sens. À trancher : l'ouvrir plus tôt (niveau 2 au lieu
+de 4), ou le faire porter sur les cinq premières places seulement.
+
+### Et la courbe des prix passe à +35 % par cercle
+
+Les prix étaient **150 · 210 · 260 · 320 · 400 · 460 · 530 · 610 · 700** (~15 % par cercle) ; ils
+deviennent **150 · 200 · 275 · 370 · 500 · 675 · 910 · 1230 · 1650**, et `beyondPriceGrowth`
+passe de 1,2 à 1,35 pour que la suite garde la même pente.
+
+La raison est arithmétique : à ×1,30 de retour et 50 % du solde misé, la bourse d'un joueur
+affûté croît d'environ 35 % par cercle. Une courbe de prix qui monte du même pas garde chaque
+cercle tendu ; une courbe plus plate le laisse redevenir une formalité dès que la bourse a pris
+de l'avance — exactement ce qui était rapporté.
+
+### Le profil « affûté », celui qui casse l'économie
+
+Les trois profils existants étalent leurs tickets, donc ne peuvent jouer pour aucun à fond : ils
+mesurent la difficulté du jeu, pas la solidité d'une cote. `sim/profiles.ts` en gagne un
+quatrième — **affûté** : un seul ticket, celui qu'il sait porter, 50 % du solde misé, toute la
+course jouée pour lui. C'est le seul profil dont les chances sont celles de `npm run odds`, et
+c'est lui qu'il faut regarder avant de toucher à une cote.
+
+Mesuré après recalibrage (300 runs, prix à +35 %) :
+
+| Profil | c1 | c2 | c3 | c4 | c5 | c6 | c7 | c8 | c9 | Retour sur mise |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| `débutant` | 20 % | 0 % | — | — | — | — | — | — | — | ×0,90 |
+| `appliqué` | 52 % | 31 % | 15 % | 14 % | 0 % | — | — | — | — | ×1,17 |
+| `joueur` | 32 % | 53 % | 6 % | 67 % | 0 % | — | — | — | — | ×0,85 |
+| **`affûté`** | **57 %** | **58 %** | **66 %** | **37 %** | **42 %** | **40 %** | **75 %** | **33 %** | **100 %** | **×1,28** |
+
+L'affûté traverse les neuf cercles avec une marge qui reste **serrée** (+15, +41, +85, −46, −39,
+−173, +50, −577, +1637 au fil des cercles) : c'est ce qu'on cherchait — plus de bourse à 2000
+pièces au quatrième cercle, plus de cercle sans enjeu.
+
+Le revers est que `appliqué` bute désormais au troisième ou quatrième cercle, là où l'ancienne
+économie le portait jusqu'au neuvième — mais il y était porté par des cotes fausses. Deux
+molettes pour le rattraper, mesurées :
+
+| Courbe des prix | `appliqué` | `affûté` | Évasion `affûté` |
+|---|---|---|---:|
+| **+35 %** (retenue) | s'arrête au c3–c4 | c1→c9, marges serrées | 0,3 % |
+| +25 % | c1→c6 à ~50 % | c1→c9, marges qui enflent (+1245 au c9) | 3 % |
+
+La seconde molette est `economy.allowanceGrowthPerCircle` (1,0 aujourd'hui, l'avance vaut 20 × N
+au cercle N) : la monter aide `appliqué` sans rien donner à `affûté`, qui vit de ses paris.
+
+### La boutique : les objets puissants coûtent plus cher
+
+Les objets d'impact `extreme` passent à +50 % (Miroir de Narcisse 180 → 270, Dette infernale
+150 → 225) et ceux d'impact `fort` à 90 pièces et au-dessus à +30 % (Troisième dé 100 → 130, Œil
+de Charon et Bât de chameau 95 → 125, Quatrième tête · Ticket première heure · Fouet du
+contremaître · Dé de Fraude 90 → 115). Les paliers en dessous n'ont pas bougé : le Verrou de
+Minos à 85 est figé dans la graine de référence `SHOP_SEED` (e2e/04-boutique), et le toucher
+obligerait à re-chercher la graine pour un gain d'équilibrage nul.
+
+### Ce que le recalibrage a coûté ailleurs
+
+`RACE_SEED_EXPECT` dépend de la cote « Vainqueur pur » : le pari auto de la graine de référence
+rapporte 11 au lieu de 18, donc 106 pièces au lieu de 113 et « encore 44 ¤ » au lieu de 37
+(e2e/seeds.ts, 06-B). Les graines elles-mêmes n'ont pas bougé — une cote n'entre pas dans le
+hasard. Les deux cotes affichées dans `03-paris` ont suivi.
 
 ## Régler quelque chose
 

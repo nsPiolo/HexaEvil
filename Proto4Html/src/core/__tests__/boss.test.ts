@@ -157,9 +157,13 @@ describe('cases spéciales', () => {
     expect(applyMove(st, move(0, 3), {}).follow).toEqual([])
   })
 
-  it('la case payante rapporte, le tremplin pousse', () => {
-    const gold = applyMove(track([{ column: 2, lane: 0, kind: 'gold', value: 5 }]), move(0, 2), {})
-    expect(gold.coins).toBe(5)
+  it('la case payante ne rapporte que sur une âme pariée, le tremplin pousse tout le monde', () => {
+    const goldTrack = track([{ column: 2, lane: 0, kind: 'gold', value: 5 }])
+    // Pariée : elle paie.
+    expect(applyMove(goldTrack, move(0, 2), { bettedSouls: new Set([0]) }).coins).toBe(5)
+    // Pas de ticket sur elle : on regarde passer, sans encaisser.
+    expect(applyMove(goldTrack, move(0, 2), { bettedSouls: new Set([1]) }).coins).toBe(0)
+    expect(applyMove(goldTrack, move(0, 2), {}).coins).toBe(0)
     const boost = applyMove(track([{ column: 2, lane: 0, kind: 'boost', value: 2 }]), move(0, 2), {})
     expect(boost.follow).toContainEqual(expect.objectContaining({ soul: 0, distance: 2 }))
   })

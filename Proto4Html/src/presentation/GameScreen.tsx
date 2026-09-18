@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { config, shop } from '../core/config'
 import { circleAt } from '../core/rules/circles'
 import { stakesAtCircle } from '../core/rules/stakes'
@@ -15,7 +15,7 @@ import { Ranking } from './Ranking'
 import { ShopPanel } from './ShopPanel'
 import { OpponentSlot, PhaseStrip, PlayerSlot } from './PlaySlots'
 import { HELP, HUD, ITEMS, RACE, fill, ordinalOf } from './texts'
-import { betBase, canBetNow, circleOf, has, itemName, previewNext, stakedOpen, useRace, type RaceUi, type SessionCarry } from './useRace'
+import { betBase, bettedSouls as bettedSoulsOf, bossPowerText, canBetNow, circleOf, has, itemName, previewNext, stakedOpen, useRace, type RaceUi, type SessionCarry } from './useRace'
 
 interface Props {
   carry: SessionCarry
@@ -75,6 +75,8 @@ export function GameScreen({ carry, unlocked, speed, onFinished, onMenu }: Props
   const [hoverSoul, setHoverSoul] = useState<number | null>(null)
   const step = stepOf(ui)
   const isBoss = raceInCircle === config.run.racesPerCircle
+  // Le pouvoir du boss ne s'applique qu'à sa course : il est annoncé sur la carte, il est rappelé ici tant qu'elle dure.
+  const bossPower = isBoss ? bossPowerText(circle) : null
   const ordinal = ordinalOf(circle)
   const rank = demonRankAtRace(carry.raceIndex)
   const price = circleCfg.price
@@ -133,8 +135,37 @@ export function GameScreen({ carry, unlocked, speed, onFinished, onMenu }: Props
   useEffect(() => {
     if (resultsOpen) setResultsSeen(true)
   }, [resultsOpen])
-  // Raccourcis clavier (spec 02/C4) : P bascule les paris, B la boutique (en préparation), sauf dans un champ.
+  /**
+   * Modalité de la dernière interaction. Espace est la touche qui **active** un bouton : celui
+   * qu'on vient d'atteindre au clavier doit garder la main, sinon naviguer au clavier deviendrait
+   * impossible dans l'écran de course. Mais on apparie à la souris, et un clic laisse le focus
+   * sur le dé cliqué — sans cette distinction, le raccourci ne servirait jamais après un clic.
+   *
+   * `:focus-visible` ne suffit pas : appuyer sur une touche suffit à le faire basculer à vrai
+   * sur l'élément focalisé, donc il vaut déjà vrai au moment où on lit l'événement. On retient
+   * donc nous-mêmes comment le focus a été posé : au pointeur, ou à la navigation clavier.
+   */
+  const keyboardNav = useRef(false)
   useEffect(() => {
+    const byPointer = (): void => {
+      keyboardNav.current = false
+    }
+    const byKeyboard = (e: KeyboardEvent): void => {
+      if (e.key === 'Tab' || e.key.startsWith('Arrow')) keyboardNav.current = true
+    }
+    window.addEventListener('pointerdown', byPointer, true)
+    window.addEventListener('keydown', byKeyboard, true)
+    return () => {
+      window.removeEventListener('pointerdown', byPointer, true)
+      window.removeEventListener('keydown', byKeyboard, true)
+    }
+  }, [])
+
+  // Raccourcis clavier (spec 02/C4) : P bascule les paris, B la boutique (en préparation),
+  // Espace enchaîne lancer puis résoudre — sauf dans un champ ou sur un bouton atteint au clavier.
+  useEffect(() => {
+    const buttonHasKeyboardFocus = (): boolean =>
+      keyboardNav.current && (document.activeElement instanceof HTMLButtonElement || document.activeElement instanceof HTMLAnchorElement)
     const onKey = (e: KeyboardEvent): void => {
       if (e.ctrlKey || e.metaKey || e.altKey || typing()) return
       if (e.key === 'p' || e.key === 'P') {
@@ -146,11 +177,17 @@ export function GameScreen({ carry, unlocked, speed, onFinished, onMenu }: Props
         e.preventDefault()
         if (shopOpen) setShopOpen(false)
         else openShop()
-      } else if (e.key === ' ' && ui.phase === 'idle') {
-        // Espace = lancer les dés. Le geste le plus répété de la course mérite la plus grande
-        // touche ; on n'agit qu'en phase `idle`, le seul moment où le lancer a un sens.
-        e.preventDefault()
-        void actions.rollDice()
+      } else if (e.key === ' ' && !buttonHasKeyboardFocus()) {
+        // Espace enchaîne le tour : il lance les dés, puis résout l'appariement. Les deux
+        // gestes les plus répétés de la course, sur la plus grande touche, sans jamais changer
+        // de main. `resolve` refuse de lui-même tant que l'appariement est incomplet.
+        if (ui.phase === 'idle') {
+          e.preventDefault()
+          void actions.rollDice()
+        } else if (ui.phase === 'pairing') {
+          e.preventDefault()
+          void actions.resolve()
+        }
       }
     }
     window.addEventListener('keydown', onKey)
@@ -173,7 +210,7 @@ export function GameScreen({ carry, unlocked, speed, onFinished, onMenu }: Props
     const ranked = ranking(ui.race)
     return ranked.filter((r, i) => i > 0 && ranked[i - 1]!.soul.position === r.soul.position && ranked[i - 1]!.soul.lane !== r.soul.lane).map((r) => r.soul.position)
   }, [ui.phase, ui.race])
-  const bettedSouls = useMemo(() => new Set(ui.bets.filter((b) => b.status === 'open').flatMap((b) => [...b.souls])), [ui.bets])
+  const bettedSouls = useMemo(() => bettedSoulsOf(ui.bets), [ui.bets])
 
   const activeSoul = ui.phase === 'resolving' || ui.phase === 'opponent' ? (ui.lastResult?.move.soul ?? null) : null
   const preview = useMemo(() => previewNext(ui), [ui])
@@ -224,6 +261,16 @@ export function GameScreen({ carry, unlocked, speed, onFinished, onMenu }: Props
           </span>
         </div>
       </header>
+
+      {/* Course du boss : sa règle change la course entière, et le joueur ne doit pas avoir à
+          la jouer de mémoire depuis la carte. Le bandeau la garde sous les yeux. */}
+      {bossPower && (
+        <div className="boss-bar" data-testid="boss-power">
+          <span className="boss-bar-name">☠ {fill(HUD.bossPowerTitle, { boss: circleCfg.boss })}</span>
+          <span className="boss-bar-power">{bossPower}</span>
+          <span className="boss-bar-hint muted small">{HUD.bossPowerHint}</span>
+        </div>
+      )}
 
       {/* La table : zone haute · plateau · zone basse, en pleine largeur */}
       <main className="felt">

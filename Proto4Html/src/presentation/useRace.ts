@@ -42,7 +42,7 @@ import {
 } from '../core/rules/race'
 import { randomSeed, seededRng, type Rng } from '../core/rules/rng'
 import { circleAt, isBeyondWritten } from '../core/rules/circles'
-import { bossValue, generateBossEffects, hasBoss, type BossEffect } from '../core/rules/boss'
+import { bossValue, describeBossEffects, generateBossEffects, hasBoss, type BossEffect } from '../core/rules/boss'
 import { stakesAtCircle } from '../core/rules/stakes'
 import { terrainFor } from '../core/rules/terrain'
 import type { Terrain } from '../core/config/schema'
@@ -118,7 +118,7 @@ export interface RaceUi {
   tribunePlaced: boolean
   /** Pouvoir du boss appliqué à cette course (vide hors course de boss). */
   boss: readonly BossEffect[]
-  /** Boss Le stagiaire ailé : le tour d'arrivée a-t-il déjà été rejoué ? */
+  /** Boss L'Ange : le tour d'arrivée a-t-il déjà été rejoué ? */
   replayed: boolean
 }
 
@@ -188,6 +188,17 @@ export function bossEffectsFor(raceIndex: number): BossEffect[] {
   return generateBossEffects(seededRng(circle * 7919))
 }
 
+/**
+ * Pouvoir du boss d'un cercle, tel qu'il s'annonce au joueur : le texte écrit de `race.json`, ou
+ * la description des effets assemblés au-delà des cercles écrits. La carte et le bandeau de la
+ * course du boss lisent la même phrase — annoncer un pouvoir puis en jouer un autre serait une
+ * trahison de règle, pas une surprise.
+ */
+export function bossPowerText(circle: number): string {
+  if (!isBeyondWritten(config.run, circle)) return circleAt(config.run, circle).power
+  return describeBossEffects(bossEffectsFor(circle * config.run.racesPerCircle - 1))
+}
+
 /** Raccourci de lecture : le joueur possède-t-il cet artefact ? */
 export function has(inventory: Inventory, id: ArtefactId): boolean {
   return inventory.artefacts.includes(id)
@@ -253,7 +264,7 @@ function opponentOptions(u: RaceUi): OpponentOptions {
   const boost = bossValue(u.boss, 'opponentBoost')
   if (boost !== null) o.boost = boost
   if (hasBoss(u.boss, 'targetBettedSouls')) {
-    const betted = [...new Set(u.bets.filter((b) => b.status === 'open').flatMap((b) => b.souls))]
+    const betted = [...bettedSouls(u.bets)]
     if (betted.length > 0) o.targets = betted
   }
   return o
@@ -329,20 +340,31 @@ export function stakedOpen(bets: readonly Bet[]): number {
   return bets.filter((b) => b.status === 'open').reduce((s, b) => s + b.stake, 0)
 }
 
+/**
+ * Âmes portées par un pari encore ouvert. Le Sceau, la paire adverse du boss Géryon et la case
+ * payante lisent tous cette même liste : « âme pariée » doit vouloir dire la même chose partout.
+ */
+export function bettedSouls(bets: readonly Bet[]): Set<number> {
+  return new Set(bets.filter((b) => b.status === 'open').flatMap((b) => [...b.souls]))
+}
+
 /** Contexte des modificateurs du joueur (Clepsydre, Sceau), identique en résolution et en prévisualisation. */
 function moveContext(u: Pick<RaceUi, 'race' | 'inventory' | 'bets' | 'boss'>): MoveContext {
   return {
     turn: u.race.turn,
     clepsydre: u.inventory.artefacts.includes('clepsydre'),
-    bettedSouls: new Set(u.bets.filter((b) => b.status === 'open').flatMap((b) => [...b.souls])),
+    bettedSouls: bettedSouls(u.bets),
     sealBonus: SEAL_BONUS,
     boss: bossDistanceMods(u.boss),
   }
 }
 
-/** Règles de déplacement de la course : celles du joueur, plus celles qu'impose le boss. */
-export function raceMoveRules(u: Pick<RaceUi, 'inventory' | 'boss'>): MoveRules {
-  return { ...moveRules(u.inventory), ...bossMoveRules(u.boss) }
+/**
+ * Règles de déplacement de la course : celles du joueur, plus celles qu'impose le boss, plus
+ * les tickets en cours — la case payante ne verse que sur une âme pariée.
+ */
+export function raceMoveRules(u: Pick<RaceUi, 'inventory' | 'boss' | 'bets'>): MoveRules {
+  return { ...moveRules(u.inventory), ...bossMoveRules(u.boss), bettedSouls: bettedSouls(u.bets) }
 }
 
 export interface ProdigalityCharge {
@@ -939,10 +961,10 @@ export function useRace({ carry, unlocked, soulCount, lanes, terrains, speed }: 
       return
     }
 
-    // Boss Le stagiaire ailé : le tour d'arrivée se rejoue une seconde fois, adversaire compris.
+    // Boss L'Ange : le tour d'arrivée se rejoue une seconde fois, adversaire compris.
     // Une seule fois par course — le drapeau `replayed` empêche la boucle sans fin.
     if (hasBoss(u.boss, 'replayTurn') && !u.replayed) {
-      let cur2 = commit(pushLog({ ...u, replayed: true, resolvingIndex: null }, 'artefact', 'Le stagiaire ailé rejoue le dernier tour.'))
+      let cur2 = commit(pushLog({ ...u, replayed: true, resolvingIndex: null }, 'artefact', 'L\'Ange rejoue le dernier tour.'))
       if (!(await resolveMoves(id, buildMoves(roll, combos, 'player', moveContext(cur2)), indexOf))) return
       commit({ ...uiRef.current, phase: 'opponent', resolvingIndex: null })
       for (const pair of pairs) {

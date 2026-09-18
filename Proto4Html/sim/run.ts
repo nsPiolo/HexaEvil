@@ -50,7 +50,7 @@ import { bossContext, bossDistanceMods, bossMoveRules, type Move } from '../src/
 import { bossValue } from '../src/core/rules/boss'
 import { defaultInventory } from '../src/core/shop/shop'
 import { riskOf, type ShopItem } from '../src/core/shop/items'
-import { applyProdigality, betBase, circleOf, moveRules, priceFor } from '../src/presentation/useRace'
+import { applyProdigality, betBase, bettedSouls, circleOf, moveRules, priceFor } from '../src/presentation/useRace'
 import { demonLevelAtRace } from '../src/presentation/demon'
 import { BETTING_ORDER, TICKETS, type Profile } from './profiles'
 
@@ -106,7 +106,7 @@ const MAX_CIRCLES = 40
  *   la plus en retard (pour ne pas aider la tête) ; les distances négatives vont à l'âme sacrifiée,
  *   sinon à la mieux placée des autres, jamais à l'âme portée.
  */
-function pair(roll: Roll, state: RaceState, plan: Plan | null, how: Profile['pairing']): Combination[] {
+export function pair(roll: Roll, state: RaceState, plan: Plan | null, how: Profile['pairing']): Combination[] {
   if (how === 'naturelle' || plan === null) return naturalCombinations(roll)
   const position = (soul: number): number => state.souls[soul]?.position ?? 0
   // Les grosses distances d'abord : elles méritent la meilleure cible.
@@ -138,7 +138,7 @@ function pair(roll: Roll, state: RaceState, plan: Plan | null, how: Profile['pai
  * Le plan de course du joueur simulé : une âme qu'il pousse, une qu'il freine. Tous ses paris
  * en découlent, sinon il parierait pour et contre la même âme dans la même course.
  */
-interface Plan {
+export interface Plan {
   favourite: number
   victim: number
 }
@@ -147,7 +147,7 @@ interface Plan {
 const AGAINST: ReadonlySet<BetTypeId> = new Set<BetTypeId>(['notTop3', 'last'])
 
 /** Âmes à désigner pour un ticket, cohérentes avec le plan de course. */
-function soulsFor(type: BetTypeId, state: RaceState, plan: Plan): number[] {
+export function soulsFor(type: BetTypeId, state: RaceState, plan: Plan): number[] {
   const count = slotCount(betType(type), state.souls.length)
   const ids = state.souls.map((s) => s.id)
   if (AGAINST.has(type)) return [plan.victim, ...ids.filter((id) => id !== plan.victim)].slice(0, count)
@@ -310,11 +310,13 @@ function simulateRace(raceIndex: number, money: number, inventory: Inventory, pr
     const ctx = {
       turn: state.turn,
       clepsydre: inv.artefacts.includes('clepsydre'),
-      bettedSouls: new Set(bets.filter((b) => b.status === 'open').flatMap((b) => [...b.souls])),
+      bettedSouls: bettedSouls(bets),
       sealBonus: 2,
       boss: bossMods,
     }
-    const rules = { ...moveRules(inv), ...bossRules }
+    // Les tickets ouverts entrent aussi dans les règles de déplacement : la case payante ne verse
+    // que sur une âme pariée, et une simulation qui l'ignorerait surestimerait les recettes.
+    const rules = { ...moveRules(inv), ...bossRules, bettedSouls: ctx.bettedSouls }
     // Le simulateur résout aussi les déplacements induits (liens, aimant, souffle, cases spéciales).
     const run = (move: Move): void => {
       const out = applyMove(state, move, rules)

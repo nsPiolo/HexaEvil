@@ -11,10 +11,10 @@ test.describe('03 · Écran Paris (le ticket de guichet)', () => {
     const panel = betsPanel(page)
     await tokenButton(page, 1).click()
     await panel.getByRole('button', { name: '20', exact: true }).click()
-    await expect(panel.getByText('Gain potentiel : +50 ¤ (×3.5)')).toBeVisible()
+    await expect(panel.getByText('Gain potentiel : +24 ¤ (×2.2)')).toBeVisible()
     await expect(panel.getByText('Solde après mise : 80 ¤')).toBeVisible()
     await panel.getByRole('button', { name: '10', exact: true }).click()
-    await expect(panel.getByText('Gain potentiel : +25 ¤ (×3.5)')).toBeVisible()
+    await expect(panel.getByText('Gain potentiel : +12 ¤ (×2.2)')).toBeVisible()
     await expect(panel.getByText('Solde après mise : 90 ¤')).toBeVisible()
     // Changer de type vide les âmes : le ticket disparaît, on redésigne et la cote suit.
     await panel.getByRole('button', { name: /^Top 3/ }).click()

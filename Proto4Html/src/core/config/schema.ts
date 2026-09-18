@@ -15,7 +15,8 @@ export interface BlockedCell {
  *
  * - `trap` : l'âme recule de `value` cases ;
  * - `boost` : elle avance de `value` cases ;
- * - `gold` : elle vous rapporte `value` pièces, quelle qu'elle soit.
+ * - `gold` : elle vous rapporte `value` pièces, **à condition d'avoir un pari ouvert sur cette
+ *   âme** : la case paie le parieur, pas le spectateur.
  */
 export type SpecialCellKind = 'trap' | 'boost' | 'gold'
 

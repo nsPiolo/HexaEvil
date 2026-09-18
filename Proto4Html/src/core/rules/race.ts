@@ -432,6 +432,12 @@ export interface MoveRules {
   frozenLanes?: boolean
   /** Boss Le Porte-chaînes : l'âme percutée est immobilisée pendant n tours. */
   chainTurns?: number
+  /**
+   * Âmes sur lesquelles le joueur a un pari ouvert : seules elles font payer la case payante
+   * (GDD §2.2). Absent = aucun pari, la case ne rapporte rien — le moteur ne devine pas les
+   * tickets, c'est l'appelant qui les lui donne.
+   */
+  bettedSouls?: ReadonlySet<SoulId>
 }
 
 /** Règles de déplacement imposées par le pouvoir de boss, à fusionner avec celles du joueur. */
@@ -488,7 +494,7 @@ export interface MoveOutcome {
    * et par tour (artefacts.md § Combinaisons à surveiller).
    */
   follow: Move[]
-  /** Pièces gagnées par ce déplacement (Tribune infernale). */
+  /** Pièces gagnées par ce déplacement (Tribune infernale, case payante). */
   coins: number
 }
 
@@ -652,7 +658,9 @@ export function applyMove(state: RaceState, move: Move, rules: MoveRules = {}): 
     // Cases spéciales du terrain (GDD §2.2) : elles n'agissent qu'à l'arrêt, pas au passage.
     const cell = specialAt(track, to, toLane)
     if (cell) {
-      if (cell.kind === 'gold') coins += cell.value
+      // La case payante ne verse que sur une âme pariée : on encaisse sur son propre ticket,
+      // pas sur la course des autres.
+      if (cell.kind === 'gold' && rules.bettedSouls?.has(move.soul)) coins += cell.value
       if (cell.kind === 'trap') follow.push({ ...simpleMove('artefact', move.soul, -cell.value, ['Piège']), induced: true })
       if (cell.kind === 'boost') follow.push({ ...simpleMove('artefact', move.soul, cell.value, ['Tremplin']), induced: true })
     }

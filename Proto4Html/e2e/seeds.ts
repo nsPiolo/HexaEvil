@@ -14,11 +14,13 @@
  *   associés désignent deux âmes différentes ;
  * - tour 2 : le joueur provoque une collision (05-F) ;
  * - après le tour 4 : une âme est dans la zone de fin, la course continue (03-C) ;
- * - course en 7 tours ; le pari auto « Vainqueur pur · Homère » est gagné : 80 + 20 d'avance − 5 + 18
- *   = 113 pièces, donc « encore 37 ¤ à trouver en 2 courses » avec un cercle 1 à 150 (06-B).
+ * - course en 7 tours ; le pari auto « Vainqueur pur · Homère » est gagné : 80 + 20 d'avance − 5 + 11
+ *   = 106 pièces, donc « encore 44 ¤ à trouver en 2 courses » avec un cercle 1 à 150 (06-B).
+ *   Le gain suit la cote « Vainqueur pur » (`economy.multipliers.winner`) : il a changé avec
+ *   elle le 18 septembre 2026 (×3,5 → ×2,2), la graine, elle, n'a pas bougé.
  */
 export const RACE_SEED = 97
-export const RACE_SEED_EXPECT = { firstMove: { soul: 'Socrate', to: 2 }, collisionTurn: 2, zoneTurn: 4, finalMoney: 113, missing: 37 }
+export const RACE_SEED_EXPECT = { firstMove: { soul: 'Socrate', to: 2 }, collisionTurn: 2, zoneTurn: 4, finalMoney: 106, missing: 44 }
 
 /** Avance versée par le stagiaire au début de chaque course (`economy.raceAllowance`) : 80 de capital + 20 → 100 à la table. */
 export const ALLOWANCE = 20

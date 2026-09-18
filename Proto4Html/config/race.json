@@ -40,7 +40,7 @@
     "rollsPerTurn": 1
   },
   "economy": {
-    "_comment": "startingMoney = capital au début de la session (conservé de course en course) ; avec l'avance, la première course commence à 100. raceAllowance = avance versée par le stagiaire au début de chaque course du cercle 1 ; elle grandit de allowanceGrowthPerCircle par cercle (même règle que les jetons et les prix de boutique, arrondi à 5) — c'est le revenu indépendant de la bourse qui permet de repartir après avoir payé un cercle (docs/proto4/equilibrage.md). L'artefact Tirelire du stagiaire l'augmente de son paramètre `bonus` (config/shop.json). stakes = mises proposées au cercle 1 ; elles grandissent de stakeGrowthPerCircle par cercle (même mécanique que les prix de la boutique, arrondi à 5), la plus petite restant plafonnée à raceAllowance pour que l'avance seule permette toujours le pari minimum. multipliers = ce que rapporte une mise gagnante (mise × multiplicateur, la mise est débitée au moment du pari). Cotes équitables à 5 âmes, pour comparaison : vainqueur 5, top 3 1,67, pas top 3 2,5, dernier 5, top 3 désordre 10, deux dans le top 3 3,33, duel 2, podium exact 60, classement complet 120, vainqueur + dernier 20.",
+    "_comment": "startingMoney = capital au début de la session (conservé de course en course) ; avec l'avance, la première course commence à 100. raceAllowance = avance versée par le stagiaire au début de chaque course du cercle 1 ; elle grandit de allowanceGrowthPerCircle par cercle (même règle que les jetons et les prix de boutique, arrondi à 5) — c'est le revenu indépendant de la bourse qui permet de repartir après avoir payé un cercle (docs/proto4/equilibrage.md). L'artefact Tirelire du stagiaire l'augmente de son paramètre `bonus` (config/shop.json). stakes = mises proposées au cercle 1 ; elles grandissent de stakeGrowthPerCircle par cercle (même mécanique que les prix de la boutique, arrondi à 5), la plus petite restant plafonnée à raceAllowance pour que l'avance seule permette toujours le pari minimum. multipliers = ce que rapporte une mise gagnante (mise × multiplicateur, la mise est débitée au moment du pari). Ces cotes ne se calculent PAS sur une course au hasard : le joueur lance 2 dés Distance et 3 dés Âme par tour quand l'adversaire n'en lance qu'une paire, et c'est lui qui décide quelle âme prend quelle distance. Mesuré sur le moteur (`npm run odds`), il désigne le vainqueur 59 % du temps et place une âme dernière 78 % du temps, pas une fois sur cinq. Les cotes ont donc été recalibrées le 18 septembre 2026 sur ces probabilités mesurées, cible : un retour de ×1,3 par pièce misée pour le joueur qui joue toute la course pour son ticket (docs/proto4/equilibrage.md). Toute modification du nombre de dés, du nombre d'âmes ou des paires adverses les invalide : relancer `npm run odds -- --suggest` avant d'y toucher. Exception connue : `fullRankingExact` s'ouvre au cercle 8, à 9 âmes, où il passe une fois sur 20 000 — sa cote n'a pas de valeur défendable tant qu'il s'ouvre si tard.",
     "startingMoney": 80,
     "raceAllowance": 20,
     "allowanceGrowthPerCircle": 1.0,
@@ -52,16 +52,16 @@
     ],
     "stakeGrowthPerCircle": 0.5,
     "multipliers": {
-      "winner": 3.5,
+      "winner": 2.2,
       "top3": 1.5,
-      "notTop3": 2,
-      "last": 3.5,
-      "podiumAnyOrder": 7,
-      "twoInTop3": 2.5,
-      "duel": 1.8,
-      "podiumExact": 40,
+      "notTop3": 1.35,
+      "last": 1.65,
+      "podiumAnyOrder": 3.4,
+      "twoInTop3": 2.05,
+      "duel": 1.35,
+      "podiumExact": 22,
       "fullRankingExact": 80,
-      "winnerAndLast": 14
+      "winnerAndLast": 3.15
     },
     "betUnlockLevel": {
       "_comment": "Niveau du stagiaire requis pour chaque type de pari (0 = Stagiaire au départ, 1 = Assistant après le cercle 2, 2 = Tourmenteur après le 3, 3 = Contremaître après le 5, 4 = Sous-directeur après le 7 ; grades dans src/presentation/texts.ts). Les gros multiplicateurs arrivent tard : un ×80 gagné au premier cercle rendrait le reste de la partie inutile.",
@@ -83,7 +83,7 @@
     }
   },
   "run": {
-    "_comment": "terrains = variantes de terrain du cercle : une est tirée au début de chaque course à partir de la graine, sans toucher au flux du hasard de la course (src/core/rules/terrain.ts). `blocked` liste ses cases bloquées en paires [colonne, couloir] ; `specials` liste ses cases spéciales en quadruplets [colonne, couloir, type, valeur] avec type parmi gold (rapporte n pièces), trap (recule de n) et boost (avance de n) — elles n'agissent que sur l'âme qui s'y ARRÊTE, jamais au passage, et arrivent progressivement (GDD §2.2 : rien aux cercles 1-2, une par terrain au 3, deux au 6, trois au 10) ; une colonne ne peut jamais être entièrement bloquée, donc un cercle à un seul couloir n'a qu'une variante, sans case bloquée. racesPerCircle = courses par cercle, la dernière est la rencontre avec le boss. circles = les neuf cercles : prix à payer à la fin du cercle (GDD §4.2), nombre d'âmes en course (GDD §4.1 : +1 aux cercles 2, 4, 6, 8, 9), couloirs (GDD §2.2 : 1 au cercle 1, un de plus à chaque âme ajoutée, soit âmes − 4), variantes de terrain (GDD §2.2 et §2.6 : colonne de parcours à partir de 1, couloir 0 = celui du bas, prioritaire), boss et son pouvoir. Prix adoucis au départ le 18 septembre 2026 (docs/proto4/equilibrage.md) : 150 au cercle 1 pour que le premier cercle laisse une marge après paiement, puis une courbe lissée qui grimpe de ~15 à 25 % par cercle, soit ~1,3 fois l'avance des trois courses du cercle. Couloirs, terrains et pouvoirs de boss sont appliqués en course. `power` est l'annonce faite au joueur ; `powers` est ce que le moteur applique (src/core/rules/boss.ts), uniquement sur la dernière course du cercle. Au-delà du dernier cercle écrit, le pouvoir est assemblé de 2 à 4 effets tirés sur la graine du cercle (GDD §8.1).",
+    "_comment": "terrains = variantes de terrain du cercle : une est tirée au début de chaque course à partir de la graine, sans toucher au flux du hasard de la course (src/core/rules/terrain.ts). `blocked` liste ses cases bloquées en paires [colonne, couloir] ; `specials` liste ses cases spéciales en quadruplets [colonne, couloir, type, valeur] avec type parmi gold (rapporte n pièces), trap (recule de n) et boost (avance de n) — elles n'agissent que sur l'âme qui s'y ARRÊTE, jamais au passage, et arrivent progressivement (GDD §2.2 : rien aux cercles 1-2, une par terrain au 3, deux au 6, trois au 10) ; une colonne ne peut jamais être entièrement bloquée, donc un cercle à un seul couloir n'a qu'une variante, sans case bloquée. racesPerCircle = courses par cercle, la dernière est la rencontre avec le boss. circles = les neuf cercles : prix à payer à la fin du cercle (GDD §4.2), nombre d'âmes en course (GDD §4.1 : +1 aux cercles 2, 4, 6, 8, 9), couloirs (GDD §2.2 : 1 au cercle 1, un de plus à chaque âme ajoutée, soit âmes − 4), variantes de terrain (GDD §2.2 et §2.6 : colonne de parcours à partir de 1, couloir 0 = celui du bas, prioritaire), boss et son pouvoir. Prix adoucis au départ le 18 septembre 2026 (docs/proto4/equilibrage.md) : 150 au cercle 1 pour que le premier cercle laisse une marge après paiement. La courbe grimpe ensuite de 35 % par cercle, décidée le même jour en même temps que le recalibrage des cotes : la bourse d'un joueur qui joue bien croît d'environ autant, donc chaque cercle reste tendu au lieu de devenir une formalité une fois la bourse lancée. Couloirs, terrains et pouvoirs de boss sont appliqués en course. `power` est l'annonce faite au joueur ; `powers` est ce que le moteur applique (src/core/rules/boss.ts), uniquement sur la dernière course du cercle. Au-delà du dernier cercle écrit, le pouvoir est assemblé de 2 à 4 effets tirés sur la graine du cercle (GDD §8.1).",
     "racesPerCircle": 3,
     "circles": [
       {
@@ -109,7 +109,7 @@
       },
       {
         "name": "Luxure",
-        "price": 210,
+        "price": 200,
         "souls": 6,
         "lanes": 2,
         "boss": "Minos",
@@ -171,7 +171,7 @@
       },
       {
         "name": "Gourmandise",
-        "price": 260,
+        "price": 275,
         "souls": 6,
         "lanes": 2,
         "boss": "Cerbère",
@@ -274,7 +274,7 @@
       },
       {
         "name": "Avarice",
-        "price": 320,
+        "price": 370,
         "souls": 7,
         "lanes": 3,
         "boss": "Ploutos",
@@ -385,7 +385,7 @@
       },
       {
         "name": "Colère",
-        "price": 400,
+        "price": 500,
         "souls": 7,
         "lanes": 3,
         "boss": "Phlégyas",
@@ -498,7 +498,7 @@
       },
       {
         "name": "Hérésie",
-        "price": 460,
+        "price": 675,
         "souls": 8,
         "lanes": 4,
         "boss": "Les Furies",
@@ -635,7 +635,7 @@
       },
       {
         "name": "Violence",
-        "price": 530,
+        "price": 910,
         "souls": 8,
         "lanes": 4,
         "boss": "Le Minotaure",
@@ -768,7 +768,7 @@
       },
       {
         "name": "Fraude",
-        "price": 610,
+        "price": 1230,
         "souls": 9,
         "lanes": 5,
         "boss": "Géryon",
@@ -913,7 +913,7 @@
       },
       {
         "name": "Trahison",
-        "price": 700,
+        "price": 1650,
         "souls": 10,
         "lanes": 6,
         "boss": "Iscariote, promu",
@@ -1070,7 +1070,7 @@
       },
       {
         "name": "Fonds marins",
-        "price": 800,
+        "price": 2230,
         "souls": 11,
         "lanes": 7,
         "boss": "Le Noyé",
@@ -1245,7 +1245,7 @@
       },
       {
         "name": "Falaise",
-        "price": 920,
+        "price": 3020,
         "souls": 11,
         "lanes": 7,
         "boss": "Le Porte-chaînes",
@@ -1416,7 +1416,7 @@
       },
       {
         "name": "Ville",
-        "price": 1060,
+        "price": 4070,
         "souls": 12,
         "lanes": 8,
         "boss": "Le Guichetier",
@@ -1599,7 +1599,7 @@
       },
       {
         "name": "Montagne",
-        "price": 1220,
+        "price": 5500,
         "souls": 12,
         "lanes": 8,
         "boss": "Le Givre",
@@ -1778,7 +1778,7 @@
       },
       {
         "name": "Ciel",
-        "price": 1400,
+        "price": 7420,
         "souls": 12,
         "lanes": 8,
         "boss": "Le Souffle",
@@ -1953,10 +1953,10 @@
       },
       {
         "name": "Paradis",
-        "price": 1600,
+        "price": 10020,
         "souls": 12,
         "lanes": 8,
-        "boss": "Iscariote, ailé",
+        "boss": "L'Ange",
         "power": "Il rejoue le dernier tour de la course une seconde fois, adversaire compris.",
         "terrains": [
           {
@@ -2136,7 +2136,7 @@
       }
     ],
     "escapeCircle": 9,
-    "beyondPriceGrowth": 1.2
+    "beyondPriceGrowth": 1.35
   },
   "artefacts": {
     "_comment": "Valeurs des artefacts déjà implémentés (activables depuis la barre provisoire de l'écran, en attendant la boutique).",
