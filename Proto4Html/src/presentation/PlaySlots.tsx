@@ -3,7 +3,7 @@ import { config } from '../core/config'
 import { bettingClosed } from '../core/rules/bets'
 import { isPairingComplete, type Combination, type MoveResult, type RaceState } from '../core/rules/race'
 import { opponentRolls, type Phase, type RaceUi } from './useRace'
-import { dieTilt, fmtDistance, soulColor, soulDieStyle } from './souls'
+import { dieTilt, distDieStyle, fmtDistance, hasDistArt, soulColor, soulDieStyle } from './souls'
 import { FaceChip } from './Inventory'
 import { BetList } from './BetPanel'
 import { GLOSSARY, HUD, RACE } from './texts'
@@ -294,13 +294,14 @@ export function PlayerSlot({ ui, speed, preview, highlightSoul, onHoverSoul, onS
                 if (over === `dist-${i}`) cls.push('die-drop')
                 if (phase === 'resolving' && resolvingIndex !== null && combinations[resolvingIndex]?.distanceDie === i) cls.push('die-resolving')
                 if (face?.altered) cls.push('die-forged')
+                if (hasDistArt(die?.kind)) cls.push('die-dist-art')
                 return (
                   <span key={i} className="die-wrap">
                     <button
                       type="button"
                       className={cls.join(' ')}
                       data-testid={`die-dist-${i}`}
-                      style={{ ['--die-tilt' as string]: dieTilt(i + 50) }}
+                      style={{ ...distDieStyle(die?.kind), ['--die-tilt' as string]: dieTilt(i + 50) }}
                       disabled={!pairing || selectedSoulDie === null || order >= 0}
                       onClick={() => onPickDistance(i)}
                       title={drag?.kind === 'soul' && order < 0 ? RACE.dropHere : die?.name}

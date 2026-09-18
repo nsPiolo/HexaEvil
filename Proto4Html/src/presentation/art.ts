@@ -35,6 +35,50 @@ export const bossPortrait = (circle: number): string => `/circles/${circleArt(ci
 export const itemArt = (id: string): string => `/objets/${id}.webp`
 
 /**
+ * Marqueur peint d'une case du plateau, nommé par son type : les trois `SpecialCellKind`
+ * (`gold`, `trap`, `boost`), la `tribune` posée par le joueur et la case `blocked`. Comme
+ * pour les vignettes d'objets, le nom du fichier EST la clé, il n'y a rien à déclarer.
+ */
+export const cellArt = (kind: string): string => `/table/cases/${kind}.webp`
+
+/** Les éboulis peints : plusieurs dessins pour la même case bloquée. */
+export const BLOCKED_ART = ['blocked', 'blocked2', 'blocked3', 'blocked4'] as const
+
+/**
+ * Éboulis d'une case bloquée, tiré de sa position.
+ *
+ * Une piste en compte jusqu'à six par terrain, et le même tas répété six fois se lit comme un
+ * motif d'interface plutôt que comme de la roche. Le tirage est donc déterministe, pour la
+ * même raison que l'inclinaison des dés (`dieTilt`) : une image retirée au hasard à chaque
+ * rendu ferait changer les éboulis à chaque déplacement d'âme, sur un décor qui, lui, ne
+ * bouge pas de la course.
+ */
+export function blockedArt(column: number, lane: number): string {
+  const n = Math.sin(column * 12.9898 + lane * 78.233) * 43758.5453
+  const i = Math.floor((n - Math.floor(n)) * BLOCKED_ART.length)
+  return cellArt(BLOCKED_ART[i] ?? BLOCKED_ART[0])
+}
+
+/**
+ * Braseros qui jalonnent la spirale de la carte : allumé pour une course déjà courue, éteint
+ * pour celles qui restent. Les deux sont dessinés sur le même canevas, la vasque exactement au
+ * même endroit — c'est ce qui permet de les échanger sans que le repère saute, et pourquoi
+ * `install-art.py map` les réduit sans les recadrer.
+ *
+ * Ancrage : centre de la vasque dans l'image, en fraction du canevas (mesuré sur `step_off`,
+ * dont la partie opaque se limite justement à la vasque). Le brasero se pose sur le point de
+ * la spirale par ce centre-là, pas par le milieu de son cadre, sinon la flamme le tirerait
+ * vers le haut.
+ */
+export const STEP_ART = {
+  on: '/map/step_on.webp',
+  off: '/map/step_off.webp',
+  ratio: 418 / 371,
+  cx: 186 / 371,
+  cy: 310.5 / 418,
+} as const
+
+/**
  * Cadenas peint (docs/proto4/raw/lock.png, détouré et réduit) : il illustre les objets encore
  * scellés dans la Collection. Une image plutôt qu'un emoji 🔒, dont le rendu change d'un
  * système à l'autre et jure avec les cartes peintes.

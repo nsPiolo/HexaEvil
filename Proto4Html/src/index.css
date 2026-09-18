@@ -157,6 +157,11 @@ p { margin: 0; }
 /* Une ligne de cases par couloir (couloir 0, prioritaire, en bas). La hauteur est posée en ligne selon le nombre de couloirs. */
 .track { grid-template-rows: repeat(var(--lanes), 1fr); }
 .cell {
+  /* Bloc contenant des calques posés dans la case : le marqueur de case spéciale et la cible
+     de pose de la tribune, tous deux en `position: absolute; inset: …`. Sans ça ils remontent
+     jusqu'à `.cells`, la seule boîte positionnée au-dessus, et se superposent tous au centre
+     du plateau au lieu de tenir chacun sur sa case. */
+  position: relative;
   background: var(--bg-2);
   border-radius: 6px;
   border: 1px solid transparent;
@@ -183,13 +188,19 @@ p { margin: 0; }
 .cell-start.head { color: var(--ink); }
 /* Rétrécissement : case bloquée, on n'y atterrit jamais. */
 .cell-blocked {
-  background: repeating-linear-gradient(135deg, #3a1d12 0 5px, #241512 5px 10px);
-  border-color: #5a2a1a;
+  /* La hachure a été assourdie quand l'éboulis peint est arrivé : à deux, ils faisaient des
+     cases bloquées le motif le plus voyant du plateau, devant les cases spéciales, qui sont
+     pourtant les seules sur lesquelles le joueur a une décision à prendre. C'est le dessin
+     qui porte maintenant, la hachure ne fait plus que teinter le fond. */
+  background: repeating-linear-gradient(135deg, #251710 0 5px, #1c1310 5px 10px);
+  border-color: #3d2016;
   display: flex;
   align-items: center;
   justify-content: center;
 }
-.cell-blocked-mark { color: #7a3a24; font-size: 0.9rem; font-weight: 700; }
+/* Éboulis peint (`public/table/cases/blocked.webp`) posé sur la hachure : la hachure dit
+   « on ne s'arrête pas là » d'un coup d'œil sur toute la piste, le dessin dit pourquoi. */
+.cell-blocked-mark { width: 100%; height: 100%; object-fit: contain; padding: 2px; opacity: 0.9; }
 /* Seuil franchi : la tête de colonne l'écrit. Départage : la colonne entière s'allume brièvement. */
 .head-closed { color: var(--bad) !important; }
 .cell-tie { animation: tie-flash 1.2s ease-out both; }
@@ -403,6 +414,33 @@ p { margin: 0; }
 }
 .die-dist { font-size: 1.5rem; font-variant-numeric: tabular-nums; }
 .die-small.die-dist { font-size: 1.15rem; }
+/*
+ * Dé Distance spécial : sa face peinte par-dessus le dé d'os, et une lueur centrale par
+ * dessus encore. Ces peintures-là sont sombres — braise, basalte, glace profonde — alors que
+ * la céramique des âmes est claire : sans la lueur, le chiffre en encre sombre tombe entre
+ * 1,9:1 et 2,5:1 au plus sombre de son emplacement, illisible. Avec, il remonte entre 6,0:1
+ * et 7,3:1, et le recul en brique (`.die-neg`) entre 3,7:1 et 4,5:1 — le dé d'os lui-même
+ * n'offre que 3,9:1 à cette encre, on est donc à parité avec lui.
+ *
+ * Une lueur plutôt qu'un liseré autour du chiffre : ces dés sont déjà éclairés de l'intérieur
+ * (feu, lave, braise sous la glace), la lumière au centre se lit comme la leur. Le chiffre
+ * garde exactement le traitement des autres dés, aucune règle de texte à part.
+ *
+ * `closest-side` fait partir les pourcentages du demi-côté et non de la diagonale : la lueur
+ * garde sa taille relative sur un dé de 72 px comme sur un `.die-small` de 58.
+ *
+ * Déclaré avant `.die-rolling`, qui remet la face d'os pendant le lancer : le dé spécial
+ * culbute comme les autres et ne se révèle qu'à l'arrêt.
+ */
+.die-dist-art {
+  background-image:
+    radial-gradient(circle closest-side at 50% 50%, rgba(233, 237, 241, 0.7) 0 16%, rgba(233, 237, 241, 0) 64%),
+    var(--dist-die),
+    url('/table/dice/white.webp');
+  background-size: 100% 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+}
 /* `--bad` (#d0453c) tombe à 1,6:1 sur le dé d'os : le recul se peint en brique sombre. */
 .die-neg { color: #6e1710; }
 .die:disabled { opacity: 0.6; }
@@ -1148,15 +1186,29 @@ p { margin: 0; }
 /* La spirale complète en fil fin ; le chemin déjà parcouru repassé par-dessus, épais et vif. */
 .spiral { fill: none; stroke: rgba(226, 236, 248, 0.3); stroke-width: 1.5; stroke-linecap: round; pointer-events: none; }
 .spiral-done { stroke: var(--ember); stroke-width: 4.5; opacity: 0.92; }
-.race-dot .dot { fill: var(--panel-2); stroke: var(--line); stroke-width: 2; transition: fill 200ms, stroke 200ms; }
-.race-done .dot { fill: #ff8b4d; stroke: rgba(10, 14, 20, 0.5); }
+/* Chaque course est un brasero : allumé si elle est franchie, éteint sinon (art.ts). L'état
+   ne se joue donc plus sur une couleur de pastille mais sur l'image elle-même ; il ne reste
+   ici qu'à éteindre un peu plus les courses hors d'atteinte et à désigner la prochaine. */
+.race-dot .dot-mark { pointer-events: none; transition: opacity 200ms, filter 200ms; }
+.dot-hit { fill: transparent; }
 .race-next { cursor: pointer; }
-.race-next .dot { fill: var(--gold); stroke: var(--ink); }
-.race-next .dot-halo { fill: rgba(224, 168, 60, 0.25); animation: halo 1.4s ease-in-out infinite; }
-.race-next:hover .dot { fill: #fff; }
-.race-locked .dot { opacity: 0.6; }
-.dot-boss { fill: var(--bg); font-size: 9px; pointer-events: none; }
-.race-locked .dot-boss { fill: var(--muted); }
+.race-next .dot-mark { filter: drop-shadow(0 0 4px rgba(224, 168, 60, 0.95)); }
+.race-next:hover .dot-mark { filter: drop-shadow(0 0 7px rgba(255, 255, 255, 1)); }
+/* Un anneau, pas un disque : le brasero de la prochaine course est éteint comme les suivants,
+   c'est donc le cerne qui la désigne, et un aplat passerait dessous sans se voir. */
+.race-next .dot-halo {
+  fill: none; stroke: var(--gold); stroke-width: 2; opacity: 0.9;
+  animation: halo 1.4s ease-in-out infinite;
+}
+.race-locked .dot-mark { opacity: 0.55; }
+/* La tête de mort est posée sur la vasque du brasero, et cette vasque change : sombre éteinte,
+   éclairée par la flamme une fois allumée. Même traitement que les chiffres des anneaux — un
+   glyphe clair cerné de sombre (paint-order) — pour qu'elle tienne sur les deux. */
+.dot-boss {
+  fill: #f3e3c6; font-size: 10px; font-weight: 700; pointer-events: none;
+  paint-order: stroke; stroke: rgba(6, 12, 20, 0.9); stroke-width: 2.5px; stroke-linejoin: round;
+}
+.race-locked .dot-boss { opacity: 0.55; }
 @keyframes halo { 0%, 100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.35); opacity: 0.3; } }
 .race-next .dot-halo { transform-box: fill-box; transform-origin: center; }
 /* Le bloc bleu peint sert de panneau : ni cadre ni fond ajoutés, juste une ombre portée sur le
@@ -1752,17 +1804,28 @@ p { margin: 0; }
 .item-hint { color: var(--gold); font-style: italic; }
 .item-error { color: #ff7b72; }
 /* Tribune posée : un fanion sur la case, et les cases permises deviennent cliquables pendant la pose. */
-.tribune { position: absolute; width: calc(100% / var(--cells)); height: calc(100% / var(--lanes)); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; color: var(--gold); pointer-events: none; text-shadow: 0 0 6px rgba(224, 168, 60, 0.7); }
+.tribune { position: absolute; width: calc(100% / var(--cells)); height: calc(100% / var(--lanes)); display: flex; align-items: center; justify-content: center; pointer-events: none; }
+.tribune img { width: 100%; height: 100%; object-fit: contain; padding: 2px; filter: drop-shadow(0 0 4px rgba(224, 168, 60, 0.7)); }
 .cell-tribune { position: absolute; inset: 2px; border: 1px dashed rgba(224, 168, 60, 0.5); border-radius: 4px; background: rgba(224, 168, 60, 0.08); cursor: pointer; }
 .cell-tribune:hover { background: rgba(224, 168, 60, 0.28); border-color: var(--gold); }
 
 /* ---- Cases spéciales du terrain ---- */
 /* Un signe discret dans la case : elle n'agit qu'à l'arrêt, elle ne doit pas crier plus fort
    qu'un jeton d'âme, mais doit se repérer avant de choisir l'ordre des combinaisons. */
-.cell-special { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; pointer-events: none; opacity: 0.8; }
-.cell-gold { color: var(--gold); }
-.cell-trap { color: #ff7b72; }
-.cell-boost { color: var(--good); }
+/*
+ * Marqueur de case spéciale : un objet peint (`public/table/cases/<kind>.webp`) et non plus
+ * un glyphe. Il occupe toute la case en `contain` — les dessins sont plus larges que hauts,
+ * la case aussi, donc c'est la largeur qui borne et ils s'alignent tous sur la même emprise.
+ *
+ * Il reste sous le jeton, qui passe par-dessus : d'où l'opacité, qui l'assourdit assez pour
+ * qu'une âme posée dessus reste lisible, et la lueur à la teinte du pouvoir, qui lui garde un
+ * bord net sur l'ardoise de la case même à moitié couvert.
+ */
+.cell-special { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; opacity: 0.85; }
+.cell-special img { width: 100%; height: 100%; object-fit: contain; padding: 3px; }
+.cell-gold img { filter: drop-shadow(0 0 2px rgba(224, 168, 60, 0.55)); }
+.cell-trap img { filter: drop-shadow(0 0 2px rgba(255, 123, 114, 0.5)); }
+.cell-boost img { filter: drop-shadow(0 0 2px rgba(78, 168, 106, 0.5)); }
 
 /* ---- Atelier de la boutique ---- */
 /* Revente d'artefact et décapage de face : on n'y achète rien, on fait de la place. Replié par

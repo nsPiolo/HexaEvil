@@ -1,4 +1,5 @@
 import { isBlocked, isInBetZone, specialAt, type MoveResult, type RaceState } from '../core/rules/race'
+import { blockedArt, cellArt } from './art'
 import { fmtDistance, soulColor } from './souls'
 import { bettingClosed } from '../core/rules/bets'
 import { BETS, BET_LIVE, BOARD, GLOSSARY, RACE, fill } from './texts'
@@ -114,19 +115,19 @@ export function Board({ race, lastResult, activeSoul, highlightSoul = null, onHo
         {/* Tribune infernale : posée avant la course, elle rapporte et pousse (artefacts.md n°19). */}
         {race.tribune && (
           <div className="tribune" style={cellStyle(race.tribune.column, race.tribune.lane)} title={BOARD.tribuneTitle} aria-label={BOARD.tribune}>
-            ⚑
+            <img src={cellArt('tribune')} alt="" />
           </div>
         )}
         {rows.map((lane) =>
           cols.map((c) => (
             <div key={`${lane}-${c}`} className={cellClass(c, lane)} title={isBlocked(track, c, lane) ? `Case bloquée (colonne ${c}, couloir ${lane + 1})` : tieColumns.includes(c) ? BOARD.tieColumn : undefined}>
-              {isBlocked(track, c, lane) && <span className="cell-blocked-mark" aria-hidden="true">✕</span>}
+              {isBlocked(track, c, lane) && <img className="cell-blocked-mark" src={blockedArt(c, lane)} alt="" aria-hidden="true" />}
               {/* Case spéciale (GDD §2.2) : elle n'agit que sur l'âme qui s'y arrête. */}
               {(() => {
                 const sp = specialAt(track, c, lane)
                 return sp ? (
                   <span className={`cell-special cell-${sp.kind}`} title={fill(BOARD.special[sp.kind], { n: sp.value })}>
-                    {BOARD.specialMark[sp.kind]}
+                    <img src={cellArt(sp.kind)} alt="" />
                   </span>
                 ) : null
               })()}

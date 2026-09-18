@@ -1,8 +1,8 @@
 import { existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { config } from '../../core/config'
-import { SOUL_COLORS, SOUL_DICE, soulColor, soulDieStyle } from '../souls'
+import { config, shop } from '../../core/config'
+import { DIST_DICE, SOUL_COLORS, SOUL_DICE, distDieStyle, hasDistArt, soulColor, soulDieStyle } from '../souls'
 
 /**
  * `soulColor` boucle sur la palette (`id % SOUL_COLORS.length`). Une palette plus courte que
@@ -50,5 +50,36 @@ describe('faces de dé peintes', () => {
     expect(soulDieStyle(0)['--soul-die']).toBe("url('/table/dice/e0a83c.webp')")
     expect(soulDieStyle(11)['--soul-die']).toBe("url('/table/dice/c5ccd2.webp')")
     expect(soulDieStyle(SOUL_COLORS.length)['--soul-die']).toBe(soulDieStyle(0)['--soul-die'])
+  })
+})
+
+/**
+ * Les faces des dés spéciaux sont nommées par l'id de l'objet, pas par une clé à part : c'est
+ * ce qui permet de composer l'URL depuis `DistanceDie.kind` sans table intermédiaire. Cette
+ * convention ne tient que si les deux listes parlent des mêmes ids.
+ */
+describe('faces des dés spéciaux', () => {
+  const dossier = fileURLToPath(new URL('../../../public/table/dice/', import.meta.url))
+  const idsBoutique = shop.items.filter((i) => i.kind === 'die').map((i) => i.id)
+
+  it('ne peint que des dés qui existent en boutique', () => {
+    for (const kind of DIST_DICE) expect(idsBoutique, kind).toContain(kind)
+  })
+
+  it('a le fichier de chaque face déclarée', () => {
+    for (const kind of DIST_DICE) expect(existsSync(`${dossier}${kind}.webp`), `${kind}.webp`).toBe(true)
+  })
+
+  it('laisse le dé d’os au dé de base et aux dés pas encore peints', () => {
+    expect(hasDistArt('base')).toBe(false)
+    expect(hasDistArt(undefined)).toBe(false)
+    expect(distDieStyle('base')).toEqual({})
+    // `fraude` est bien un dé spécial, mais sa face n'est pas peinte : le repli doit tenir.
+    expect(idsBoutique).toContain('fraude')
+    expect(hasDistArt('fraude')).toBe(false)
+  })
+
+  it('pointe sur la face de l’objet quand elle est peinte', () => {
+    expect(distDieStyle('colere')).toEqual({ '--dist-die': "url('/table/dice/colere.webp')" })
   })
 })

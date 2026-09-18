@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { config } from '../core/config'
 import { circleAt, isBeyondWritten } from '../core/rules/circles'
 import { demonRankAtRace } from './demon'
+import { STEP_ART } from './art'
 import { CIRCLES, HUD, MAP, MENU, fill, ordinalOf } from './texts'
 import { describeBossEffects } from '../core/rules/boss'
 import { bossEffectsFor, circleOf, type SessionCarry } from './useRace'
@@ -17,6 +18,9 @@ const STEP = 30
 /** Jeu laissé entre deux couronnes voisines, pour qu'elles se lisent sans trait de contour. */
 const GAP = 5
 const PAD = 10
+/** Largeur d'un brasero, en unités de la `viewBox` ; le boss a le sien, plus imposant. */
+const BRAZIER = 30
+const BRAZIER_BOSS = 42
 
 /**
  * Géométrie de la spirale pour un nombre d'anneaux donné. La `viewBox` vaut exactement les
@@ -140,6 +144,7 @@ export function MapScreen({ carry, onLaunch, onMenu }: Props) {
             const state = i < next ? 'done' : i === next ? 'next' : 'locked'
             const n = Math.floor(i / per) + 1
             const label = isBoss ? `${MAP.bossRace} — ${circleAt(config.run, n).boss}` : fill(MAP.race, { n: (i % per) + 1 })
+            const w = isBoss ? BRAZIER_BOSS : BRAZIER
             return (
               <g
                 key={i}
@@ -152,9 +157,19 @@ export function MapScreen({ carry, onLaunch, onMenu }: Props) {
                 aria-label={state === 'next' ? `${MAP.launch} : ${label}` : label}
               >
                 <title>{`${fill(MAP.circleOf, { n, name: circleAt(config.run, n).name })} · ${label} · ${state === 'done' ? MAP.done : state === 'next' ? MAP.next : MAP.locked}`}</title>
-                {state === 'next' && <circle cx={p.x} cy={p.y} r={isBoss ? 16 : 12} className="dot-halo" />}
-                <circle cx={p.x} cy={p.y} r={isBoss ? 9 : 6} className="dot" />
+                {state === 'next' && <circle cx={p.x} cy={p.y} r={isBoss ? 14 : 11} className="dot-halo" />}
+                <image
+                  href={state === 'done' ? STEP_ART.on : STEP_ART.off}
+                  className="dot-mark"
+                  width={w}
+                  height={w * STEP_ART.ratio}
+                  x={p.x - w * STEP_ART.cx}
+                  y={p.y - w * STEP_ART.ratio * STEP_ART.cy}
+                />
                 {isBoss && <text x={p.x} y={p.y + 3.5} className="dot-boss" textAnchor="middle">☠</text>}
+                {/* Cible de clic : la vasque, pas le cadre de l'image — celui de `step_on` monte
+                    haut au-dessus du brasero et mordrait sur le repère voisin. */}
+                <circle cx={p.x} cy={p.y} r={isBoss ? 11 : 8} className="dot-hit" />
               </g>
             )
           })}

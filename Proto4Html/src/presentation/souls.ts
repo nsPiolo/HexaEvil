@@ -62,6 +62,31 @@ export function soulDieStyle(id: number): Record<string, string> {
   return { '--soul': color, '--soul-die': SOUL_DICE.has(hex) ? `url('/table/dice/${hex}.webp')` : 'none' }
 }
 
+/*
+ * Faces peintes des dés spéciaux (`docs/proto4/raw/des/<id>.png`). Même dossier et même
+ * convention que les faces d'âme, mais la clé est cette fois l'id de l'objet dans
+ * `config/shop.json` — celui que `DistanceDie.kind` transporte. Les dés qui n'ont pas encore
+ * la leur (`fraude`, `troisiemeDe`) gardent le dé d'os, comme le dé de base.
+ */
+export const DIST_DICE: ReadonlySet<string> = new Set(['limbes', 'colere', 'glace', 'prodigalite'])
+
+/**
+ * Variables CSS d'un dé Distance, vides pour un dé qui n'a pas de face peinte : le dé d'os
+ * de `.die` sert alors seul, sans couche à recouvrir.
+ *
+ * Ces faces-là sont des peintures sombres, pas la céramique claire des âmes ; le chiffre en
+ * encre sombre y tomberait entre 1,9:1 et 2,5:1 au plus sombre de son emplacement. C'est
+ * `.die-dist-art` qui rattrape ça côté CSS, et c'est pour ça que l'appelant a besoin de
+ * savoir si la face existe — d'où `hasDistArt` plutôt qu'un simple `url(...)` ou rien.
+ */
+export function hasDistArt(kind: string | undefined): boolean {
+  return kind !== undefined && DIST_DICE.has(kind)
+}
+
+export function distDieStyle(kind: string | undefined): Record<string, string> {
+  return hasDistArt(kind) ? { '--dist-die': `url('/table/dice/${kind}.webp')` } : {}
+}
+
 /**
  * Inclinaison d'un dé, tirée de sa position. Des dés parfaitement alignés font gabarit ;
  * un angle retiré au hasard à chaque rendu ferait vibrer l'interface à chaque changement
