@@ -32,22 +32,33 @@ export const START_MONEY = 80 + ALLOWANCE
 export const TIE_SEED = 31
 export const TIE_RACE_INDEX = 3
 
+/** Objets présentés par la boutique (`shop.slots`) : la vitrine en montre exactement autant. */
+export const SHOP_SLOTS = 3
+
+/**
+ * Courses par cercle (`run.racesPerCircle`). Sert à se placer à un cercle donné : `race = n *
+ * RACES_PER_CIRCLE` démarre à la première course du cercle n + 1, donc au grade que le
+ * stagiaire a gagné en payant les n cercles précédents.
+ */
+export const RACES_PER_CIRCLE = 3
+
 /**
  * Vitrine du cercle 1, inventaire de départ (la vitrine est tirée à la première ouverture de la
- * boutique, avant tout lancer) : Face de gel 40 (sûr), Dé des Limbes 30 (sûr), Œil du parieur 80
- * (ambitieux, ≥ seuil de confirmation), Bât de chameau 95 (danger ⚠). Tous les prix dépassent
- * 15 : à 0 pièce apportée (20 d'avance − 5 de mise), tout est trop cher (04-D).
+ * boutique, avant tout lancer) : Dé des Limbes 30 (sûr), Verrou de Minos 85 (ambitieux, ≥ seuil
+ * de confirmation), Dé de la Colère 55 (danger ⚠). Tous les prix dépassent 15 : à 0 pièce
+ * apportée (20 d'avance − 5 de mise), tout est trop cher (04-D).
  *
- * Re-cherchée après l'élargissement du catalogue (16 → 47 objets), qui a invalidé la graine 171.
- * Contraintes à retrouver si elle saute à son tour : quatre objets triés sûr, sûr, ambitieux,
- * danger ; un dé à remplacer, sûr, sous le seuil de confirmation et payable à 67 ; un artefact
- * ambitieux entre 68 et 95 (achetable à 95, refusé à 67) ; un objet à contrepartie ; rien sous 16.
+ * Re-cherchée deux fois : à l'élargissement du catalogue (16 → 47 objets), puis au passage de
+ * la vitrine de 4 à 3 objets. Contraintes à retrouver si elle saute encore : `SHOP_SLOTS`
+ * objets triés sûr, ambitieux, danger ; un dé à remplacer, sûr, sous le seuil de confirmation
+ * et payable à 67 ; un artefact ambitieux entre 68 et 95 (achetable à 95, refusé à 67) ; un
+ * objet à contrepartie ; rien sous 16.
  */
-export const SHOP_SEED = 210
+export const SHOP_SEED = 918
 export const SHOP_SEED_EXPECT = {
-  order: ['Sûr', 'Sûr', 'Ambitieux', 'Danger ⚠'],
-  danger: { name: 'Bât de chameau', warning: "la fusion dure toute la course et vous ne la choisissez qu'une fois", impact: 'fort' },
-  confirm: { name: 'Œil du parieur', price: 80 },
+  order: ['Sûr', 'Ambitieux', 'Danger ⚠'],
+  danger: { name: 'Dé de la Colère', warning: 'une face à −2 : un recul de deux cases est possible', impact: 'moyen' },
+  confirm: { name: 'Verrou de Minos', price: 85 },
   die: { name: 'Dé des Limbes', price: 30, faces: ['+1', '+1', '+2', '+2'] },
   cheapest: 30,
 }

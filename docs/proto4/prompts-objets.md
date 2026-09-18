@@ -1,7 +1,7 @@
 # Objets achetables — images à générer (Gemini)
 
-Les seize objets de la boutique (`Proto4Html/config/shop.json`) : huit artefacts,
-quatre dés et quatre opérations de forge. Chacun reçoit une **vignette carrée**
+Les quarante-sept objets de la boutique (`Proto4Html/config/shop.json`) : trente
+artefacts, six dés et onze opérations de forge. Chacun reçoit une **vignette carrée**
 posée à gauche de son nom dans la carte de vitrine, et en réduction dans la
 pastille d'inventaire. Le code est en place ; il ne manque que les dessins.
 
@@ -18,9 +18,23 @@ dans `config/shop.json` (voir le tableau plus bas) : `sablier.webp`,
 (`src/presentation/ItemArt.tsx`) construit le chemin à partir de l'id, donc :
 
 - poser le `.webp` dans le dossier **suffit**, il n'y a rien à déclarer dans le code ;
-- tant qu'un fichier manque, la carte se passe d'image et le texte reprend toute la
-  largeur — pas de cadre vide, pas de trou. Les dessins peuvent donc arriver un par
-  un, dans n'importe quel ordre.
+- tant qu'un fichier manque, la carte montre `qmark.webp`, le point d'interrogation peint.
+  Toutes les cartes gardent donc la même silhouette, et les dessins peuvent arriver un par
+  un, dans n'importe quel ordre, sans qu'une carte s'élargisse parce qu'il lui manque le sien.
+
+Les PNG détourés vivent dans `docs/proto4/raw/objects/png/` et c'est
+`Proto4Html/scripts/install-art.py` qui les pose dans le jeu :
+
+```bash
+cd Proto4Html
+python3 scripts/install-art.py objets
+```
+
+Il recadre chaque vignette sur sa boîte opaque et la repose au centre d'un carré dont elle
+occupe 85 %, avant de réduire à 256 × 256 en WebP qualité 88. Ce recadrage n'est pas
+cosmétique : le cadrage des sources va de 70 % à 91 % du cadre, et les vignettes étant
+affichées en `object-fit: contain` dans des cases de même taille, s'en remettre au cadrage
+d'origine ferait des objets visiblement plus petits que d'autres en vitrine.
 
 Format : **2048 × 2048** en source — c'est ce que sort l'API, en JPEG et non en PNG
 (voir `scripts/gen-objets.mjs`) —, réduit à **256 × 256** en WebP qualité 88 (quelques
@@ -74,7 +88,11 @@ Conséquences sur les prompts :
 - **bord net et fermé**, sans fumée ni braises qui s'évaporent hors de l'objet ;
 - **rien qui flotte à côté** : le modèle a tendance à lâcher un coup de pinceau détaché
   dans le vide, invisible à l'œil sur fond sombre mais que la baguette magique laissera
-  en place — c'est la dernière chose à vérifier avant d'exporter.
+  en place — c'est la dernière chose à vérifier avant d'exporter ;
+- **pas de cadre** : demander un objet bien centré dans son carré suffit à lui faire
+  peindre un filet clair le long des bords, comme une bordure de tableau. Il compte pour
+  un objet distinct au détourage et ruine la vignette, d'où la clause explicite dans le
+  squelette.
 
 Le blanc pur, lui, est autorisé : les reflets vifs et les arêtes les plus claires
 peuvent monter jusqu'au blanc sans risque, c'était l'interdit du temps du fond blanc.
@@ -82,7 +100,7 @@ peuvent monter jusqu'au blanc sans risque, c'était l'interdit du temps du fond 
 ## Direction artistique commune
 
 Le paragraphe suivant est repris **mot pour mot** dans chaque prompt, c'est lui qui
-fait tenir les seize objets ensemble — et avec le reste du jeu, puisque c'est la
+fait tenir les quarante-sept objets ensemble — et avec le reste du jeu, puisque c'est la
 même DA que les décors et les personnages :
 
 > Digital concept painting with wide visible brush strokes, misty and ethereal
@@ -119,10 +137,11 @@ Un seul prompt, dont seule la **phrase d'objet** change d'une vignette à l'autr
 > strictly inside the object's silhouette: the background is one perfectly flat colour and
 > completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient.
 > Everything painted in the image belongs to that one object — no detached brush strokes,
-> specks, flecks or floating fragments anywhere in the background. No text, no letters, no
-> numbers, no logo, no user interface, no hands, no character.
+> specks, flecks or floating fragments anywhere in the background, and no frame, border,
+> outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo,
+> no user interface, no hands, no character.
 
-## Les seize phrases d'objet
+## Les quarante-sept phrases d'objet
 
 Six objets sont sombres par nature — `sablier`, `livreDesComptes`, `colere`,
 `limee`, `retournee`, `sceau`. Leur phrase porte une mention explicite d'arête de
@@ -141,22 +160,59 @@ silhouette existe.
 | `boursePercee.webp` | Bourse percée | a worn leather coin purse, its drawstring loose and a hole torn in the bottom, two or three tarnished coins slipping out |
 | `livreDesComptes.webp` | Livre des comptes | a thick ledger bound in cracked dark leather, closed, its edges gilded and worn, a frayed red ribbon marker hanging out, a cold pale rim light along the cover and the spine |
 | `tirelire.webp` | Tirelire du stagiaire | a small chipped clay money box shaped like a horned imp, a coin slot on top, a hairline crack down one side |
+| `relanceJumelle.webp` | Relance jumelle | a pair of twin bronze amulets cast from the same mould, hanging side by side from one split ring, one of them turned to show its blank reverse |
+| `quatriemeTete.webp` | Quatrième tête de Cerbère | a stone carving of a fourth dog's head, freshly broken off a larger statue, its muzzle chipped and its eye sockets lit by a faint amber ember |
+| `fioleDeSang.webp` | Fiole de sang | a small thick glass vial of dark blood, its cork sealed with red wax and bound with a leather cord, a single drop running down the outside |
+| `verrouDeMinos.webp` | Verrou de Minos | a heavy square iron padlock, ancient and pitted, its shackle firmly closed, a short length of scaled tail-like chain threaded through it |
+| `semellesDePlomb.webp` | Semelles de plomb | a pair of thick boot soles cast in dull grey lead, their leather straps frayed and their edges rounded by dragging |
+| `batDeChameau.webp` | Bât de chameau | a heavy leather pack-saddle on a wooden frame, a laden pannier slung on either side, its girth strap buckled tight |
+| `balanceTruquee.webp` | Balance truquée | a small brass balance scale, visibly rigged, one pan hanging far lower than the other, a lead slug stuck under it |
+| `chaineDuCoccyte.webp` | Chaîne du Coccyte | a short length of thick iron chain caught inside a block of blue-white ice, two links protruding at either end, hoarfrost along the metal |
+| `ticketPremiereHeure.webp` | Ticket de la première heure | a torn paper betting slip, blank and unprinted, its edge ragged where it was pulled from a book, punched once with a round hole, yellowed and creased |
+| `quatriemeMarche.webp` | Quatrième marche | a short flight of worn stone steps, three of them smoothed hollow by use, a fourth one freshly cut and paler with its edge still sharp |
+| `encensoirDuDernier.webp` | Encensoir du dernier | a battered brass censer hanging from three short chains, its pierced lid half open, a little pale smoke caught in the holes and going no further |
+| `pieceADeuxFaces.webp` | Pièce à deux faces | a thick tarnished silver coin standing on its edge and caught mid-spin, both visible faces struck with the same blank relief |
+| `denierDuCercle.webp` | Denier du cercle | one large worn silver coin resting on a small stack of three lesser ones, its rim deeply nicked all the way round |
+| `baumeDuPerdant.webp` | Baume du perdant | a squat clay ointment jar, its stopper pushed askew, a pale greenish balm oozing over the rim and down one side |
+| `tribuneInfernale.webp` | Tribune infernale | a small wooden grandstand of three tiered benches built from dark salvaged planks, one of its legs propped up on a stone |
+| `detteInfernale.webp` | Dette infernale | a folded parchment note sealed with a blob of dark red wax, a broken length of iron chain threaded through a hole torn in its corner |
+| `pourboireDuStagiaire.webp` | Pourboire du stagiaire | a chipped clay saucer holding a loose handful of tarnished coins, one coin balanced upright against the rim |
+| `oeilDeCharon.webp` | Œil de Charon | a short battered brass spyglass, its barrel green with patina, its lens clouded, an old coin wedged into the ring of the eyepiece |
+| `fouetDuContremaitre.webp` | Fouet du contremaître | a coiled leather whip with a braided handle bound in brass wire, its lash wound tight and its tip frayed to threads |
+| `miroirDeNarcisse.webp` | Miroir de Narcisse | a small hand mirror in tarnished silver with an ornate handle, its glass cracked across once and reflecting nothing but flat grey |
+| `marteauHephaistos.webp` | Marteau d'Héphaïstos | a blacksmith's hammer with a scarred steel head and a short charred wooden handle, its striking face still glowing dull orange from the anvil |
+| `rabaisDePloutos.webp` | Rabais de Ploutos | a merchant's brass scale weight, squat and round with a ring handle on top, visibly filed down along its base, brass dust caught in the cuts |
 
 ### Dés (`kind: "die"`)
 
-À la table, un dé n'est pas un cube : c'est une **face de céramique arrondie**,
-épaisse et émaillée (`public/table/dice/`, posée en fond de `.die` par le CSS), la
-valeur étant écrite par-dessus en HTML. Les vignettes de la boutique reprennent cet
-objet-là, vu de trois quarts pour qu'on en voie l'épaisseur — **jamais un cube, jamais
-un chiffre gravé**. Les quatre dés se distinguent par la matière et la couleur, pas
-par leurs valeurs, qui sont affichées sous la carte et changent avec la forge.
+**En vitrine, les quatre dés sont des cubes.** C'est un écart assumé avec la table, où
+un dé n'est pas un cube mais une **face de céramique arrondie**, épaisse et émaillée
+(`public/table/dice/`, posée en fond de `.die` par le CSS), la valeur étant écrite
+par-dessus en HTML.
+
+Les deux n'ont pas le même travail à faire. À la table, le contexte dit ce qu'est
+l'objet : le dé est aligné avec les autres, il porte une valeur, on sait ce qu'on
+regarde. Dans la vitrine il est seul, entre un creuset et une bourse, et la silhouette
+doit suffire — une dalle épaisse s'y lit comme une pierre. Le cube dit « dé »
+immédiatement, la face de céramique non.
+
+Les quatre partagent donc la même silhouette — cube vu de trois quarts, trois faces
+visibles — et ne se distinguent que par la **matière**, qui emporte le traitement des
+arêtes : la pierre des Limbes est usée et ses angles émoussés, la glace reste vive et
+ébréchée, l'or est gonflé comme à demi fondu, le basalte est fendu.
+
+**Aucun dé ne porte de chiffre ni de point.** C'est la règle qui ne bouge pas : les
+valeurs sont affichées sous la carte en HTML et changent avec la forge, un dé peint avec
+un « 3 » ou avec des points mentirait dès la première opération.
 
 | Fichier | Objet | Phrase d'objet |
 |---|---|---|
-| `limbes.webp` | Dé des Limbes | a single thick rounded-square ceramic tile, blank and glazed, carved from pale grey stone, smooth and worn, its edges softened by handling, faintly dusty |
-| `colere.webp` | Dé de la Colère | a single thick rounded-square ceramic tile, blank and glazed, in dark cracked basalt, molten orange light glowing from the cracks and staying inside the tile, one corner chipped off, a cold pale rim light along its edges |
-| `glace.webp` | Dé de Glace | a single thick rounded-square tile of clear blue ice, blank, sharp-edged, frost crusted along its rim, a cold pale glow contained inside the ice |
-| `prodigalite.webp` | Dé de Prodigalité | a single thick rounded-square tile cast in soft gold, blank, slightly deformed as if half melted, a few gold droplets frozen along its rim |
+| `limbes.webp` | Dé des Limbes | a single cube with the proportions of a gaming die, seen at a three-quarter angle so three faces are visible, carved from pale grey stone, smooth and worn, its corners rounded and its edges softened by long handling, faintly dusty; its faces completely blank — no pips, no dots, no numbers, no carving of any kind |
+| `colere.webp` | Dé de la Colère | a single cube with the proportions of a gaming die, seen at a three-quarter angle so three faces are visible, its corners rounded and its edges bevelled, carved from dark cracked basalt, molten orange light glowing from the cracks and staying inside the cube, one corner chipped off, a cold pale rim light along its edges; its faces completely blank — no pips, no dots, no numbers, no carving of any kind |
+| `glace.webp` | Dé de Glace | a single cube with the proportions of a gaming die, seen at a three-quarter angle so three faces are visible, carved from clear blue ice, its edges crisp and one corner chipped away, frost crusted along the edges, a cold pale glow contained inside the ice; its faces completely blank — no pips, no dots, no numbers, no carving of any kind |
+| `prodigalite.webp` | Dé de Prodigalité | a single cube with the proportions of a gaming die, seen at a three-quarter angle so three faces are visible, cast in soft gold, its corners rounded and its edges swollen as if half melted, slightly slumped out of true, a few gold droplets frozen along its lower edges; its faces completely blank — no pips, no dots, no numbers, no carving of any kind |
+| `fraude.webp` | Dé de Fraude | a single cube with the proportions of a gaming die, seen at a three-quarter angle so three faces are visible, its corners rounded and its edges worn, cast in tarnished green-grey lead, one face visibly slumped and re-cast as if tampered with; its faces completely blank — no pips, no dots, no numbers, no carving of any kind |
+| `troisiemeDe.webp` | Troisième dé Distance | a single cube with the proportions of a gaming die, seen at a three-quarter angle so three faces are visible, its corners rounded and its edges crisp, carved from plain bone yellowed with age, a hairline crack running across one face; its faces completely blank — no pips, no dots, no numbers, no carving of any kind |
 
 ### Forge (`kind: "forge"`)
 
@@ -169,6 +225,13 @@ montre l'outil ou la marque, pas le dé.
 | `doree.webp` | Face dorée | a small foundry crucible tipping over — a thick-walled ceramic cup held in an iron ring handle, not a rock — a thread of molten gold pouring from its lip and catching the light |
 | `retournee.webp` | Face retournée | a blacksmith's iron tongs gripping a small glowing plate of metal, turning it over, the plate lit orange from within, a cold pale rim light along the arms of the tongs |
 | `sceau.webp` | Sceau du parieur | a heavy wax seal stamp in blackened bronze, its handle short and thick, a blob of warm scarlet sealing wax still stuck to its face, never purple, a cold pale rim light along the handle and the collar |
+| `explosive.webp` | Face explosive | a squat blackened iron powder charge bound with two bands, its short fuse lit, a tight orange spark contained at the tip |
+| `bond.webp` | Face de bond | a thick oiled steel spring compressed under a worn iron plate, wound tight and about to let go |
+| `miroir.webp` | Face miroir | a polished steel plate held in a small clamp, its surface mirror-bright and slightly warped, the reflection smeared out of shape |
+| `feuFollet.webp` | Face feu follet | a small glass lantern with no candle in it, a pale green flame floating loose inside the glass, the top of the pane smoked black-brown |
+| `elan.webp` | Face d'élan | a heavy iron flywheel on a short axle, its rim nicked and scarred, spinning fast enough to blur along one side |
+| `gel.webp` | Face de gel | a blacksmith's tongs gripping a metal plate that has frozen instead of glowing, blue-white frost creeping up the jaws |
+| `aimant.webp` | Face aimant | a squat grey bar lodestone, pitted and dark, iron filings and two bent nails clinging in dense tufts to each end |
 
 ## Générer : `npm run gen:objets`
 

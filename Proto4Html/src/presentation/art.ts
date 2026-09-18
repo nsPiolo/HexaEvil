@@ -30,7 +30,7 @@ export const bossPortrait = (circle: number): string => `/circles/${circleArt(ci
 /**
  * Vignette d'un objet de la boutique (artefact, dé ou opération de forge), nommée par son id
  * dans `config/shop.json` : `public/objets/<id>.webp`. Les dessins arrivent au fur et à mesure ;
- * `ItemArt` se passe de l'image tant que le fichier manque, il n'y a donc rien à déclarer ici.
+ * `ItemArt` sert le point d’interrogation tant que le fichier manque, il n’y a rien à déclarer ici.
  */
 export const itemArt = (id: string): string => `/objets/${id}.webp`
 

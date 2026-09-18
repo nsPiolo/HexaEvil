@@ -330,10 +330,14 @@ Source : un buste détouré sur le **canevas commun 976 × 1075**, le même que 
 portraits du stagiaire (`docs/proto4/raw/perso/`) — c'est lui qui fait que les deux
 se remplacent au même endroit sans que le personnage saute. Le canevas n'est jamais
 recadré à la conversion : réduction à 700 px de large, WebP qualité 88, et c'est
-tout. Les rendus bruts vivent dans `docs/proto4/raw/demons/png/`, nommés
-`<n>_<univers>.png` ; le numéro donne le cercle, pas le nom du dossier
-(`10_mer` → `10-fonds-marins`, `13_neige` → `13-montagne`, `14_vent` → `14-ciel`,
-`15_ange` → `15-paradis`).
+tout. Les rendus bruts vivent dans `docs/proto4/raw/demons/`, leurs détourages dans
+`png2/` à côté, nommés `<n>_<univers>.png` ; le numéro donne le cercle, pas le nom du
+dossier (`10_mer` → `10-fonds-marins`, `12_villes` → `12-ville`, `13_neige` →
+`13-montagne`, `14_vent` → `14-ciel`, `15_ange` → `15-paradis`).
+
+La conversion n'est pas à faire à la main : `Proto4Html/scripts/install-art.py` pose les
+portraits de boss **et** ceux du stagiaire au bon format et au bon endroit. Les prompts
+et la marche à suivre sont dans [`prompts-boss.md`](prompts-boss.md).
 
 Les quinze sont peints. Celui du cercle 9 est le stagiaire lui-même, promu : c'est le
 même personnage que `menu/perso/stagiaire_4_boss.webp`, en costume bleu. Les cercles

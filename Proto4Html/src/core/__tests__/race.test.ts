@@ -331,7 +331,7 @@ describe('couloirs et terrains : config', () => {
     const c = loadConfig(rawConfig).run.circles
     for (const circle of c) {
       expect(circle.terrains.length).toBeGreaterThan(0)
-      if (circle.lanes === 1) expect(circle.terrains).toEqual([{ name: circle.terrains[0]!.name, blocked: [] }])
+      if (circle.lanes === 1) expect(circle.terrains).toEqual([{ name: circle.terrains[0]!.name, blocked: [], specials: circle.terrains[0]!.specials }])
       else expect(circle.terrains.length).toBeGreaterThan(1)
     }
   })

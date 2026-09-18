@@ -23,6 +23,8 @@ export interface Face {
   effect: FaceEffect | null
   /** Id de l'altération de forge, pour l'affichage ; null pour une face d'origine. */
   altered: string | null
+  /** Valeur d'avant la forge, gardée pour le décapage (forge.md). Absente sur une face d'origine. */
+  original?: number
   /** Face « ? » du Dé de Fraude : elle copie la meilleure autre face du lancer (des.md n°5). */
   wild?: boolean
 }

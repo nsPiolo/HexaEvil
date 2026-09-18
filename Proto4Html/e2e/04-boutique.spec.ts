@@ -1,13 +1,13 @@
 import { expect, test, type Page } from '@playwright/test'
 import { hudMoney, openShop, placeBet, shopPanel, start } from './helpers'
-import { SHOP_SEED, SHOP_SEED_EXPECT as E, START_MONEY } from './seeds'
+import { SHOP_SEED, SHOP_SEED_EXPECT as E, SHOP_SLOTS, START_MONEY } from './seeds'
 
 /** Pose un pari de 5 sur Homère et ouvre la boutique : la vitrine de la graine apparaît. */
 async function openShopWithBet(page: Page) {
   await placeBet(page, { souls: [0], stake: 5 })
   await openShop(page)
   const shop = shopPanel(page)
-  await expect(shop.getByRole('article')).toHaveCount(4)
+  await expect(shop.getByRole('article')).toHaveCount(SHOP_SLOTS)
   return shop
 }
 

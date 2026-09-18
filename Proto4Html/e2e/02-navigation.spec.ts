@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { autoToResults, betsPanel, board, openShop, phaseStrip, placeBet, rollDice, shopPanel, slot, start, startRace, tokenButton } from './helpers'
-import { RACE_SEED, SHOP_SEED } from './seeds'
+import { RACES_PER_CIRCLE, RACE_SEED, SHOP_SEED, SHOP_SLOTS } from './seeds'
 
 const EMPTY_STATE = 'Pose d’abord un pari, le stagiaire n’ouvre pas la caisse aux indécis.'
 
@@ -26,23 +26,26 @@ test.describe('02 · Navigation Pari ↔ Boutique', () => {
     await expect(shopBtn).toBeEnabled()
     await openShop(page)
     const shop = shopPanel(page)
-    await expect(shop.getByRole('article')).toHaveCount(4)
+    await expect(shop.getByRole('article')).toHaveCount(SHOP_SLOTS)
     await expect(shop.getByText(EMPTY_STATE)).toHaveCount(0)
   })
 
   test('E2E-02-C : le brouillon de ticket survit à l’aller-retour boutique', async ({ page }) => {
-    // 02/AC3
-    await start(page, { seed: RACE_SEED })
+    // 02/AC3 — le brouillon testé est un Duel, à deux emplacements : c'est celui qui a le plus
+    // à perdre dans un aller-retour. Le Duel étant un pari combiné, il demande le premier grade
+    // du stagiaire : on se place au troisième cercle, où les mises valent 10 · 20 · 40 · 100 et
+    // l'avance 60 (40 apportés + 60 d'avance = 100 à la table).
+    await start(page, { seed: RACE_SEED, race: 2 * RACES_PER_CIRCLE, money: 40 })
     const panel = betsPanel(page)
     // La boutique n'ouvre qu'après un premier pari posé : c'est lui qui déverrouille le bouton.
     // Le brouillon dont on teste la survie est le suivant, monté par-dessus.
-    await placeBet(page, { souls: [4], stake: 5 })
+    await placeBet(page, { souls: [4], stake: 10 })
     await panel.getByRole('tab', { name: /^Combinés/ }).click()
     await panel.getByRole('button', { name: /^Duel/ }).click()
     await tokenButton(page, 0).click()
     await tokenButton(page, 2).click()
     await panel.getByRole('button', { name: '20', exact: true }).click()
-    await expect(panel.getByText('Solde après mise : 80 ¤')).toBeVisible()
+    await expect(panel.getByText('Solde après mise : 70 ¤')).toBeVisible()
 
     await openShop(page)
     await expect(shopPanel(page)).toBeVisible()
@@ -54,7 +57,7 @@ test.describe('02 · Navigation Pari ↔ Boutique', () => {
     await expect(panel.getByRole('button', { name: /^Duel/ })).toHaveAttribute('aria-pressed', 'true')
     await expect(slot(page, 'devant')).toContainText('Homère')
     await expect(slot(page, 'derrière')).toContainText('Aristote')
-    await expect(panel.getByText('Solde après mise : 80 ¤')).toBeVisible()
+    await expect(panel.getByText('Solde après mise : 70 ¤')).toBeVisible()
   })
 
   test('E2E-02-D : course lancée, plus d’accès à la boutique ; l’onglet Paris reste jusqu’à la fin', async ({ page }) => {

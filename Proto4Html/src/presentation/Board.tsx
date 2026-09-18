@@ -1,4 +1,4 @@
-import { isBlocked, isInBetZone, type MoveResult, type RaceState } from '../core/rules/race'
+import { isBlocked, isInBetZone, specialAt, type MoveResult, type RaceState } from '../core/rules/race'
 import { fmtDistance, soulColor } from './souls'
 import { bettingClosed } from '../core/rules/bets'
 import { BETS, BET_LIVE, BOARD, GLOSSARY, RACE, fill } from './texts'
@@ -121,6 +121,15 @@ export function Board({ race, lastResult, activeSoul, highlightSoul = null, onHo
           cols.map((c) => (
             <div key={`${lane}-${c}`} className={cellClass(c, lane)} title={isBlocked(track, c, lane) ? `Case bloquée (colonne ${c}, couloir ${lane + 1})` : tieColumns.includes(c) ? BOARD.tieColumn : undefined}>
               {isBlocked(track, c, lane) && <span className="cell-blocked-mark" aria-hidden="true">✕</span>}
+              {/* Case spéciale (GDD §2.2) : elle n'agit que sur l'âme qui s'y arrête. */}
+              {(() => {
+                const sp = specialAt(track, c, lane)
+                return sp ? (
+                  <span className={`cell-special cell-${sp.kind}`} title={fill(BOARD.special[sp.kind], { n: sp.value })}>
+                    {BOARD.specialMark[sp.kind]}
+                  </span>
+                ) : null
+              })()}
               {/* Pose de la tribune : seules les cases permises sont cliquables. */}
               {onPlaceTribune && c > 0 && c < track.betThresholdColumn && !isBlocked(track, c, lane) && (
                 <button type="button" className="cell-tribune" onClick={() => onPlaceTribune(c, lane)} aria-label={fill(BOARD.tribunePlace, { column: c })} title={fill(BOARD.tribunePlace, { column: c })} />

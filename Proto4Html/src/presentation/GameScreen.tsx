@@ -239,6 +239,9 @@ export function GameScreen({ carry, unlocked, speed, onFinished, onMenu }: Props
                 raceIndex={ui.raceIndex}
                 inventory={ui.inventory}
                 forgeFree={!ui.forgeFreeUsed}
+                level={level}
+                onSell={actions.sell}
+                onDecap={actions.decap}
                 pending={ui.pendingPurchase}
                 onBuy={(id, target) => actions.buy(id, target ?? null)}
                 onCancel={actions.cancelPurchase}
@@ -247,7 +250,7 @@ export function GameScreen({ carry, unlocked, speed, onFinished, onMenu }: Props
                 onGoToBets={openBets}
                 onClose={openBets}
               />
-              {shopUnlocked && <Inventory inventory={ui.inventory} lateBetCharges={ui.lateBetCharges} compact />}
+              {shopUnlocked && <Inventory inventory={ui.inventory} lateBetCharges={ui.lateBetCharges} level={level} compact />}
             </div>
           )}
           {!prep && <OpponentSlot ui={ui} />}

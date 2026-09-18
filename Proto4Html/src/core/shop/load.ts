@@ -1,5 +1,5 @@
 import { ConfigError } from '../config/load'
-import { IMPACTS, IMPACT_OF_RARITY, isArtefactId, isForgeId, type Impact, type Rarity, type ShopConfig, type ShopItem } from './items'
+import { IMPACTS, IMPACT_OF_RARITY, RANK_OF_RARITY, isArtefactId, isForgeId, type Impact, type Rarity, type ShopConfig, type ShopItem } from './items'
 
 function fail(field: string, detail: string): never {
   throw new ConfigError(field, detail)
@@ -51,6 +51,7 @@ function item(raw: unknown, field: string): ShopItem {
     params: params(o.params, `${field}.params`),
     impact: impact as Impact,
     warning,
+    minRank: o.minRank === undefined ? RANK_OF_RARITY[rarity as Rarity] : int(o.minRank, `${field}.minRank`, 0),
   }
   switch (kind) {
     case 'artefact':
@@ -79,7 +80,7 @@ function item(raw: unknown, field: string): ShopItem {
  * Socle débloqué au premier lancement. Il doit remplir une vitrine entière (`slots`), sinon
  * la boutique ouvrirait à moitié vide tant qu'aucun cercle n'a été payé (`shop/unlocks.ts`).
  */
-function startIds(raw: unknown, known: ReadonlySet<string>, slots: number): string[] {
+function startIds(raw: unknown, known: ReadonlySet<string>, items: readonly ShopItem[], slots: number): string[] {
   const field = 'shop.unlockedAtStart'
   if (!Array.isArray(raw)) fail(field, 'tableau d’identifiants attendu')
   const out: string[] = []
@@ -90,6 +91,10 @@ function startIds(raw: unknown, known: ReadonlySet<string>, slots: number): stri
     out.push(id)
   })
   if (out.length < slots) fail(field, `au moins ${slots} objets attendus (shop.slots)`)
+  // La vitrine se filtre aussi par grade : il faut assez d'objets ouverts au grade 0, sinon la
+  // toute première boutique s'ouvrirait à moitié vide.
+  const atRankZero = out.filter((id) => items.find((it) => it.id === id)?.minRank === 0).length
+  if (atRankZero < slots) fail(field, `au moins ${slots} objets de minRank 0 attendus (${atRankZero} trouvés) : la première vitrine serait incomplète`)
   return out
 }
 
@@ -104,6 +109,19 @@ export function loadShopConfig(raw: unknown): ShopConfig {
   const rarityWeights = {} as Record<Rarity, number>
   for (const r of RARITIES) rarityWeights[r] = num(w[r], `shop.rarityWeights.${r}`)
   const confirmThreshold = root.confirmThreshold === undefined ? 60 : int(root.confirmThreshold, 'shop.confirmThreshold', 0)
+  const forgeRaw = root.forge === undefined ? {} : obj(root.forge, 'shop.forge')
+  const forge = {
+    maxAltered: forgeRaw.maxAltered === undefined ? 2 : int(forgeRaw.maxAltered, 'shop.forge.maxAltered', 1),
+    advancedLevel: forgeRaw.advancedLevel === undefined ? 2 : int(forgeRaw.advancedLevel, 'shop.forge.advancedLevel', 0),
+    maxAlteredAdvanced: forgeRaw.maxAlteredAdvanced === undefined ? 3 : int(forgeRaw.maxAlteredAdvanced, 'shop.forge.maxAlteredAdvanced', 1),
+    decapCost: forgeRaw.decapCost === undefined ? 10 : int(forgeRaw.decapCost, 'shop.forge.decapCost', 0),
+  }
+  if (forge.maxAlteredAdvanced < forge.maxAltered) fail('shop.forge.maxAlteredAdvanced', `au moins shop.forge.maxAltered (${forge.maxAltered})`)
+  const slotLevelsRaw = root.artefactSlotLevels
+  if (slotLevelsRaw !== undefined && !Array.isArray(slotLevelsRaw)) fail('shop.artefactSlotLevels', 'tableau de grades attendu')
+  const artefactSlotLevels = ((slotLevelsRaw as unknown[]) ?? [2, 4]).map((v, i) => int(v, `shop.artefactSlotLevels[${i}]`, 1))
+  const resaleRatio = root.resaleRatio === undefined ? 0.4 : num(root.resaleRatio, 'shop.resaleRatio')
+  if (resaleRatio < 0 || resaleRatio > 1) fail('shop.resaleRatio', 'entre 0 et 1')
   const confirmResetMs = root.confirmResetMs === undefined ? 3000 : int(root.confirmResetMs, 'shop.confirmResetMs', 0)
   if (!Array.isArray(root.items) || root.items.length < slots) fail('shop.items', `au moins ${slots} objets attendus (shop.slots)`)
   const items = root.items.map((it, i) => item(it, `shop.items[${i}]`))
@@ -112,6 +130,6 @@ export function loadShopConfig(raw: unknown): ShopConfig {
     if (ids.has(it.id)) fail('shop.items', `id « ${it.id} » en double`)
     ids.add(it.id)
   }
-  const unlockedAtStart = startIds(root.unlockedAtStart, ids, slots)
-  return { slots, rerollCost, priceGrowthPerCircle, artefactSlots, rarityWeights, confirmThreshold, confirmResetMs, unlockedAtStart, items }
+  const unlockedAtStart = startIds(root.unlockedAtStart, ids, items, slots)
+  return { slots, rerollCost, priceGrowthPerCircle, artefactSlots, rarityWeights, confirmThreshold, confirmResetMs, forge, artefactSlotLevels, resaleRatio, unlockedAtStart, items }
 }

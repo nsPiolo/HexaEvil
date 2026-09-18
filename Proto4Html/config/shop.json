@@ -1,6 +1,6 @@
 {
   "_comment": "Boutique (GDD §6). Accessible après les paris initiaux, avant la course. Les prix sont ceux du cercle 1 et grandissent de priceGrowthPerCircle par cercle. Les effets sont implémentés dans src/core/shop/shop.ts, indexés par id : changer un prix ou un texte ici suffit, ajouter un id demande du code. Chaque objet peut porter `impact` (faible | moyen | fort | extreme ; sinon déduit de la rareté : common→faible, rare→moyen, legendary→fort) et `warning` (contrepartie explicite, affichée en rouge : l'objet est alors marqué DANGER et demande une confirmation). confirmThreshold = prix effectif à partir duquel un achat demande deux clics (« Confirmer {prix} ¤ ») ; confirmResetMs = délai avant que le bouton redevienne « Acheter » sans second clic.",
-  "slots": 4,
+  "slots": 3,
   "rerollCost": 10,
   "priceGrowthPerCircle": 0.25,
   "artefactSlots": 5,
@@ -15,11 +15,26 @@
   "unlockedAtStart": [
     "clepsydre",
     "boursePercee",
+    "tirelire",
+    "semellesDePlomb",
     "limbes",
     "colere",
     "limee",
-    "doree"
+    "doree",
+    "gel"
   ],
+  "forge": {
+    "maxAltered": 2,
+    "advancedLevel": 2,
+    "maxAlteredAdvanced": 3,
+    "decapCost": 10
+  },
+  "artefactSlotLevels": [
+    2,
+    4
+  ],
+  "resaleRatio": 0.4,
+  "_progression": "Déblocage par la hiérarchie du stagiaire (boutique-README) : minRank = grade minimal pour qu'un objet sorte en vitrine ; absent, il se déduit de la rareté (common 0, rare 2, legendary 4). artefactSlotLevels = grades qui ouvrent un emplacement d'artefact de plus (5 au départ, +1 aux rangs 2 et 4). resaleRatio = part du prix rendue à la revente. forge = règles de forge (forge.md) : maxAltered faces altérées par dé, maxAlteredAdvanced à partir du grade advancedLevel, decapCost pour rendre une face à son état d'origine.",
   "items": [
     {
       "id": "lateBet",

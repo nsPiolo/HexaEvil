@@ -11,9 +11,10 @@
  * Certaines cases peuvent être bloquées (rétrécissement) : on n'y atterrit jamais.
  * Avec un seul couloir, on retrouve les règles d'origine : une case par colonne.
  */
-import type { BlockedCell, RaceConfig } from '../config/schema'
+import type { BlockedCell, RaceConfig, SpecialCell } from '../config/schema'
 import { BOARD_EFFECTS, plainFace, type DistanceDie, type Face, type FaceEffect } from './dice'
 import type { Rng } from './rng'
+import { bossValue, hasBoss, type BossEffect } from './boss'
 
 export type SoulId = number
 
@@ -42,6 +43,8 @@ export interface Track {
   lanes: number
   /** Cases bloquées (rétrécissements), colonnes 1 à columns − 1. */
   blocked: readonly BlockedCell[]
+  /** Cases spéciales du terrain : elles agissent sur l'âme qui s'y arrête (GDD §2.2). */
+  specials: readonly SpecialCell[]
 }
 
 /** Deux âmes fusionnées par le Bât de chameau : tout déplacement de l'une déplace l'autre. */
@@ -65,6 +68,8 @@ export interface RaceState {
   fusion: Fusion | null
   /** Tribune infernale : case qui rapporte et pousse, posée avant la course. */
   tribune: { column: number; lane: number } | null
+  /** Boss Porte-chaînes : âmes immobilisées, avec le dernier tour où elles le restent. */
+  chained: readonly { soul: SoulId; untilTurn: number }[]
 }
 
 /** Un lancer : valeurs des dés Distance (avec la face sortie), et âme désignée par chaque dé Âme. */
@@ -148,6 +153,8 @@ export interface RaceOptions {
   lanes?: number
   /** Cases bloquées du cercle ; aucune par défaut. */
   blocked?: readonly BlockedCell[]
+  /** Cases spéciales du terrain ; aucune par défaut. */
+  specials?: readonly SpecialCell[]
 }
 
 export function createTrack(cfg: RaceConfig['track'], options: RaceOptions = {}): Track {
@@ -162,11 +169,17 @@ export function createTrack(cfg: RaceConfig['track'], options: RaceOptions = {})
     betThresholdColumn: Math.ceil(cfg.columns * ratio),
     lanes,
     blocked: (options.blocked ?? []).filter((b) => b.lane < lanes && b.column > 0 && b.column < cfg.columns),
+    specials: (options.specials ?? []).filter((c) => c.lane < lanes && c.column > 0 && c.column < cfg.columns),
   }
 }
 
 export function isBlocked(track: Track, column: number, lane: number): boolean {
   return track.blocked.some((b) => b.column === column && b.lane === lane)
+}
+
+/** Case spéciale de cette position, ou null. */
+export function specialAt(track: Track, column: number, lane: number): SpecialCell | null {
+  return track.specials.find((c) => c.column === column && c.lane === lane) ?? null
 }
 
 export function createRace(config: RaceConfig, options: RaceOptions = {}): RaceState {
@@ -177,7 +190,7 @@ export function createRace(config: RaceConfig, options: RaceOptions = {}): RaceS
   for (let i = 0; i < count; i++) {
     souls.push({ id: i, name: at(config.souls.names, i, 'souls.names'), position: 0, lane: i % track.lanes, finishOrder: null })
   }
-  return { track, souls, turn: 1, finished: false, nextFinishOrder: 1, frozen: [], links: [], fusion: null, tribune: null }
+  return { track, souls, turn: 1, finished: false, nextFinishOrder: 1, frozen: [], links: [], fusion: null, tribune: null, chained: [] }
 }
 
 /**
@@ -218,6 +231,8 @@ export interface RollOptions {
    * une fois. Le second tirage est gardé tel quel, même s'il répète (artefacts.md n°1).
    */
   rerollTwins?: boolean
+  /** Boss Géryon : une fois sur n, un dé Âme désigne l'âme voisine au lieu de la sienne. */
+  lying?: number
 }
 
 /** Lancer du joueur avec ses propres dés Distance (forgés ou spéciaux). */
@@ -228,18 +243,35 @@ export function rollPlayerDice(config: RaceConfig, soulCount: number, rng: Rng, 
   const drawSouls = (): SoulId[] => Array.from({ length: count }, () => rng.int(soulCount))
   let soul = drawSouls()
   if (options.rerollTwins && new Set(soul).size < soul.length) soul = drawSouls()
+  // Boss Géryon : le mensonge se glisse après le tirage, pour que la relance jumelle porte sur
+  // ce que les dés ont vraiment dit — sinon l'artefact corrigerait le pouvoir du boss.
+  if (options.lying && options.lying > 0) soul = soul.map((id) => (rng.int(options.lying!) === 0 ? (id + 1) % soulCount : id))
   return { distance: faces.map((f) => f.value), faces, soul }
 }
 
 export interface OpponentOptions {
   /** Face retournée : les -1 de l'adversaire valent +1. */
   flipNegatives?: boolean
+  /** Boss Le Minotaure : ses distances positives gagnent n cases. */
+  boost?: number
+  /**
+   * Boss Le stagiaire promu : il lit vos tickets. Ses paires visent d'abord une de vos âmes
+   * pariées et la font reculer. Vide = il tire au hasard comme d'habitude.
+   */
+  targets?: readonly SoulId[]
 }
 
 /** Une paire de l'adversaire : un dé Âme, un dé Distance de base (§2.5.2). */
 export function rollOpponentPair(config: RaceConfig, soulCount: number, rng: Rng, options: OpponentOptions = {}): Roll {
   let value = at(config.dice.distanceFaces, rng.int(config.dice.distanceFaces.length), 'distanceFaces')
   if (options.flipNegatives && value < 0) value = -value
+  if (options.boost && value > 0) value += options.boost
+  const targets = options.targets ?? []
+  if (targets.length > 0) {
+    // Il vise vos paris et les fait reculer : la face devient négative, l'âme est une des vôtres.
+    value = -Math.abs(value === 0 ? 1 : value)
+    return { distance: [value], faces: [plainFace(value)], soul: [at(targets, rng.int(targets.length), 'âme pariée')] }
+  }
   return { distance: [value], faces: [plainFace(value)], soul: [rng.int(soulCount)] }
 }
 
@@ -252,11 +284,40 @@ export interface MoveContext {
   bettedSouls: ReadonlySet<SoulId>
   /** Bonus du Sceau quand l'âme est pariée (+2 par-dessus le +1 de la face). */
   sealBonus: number
+  /**
+   * Effets de boss qui pèsent sur toute distance, la vôtre comme celle de l'adversaire
+   * (Minos aggrave les reculs, le Noyé ralentit les avancées). Voir `bossContext`.
+   */
+  boss?: { harshNegatives?: number; slowWater?: number }
+}
+
+/** Contexte minimal pour l'adversaire : il subit les effets de boss, pas vos artefacts. */
+export function bossContext(turn: number, effects: readonly BossEffect[]): MoveContext {
+  return { turn, clepsydre: false, bettedSouls: new Set(), sealBonus: 0, boss: bossDistanceMods(effects) }
+}
+
+/** Part du pouvoir de boss qui modifie les distances, extraite une fois pour toutes. */
+export function bossDistanceMods(effects: readonly BossEffect[]): { harshNegatives?: number; slowWater?: number } {
+  const mods: { harshNegatives?: number; slowWater?: number } = {}
+  const harsh = bossValue(effects, 'harshNegatives')
+  if (harsh !== null) mods.harshNegatives = harsh
+  const slow = bossValue(effects, 'slowWater')
+  if (slow !== null) mods.slowWater = slow
+  return mods
 }
 
 function effectiveDistance(face: Face, soul: SoulId, ctx: MoveContext | undefined, notes: string[]): number {
   let d = face.value
   if (!ctx) return d
+  // Pouvoir de boss d'abord : il pèse sur la face sortie, avant tout ce que le joueur y ajoute.
+  if (ctx.boss?.harshNegatives && d < 0) {
+    d -= ctx.boss.harshNegatives
+    notes.push(`Reculs aggravés : ${d}`)
+  }
+  if (ctx.boss?.slowWater && d > 0) {
+    d = Math.max(0, d - ctx.boss.slowWater)
+    notes.push(`Eaux lourdes : +${d}`)
+  }
   if (ctx.clepsydre && ctx.turn === 1) {
     if (d < 0) {
       notes.push(`Clepsydre : ${d} → +${-d}`)
@@ -336,13 +397,15 @@ export interface CellChoice {
  *    la plus en bas, et collision avec son occupante ;
  * 3. sa case est occupée : une autre case vide, la plus en bas ; sinon collision sur place.
  */
-export function chooseCell(track: Track, souls: readonly Soul[], column: number, preferredLane: number, except: SoulId): CellChoice {
+export function chooseCell(track: Track, souls: readonly Soul[], column: number, preferredLane: number, except: SoulId, frozenLanes = false): CellChoice {
   const occupantOf = (lane: number): Soul | null => souls.find((s) => s.id !== except && s.position === column && s.lane === lane) ?? null
   let open: number[] = []
   for (let l = 0; l < track.lanes; l++) if (!isBlocked(track, column, l)) open.push(l)
   if (open.length === 0) open = Array.from({ length: track.lanes }, (_, l) => l)
   const preferredOpen = open.includes(preferredLane)
   if (preferredOpen && !occupantOf(preferredLane)) return { lane: preferredLane, occupant: null, detour: null }
+  // Couloirs gelés (boss Le Givre) : plus de déport, l'âme reste dans son couloir et y percute.
+  if (frozenLanes && preferredOpen) return { lane: preferredLane, occupant: occupantOf(preferredLane), detour: null }
   const empty = open.find((l) => !occupantOf(l))
   if (empty !== undefined) return { lane: empty, occupant: null, detour: preferredOpen ? 'occupied' : 'blocked' }
   const lane = preferredOpen ? preferredLane : at(open, 0, 'couloir')
@@ -361,6 +424,26 @@ export interface MoveRules {
   bat?: boolean
   /** Tribune infernale : pièces versées et poussée quand une âme s'arrête sur la case. */
   tribune?: { coins: number; push: number }
+  /** Boss Cerbère : l'âme percutée est mordue et recule de n cases après le saut. */
+  bite?: number
+  /** Boss Phlégyas : reculer sur une âme la pousse en arrière au lieu d'échanger. */
+  pushBack?: boolean
+  /** Boss Le Givre : plus de déport de couloir, on percute l'occupante de son propre couloir. */
+  frozenLanes?: boolean
+  /** Boss Le Porte-chaînes : l'âme percutée est immobilisée pendant n tours. */
+  chainTurns?: number
+}
+
+/** Règles de déplacement imposées par le pouvoir de boss, à fusionner avec celles du joueur. */
+export function bossMoveRules(effects: readonly BossEffect[]): MoveRules {
+  const r: MoveRules = {}
+  const bite = bossValue(effects, 'bite')
+  if (bite !== null) r.bite = bite
+  if (hasBoss(effects, 'pushBack')) r.pushBack = true
+  if (hasBoss(effects, 'frozenLanes')) r.frozenLanes = true
+  const chain = bossValue(effects, 'chained')
+  if (chain !== null) r.chainTurns = chain
+  return r
 }
 
 /** Distance réelle de la face Bond : jusqu'à l'âme suivante, sinon la valeur de la face. */
@@ -427,6 +510,15 @@ export function applyMove(state: RaceState, move: Move, rules: MoveRules = {}): 
       coins: 0,
     }
   }
+  // Boss Le Porte-chaînes : une âme enchaînée ne bouge plus, quelle que soit la source.
+  if (state.chained.some((c) => c.soul === move.soul && state.turn <= c.untilTurn)) {
+    return {
+      state,
+      result: { move, from, to: from, fromLane, toLane: fromLane, detour: null, blockedAtStart: false, collision: null, crossedFinish: false, frozen: true },
+      follow: [],
+      coins: 0,
+    }
+  }
   // Le tour adverse ne déplace pas une âme gelée.
   if (move.source === 'opponent' && state.frozen.includes(move.soul)) {
     return {
@@ -446,6 +538,7 @@ export function applyMove(state: RaceState, move: Move, rules: MoveRules = {}): 
   let blockedAtStart = false
   let fusion = state.fusion
   let links = state.links
+  let chained = state.chained
   const souls = state.souls.map((s) => ({ ...s }))
   const follow: Move[] = []
 
@@ -457,7 +550,7 @@ export function applyMove(state: RaceState, move: Move, rules: MoveRules = {}): 
     // à chaque colonne. La dernière case du plateau se partage (les arrivées s'y empilent).
     const over: SoulId[] = []
     for (;;) {
-      const choice = chooseCell(track, souls, to, fromLane, mover.id)
+      const choice = chooseCell(track, souls, to, fromLane, mover.id, rules.frozenLanes)
       toLane = choice.lane
       detour = choice.detour
       if (!choice.occupant || to >= maxCell) break
@@ -466,7 +559,7 @@ export function applyMove(state: RaceState, move: Move, rules: MoveRules = {}): 
       if (rules.bat && fusion === null && !move.induced) {
         fusion = { front: choice.occupant.id, back: mover.id }
         to = Math.max(0, to - 1)
-        const behind = chooseCell(track, souls, to, fromLane, mover.id)
+        const behind = chooseCell(track, souls, to, fromLane, mover.id, rules.frozenLanes)
         toLane = behind.lane
         detour = behind.detour
         break
@@ -474,26 +567,41 @@ export function applyMove(state: RaceState, move: Move, rules: MoveRules = {}): 
       over.push(choice.occupant.id)
       to += 1
     }
-    if (over.length > 0) collision = { kind: 'jump', over }
+    if (over.length > 0) {
+      collision = { kind: 'jump', over }
+      if (!move.induced) {
+        // Boss Cerbère : la percutée est mordue et recule après le saut.
+        if (rules.bite) for (const id of over) follow.push({ ...simpleMove('artefact', id, -rules.bite, ['Morsure']), induced: true })
+        // Boss Le Porte-chaînes : la percutée est immobilisée pour les tours suivants.
+        if (rules.chainTurns) chained = [...chained, ...over.map((id) => ({ soul: id, untilTurn: state.turn + rules.chainTurns! }))]
+      }
+    }
   } else if (distance < 0) {
     to = Math.max(0, from + distance)
     if (to > 0) {
       // Colonne pleine en reculant : échange de place avec l'occupante de la case retenue.
       // La ligne de départ se partage.
-      let choice = chooseCell(track, souls, to, fromLane, mover.id)
+      let choice = chooseCell(track, souls, to, fromLane, mover.id, rules.frozenLanes)
       // Semelles de plomb : on n'échange plus avec une âme en zone de fin, on se range derrière,
       // tant qu'on y reste. Dès qu'on sort de la zone, la règle normale (échange) reprend.
       while (rules.semelles && choice.occupant && isInBetZone(track, to) && to > 0) {
         to -= 1
-        choice = chooseCell(track, souls, to, fromLane, mover.id)
+        choice = chooseCell(track, souls, to, fromLane, mover.id, rules.frozenLanes)
       }
       toLane = choice.lane
       detour = choice.detour
       if (choice.occupant && to > 0) {
-        collision = { kind: 'swap', with: choice.occupant.id, otherFrom: to, otherTo: from }
         const other = at(souls, choice.occupant.id, 'âme')
-        other.position = from
-        other.lane = fromLane
+        if (rules.pushBack) {
+          // Boss Phlégyas : dans le Styx on ne s'échange pas, on se pousse — les deux reculent.
+          const pushed = Math.max(0, to - 1)
+          collision = { kind: 'swap', with: other.id, otherFrom: to, otherTo: pushed }
+          other.position = pushed
+        } else {
+          collision = { kind: 'swap', with: other.id, otherFrom: to, otherTo: from }
+          other.position = from
+          other.lane = fromLane
+        }
         // Balance truquée : l'âme échangée gagne une case de plus.
         if (rules.balance && !move.induced) follow.push({ ...simpleMove('artefact', other.id, 1, ['Balance truquée']), induced: true })
         // Chaîne du Coccyte : les deux âmes restent liées jusqu'à la fin du tour.
@@ -538,13 +646,20 @@ export function applyMove(state: RaceState, move: Move, rules: MoveRules = {}): 
     // Tribune infernale : l'âme qui s'y arrête paie le spectacle et repart poussée.
     const tribune = state.tribune
     if (rules.tribune && tribune && to === tribune.column && toLane === tribune.lane) {
-      coins = rules.tribune.coins
+      coins += rules.tribune.coins
       if (rules.tribune.push > 0) follow.push({ ...simpleMove('artefact', move.soul, rules.tribune.push, ['Tribune infernale']), induced: true })
+    }
+    // Cases spéciales du terrain (GDD §2.2) : elles n'agissent qu'à l'arrêt, pas au passage.
+    const cell = specialAt(track, to, toLane)
+    if (cell) {
+      if (cell.kind === 'gold') coins += cell.value
+      if (cell.kind === 'trap') follow.push({ ...simpleMove('artefact', move.soul, -cell.value, ['Piège']), induced: true })
+      if (cell.kind === 'boost') follow.push({ ...simpleMove('artefact', move.soul, cell.value, ['Tremplin']), induced: true })
     }
   }
 
   return {
-    state: { ...state, souls, nextFinishOrder, frozen: state.frozen, links, fusion },
+    state: { ...state, souls, nextFinishOrder, frozen: state.frozen, links, fusion, chained },
     result: { move, from, to, fromLane, toLane, detour, blockedAtStart, collision, crossedFinish, frozen: false },
     follow,
     coins,
@@ -566,9 +681,15 @@ export function previewMove(state: RaceState, soul: SoulId, distance: number, ef
  * Clôture le tour : la course est finie dès qu'une âme a franchi l'arrivée (§2.7). Le gel et
  * les chaînes ne durent qu'un tour et tombent ici ; la fusion du Bât tient toute la course.
  */
-export function endTurn(state: RaceState): RaceState {
+export function endTurn(state: RaceState, effects: readonly BossEffect[] = []): RaceState {
   const finished = state.souls.some((s) => s.position >= state.track.columns)
-  return { ...state, finished, turn: finished ? state.turn : state.turn + 1, frozen: [], links: [] }
+  const turn = finished ? state.turn : state.turn + 1
+  // Boss Le Souffle : tout le monde recule d'un cran en fin de tour. Le recul est uniforme, donc
+  // sans collision : l'ordre relatif ne change pas, seule la course s'allonge. Sur le tour
+  // d'arrivée on n'y touche pas — le classement est déjà joué.
+  const gust = bossValue(effects, 'backdraft')
+  const souls = !finished && gust ? state.souls.map((so) => ({ ...so, position: Math.max(0, so.position - gust) })) : state.souls
+  return { ...state, souls, finished, turn, frozen: [], links: [], chained: state.chained.filter((c) => c.untilTurn >= turn) }
 }
 
 /**

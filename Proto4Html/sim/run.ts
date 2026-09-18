@@ -46,9 +46,11 @@ import { stakesAtCircle } from '../src/core/rules/stakes'
 import { terrainFor } from '../src/core/rules/terrain'
 import { applyPurchase, generateVitrine, opponentNegativesFlipped, type Inventory } from '../src/core/shop/shop'
 import { allIds } from '../src/core/shop/unlocks'
+import { bossContext, bossDistanceMods, bossMoveRules, type Move } from '../src/core/rules/race'
+import { bossValue } from '../src/core/rules/boss'
 import { defaultInventory } from '../src/core/shop/shop'
 import { riskOf, type ShopItem } from '../src/core/shop/items'
-import { applyProdigality, betBase, circleOf, priceFor } from '../src/presentation/useRace'
+import { applyProdigality, betBase, circleOf, moveRules, priceFor } from '../src/presentation/useRace'
 import { demonLevelAtRace } from '../src/presentation/demon'
 import { BETTING_ORDER, TICKETS, type Profile } from './profiles'
 
@@ -234,7 +236,7 @@ function shopFor(vitrine: readonly ShopItem[], money: number, raceIndex: number,
 
 /** Une course entière, de l'avance au règlement des paris. */
 function simulateRace(raceIndex: number, money: number, inventory: Inventory, profile: Profile, rng: Rng, seed: number): { money: number; inventory: Inventory; outcome: RaceOutcome } {
-  const { circle } = circleOf(raceIndex)
+  const { circle, raceInCircle } = circleOf(raceIndex)
   const cfg = circleAt(config.run, circle)
   const level = demonLevelAtRace(raceIndex)
   const terrain = terrainFor(cfg.terrains, seed)
@@ -243,10 +245,17 @@ function simulateRace(raceIndex: number, money: number, inventory: Inventory, pr
   let cash = money + allowance
   let inv = inventory
   const sablier = inv.artefacts.includes('sablier')
+  // Course du boss : son pouvoir s'applique, comme en jeu (src/core/rules/boss.ts). Sans lui,
+  // l'équilibrage mesurerait deux courses sur trois et ignorerait la plus dure.
+  const boss = raceInCircle === config.run.racesPerCircle ? [...cfg.powers] : []
+  const bossRules = bossMoveRules(boss)
+  const bossMods = bossDistanceMods(boss)
   let state = createRace(config, {
     soulCount: cfg.souls,
     lanes: cfg.lanes,
     blocked: terrain.blocked,
+    specials: terrain.specials,
+    ...(bossValue(boss, 'betThreshold') !== null ? { betThresholdRatio: bossValue(boss, 'betThreshold')! / 100 } : {}),
     ...(sablier ? { betThresholdRatio: config.artefacts.sablier.betThresholdRatio } : {}),
   })
 
@@ -303,17 +312,27 @@ function simulateRace(raceIndex: number, money: number, inventory: Inventory, pr
       clepsydre: inv.artefacts.includes('clepsydre'),
       bettedSouls: new Set(bets.filter((b) => b.status === 'open').flatMap((b) => [...b.souls])),
       sealBonus: 2,
+      boss: bossMods,
     }
-    for (const move of buildMoves(charged, combos, 'player', ctx)) state = applyMove(state, move).state
+    const rules = { ...moveRules(inv), ...bossRules }
+    // Le simulateur résout aussi les déplacements induits (liens, aimant, souffle, cases spéciales).
+    const run = (move: Move): void => {
+      const out = applyMove(state, move, rules)
+      state = out.state
+      cash += out.coins
+      for (const f of out.follow) state = applyMove(state, f, rules).state
+    }
+    for (const move of buildMoves(charged, combos, 'player', ctx)) run(move)
     if (inv.artefacts.includes('boussole')) {
-      for (const move of unusedSoulMoves(charged, combos)) state = applyMove(state, move).state
+      for (const move of unusedSoulMoves(charged, combos)) run(move)
     }
-    const flip = opponentNegativesFlipped(inv)
-    for (let k = 0; k < config.opponent.rollsPerTurn; k++) {
-      const opponent = rollOpponentPair(config, state.souls.length, rng, { flipNegatives: flip })
-      for (const move of buildMoves(opponent, naturalCombinations(opponent), 'opponent')) state = applyMove(state, move).state
+    const oppOpts = { flipNegatives: opponentNegativesFlipped(inv), ...(bossValue(boss, 'opponentBoost') !== null ? { boost: bossValue(boss, 'opponentBoost')! } : {}) }
+    const pairs = config.opponent.rollsPerTurn + (bossValue(boss, 'extraPairs') ?? 0)
+    for (let k = 0; k < pairs; k++) {
+      const opponent = rollOpponentPair(config, state.souls.length, rng, oppOpts)
+      for (const move of buildMoves(opponent, naturalCombinations(opponent), 'opponent', bossContext(state.turn, boss))) run(move)
     }
-    state = endTurn(state)
+    state = endTurn(state, boss)
   }
 
   const refundRatio = inv.artefacts.includes('livreDesComptes') ? 0.5 : 0

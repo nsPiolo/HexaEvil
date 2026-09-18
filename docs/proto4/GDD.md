@@ -86,7 +86,7 @@ Chaque course utilise un circuit linéaire ressemblant à un plateau de jeu de s
 | Cases après l'arrivée | Permettent de classer plusieurs arrivées du même tour | 2 à 4 |
 | Départage dans une colonne | Deux âmes dans la même colonne : la plus **en bas** est devant | — |
 | Zones de pari | Signalent la limite de prise de paris | seuil à 60 % du parcours |
-| Cases spéciales | Pièges, bonus ou règles de cercle | à introduire progressivement |
+| Cases spéciales | Pièges, bonus et cases payantes ; elles n'agissent qu'à l'arrêt | 0 aux cercles 1-2, 1 au 3, 2 au 6, 3 au 10 |
 
 La piste est représentée par un ou plusieurs **couloirs** parallèles. Au premier cercle il n'y en a qu'un, pour 5 âmes. À partir du second cercle, chaque fois qu'une âme est ajoutée au départ (cercles 2, 4, 6, 8, 9, voir §4.1), un couloir est ajouté aussi : 6 âmes et 2 couloirs au cercle 2, 7 âmes et 3 couloirs au cercle 4, etc. Le nombre de couloirs est donc `âmes − 4`, une valeur de configuration.
 
@@ -263,6 +263,13 @@ Chaque boss doit présenter :
 - une récompense cohérente avec le risque ;
 - une mise en scène qui fait progresser l'intrigue du stagiaire.
 
+**Dans le proto** : le pouvoir d'un boss est une liste d'**effets typés**
+(`src/core/rules/boss.ts`), pas un texte. `config/race.json` porte les deux : `power`
+est l'annonce faite au joueur sur la carte, `powers` est ce que le moteur applique —
+uniquement sur la dernière course du cercle. Les quinze effets sont indépendants les
+uns des autres, ce qui permet de les assembler (§8.1) ; les couples qui s'annulent ou
+s'embrouillent sont déclarés incompatibles et ne sortent jamais ensemble.
+
 Le boss du neuvième cercle est le **démon stagiare qui a été promu**, cohérent avec le cercle de la trahison.
 
 ### 5.2 Le stagiaire et le coaching
@@ -375,7 +382,7 @@ Ces modifications doivent être visibles avant les paris initiaux. Une modificat
 
 Après le neuvième cercle, le joueur peut continuer en tant que démon et affronter des cercles supplémentaires : 10, 11, 12, etc. Ces cercles sont infernaux, mais ne suivent pas nécessairement une cosmologie fixe. Ils servent de contenu de maîtrise et de rejouabilité.
 
-**Dans le proto** : les cercles 10 à 15 sont écrits à la main, pas générés — une montée qui quitte l'enfer (fonds marins, falaise, ville, montagne, ciel, paradis), chacun avec son décor, son boss, son portrait, ses terrains et ses dialogues. Au-delà du quinzième, le jeu rejoue le paradis sans fin, avec un prix de sortie multiplié par `run.beyondPriceGrowth` à chaque tour : le run s'arrête quand le joueur ne peut plus payer, et non à un cercle fixé. La génération procédurale de boss par assemblage de tags reste à faire — les pouvoirs de boss eux-mêmes ne sont pas encore appliqués en course.
+**Dans le proto** : les cercles 10 à 15 sont écrits à la main, pas générés — une montée qui quitte l'enfer (fonds marins, falaise, ville, montagne, ciel, paradis), chacun avec son décor, son boss, son portrait, ses terrains et ses dialogues. Au-delà du quinzième, le jeu rejoue le paradis sans fin, avec un prix de sortie multiplié par `run.beyondPriceGrowth` à chaque tour : le run s'arrête quand le joueur ne peut plus payer, et non à un cercle fixé. Les pouvoirs de boss sont appliqués en course (§5.1) et, au-delà des cercles écrits, **assemblés** : 2 à 4 effets tirés sur la graine du cercle, sans couple incompatible. Le tirage étant déterministe, la carte annonce exactement ce qui sera joué.
 
 Les boss post-9 sont générés procéduralement en assemblant **2 à 4 effets** tirés parmi une liste de tags/effets. Chaque effet doit être suffisamment indépendant pour pouvoir se combiner avec les deux autres sans produire de règle illisible.
 

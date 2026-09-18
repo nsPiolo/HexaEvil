@@ -1,6 +1,7 @@
 import { useEffect, useState, type PointerEvent } from 'react'
 import { shop } from '../core/config'
 import { riskOf, sortByRisk, type ShopItem } from '../core/shop/items'
+import { artefactSlotsAt, findItem, maxAlteredFaces, resaleValue } from '../core/shop/shop'
 import type { Inventory as Inv, PurchaseTarget } from '../core/shop/shop'
 import { FaceChip } from './Inventory'
 import { ItemArt } from './ItemArt'
@@ -20,6 +21,12 @@ interface Props {
   inventory: Inv
   /** Marteau d'Héphaïstos : la forge offerte du cercle est-elle encore disponible ? */
   forgeFree: boolean
+  /** Grade du stagiaire : il ouvre des emplacements d'artefacts et des faces de forge. */
+  level: number
+  /** Revente d'un artefact possédé (40 % du prix). */
+  onSell: (id: string) => string | null
+  /** Décapage d'une face forgée : elle retrouve sa valeur d'origine. */
+  onDecap: (dieIndex: number, faceIndex: number) => string | null
   pending: string | null
   onBuy: (id: string, target?: PurchaseTarget) => string | null
   onCancel: () => void
@@ -32,13 +39,15 @@ interface Props {
 const KIND_LABEL = { artefact: 'Artefact', die: 'Dé', forge: 'Forge' } as const
 const RARITY_LABEL = { common: 'commun', rare: 'rare', legendary: 'légendaire' } as const
 
-export function ShopPanel({ vitrine, unlocked, money, price, staked, raceIndex, inventory, forgeFree, pending, onBuy, onCancel, onReroll, onLeave, onGoToBets, onClose }: Props) {
+export function ShopPanel({ vitrine, unlocked, money, price, staked, raceIndex, inventory, forgeFree, level, onSell, onDecap, pending, onBuy, onCancel, onReroll, onLeave, onGoToBets, onClose }: Props) {
   const [error, setError] = useState<string | null>(null)
   /** Objet dont le bouton affiche « Confirmer » (spec 04/C4) ; retombe seul après confirmResetMs. */
   const [confirming, setConfirming] = useState<string | null>(null)
   const pendingItem = pending ? vitrine.find((i) => i.id === pending) ?? null : null
   const hintValue = pendingItem?.kind === 'forge' ? pendingItem.target : null
-  const artefactsFull = inventory.artefacts.length >= shop.artefactSlots
+  const slots = artefactSlotsAt(shop, level)
+  const artefactsFull = inventory.artefacts.length >= slots
+  const maxAltered = maxAlteredFaces(shop, level)
   const rerollCost = rerollCostFor(inventory)
   const sorted = sortByRisk(vitrine)
 
@@ -111,9 +120,23 @@ export function ShopPanel({ vitrine, unlocked, money, price, staked, raceIndex, 
       {pendingItem && (
         <div className="shop-target">
           <h3>
-            {pendingItem.name} — {pendingItem.kind === 'die' ? 'quel dé remplacer ?' : 'quelle face forger ?'}
+            {pendingItem.name} — {pendingItem.kind === 'artefact' ? SHOP.replaceArtefact : pendingItem.kind === 'die' ? 'quel dé remplacer ?' : 'quelle face forger ?'}
           </h3>
+          {/* Emplacements pleins : on choisit l'artefact sacrifié. Il est détruit, pas revendu. */}
+          {pendingItem.kind === 'artefact' && (
+            <>
+              <p className="small muted">{SHOP.replaceArtefactWarning}</p>
+              <div className="shop-artefacts">
+                {inventory.artefacts.map((id) => (
+                  <button key={id} type="button" className="btn" onClick={() => attempt(pendingItem.id, { dieIndex: 0, replaceArtefact: id })}>
+                    {findItem(shop, id).name}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
           {pendingItem.kind === 'die' && <p className="small muted">{SHOP.compare}</p>}
+          {pendingItem.kind !== 'artefact' && (
           <div className="shop-dice">
             {inventory.dice.map((d, di) => (
               <div key={di} className="shop-die">
@@ -160,10 +183,55 @@ export function ShopPanel({ vitrine, unlocked, money, price, staked, raceIndex, 
               </div>
             ))}
           </div>
+          )}
+          {pendingItem.kind === 'forge' && <p className="small muted">{fill(SHOP.forgeLimit, { n: maxAltered })}</p>}
           <button type="button" className="btn" onClick={onCancel}>
             Annuler
           </button>
         </div>
+      )}
+
+      {!pendingItem && (inventory.artefacts.length > 0 || inventory.dice.some((d) => d.faces.some((f) => f.altered))) && (
+        /* Atelier : ce que le joueur possède déjà et peut défaire — revendre un artefact
+           (artefacts.md) ou décaper une face forgée (forge.md). Séparé de la vitrine : on n'y
+           achète rien de neuf, on fait de la place. */
+        <details className="shop-workshop">
+          <summary>
+            {fill(SHOP.workshop, { n: inventory.artefacts.length, slots })}
+          </summary>
+          {inventory.artefacts.length > 0 && (
+            <div className="shop-artefacts">
+              {inventory.artefacts.map((id) => {
+                const back = resaleValue(shop, priceFor(findItem(shop, id), raceIndex, inventory, false))
+                return (
+                  <button key={id} type="button" className="btn" onClick={() => setError(onSell(id))} title={fill(SHOP.sellTitle, { back })}>
+                    {fill(SHOP.sell, { name: findItem(shop, id).name, back })}
+                  </button>
+                )
+              })}
+            </div>
+          )}
+          <div className="shop-dice">
+            {inventory.dice.map((d, di) =>
+              d.faces.some((f) => f.altered) ? (
+                <div key={di} className="shop-die">
+                  <span className="inv-die-name">
+                    n°{di + 1} · {d.name}
+                  </span>
+                  <div className="shop-faces">
+                    {d.faces.map((f, fi) =>
+                      f.altered ? (
+                        <button key={fi} type="button" className="face-btn" onClick={() => setError(onDecap(di, fi))} title={fill(SHOP.decapTitle, { cost: shop.forge.decapCost })}>
+                          <FaceChip face={f} />
+                        </button>
+                      ) : null,
+                    )}
+                  </div>
+                </div>
+              ) : null,
+            )}
+          </div>
+        </details>
       )}
 
       {!pendingItem && (

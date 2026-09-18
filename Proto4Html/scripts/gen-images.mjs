@@ -18,9 +18,11 @@
  *   node scripts/gen-images.mjs boss --dry-run         # les prompts complets
  *   node scripts/gen-images.mjs boss --force 12_villes # refait malgré le fichier
  *   node scripts/gen-images.mjs objets --model=gemini-3.1-flash-image --size=4K
+ *   node scripts/gen-images.mjs objets --manifest          # complète le manifeste
+ *   node scripts/gen-images.mjs objets --manifest --adopt  # …et accepte l'existant
  */
 import { createHash } from 'node:crypto'
-import { readFileSync, writeFileSync, mkdirSync, readdirSync, existsSync, renameSync, unlinkSync } from 'node:fs'
+import { readFileSync, writeFileSync, mkdirSync, readdirSync, existsSync, renameSync, statSync, unlinkSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -36,7 +38,7 @@ const FAMILLES = {
     doc: 'docs/proto4/prompts-objets.md',
     out: 'docs/proto4/raw/objects',
     ratio: '1:1',
-    quoi: 'les seize objets de la boutique',
+    quoi: 'les quarante-sept objets de la boutique',
   },
   boss: {
     doc: 'docs/proto4/prompts-boss.md',
@@ -76,6 +78,8 @@ const MANIFEST = join(OUT_DIR, 'manifest.json')
 const FORCE = flag('force')
 const DRY = flag('dry-run')
 const LIST = flag('list')
+const MANIFEST_ONLY = flag('manifest')
+const ADOPT = flag('adopt')
 const MODEL = opt('model', process.env.GEMINI_IMAGE_MODEL || DEFAULT_MODEL)
 const SIZE = opt('size', DEFAULT_SIZE) // 1K | 2K | 4K
 
@@ -149,11 +153,25 @@ const cleFor = (model, size, ratio, prompt) => createHash('sha256').update(`${mo
 const readManifest = () => (existsSync(MANIFEST) ? JSON.parse(readFileSync(MANIFEST, 'utf8')) : {})
 const writeManifest = (m) => writeFileSync(MANIFEST, `${JSON.stringify(m, null, 2)}\n`)
 
+/**
+ * Ce que le dossier de sortie contient pour un id : le rendu brut tel que l'API le
+ * produit, et le détourage à alpha quand il a été fait à côté. Un `.png` n'est pris pour
+ * le rendu brut que si rien d'autre ne correspond — l'API ne rend que du JPEG.
+ */
+function fichiersDe(id, connu) {
+  if (!existsSync(OUT_DIR)) return { brut: null, detoure: null }
+  const tous = readdirSync(OUT_DIR).filter((f) => new RegExp(`^${id}\\.(png|jpe?g|webp)$`).test(f))
+  const brut = (connu?.fichier && tous.includes(connu.fichier) ? connu.fichier : null)
+    ?? tous.find((f) => !f.endsWith('.png'))
+    ?? tous[0]
+    ?? null
+  return { brut, detoure: tous.find((f) => f.endsWith('.png') && f !== brut) ?? null }
+}
+
 /** L'image existante d'un objet, quelle que soit son extension, ou null. */
-function existingFile(id) {
-  if (!existsSync(OUT_DIR)) return null
-  const hit = readdirSync(OUT_DIR).find((f) => new RegExp(`^${id}\\.(png|jpe?g|webp)$`).test(f))
-  return hit ? join(OUT_DIR, hit) : null
+function existingFile(id, connu) {
+  const { brut } = fichiersDe(id, connu)
+  return brut ? join(OUT_DIR, brut) : null
 }
 
 // --------------------------------------------------------------------- API
@@ -216,8 +234,8 @@ async function main() {
   const plan = selected.map((item) => {
     const prompt = buildPrompt(skeleton, item.phrase)
     const cle = cleFor(MODEL, SIZE, FAM.ratio, prompt)
-    const file = existingFile(item.id)
     const known = manifest[item.id]
+    const file = existingFile(item.id, known)
     let state = 'à générer'
     if (file && !FORCE) state = known?.cle === cle ? 'à jour' : 'périmé'
     else if (file && FORCE) state = 'à refaire'
@@ -229,6 +247,48 @@ async function main() {
   console.log(`Sortie : ${OUT_DIR.replace(`${REPO}/`, '')}\n`)
   for (const p of plan) console.log(`  ${p.state.padEnd(10)} ${p.id.padEnd(18)} ${p.name}`)
   console.log('')
+
+  if (MANIFEST_ONLY) {
+    let ajoutes = 0
+    let adoptes = 0
+    for (const p of plan) {
+      const connu = manifest[p.id]
+      if (!p.file) {
+        // Rien sur le disque : on consigne ce qui sera demandé, sans faire croire à une image.
+        manifest[p.id] = { cle: p.cle, modele: MODEL, taille: SIZE, ratio: FAM.ratio, etat: 'à générer', prompt: p.prompt }
+        if (!connu) ajoutes++
+        continue
+      }
+      const { brut, detoure } = fichiersDe(p.id, connu)
+      const entree = {
+        ...connu,
+        cle: connu?.cle ?? p.cle,
+        modele: connu?.modele ?? MODEL,
+        taille: connu?.taille ?? SIZE,
+        ratio: connu?.ratio ?? FAM.ratio,
+        fichier: brut,
+        octets: statSync(join(OUT_DIR, brut)).size,
+        genereLe: connu?.genereLe ?? statSync(join(OUT_DIR, brut)).mtime.toISOString(),
+        prompt: connu?.prompt ?? p.prompt,
+      }
+      if (detoure) entree.detoure = detoure
+      delete entree.etat
+      // --adopt : l'image date d'un prompt antérieur mais convient. On la déclare à jour
+      // en gardant trace de la clé qui l'a réellement produite, sinon l'historique ment.
+      if (ADOPT && entree.cle !== p.cle) {
+        entree.adopteDe = entree.cle
+        entree.cle = p.cle
+        entree.prompt = p.prompt
+        adoptes++
+      }
+      manifest[p.id] = entree
+      if (!connu) ajoutes++
+    }
+    writeManifest(manifest)
+    console.log(`Manifeste écrit : ${Object.keys(manifest).length} entrées, ${ajoutes} ajoutée(s)${adoptes ? `, ${adoptes} adoptée(s)` : ''}.`)
+    console.log(MANIFEST.replace(`${REPO}/`, ''))
+    return
+  }
 
   if (LIST) return
   if (DRY) {

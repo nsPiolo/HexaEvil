@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { betsPanel, hudMoney, placeBet, placedBets, playTurn, slot, start, startRace, token, tokenButton } from './helpers'
-import { RACE_SEED, RACE_SEED_EXPECT } from './seeds'
+import { RACES_PER_CIRCLE, RACE_SEED, RACE_SEED_EXPECT } from './seeds'
 
 const THRESHOLD_TEXT = 'A dépassé le seuil de pari'
 
@@ -25,8 +25,9 @@ test.describe('03 · Écran Paris (le ticket de guichet)', () => {
   })
 
   test('E2E-03-B : Duel — deux jetons remplissent les slots dans l’ordre, re-clic retire, troisième sans effet', async ({ page }) => {
-    // 03/AC2
-    await start(page, { seed: RACE_SEED })
+    // 03/AC2 — le Duel est un pari combiné : il demande le premier grade du stagiaire, gagné
+    // à la fin du deuxième cercle. On se place donc au troisième (race = 2 cercles de courses).
+    await start(page, { seed: RACE_SEED, race: 2 * RACES_PER_CIRCLE })
     const panel = betsPanel(page)
     await panel.getByRole('tab', { name: /^Combinés/ }).click()
     await panel.getByRole('button', { name: /^Duel/ }).click()
@@ -93,17 +94,29 @@ test.describe('03 · Écran Paris (le ticket de guichet)', () => {
   })
 
   test('E2E-03-E : un pari verrouillé reste visible, désactivé, avec le grade en texte', async ({ page }) => {
-    // 01/C3 · lisibilité
+    // 01/C3 · lisibilité. Deux états à couvrir, parce qu'ils ne se ressemblent pas :
+    // un palier ENTIÈREMENT verrouillé (son onglet le dit et ne s'ouvre pas) et un palier
+    // PARTIEL (l'onglet s'ouvre, le pari hors de portée reste lisible mais désactivé).
     await start(page, { seed: RACE_SEED })
     const panel = betsPanel(page)
-    await panel.getByRole('tab', { name: /^Combinés/ }).click()
-    const locked = panel.getByRole('button', { name: /^Top 3 dans le désordre/ })
+    // Au départ, le stagiaire n'a aucun grade : les combinés comme les avancés sont fermés.
+    for (const tier of ['Combinés', 'Avancés']) {
+      const tab = panel.getByRole('tab', { name: new RegExp(`^${tier}`) })
+      await expect(tab).toContainText('verrouillé')
+      await expect(tab).toBeDisabled()
+    }
+
+    // Au quatrième cercle (grade Tourmenteur), le palier avancé s'entrouvre : « Vainqueur +
+    // dernier » est ouvert, le « Podium exact » attend encore le grade suivant.
+    await start(page, { seed: RACE_SEED, race: 3 * RACES_PER_CIRCLE })
+    const later = betsPanel(page)
+    await later.getByRole('tab', { name: /^Avancés/ }).click()
+    const locked = later.getByRole('button', { name: /^Podium exact/ })
     await expect(locked).toBeVisible()
     await expect(locked).toBeDisabled()
-    await expect(locked).toContainText('dès Assistant')
-    await expect(locked).toHaveAttribute('title', 'Ce pari s’ouvrira quand le stagiaire sera Assistant.')
-    // Le palier entièrement verrouillé l'écrit aussi.
-    await expect(panel.getByRole('tab', { name: /^Avancés/ })).toContainText('verrouillé')
+    await expect(locked).toContainText('dès Contremaître')
+    await expect(locked).toHaveAttribute('title', 'Ce pari s’ouvrira quand le stagiaire sera Contremaître.')
+    await expect(later.getByRole('button', { name: /^Vainqueur \+ dernier/ })).toBeEnabled()
   })
 
   test('E2E-03-F : la mise se pose au clic comme au glisser-déposer, et le jeton trop cher est refusé', async ({ page }) => {

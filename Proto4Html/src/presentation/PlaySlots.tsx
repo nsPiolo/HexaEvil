@@ -2,7 +2,7 @@ import { useEffect, useState, type DragEvent } from 'react'
 import { config } from '../core/config'
 import { bettingClosed } from '../core/rules/bets'
 import { isPairingComplete, type Combination, type MoveResult, type RaceState } from '../core/rules/race'
-import type { Phase, RaceUi } from './useRace'
+import { opponentRolls, type Phase, type RaceUi } from './useRace'
 import { dieTilt, fmtDistance, soulColor, soulDieStyle } from './souls'
 import { FaceChip } from './Inventory'
 import { BetList } from './BetPanel'
@@ -18,10 +18,15 @@ function soulName(race: RaceState, id: number | undefined): string {
  */
 export function OpponentSlot({ ui }: { ui: RaceUi }) {
   const { phase, opponentRoll, race } = ui
+  const pairs = opponentRolls(ui)
   const thin = phase !== 'opponent' && !opponentRoll
   return (
     <section className={'slot slot-opponent' + (thin ? ' slot-opponent-thin' : '')} aria-label="Adversaire" data-state={thin ? 'thin' : 'full'}>
-      <span className="slot-label">Adversaire · {config.opponent.rollsPerTurn} paire{config.opponent.rollsPerTurn > 1 ? 's' : ''} par tour</span>
+      {/* Le nombre de paires n'est pas fixe : le Fouet, la Pièce à deux faces et certains
+          pouvoirs de boss en ajoutent. L'étiquette dit ce qui va réellement tomber ce tour-ci. */}
+      <span className="slot-label">
+        Adversaire · {pairs} paire{pairs > 1 ? 's' : ''} par tour
+      </span>
       <div className="dice-row">
         {phase === 'opponent' && !opponentRoll && (
           <>

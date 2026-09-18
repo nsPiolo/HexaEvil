@@ -132,18 +132,20 @@ alpha dans `docs/proto4/raw/demons/png2/`, sous le même nom que le rendu brut. 
 par **Décontaminer les couleurs** — le violet resté dans les cheveux et le duvet des
 épaules est ce qui se voit le plus sur un portrait.
 
-Le reste est fait par `scripts/install-boss.py`, qui pose les quinze dans le jeu :
+Le reste est fait par `scripts/install-art.py`, qui pose les quinze dans le jeu :
 
 ```bash
 cd Proto4Html
-python3 scripts/install-boss.py            # les quinze
-python3 scripts/install-boss.py 4          # seulement le cercle 4
-python3 scripts/install-boss.py --dry-run  # ce qui serait écrit
+python3 scripts/install-art.py boss            # les quinze
+python3 scripts/install-art.py boss 4          # seulement le cercle 4
+python3 scripts/install-art.py boss --dry-run  # ce qui serait écrit
 ```
 
 Il ramène chaque PNG sur le canevas commun et l'écrit en WebP qualité 88 sous
 `public/circles/<NN>-<nom>/boss.webp` — c'est lui qui connaît la correspondance entre
-le numéro du cercle et le nom du dossier. Le rendu sort en 4:5, plus haut que la cible,
+le numéro du cercle et le nom du dossier. Sa famille `perso` fait la même chose pour les
+portraits du stagiaire (`docs/proto4/raw/perso/*.png` → `public/menu/perso/`), qui sont
+déjà au canevas et n'ont donc qu'à être réduits. Le rendu sort en 4:5, plus haut que la cible,
 donc il rogne **par le bas** : la tête garde sa place dans le tiers supérieur et la
 coupe tombe dans l'ourlet qui se dissout déjà. Il signale au passage un buste qui
 n'atteindrait pas le bord bas, ce qui le ferait flotter au-dessus du sol de la scène.

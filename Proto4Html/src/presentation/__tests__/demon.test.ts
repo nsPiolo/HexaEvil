@@ -6,9 +6,10 @@ import { CIRCLES, DEMON_RANKS, ordinalOf } from '../texts'
 const per = config.run.racesPerCircle
 
 describe('grades du démon', () => {
-  it('commence stagiaire et monte après les cercles 1, 3, 5, 7 et 8', () => {
+  it('commence stagiaire et monte après les cercles 2, 3, 5, 7 et 8', () => {
     expect(demonRank(0).name).toBe('Stagiaire')
-    expect(demonRank(1).name).toBe('Assistant')
+    // Un cercle ne suffit plus : le premier grade se gagne au bout de deux.
+    expect(demonRank(1).name).toBe('Stagiaire')
     expect(demonRank(2).name).toBe('Assistant')
     expect(demonRank(3).name).toBe('Tourmenteur')
     expect(demonRank(5).name).toBe('Contremaître')
@@ -20,13 +21,15 @@ describe('grades du démon', () => {
   it('se déduit de la course en cours', () => {
     expect(demonRankAtRace(0).name).toBe('Stagiaire')
     expect(demonRankAtRace(per - 1).name).toBe('Stagiaire')
-    expect(demonRankAtRace(per).name).toBe('Assistant')
+    expect(demonRankAtRace(per).name).toBe('Stagiaire')
+    expect(demonRankAtRace(2 * per).name).toBe('Assistant')
     expect(demonRankAtRace(3 * per).name).toBe('Tourmenteur')
   })
 
   it('le niveau est l’index du grade', () => {
     expect(demonLevel(0)).toBe(0)
-    expect(demonLevel(1)).toBe(1)
+    expect(demonLevel(1)).toBe(0)
+    expect(demonLevel(2)).toBe(1)
     expect(demonLevel(4)).toBe(2)
     expect(demonLevel(8)).toBe(5)
     expect(demonLevelAtRace(3 * per + 1)).toBe(2)
@@ -54,13 +57,14 @@ describe('grades du démon', () => {
 
 describe('dialogues de transition', () => {
   it("insère la promotion juste avant l'annonce du cercle suivant, avec le nouveau nom", () => {
-    const lines = circleSuccess(1)
-    const success = CIRCLES[0]!.success
+    // La première promotion tombe à la fin du DEUXIÈME cercle.
+    const lines = circleSuccess(2)
+    const success = CIRCLES[1]!.success
     const promo = DEMON_RANKS[1]!
     expect(lines).toHaveLength(success.length + promo.lines.length)
     // Avant la promotion : ancien nom.
     for (let i = 0; i < success.length - 1; i++) {
-      expect(lines[i]!.text).toBe(success[i]!.text.replace('{souls}', String(config.run.circles[1]!.souls)).replace('{price}', String(config.run.circles[1]!.price)))
+      expect(lines[i]!.text).toBe(success[i]!.text.replace('{souls}', String(config.run.circles[2]!.souls)).replace('{price}', String(config.run.circles[2]!.price)))
       if (lines[i]!.who === 'demon') expect(lines[i]!.label).toBe('Démon stagiaire')
     }
     // Les lignes de promotion, dites par l'assistant, cotes remplies.
@@ -70,17 +74,18 @@ describe('dialogues de transition', () => {
       if (l.who === 'demon') expect(line.label).toBe(promo.label)
       else expect(line.label).toBeUndefined()
     })
-    // La dernière : annonce du cercle 2 avec ses valeurs, par l'assistant.
+    // La dernière : annonce du cercle 3 avec ses valeurs, par l'assistant.
     const last = lines[lines.length - 1]!
     expect(last.label).toBe(promo.label)
-    expect(last.text).toContain(String(config.run.circles[1]!.price))
+    expect(last.text).toContain(String(config.run.circles[2]!.price))
     expect(last.text).not.toContain('{')
   })
 
   it('sans promotion, le texte du cercle est dit tel quel par le grade courant', () => {
-    const lines = circleSuccess(2)
-    expect(lines).toHaveLength(CIRCLES[1]!.success.length)
-    expect(lines.every((l) => l.who !== 'demon' || l.label === 'Démon assistant')).toBe(true)
+    // Le premier cercle ne promeut plus : son texte est dit par le stagiaire, sans coupure.
+    const lines = circleSuccess(1)
+    expect(lines).toHaveLength(CIRCLES[0]!.success.length)
+    expect(lines.every((l) => l.who !== 'demon' || l.label === 'Démon stagiaire')).toBe(true)
   })
 
   it('le cercle 8 promeut sans lignes propres : le texte du cercle suffit, le nom change', () => {
@@ -98,9 +103,11 @@ describe('dialogues de transition', () => {
   it("l'échec et l'annonce du boss gardent le grade d'avant le cercle", () => {
     expect(circleFailure(1)[0]!.label).toBe('Démon stagiaire')
     expect(circleFailure(4)[0]!.label).toBe('Démon tourmenteur')
+    // Le boss du deuxième cercle est annoncé par le stagiaire : il n'est promu qu'après l'avoir battu.
     const boss = bossAnnounce(2)
-    expect(boss[0]!.label).toBe('Démon assistant')
+    expect(boss[0]!.label).toBe('Démon stagiaire')
     expect(boss[0]!.text).toContain(String(config.run.circles[1]!.price))
+    expect(bossAnnounce(3)[0]!.label).toBe('Démon assistant')
   })
 })
 

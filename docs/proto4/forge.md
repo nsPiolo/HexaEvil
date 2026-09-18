@@ -14,8 +14,12 @@ Règles de forge proposées :
 - l'altération est permanente pour le run et suit le dé s'il est remplacé par un
   dé spécial (elle est perdue, pas remboursée).
 
-Les faces marquées ✔ sont implémentées dans `Proto4Html`. Dans le proto, une face
-forgée ne peut pas être reforgée et un dé garde toujours une face positive.
+Les faces marquées ✔ sont implémentées dans `Proto4Html`, règles de forge comprises :
+une face forgée ne se reforge pas, un dé garde toujours une face positive, un dé ne
+porte pas plus de `shop.forge.maxAltered` faces altérées (2, puis
+`maxAlteredAdvanced` = 3 à partir du grade `advancedLevel`), et le **décapage** rend
+une face à sa valeur d'origine pour `shop.forge.decapCost` (10) depuis l'atelier de la
+boutique.
 
 Le prix dépend de la face remplacée : altérer le `-1` est moins cher qu'altérer
 le `3`, parce qu'on perd moins. Les prix ci-dessous sont donnés pour la face

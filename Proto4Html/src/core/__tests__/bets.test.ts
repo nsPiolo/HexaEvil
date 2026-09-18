@@ -100,9 +100,12 @@ describe('validité d’un pari', () => {
 
 describe('déblocage des paris par niveau du stagiaire', () => {
   const unlock = cfg.economy.betUnlockLevel
-  it('au niveau 0, seuls les paris simples et le duel sont ouverts', () => {
+  it('au niveau 0, seuls les quatre paris simples sont ouverts', () => {
+    // Le Duel est un pari combiné : il attend le premier grade du stagiaire, comme les autres.
     const open = unlockedBetTypes(0, unlock).map((t) => t.id)
-    expect(open).toEqual(['winner', 'top3', 'notTop3', 'last', 'duel'])
+    expect(open).toEqual(['winner', 'top3', 'notTop3', 'last'])
+    expect(betUnlocked('duel', 0, unlock)).toBe(false)
+    expect(betUnlocked('duel', 1, unlock)).toBe(true)
   })
   it('les gros multiplicateurs arrivent avec les grades', () => {
     expect(betUnlocked('fullRankingExact', 3, unlock)).toBe(false)

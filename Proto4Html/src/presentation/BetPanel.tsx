@@ -12,9 +12,15 @@ import { BETS, BET_LIVE, fill } from './texts'
 export interface BetDraft {
   type: BetTypeId
   souls: number[]
+  /**
+   * Mise posée dans le logement, ou null tant que le joueur n'a rien choisi (le panneau prend
+   * alors le plus petit jeton du cercle). Elle fait partie du brouillon : un ticket à moitié
+   * rempli doit se retrouver entier après un détour par la boutique.
+   */
+  stake?: number | null
 }
 
-export const EMPTY_DRAFT: BetDraft = { type: 'winner', souls: [] }
+export const EMPTY_DRAFT: BetDraft = { type: 'winner', souls: [], stake: null }
 
 /** Ajoute ou retire une âme du brouillon, sans dépasser `slots` : même règle pour les chips et les jetons. */
 export function toggleDraftSoul(draft: BetDraft, id: number, slots: number): BetDraft {
@@ -80,8 +86,15 @@ export function BetPanel({ race, money, stakes, price, bets, open, phase, level,
   const d = draft ?? localDraft
   const setDraft = onDraftChange ?? setLocalDraft
   const { type, souls } = d
-  const [tier, setTier] = useState<BetTier>('simple')
-  const [stake, setStake] = useState<number>(stakes[0] ?? 5)
+  /**
+   * Palier affiché. Il s'initialise sur celui du brouillon en cours, pas sur « Simples » : le
+   * panneau est démonté quand la boutique prend sa place, et un ticket à moitié rempli doit se
+   * retrouver à l'endroit où on l'a laissé, pas se cacher derrière un onglet.
+   */
+  const [tier, setTier] = useState<BetTier>(() => betType(d.type).tier)
+  // La mise vit dans le brouillon, pas dans le panneau : elle survit à son démontage.
+  const stake = d.stake ?? stakes[0] ?? 5
+  const setStake = (v: number): void => setDraft({ ...d, stake: v })
   const chipArt = (v: number): string => chipArtIn(stakes, v)
   /** La mise la plus forte du cercle, la seule qui prenne feu dans le logement. */
   const hottest = Math.max(...stakes)
@@ -116,7 +129,9 @@ export function BetPanel({ race, money, stakes, price, bets, open, phase, level,
   }
 
   const changeType = (id: BetTypeId): void => {
-    setDraft({ type: id, souls: [] })
+    // Changer de type vide les âmes désignées, mais garde la mise : le jeton posé dans le
+    // logement est un choix à part, il n'a pas à être refait à chaque changement de guichet.
+    setDraft({ ...d, type: id, souls: [] })
     setError(null)
   }
   const changeTier = (t: BetTier): void => {

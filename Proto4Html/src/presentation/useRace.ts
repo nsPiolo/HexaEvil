@@ -9,7 +9,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { config, shop } from '../core/config'
-import { betRefusal, betType, betUnlocked, cancelBet as cancelBetRule, currentMultiplier, effectiveBase, fmtMultiplier, potentialPayout, raceProgress, settleBets, ticketMultiplier, type BaseModifiers, type Bet, type BetTypeId, type SettleOptions, type Settlement } from '../core/rules/bets'
+import { betRefusal, betType, betUnlocked, cancelBet as cancelBetRule, currentMultiplier, effectiveBase, fmtMultiplier, potentialPayout, raceProgress, settleBets, ticketMultiplier, unlockedBetTypes, type BaseModifiers, type Bet, type BetTypeId, type SettleOptions, type Settlement } from '../core/rules/bets'
 import { fmtFace, type DistanceDie, type Face } from '../core/rules/dice'
 import { allowanceAtCircle, raceAllowance } from '../core/rules/allowance'
 import {
@@ -19,6 +19,9 @@ import {
   createTrack,
   endTurn,
   isPairingComplete,
+  bossContext,
+  bossDistanceMods,
+  bossMoveRules,
   isInBetZone,
   naturalCombinations,
   placeTribune,
@@ -32,18 +35,21 @@ import {
   type MoveContext,
   type MoveResult,
   type MoveRules,
+  type OpponentOptions,
   type RaceOptions,
   type RaceState,
   type Roll,
 } from '../core/rules/race'
 import { randomSeed, seededRng, type Rng } from '../core/rules/rng'
+import { circleAt, isBeyondWritten } from '../core/rules/circles'
+import { bossValue, generateBossEffects, hasBoss, type BossEffect } from '../core/rules/boss'
 import { stakesAtCircle } from '../core/rules/stakes'
 import { terrainFor } from '../core/rules/terrain'
 import type { Terrain } from '../core/config/schema'
-import type { ArtefactId, ShopItem } from '../core/shop/items'
-import { applyPurchase, effectivePrice, effectiveRerollCost, findItem, generateVitrine, opponentNegativesFlipped, type Inventory, type PriceRules, type PurchaseTarget } from '../core/shop/shop'
+import { isArtefactId, type ArtefactId, type ShopItem } from '../core/shop/items'
+import { applyPurchase, artefactSlotsAt, decapFace, effectivePrice, effectiveRerollCost, findItem, generateVitrine, maxAlteredFaces, opponentNegativesFlipped, resaleValue, sellArtefact, type Inventory, type PriceRules, type PurchaseTarget } from '../core/shop/shop'
 import { demonLevelAtRace, rankOfLevel } from './demon'
-import { seedForRace } from './urlParams'
+import { e2eMode, seedForRace } from './urlParams'
 import { BETS, fill } from './texts'
 
 export type Phase = 'prep' | 'idle' | 'rolling' | 'pairing' | 'resolving' | 'opponent' | 'finished'
@@ -110,6 +116,10 @@ export interface RaceUi {
   opponentPreview: readonly Roll[] | null
   /** Tribune infernale : la tribune de cette course est-elle posée ? */
   tribunePlaced: boolean
+  /** Pouvoir du boss appliqué à cette course (vide hors course de boss). */
+  boss: readonly BossEffect[]
+  /** Boss Le stagiaire ailé : le tour d'arrivée a-t-il déjà été rejoué ? */
+  replayed: boolean
 }
 
 export interface RaceTally {
@@ -166,6 +176,18 @@ export function itemName(id: string): string {
   return findItem(shop, id).name
 }
 
+/**
+ * Pouvoir du boss appliqué à cette course (GDD §5.1) : uniquement la dernière course du cercle.
+ * Au-delà des cercles écrits, il est assemblé sur la graine du cercle (§8.1) — déterministe,
+ * pour que la carte annonce exactement ce qui sera joué.
+ */
+export function bossEffectsFor(raceIndex: number): BossEffect[] {
+  const { circle, raceInCircle } = circleOf(raceIndex)
+  if (raceInCircle !== config.run.racesPerCircle) return []
+  if (!isBeyondWritten(config.run, circle)) return [...circleAt(config.run, circle).powers]
+  return generateBossEffects(seededRng(circle * 7919))
+}
+
 /** Raccourci de lecture : le joueur possède-t-il cet artefact ? */
 export function has(inventory: Inventory, id: ArtefactId): boolean {
   return inventory.artefacts.includes(id)
@@ -220,9 +242,21 @@ export function soulDiceCount(inventory: Inventory): number {
  * Paires lancées par l'adversaire à ce tour : la base, plus celle qu'a réveillée la Pièce à deux
  * faces, plus celle que coûte le Fouet du contremaître dès qu'une âme entre en zone de fin.
  */
-export function opponentRolls(u: Pick<RaceUi, 'inventory' | 'doubledStakes' | 'race'>): number {
+export function opponentRolls(u: Pick<RaceUi, 'inventory' | 'doubledStakes' | 'race' | 'boss'>): number {
   const whipped = has(u.inventory, 'fouetDuContremaitre') && u.race.souls.some((so) => isInBetZone(u.race.track, so.position))
-  return config.opponent.rollsPerTurn + (u.doubledStakes ? 1 : 0) + (whipped ? 1 : 0)
+  return config.opponent.rollsPerTurn + (u.doubledStakes ? 1 : 0) + (whipped ? 1 : 0) + (bossValue(u.boss, 'extraPairs') ?? 0)
+}
+
+/** Options du lancer adverse pour cette course : Face retournée du joueur, pouvoirs du boss. */
+function opponentOptions(u: RaceUi): OpponentOptions {
+  const o: OpponentOptions = { flipNegatives: opponentNegativesFlipped(u.inventory) }
+  const boost = bossValue(u.boss, 'opponentBoost')
+  if (boost !== null) o.boost = boost
+  if (hasBoss(u.boss, 'targetBettedSouls')) {
+    const betted = [...new Set(u.bets.filter((b) => b.status === 'open').flatMap((b) => b.souls))]
+    if (betted.length > 0) o.targets = betted
+  }
+  return o
 }
 
 /** Le joueur voit-il le tour adverse avant d'ordonner, et jusqu'où ? */
@@ -261,10 +295,28 @@ export function rerollCostFor(inventory: Inventory): number {
 }
 
 /** Options de piste : celles du cercle, plus les artefacts qui changent le plateau. */
-function raceOptions(inventory: Inventory, base: RaceOptions): RaceOptions {
+function raceOptions(inventory: Inventory, base: RaceOptions, boss: readonly BossEffect[] = []): RaceOptions {
   const o: RaceOptions = { ...base }
   if (inventory.artefacts.includes('sablier')) o.betThresholdRatio = config.artefacts.sablier.betThresholdRatio
+  // Boss Les Furies : le guichet ferme plus tôt. Le pouvoir l'emporte sur le Sablier — c'est le
+  // boss qui impose sa règle, l'artefact ne l'annule pas.
+  const threshold = bossValue(boss, 'betThreshold')
+  if (threshold !== null) o.betThresholdRatio = threshold / 100
   return o
+}
+
+/**
+ * Boss Le Guichetier : les types de paris fermés à ce tour. Ils tournent d'un tour à l'autre,
+ * à partir du numéro de tour : le joueur peut anticiper, ce n'est pas une punition aveugle.
+ */
+export function closedBetTypes(u: Pick<RaceUi, 'boss' | 'race' | 'raceIndex'>): ReadonlySet<BetTypeId> {
+  const count = bossValue(u.boss, 'closeWindow')
+  if (count === null || count <= 0) return new Set()
+  // On ne ferme que des guichets réellement ouverts au joueur : fermer un pari qu'il ne peut
+  // pas poser ne serait pas un pouvoir, juste du bruit.
+  const open = unlockedBetTypes(demonLevelAtRace(u.raceIndex), config.economy.betUnlockLevel)
+  if (open.length <= 1) return new Set()
+  return new Set(Array.from({ length: Math.min(count, open.length - 1) }, (_, k) => open[(u.race.turn + k) % open.length]!.id))
 }
 
 /** Charges de l'Œil du parieur pour un cercle neuf. */
@@ -278,13 +330,19 @@ export function stakedOpen(bets: readonly Bet[]): number {
 }
 
 /** Contexte des modificateurs du joueur (Clepsydre, Sceau), identique en résolution et en prévisualisation. */
-function moveContext(u: Pick<RaceUi, 'race' | 'inventory' | 'bets'>): MoveContext {
+function moveContext(u: Pick<RaceUi, 'race' | 'inventory' | 'bets' | 'boss'>): MoveContext {
   return {
     turn: u.race.turn,
     clepsydre: u.inventory.artefacts.includes('clepsydre'),
     bettedSouls: new Set(u.bets.filter((b) => b.status === 'open').flatMap((b) => [...b.souls])),
     sealBonus: SEAL_BONUS,
+    boss: bossDistanceMods(u.boss),
   }
+}
+
+/** Règles de déplacement de la course : celles du joueur, plus celles qu'impose le boss. */
+export function raceMoveRules(u: Pick<RaceUi, 'inventory' | 'boss'>): MoveRules {
+  return { ...moveRules(u.inventory), ...bossMoveRules(u.boss) }
 }
 
 export interface ProdigalityCharge {
@@ -328,13 +386,14 @@ export function previewNext(u: RaceUi): MoveResult | null {
   const first = buildMoves(roll, u.combinations, 'player', moveContext(u))[0]
   if (!first) return null
   // Mêmes règles qu'à la résolution (Bond, Semelles, Bât…) : le fantôme ne doit jamais mentir.
-  const result = previewMove(u.race, first.soul, first.distance, first.effects, moveRules(u.inventory))
+  const result = previewMove(u.race, first.soul, first.distance, first.effects, raceMoveRules(u))
   return { ...result, move: first }
 }
 
 function initial(seed: number, carry: SessionCarry, terrain: Terrain, base: RaceOptions): RaceUi {
   const { circle, raceInCircle } = circleOf(carry.raceIndex)
-  const race = createRace(config, raceOptions(carry.inventory, { ...base, blocked: terrain.blocked }))
+  const boss = bossEffectsFor(carry.raceIndex)
+  const race = createRace(config, raceOptions(carry.inventory, { ...base, blocked: terrain.blocked, specials: terrain.specials }, boss))
   const lanes = race.track.lanes
   const blocked = race.track.blocked.length
   // Avance de course : versée avant les paris initiaux, racontée dans le journal (visible sous le plateau).
@@ -372,6 +431,8 @@ function initial(seed: number, carry: SessionCarry, terrain: Terrain, base: Race
     doubledStakes: false,
     opponentPreview: null,
     tribunePlaced: false,
+    boss,
+    replayed: false,
   }
 }
 
@@ -430,14 +491,27 @@ export function useRace({ carry, unlocked, soulCount, lanes, terrains, speed }: 
 
   /** Niveau du stagiaire pendant cette course : conditionne les types de paris ouverts. */
   const level = demonLevelAtRace(carry.raceIndex)
+  /**
+   * Grade utilisé pour filtrer la vitrine (`minRank`). En mode e2e il est levé, comme l'est
+   * déjà le déblocage du catalogue : les specs de la boutique testent son comportement — tri
+   * par risque, confirmation, remplacement de dé — pas la progression, et leurs graines de
+   * référence doivent pouvoir tirer dans tout le catalogue.
+   */
+  const vitrineLevel = e2eMode() ? Number.POSITIVE_INFINITY : level
 
   const placeBet = useCallback((type: BetTypeId, souls: readonly number[], stake: number): string | null => {
     const u = uiRef.current
     if (!canBetNow(u)) return u.phase === 'pairing' ? 'Les dés sont lancés : plus de pari avant le prochain tour.' : 'Attendez la fin de la résolution.'
     if (!betUnlocked(type, level, config.economy.betUnlockLevel)) return fill(BETS.locked, { rank: rankOfLevel(config.economy.betUnlockLevel[type]).name })
+    // Boss Le Guichetier : certains guichets ferment, en rotation d'un tour à l'autre.
+    if (closedBetTypes(u).has(type)) return `Guichet fermé ce tour : ${betType(type).label} est indisponible.`
+    const initial = u.phase === 'prep'
+    // Boss Ploutos : un pari posé en course coûte plus cher que sa mise affichée. La mise
+    // enregistrée reste celle du ticket : c'est le passage au guichet qui est taxé, pas le gain.
+    const cost = Math.round(stake * (initial ? 1 : (bossValue(u.boss, 'costlyLateBets') ?? 1)))
     const refusal = betRefusal(u.race, type, souls, stake, u.money, u.bets)
     if (refusal) return refusal
-    const initial = u.phase === 'prep'
+    if (cost > u.money) return `Ce guichet prend sa part : il faut ${cost} pièces pour miser ${stake}.`
     let multiplier = currentMultiplier(betBase(type, u.inventory), raceProgress(u.race), config.economy.decay)
     // Ticket de la première heure : la cote monte avant le premier lancer, descend en course.
     if (has(u.inventory, 'ticketPremiereHeure')) {
@@ -445,7 +519,7 @@ export function useRace({ carry, unlocked, soulCount, lanes, terrains, speed }: 
     }
     const bet: Bet = { id: betId.current++, type, souls: [...souls], stake, multiplier, turn: initial ? 0 : u.race.turn, status: 'open', payout: 0 }
     const names = souls.map((id) => u.race.souls[id]?.name ?? `#${id}`).join(betType(type).ordered ? ' > ' : ', ')
-    commit(pushLog({ ...u, money: u.money - stake, bets: [...u.bets, bet] }, 'bet', `Pari ${betType(type).label} sur ${names} : mise ${stake} à ${fmtMultiplier(multiplier)}, rapporte ${potentialPayout(stake, multiplier)} si gagné.`))
+    commit(pushLog({ ...u, money: u.money - cost, bets: [...u.bets, bet] }, 'bet', `Pari ${betType(type).label} sur ${names} : mise ${stake}${cost !== stake ? ` (payée ${cost})` : ''} à ${fmtMultiplier(multiplier)}, rapporte ${potentialPayout(stake, multiplier)} si gagné.`))
     return null
   }, [commit, pushLog, level])
 
@@ -476,32 +550,29 @@ export function useRace({ carry, unlocked, soulCount, lanes, terrains, speed }: 
     const u = uiRef.current
     if (!shopUnlocked(u)) return false
     if (u.vitrine === null) {
-      const vitrine = generateVitrine(shop, u.inventory, unlocked, rngRef.current)
+      const vitrine = generateVitrine(shop, u.inventory, unlocked, rngRef.current, vitrineLevel)
       commit(pushLog({ ...u, vitrine, pendingPurchase: null }, 'shop', `La boutique ouvre : ${vitrine.length} objets en vitrine.`))
     }
     return true
-  }, [commit, pushLog, shopUnlocked, unlocked])
+  }, [commit, pushLog, shopUnlocked, unlocked, vitrineLevel])
 
   const rerollVitrine = useCallback(() => {
     const u = uiRef.current
     const cost = rerollCostFor(u.inventory)
     if (!shopUnlocked(u) || u.money < cost) return
-    const vitrine = generateVitrine(shop, u.inventory, unlocked, rngRef.current)
+    const vitrine = generateVitrine(shop, u.inventory, unlocked, rngRef.current, vitrineLevel)
     commit(pushLog({ ...u, money: u.money - cost, vitrine, pendingPurchase: null, tally: { ...u.tally, spent: u.tally.spent + cost } }, 'shop', `Vitrine renouvelée pour ${cost} pièces.`))
-  }, [commit, pushLog, shopUnlocked, unlocked])
+  }, [commit, pushLog, shopUnlocked, unlocked, vitrineLevel])
 
   /** Pourquoi un objet n'est pas achetable maintenant, ou null. */
   const purchaseRefusal = useCallback((u: RaceUi, item: ShopItem): string | null => {
     if (!shopUnlocked(u)) return 'La boutique est fermée.'
     const price = priceFor(item, u.raceIndex, u.inventory, !u.forgeFreeUsed)
     if (u.money < price) return 'Pas assez d’argent.'
-    if (item.kind === 'artefact') {
-      if (u.inventory.artefacts.includes(item.id)) return 'Déjà possédé.'
-      if (u.inventory.artefacts.length >= shop.artefactSlots) return `Emplacements d’artefacts pleins (${shop.artefactSlots}).`
-    }
+    if (item.kind === 'artefact' && u.inventory.artefacts.includes(item.id)) return 'Déjà possédé.'
     if (item.kind === 'forge' && !u.inventory.dice.some((d) => d.faces.some((f) => !f.altered))) return 'Plus aucune face à forger.'
     return null
-  }, [shopUnlocked])
+  }, [shopUnlocked, level])
 
   /**
    * Achat. Un dé spécial ou une altération de forge demande une cible : le premier
@@ -513,20 +584,22 @@ export function useRace({ carry, unlocked, soulCount, lanes, terrains, speed }: 
     if (!item) return 'Objet absent de la vitrine.'
     const refusal = purchaseRefusal(u, item)
     if (refusal) return refusal
-    const needsTarget = item.kind === 'forge' || (item.kind === 'die' && item.mode === 'replace')
+    const slots = artefactSlotsAt(shop, level)
+    const needsTarget =
+      item.kind === 'forge' || (item.kind === 'die' && item.mode === 'replace') || (item.kind === 'artefact' && u.inventory.artefacts.length >= slots)
     if (needsTarget && !target) {
       commit({ ...u, pendingPurchase: itemId })
       return null
     }
     try {
-      const { inventory, text } = applyPurchase(item, u.inventory, target)
+      const { inventory, text } = applyPurchase(item, u.inventory, target, maxAlteredFaces(shop, level))
       const freeForge = item.kind === 'forge' && has(u.inventory, 'marteauHephaistos') && !u.forgeFreeUsed
       const price = priceFor(item, u.raceIndex, u.inventory, !u.forgeFreeUsed)
       const lateBetCharges = item.kind === 'artefact' && item.id === 'lateBet' ? config.artefacts.lateBet.chargesPerCircle : u.lateBetCharges
       let next = pushLog({ ...u, money: u.money - price, inventory, lateBetCharges, forgeFreeUsed: u.forgeFreeUsed || freeForge, vitrine: (u.vitrine ?? []).filter((i) => i !== item), pendingPurchase: null, tally: { ...u.tally, spent: u.tally.spent + price } }, 'shop', freeForge ? `${text} — offert par le Marteau d'Héphaïstos.` : `${text} (${price} pièces)`)
       // Le Sablier change le plateau : on achète en préparation, personne n'a bougé, le plateau est refait tout de suite.
       if (item.kind === 'artefact' && item.id === 'sablier') {
-        const track = createTrack(config.track, raceOptions(inventory, { lanes: u.race.track.lanes, blocked: u.race.track.blocked }))
+        const track = createTrack(config.track, raceOptions(inventory, { lanes: u.race.track.lanes, blocked: u.race.track.blocked, specials: u.race.track.specials }, u.boss))
         next = pushLog({ ...next, race: { ...next.race, track } }, 'shop', `Seuil de pari à ${Math.round(track.betThresholdRatio * 100)} % dès cette course.`)
       }
       commit(next)
@@ -534,7 +607,38 @@ export function useRace({ carry, unlocked, soulCount, lanes, terrains, speed }: 
     } catch (e) {
       return e instanceof Error ? e.message : 'Achat impossible.'
     }
-  }, [commit, purchaseRefusal, pushLog])
+  }, [commit, purchaseRefusal, pushLog, level])
+
+  /** Revente d'un artefact : 40 % du prix du cercle, l'emplacement se libère (artefacts.md). */
+  const sell = useCallback((id: string): string | null => {
+    const u = uiRef.current
+    if (!shopUnlocked(u)) return 'La boutique est fermée.'
+    if (!isArtefactId(id) || !u.inventory.artefacts.includes(id)) return 'Artefact non possédé.'
+    const item = findItem(shop, id)
+    const back = resaleValue(shop, priceFor(item, u.raceIndex, u.inventory, false))
+    try {
+      const { inventory } = sellArtefact(u.inventory, id)
+      commit(pushLog({ ...u, inventory, money: u.money + back }, 'shop', `${item.name} revendu : +${back} pièces.`))
+      return null
+    } catch (e) {
+      return e instanceof Error ? e.message : 'Revente impossible.'
+    }
+  }, [commit, pushLog, shopUnlocked])
+
+  /** Décapage : la face forgée retrouve sa valeur d'origine, contre le prix fixé par la forge. */
+  const decap = useCallback((dieIndex: number, faceIndex: number): string | null => {
+    const u = uiRef.current
+    if (!shopUnlocked(u)) return 'La boutique est fermée.'
+    const cost = shop.forge.decapCost
+    if (u.money < cost) return `Le décapage coûte ${cost} pièces.`
+    try {
+      const { inventory, text } = decapFace(u.inventory, { dieIndex, faceIndex })
+      commit(pushLog({ ...u, inventory, money: u.money - cost, tally: { ...u.tally, spent: u.tally.spent + cost } }, 'shop', `${text} (${cost} pièces)`))
+      return null
+    } catch (e) {
+      return e instanceof Error ? e.message : 'Décapage impossible.'
+    }
+  }, [commit, pushLog, shopUnlocked])
 
   const cancelPurchase = useCallback(() => {
     const u = uiRef.current
@@ -555,7 +659,7 @@ export function useRace({ carry, unlocked, soulCount, lanes, terrains, speed }: 
     async (id: number, moves: ReturnType<typeof buildMoves>, indexOf: (i: number) => number | null): Promise<boolean> => {
       const inv = uiRef.current.inventory
       const coinsPerCollision = has(inv, 'boursePercee') ? param('boursePercee', 'coinsPerCollision', 2) : 0
-      const rules = moveRules(inv)
+      const rules = raceMoveRules(uiRef.current)
       // File ouverte : un déplacement peut en induire d'autres (lien, aimant, souffle, tribune).
       // Ils sont insérés juste après lui et ne portent pas de numéro de combinaison.
       const queue: { move: Move; index: number | null }[] = moves.map((m, i) => ({ move: m, index: indexOf(i) }))
@@ -588,8 +692,8 @@ export function useRace({ carry, unlocked, soulCount, lanes, terrains, speed }: 
     // fois pour toutes : ce que le joueur voit est exactement ce qui sera résolu.
     const sight = opponentSight(u.inventory)
     if (sight !== 'none') {
-      const flipNow = opponentNegativesFlipped(u.inventory)
-      const pairs = Array.from({ length: opponentRolls(u) }, () => rollOpponentPair(config, u.race.souls.length, rngRef.current, { flipNegatives: flipNow }))
+      const opts = opponentOptions(u)
+      const pairs = Array.from({ length: opponentRolls(u) }, () => rollOpponentPair(config, u.race.souls.length, rngRef.current, opts))
       if (sight === 'resolved') {
         // Miroir de Narcisse : l'adversaire joue et se résout avant le lancer du joueur.
         commit(pushLog({ ...uiRef.current, phase: 'opponent', opponentPreview: pairs }, 'artefact', 'Miroir de Narcisse : l’adversaire joue en premier.'))
@@ -597,7 +701,7 @@ export function useRace({ carry, unlocked, soulCount, lanes, terrains, speed }: 
           const w = uiRef.current
           const who = w.race.souls[pair.soul[0] ?? 0]?.name ?? '?'
           commit(pushLog({ ...w, opponentRoll: pair }, 'opponent', `L'adversaire lance : ${who} ${fmt(pair.distance[0] ?? 0)}.`))
-          if (!(await resolveMoves(id, buildMoves(pair, naturalCombinations(pair), 'opponent'), () => null))) return
+          if (!(await resolveMoves(id, buildMoves(pair, naturalCombinations(pair), 'opponent', bossContext(uiRef.current.race.turn, uiRef.current.boss)), () => null))) return
         }
         commit({ ...uiRef.current, phase: 'rolling', opponentRoll: null, opponentPreview: [] })
       } else {
@@ -612,6 +716,7 @@ export function useRace({ carry, unlocked, soulCount, lanes, terrains, speed }: 
     const roll = rollPlayerDice(config, u.race.souls.length, rngRef.current, u.inventory.dice, {
       soulDice: soulDiceCount(u.inventory),
       rerollTwins: has(u.inventory, 'relanceJumelle'),
+      ...(bossValue(u.boss, 'lyingSoulDice') !== null ? { lying: bossValue(u.boss, 'lyingSoulDice')! } : {}),
       ...(locked ? { locked } : {}),
     })
     if (!(await wait(config.animation.diceMs, id))) return
@@ -815,28 +920,46 @@ export function useRace({ carry, unlocked, soulCount, lanes, terrains, speed }: 
     // Tour de l'adversaire (§2.5.2). Avec le Miroir de Narcisse il a déjà joué (liste vide) ;
     // avec l'Œil ou le Fouet, ses paires ont été tirées au lancer et sont rejouées telles quelles.
     commit({ ...uiRef.current, phase: 'opponent', resolvingIndex: null })
-    const flip = opponentNegativesFlipped(uiRef.current.inventory)
+    const opts = opponentOptions(uiRef.current)
     const preview = uiRef.current.opponentPreview
-    const pairs = preview ?? Array.from({ length: opponentRolls(uiRef.current) }, () => rollOpponentPair(config, uiRef.current.race.souls.length, rngRef.current, { flipNegatives: flip }))
+    const pairs = preview ?? Array.from({ length: opponentRolls(uiRef.current) }, () => rollOpponentPair(config, uiRef.current.race.souls.length, rngRef.current, opts))
     for (const pair of pairs) {
       commit({ ...uiRef.current, opponentRoll: null, lastResult: null })
       if (!(await wait(config.animation.diceMs, id))) return
       const u = uiRef.current
       const name = u.race.souls[pair.soul[0] ?? 0]?.name ?? '?'
       commit(pushLog({ ...u, opponentRoll: pair }, 'opponent', `L'adversaire lance : ${name} ${fmt(pair.distance[0] ?? 0)}.`))
-      if (!(await resolveMoves(id, buildMoves(pair, naturalCombinations(pair), 'opponent'), () => null))) return
+      if (!(await resolveMoves(id, buildMoves(pair, naturalCombinations(pair), 'opponent', bossContext(uiRef.current.race.turn, uiRef.current.boss)), () => null))) return
     }
 
     const u = uiRef.current
-    const ended = endTurn(u.race)
+    const ended = endTurn(u.race, u.boss)
     if (!ended.finished) {
       commit({ ...u, race: ended, phase: 'idle', resolvingIndex: null, roll: null, combinations: [], opponentRoll: null, opponentPreview: null })
       return
     }
-    let done = pushLog({ ...u, race: ended, phase: 'finished', resolvingIndex: null }, 'system', `Une âme a franchi l'arrivée : fin de course au tour ${ended.turn}.`)
-    const settlement = settleBets(done.bets, ranking(ended), settleOptions(u.inventory, circleOf(u.raceIndex).circle, (n) => rngRef.current.int(n)))
+
+    // Boss Le stagiaire ailé : le tour d'arrivée se rejoue une seconde fois, adversaire compris.
+    // Une seule fois par course — le drapeau `replayed` empêche la boucle sans fin.
+    if (hasBoss(u.boss, 'replayTurn') && !u.replayed) {
+      let cur2 = commit(pushLog({ ...u, replayed: true, resolvingIndex: null }, 'artefact', 'Le stagiaire ailé rejoue le dernier tour.'))
+      if (!(await resolveMoves(id, buildMoves(roll, combos, 'player', moveContext(cur2)), indexOf))) return
+      commit({ ...uiRef.current, phase: 'opponent', resolvingIndex: null })
+      for (const pair of pairs) {
+        cur2 = commit({ ...uiRef.current, opponentRoll: null, lastResult: null })
+        if (!(await wait(config.animation.diceMs, id))) return
+        const who = cur2.race.souls[pair.soul[0] ?? 0]?.name ?? '?'
+        commit(pushLog({ ...uiRef.current, opponentRoll: pair }, 'opponent', `L'adversaire rejoue : ${who} ${fmt(pair.distance[0] ?? 0)}.`))
+        if (!(await resolveMoves(id, buildMoves(pair, naturalCombinations(pair), 'opponent', bossContext(uiRef.current.race.turn, uiRef.current.boss)), () => null))) return
+      }
+    }
+
+    const after = uiRef.current
+    let done = pushLog({ ...after, race: endTurn(after.race, after.boss), phase: 'finished', resolvingIndex: null }, 'system', `Une âme a franchi l'arrivée : fin de course au tour ${ended.turn}.`)
+    const finalRace = done.race
+    const settlement = settleBets(done.bets, ranking(finalRace), settleOptions(u.inventory, circleOf(u.raceIndex).circle, (n) => rngRef.current.int(n)))
     for (const b of settlement.bets) {
-      const names = b.souls.map((id) => ended.souls[id]?.name ?? `#${id}`).join(betType(b.type).ordered ? ' > ' : ', ')
+      const names = b.souls.map((id) => finalRace.souls[id]?.name ?? `#${id}`).join(betType(b.type).ordered ? ' > ' : ', ')
       done = pushLog(done, 'bet', b.status === 'won' ? `Pari ${betType(b.type).label} (${names}) gagné : +${b.payout - b.stake} net (mise ${b.stake} rendue).` : `Pari ${betType(b.type).label} (${names}) perdu : −${b.stake}.`)
     }
     if (settlement.refund > 0) done = pushLog(done, 'artefact', `Livre des comptes : ${settlement.refund} pièces remboursées.`)
@@ -873,7 +996,7 @@ export function useRace({ carry, unlocked, soulCount, lanes, terrains, speed }: 
       openShop, startRace, buy, cancelPurchase, rerollVitrine, placeBet, cancelBet, useLateBet, rollDice,
       pickSoulDie, pickDistanceDie, pairDice, resetPairing, removeCombination, removeCombinations,
       moveCombination, moveCombinationTo, setCombinations, autoPair, resolve,
-      useFiole, useMomentum, lockDie, doubleStakes, putTribune,
+      useFiole, useMomentum, lockDie, doubleStakes, putTribune, sell, decap,
     },
   }
 }

@@ -48,7 +48,15 @@ interface ItemBase {
   impact: Impact
   /** Contrepartie explicite (ex. « chaque association coûte 3 ¤ »), ou null si l'objet n'en a pas. */
   warning: string | null
+  /**
+   * Grade minimal du stagiaire pour que l'objet sorte en vitrine (boutique-README § Déblocage
+   * par la hiérarchie). Déduit de la rareté quand la config n'en donne pas.
+   */
+  minRank: number
 }
+
+/** Grade minimal par défaut d'une rareté : commun dès le départ, rare au 2, légendaire au 4. */
+export const RANK_OF_RARITY: Readonly<Record<Rarity, number>> = { common: 0, rare: 2, legendary: 4 }
 
 export interface ArtefactItem extends ItemBase {
   kind: 'artefact'
@@ -87,6 +95,23 @@ export interface ShopConfig {
   rarityWeights: Readonly<Record<Rarity, number>>
   /** Prix effectif à partir duquel un achat demande une confirmation (second clic). */
   confirmThreshold: number
+  /** Règles de forge (forge.md) : combien de faces altérées par dé, et à quel prix on décape. */
+  forge: {
+    /** Faces altérées au maximum par dé, avant le grade avancé. */
+    maxAltered: number
+    /** Grade du stagiaire à partir duquel on peut en altérer une de plus. */
+    advancedLevel: number
+    maxAlteredAdvanced: number
+    /** Prix pour rendre une face forgée à son état d'origine. */
+    decapCost: number
+  }
+  /**
+   * Grades du stagiaire qui ouvrent un emplacement d'artefact de plus (artefacts.md :
+   * 5 au départ, +1 aux rangs 2 et 4).
+   */
+  artefactSlotLevels: readonly number[]
+  /** Part du prix rendue à la revente d'un artefact (artefacts.md : 40 %). */
+  resaleRatio: number
   /** Délai avant que le bouton « Confirmer » redevienne « Acheter » sans second clic. */
   confirmResetMs: number
   /**

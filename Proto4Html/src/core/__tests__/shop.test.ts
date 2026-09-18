@@ -72,10 +72,20 @@ describe('vitrine', () => {
       expect(v.some((i) => i.id === 'lateBet')).toBe(false)
     }
   })
-  it("n'offre plus d'artefact quand les emplacements sont pleins", () => {
+  it('continue à proposer des artefacts quand les emplacements sont pleins : on en remplace un', () => {
+    // Avant la revente et le remplacement (artefacts.md), la vitrine cachait les artefacts dès
+    // que les emplacements étaient pleins. Ils restent offerts : c'est un choix, pas un blocage.
     const inv = { ...defaultInventory(cfg), artefacts: ['lateBet', 'sablier', 'boussole', 'clepsydre', 'ferACheval'] as const }
-    const v = generateVitrine(shop, { artefacts: [...inv.artefacts], dice: inv.dice }, all, seededRng(3))
-    expect(v.every((i) => i.kind !== 'artefact')).toBe(true)
+    const seen = new Set<string>()
+    for (let seed = 1; seed < 40; seed++) {
+      for (const it of generateVitrine(shop, { artefacts: [...inv.artefacts], dice: inv.dice }, all, seededRng(seed))) seen.add(it.kind)
+    }
+    expect(seen.has('artefact')).toBe(true)
+    // Les artefacts déjà possédés, eux, ne reviennent jamais.
+    for (let seed = 1; seed < 40; seed++) {
+      const v = generateVitrine(shop, { artefacts: [...inv.artefacts], dice: inv.dice }, all, seededRng(seed))
+      expect(v.some((i) => (inv.artefacts as readonly string[]).includes(i.id))).toBe(false)
+    }
   })
   it('ne tire que parmi les objets débloqués', () => {
     const inv = defaultInventory(cfg)
@@ -105,7 +115,7 @@ describe('achats', () => {
   })
   it('forge une face, une seule fois, en gardant une face positive', () => {
     const r = applyPurchase(findItem(shop, 'limee'), inv, { dieIndex: 0, faceIndex: 0 })
-    expect(r.inventory.dice[0]?.faces[0]).toEqual({ value: 0, effect: null, altered: 'limee' })
+    expect(r.inventory.dice[0]?.faces[0]).toEqual({ value: 0, effect: null, altered: 'limee', original: -1 })
     expect(() => applyPurchase(findItem(shop, 'doree'), r.inventory, { dieIndex: 0, faceIndex: 0 })).toThrow(/déjà forgée/)
     const limbes = applyPurchase(findItem(shop, 'limbes'), inv, { dieIndex: 0 }).inventory
     let cur = limbes

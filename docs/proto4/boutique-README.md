@@ -77,19 +77,24 @@ de fin de cercle.
 - Le menu `Collection` de l'accueil liste les objets descellés et compte les
   scellés **sans les nommer** (voir [`interface.md`](interface.md) § Collection).
 
-Socle livré aujourd'hui (6 objets sur 47) : Clepsydre fêlée, Bourse percée, Dé
-des Limbes, Dé de la Colère, Face limée, Face dorée. Un run complet jusqu'au
-neuvième cercle descelle donc 9 objets. Avec 41 objets scellés, il faut désormais
-cinq runs complets pour ouvrir tout le catalogue : c'est le chiffre à surveiller si
-le rythme paraît trop lent — il se règle par `unlockedAtStart`, sans toucher au code.
+Socle livré aujourd'hui (**9 objets sur 47**), réparti sur les trois familles pour
+qu'une vitrine de trois puisse toujours offrir autre chose qu'une seule sorte de
+geste : Clepsydre fêlée, Bourse percée, Tirelire du stagiaire, Semelles de plomb,
+Dé des Limbes, Dé de la Colère, Face limée, Face dorée, Face de gel.
+
+Un run complet jusqu'au neuvième cercle descelle 9 objets. Avec 38 objets scellés,
+il faut quatre runs complets pour ouvrir tout le catalogue : c'est le chiffre à
+surveiller si le rythme paraît trop lent — il se règle par `unlockedAtStart`, sans
+toucher au code.
 
 Code : `Proto4Html/src/core/shop/unlocks.ts` (tirage et partage descellé/scellé),
 `storage.ts` (clé `sinnersbet.unlocks.v1`), `App.tsx` (révélation de fin de cercle).
 
 ## Trois options par vitrine
 
-Pour respecter la tension prudente / ambitieuse / dangereuse (inspi §6), chaque
-vitrine de boutique devrait proposer au moins :
+La vitrine montre **trois objets** (`shop.slots`), renouvelables contre
+`shop.rerollCost`. Pour respecter la tension prudente / ambitieuse / dangereuse
+(inspi §6), chaque vitrine devrait proposer au moins :
 
 - un objet **sûr** (Faible ou Moyen, sans contrepartie) ;
 - un objet **ambitieux** (Fort, souvent conditionnel) ;
@@ -102,14 +107,27 @@ listes indiquent un **rang** minimal quand il y en a un :
 
 | Rang | Obtenu | Débloque | Paris ouverts (proto 4, `economy.betUnlockLevel`) |
 |---|---|---|---|
-| 0 — Stagiaire | départ | cartes communes, forge de base, un dé spécial | Vainqueur, Top 3, Pas dans le top 3, Dernière place, Duel |
-| 1 — Assistant | boss du cercle 1 battu | personnalités (1 par course), artefacts communs | + Deux âmes dans le top 3, Top 3 dans le désordre |
+| 0 — Stagiaire | départ | cartes communes, forge de base, un dé spécial | Vainqueur, Top 3, Pas dans le top 3, Dernière place |
+| 1 — Assistant | boss du cercle 2 battu | personnalités (1 par course), artefacts communs | + Duel, Deux âmes dans le top 3, Top 3 dans le désordre |
 | 2 — Tourmenteur | boss du cercle 3 battu | 2 personnalités par course, dés rares, forge avancée | + Vainqueur + dernier |
 | 3 — Contremaître | boss du cercle 5 battu | 3 personnalités, artefacts rares, modification du circuit | + Podium exact |
 | 4 — Sous-directeur | boss du cercle 7 battu | tout, y compris les objets ⚠ extrêmes | + Classement complet exact |
 
 Les paris à gros multiplicateur arrivent tard : un classement complet exact (×80)
 gagné au premier cercle rendrait toutes les courses suivantes inutiles.
+
+**Dans le proto** : chaque objet porte un `minRank` dans `config/shop.json` — le grade
+minimal pour qu'il sorte en vitrine. Absent, il se déduit de la rareté : **commune dès
+le grade 0, rare au 2, légendaire au 4**, ce qui correspond exactement aux rangs donnés
+objet par objet dans [`des.md`](des.md). Le filtrage est levé en mode e2e, où les
+graines de référence doivent pouvoir tirer dans tout le catalogue.
+
+Les **emplacements d'artefacts** suivent la même hiérarchie : 5 au départ, +1 à chaque
+grade listé dans `shop.artefactSlotLevels` (2 et 4). Emplacements pleins, la vitrine
+continue de proposer des artefacts : l'achat en **remplace** un, qui est détruit sans
+remboursement. Pour récupérer des pièces, il faut le **revendre** d'abord, à
+`shop.resaleRatio` du prix du cercle (40 %) — ces deux gestes vivent dans l'atelier de
+la boutique, replié sous la vitrine.
 
 ## Vocabulaire commun
 

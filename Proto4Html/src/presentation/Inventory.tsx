@@ -1,4 +1,5 @@
-import { config } from '../core/config'
+import { config, shop } from '../core/config'
+import { artefactSlotsAt } from '../core/shop/shop'
 import { fmtFace, type Face } from '../core/rules/dice'
 import type { Inventory as Inv } from '../core/shop/shop'
 import { ItemArt } from './ItemArt'
@@ -33,15 +34,17 @@ export function FaceChip({ face, dim }: { face: Face; dim?: boolean }) {
 interface Props {
   inventory: Inv
   lateBetCharges: number
+  /** Grade du stagiaire : il ouvre des emplacements d'artefacts (artefacts.md). */
+  level: number
   compact?: boolean
 }
 
 /** Ce que le joueur possède : artefacts et dés, visible en boutique et pendant la course. */
-export function Inventory({ inventory, lateBetCharges, compact }: Props) {
+export function Inventory({ inventory, lateBetCharges, level, compact }: Props) {
   return (
     <section className={'inventory' + (compact ? ' inventory-compact' : '')} aria-label="Inventaire">
       <div className="inv-group">
-        <span className="bet-label">Artefacts ({inventory.artefacts.length}/{5})</span>
+        <span className="bet-label">Artefacts ({inventory.artefacts.length}/{artefactSlotsAt(shop, level)})</span>
         <div className="inv-items">
           {inventory.artefacts.length === 0 && <span className="muted small">aucun</span>}
           {inventory.artefacts.map((id) => (

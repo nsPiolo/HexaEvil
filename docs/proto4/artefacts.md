@@ -1,8 +1,10 @@
 # Artefacts
 
-Objets passifs, actifs pour tout le run dès l'achat (GDD §6.4). Capacité
-proposée : **5 emplacements** au départ, +1 aux rangs 2 et 4 du stagiaire.
-Remplacer un artefact le détruit ; revente à 40 % du prix.
+Objets passifs, actifs pour tout le run dès l'achat (GDD §6.4). Capacité :
+**5 emplacements** au départ, +1 aux rangs 2 et 4 du stagiaire
+(`shop.artefactSlotLevels`). Remplacer un artefact le détruit, sans remboursement ;
+la revente rend 40 % du prix du cercle (`shop.resaleRatio`) et libère la place. Les
+deux gestes sont dans l'atelier de la boutique. ✔ Implémenté.
 
 Rareté : **C**ommune (visible dès le rang 0), **R**are (rang 2), **L**égendaire
 (rang 4, une par vitrine au maximum). Les objets ⚠ ont une contrepartie. Les

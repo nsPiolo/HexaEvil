@@ -3,7 +3,10 @@
  * Une erreur désigne toujours le champ fautif, pour qu'un réglage cassé se voie au premier écran.
  */
 import { BET_TYPE_IDS, type BetTypeId } from '../rules/betTypes'
-import type { BlockedCell, RaceConfig, Terrain } from './schema'
+import { BOSS_EFFECT_DOC, isBossEffectId, type BossEffect } from '../rules/boss'
+import type { BlockedCell, RaceConfig, SpecialCell, SpecialCellKind, Terrain } from './schema'
+
+const SPECIAL_KINDS: readonly SpecialCellKind[] = ['trap', 'boost', 'gold']
 
 export class ConfigError extends Error {
   constructor(field: string, detail: string) {
@@ -50,6 +53,22 @@ function strArray(raw: unknown, field: string): string[] {
   return raw.map((v, i) => {
     if (typeof v !== 'string' || v.trim() === '') fail(`${field}[${i}]`, 'chaîne non vide attendue')
     return v
+  })
+}
+
+/**
+ * Effets typés du pouvoir de boss (`rules/boss.ts`). Absent = boss sans effet mécanique : le
+ * texte `power` reste affiché, la course se joue aux règles normales.
+ */
+function bossPowers(raw: unknown, field: string): BossEffect[] {
+  if (raw === undefined) return []
+  if (!Array.isArray(raw)) fail(field, 'tableau attendu')
+  return raw.map((e, i) => {
+    const o = obj(e, `${field}[${i}]`)
+    const id = str(o.id, `${field}[${i}].id`)
+    if (!isBossEffectId(id)) fail(`${field}[${i}].id`, `effet inconnu « ${id} » (voir BOSS_EFFECT_IDS)`)
+    const value = o.value === undefined ? BOSS_EFFECT_DOC[id].fallback : num(o.value, `${field}[${i}].value`)
+    return { id, value }
   })
 }
 
@@ -141,7 +160,24 @@ export function loadConfig(raw: unknown): RaceConfig {
       for (const [column, n] of perColumn) {
         if (n >= lanes) fail(`${g}.blocked`, `colonne ${column} entièrement bloquée : il faut au moins une case libre par colonne`)
       }
-      return { name: str(to.name, `${g}.name`), blocked }
+      // Cases spéciales : [colonne, couloir, type, valeur], même écriture à l'œil que `blocked`.
+      const specials: SpecialCell[] = !Array.isArray(to.specials)
+        ? []
+        : to.specials.map((c, k) => {
+            const h = `${g}.specials[${k}]`
+            if (!Array.isArray(c) || c.length !== 4) fail(h, 'quadruplet [colonne, couloir, type, valeur] attendu')
+            const column = int(c[0], `${h}[0]`, 1)
+            if (column >= columns) fail(`${h}[0]`, `avant l'arrivée (moins de ${columns})`)
+            const lane = int(c[1], `${h}[1]`, 0)
+            if (lane >= lanes) fail(`${h}[1]`, `au plus lanes − 1 (${lanes - 1})`)
+            const kind = str(c[2], `${h}[2]`)
+            if (!SPECIAL_KINDS.includes(kind as SpecialCellKind)) fail(`${h}[2]`, `parmi ${SPECIAL_KINDS.join(', ')}`)
+            const value = int(c[3], `${h}[3]`, 1)
+            if (blocked.some((b) => b.column === column && b.lane === lane)) fail(h, `la case (${column}, ${lane}) est bloquée : rien ne peut s'y arrêter`)
+            return { column, lane, kind: kind as SpecialCellKind, value }
+          })
+      if (new Set(specials.map((c) => `${c.column}:${c.lane}`)).size !== specials.length) fail(`${g}.specials`, 'case spéciale en double')
+      return { name: str(to.name, `${g}.name`), blocked, specials }
     })
     if (new Set(terrains.map((t) => t.name)).size !== terrains.length) fail(`${f}.terrains`, 'nom de terrain en double')
     return {
@@ -152,6 +188,7 @@ export function loadConfig(raw: unknown): RaceConfig {
       terrains,
       boss: str(o.boss, `${f}.boss`),
       power: str(o.power, `${f}.power`),
+      powers: bossPowers(o.powers, `${f}.powers`),
     }
   })
   const escapeCircle = int(run.escapeCircle, 'run.escapeCircle', 1)

@@ -57,7 +57,7 @@ export const INTRO: readonly Line[] = [
   P("Bon, d'accord, mais pas d'entourloupe."),
   D('Parfait, on a un pacte !', 'fier'),
   D("Ici on mise sur une course d'âmes damnées, donc voilà {money} pièces pour commencer. Et avant chaque course, je vous avancerai {allowance} pièces de plus — davantage à chaque cercle, un stagiaire qui monte en grade a plus de caisse : il faut bien que le guichet tourne.", 'neutre'),
-  D("Ah, et je n'ai le droit de prendre que les paris simples : vainqueur, top 3, dernier, un duel. Les gros tickets, c'est au-dessus de mon grade. Pour l'instant.", 'doute'),
+  D("Ah, et je n'ai le droit de prendre que les paris simples : vainqueur, top 3, pas dans le top 3, dernier. Tout ce qui met deux âmes sur le même ticket, c'est au-dessus de mon grade. Pour l'instant.", 'doute'),
 ]
 
 /** Fin de la deuxième course : le boss du cercle arrive. */
@@ -98,12 +98,14 @@ export const DEMON_RANKS: readonly DemonRank[] = [
   {
     name: 'Assistant',
     label: 'Démon assistant',
-    afterCircle: 1,
+    // Le premier grade se gagne au bout de DEUX cercles : un seul ne prouve rien, et
+    // l'administration infernale ne promeut pas sur un coup de chance.
+    afterCircle: 2,
     portrait: 'stagiaire_1_assistant',
     lines: [
-      D("Et… j'ai une nouvelle. Charon a signé un papier : je suis assistant. Assistant ! Mon premier grade en trois siècles de stage."),
+      D("Et… il y a mieux. Minos a enroulé sa queue deux fois autour de mon dossier : je suis assistant. Assistant ! Mon premier grade en trois siècles de stage.", 'fier'),
       P('Félicitations. Ça change quoi ?'),
-      D("Pour moi, une chaise avec un dossier. Pour vous, deux tickets de plus au guichet : « Deux âmes dans le top 3 » à ×{twoInTop3}, et « Top 3 dans le désordre » à ×{podiumAnyOrder}. Un assistant a le droit de prendre des paris combinés."),
+      D("Pour moi, une chaise avec un dossier. Pour vous, trois tickets de plus au guichet : le « Duel » à ×{duel}, « Deux âmes dans le top 3 » à ×{twoInTop3}, et « Top 3 dans le désordre » à ×{podiumAnyOrder}. Un assistant a le droit de mettre deux âmes sur le même ticket."),
     ],
   },
   {
@@ -173,6 +175,7 @@ export const CIRCLES: readonly CircleTexts[] = [
     success: [
       D("Félicitations, je ne pensais pas que vous pouviez réussir.", 'fier'),
       D('Si ça vous va, je vais vous coacher. On va vous tester dans les autres cercles.'),
+      D("J'ai bien tenté de faire remonter votre nom. On m'a répondu qu'un cercle, ça arrive à n'importe quel mort. Tenez-en deux et ça devient un dossier.", 'doute'),
       D('Prochain arrêt : la Luxure. Des vents éternels y bousculent les âmes, il y en aura {souls} au départ, une de plus. Et le tarif de sortie monte à {price} pièces.'),
     ],
     failure: [D("Bon, vous êtes nul en fait !! Finalement, j'ai trouvé quelle punition éternelle vous allez subir. Bye.", 'degout')],
@@ -444,7 +447,6 @@ export const MAP = {
   locked: 'à venir',
   boss: 'Boss',
   power: 'Pouvoir',
-  powerPending: 'règle à venir dans le proto',
   track: 'Piste',
   lanes: '{n} couloir{s}',
   blocked: '{n} case{s} bloquée{s} (colonnes {columns})',
@@ -568,6 +570,15 @@ export const SHOP = {
   confirm: 'Confirmer {price} ¤',
   confirmTitle: 'Achat important : un second clic confirme.',
   compare: 'faces actuelles → nouvelles faces',
+  /** Emplacements pleins : l'achat d'un artefact en détruit un (artefacts.md). */
+  replaceArtefact: 'quel artefact sacrifier ?',
+  replaceArtefactWarning: 'L’artefact choisi est détruit, sans remboursement. Pour récupérer des pièces, revendez-le d’abord dans l’atelier.',
+  forgeLimit: 'Un dé ne porte pas plus de {n} faces forgées. Décapez-en une dans l’atelier pour faire de la place.',
+  /** Atelier : défaire ce qu'on possède (revente d'artefact, décapage de face). */
+  workshop: 'Atelier — {n}/{slots} artefacts, revendre ou décaper',
+  sell: 'Revendre {name} (+{back} ¤)',
+  sellTitle: 'Revente à 40 % du prix du cercle : {back} pièces, et l’emplacement se libère.',
+  decapTitle: 'Décaper cette face : elle retrouve sa valeur d’origine pour {cost} pièces.',
   replace: 'Remplacer ce dé',
 } as const
 
@@ -618,6 +629,13 @@ export const BET_LIVE = {
 
 /** Plateau. */
 export const BOARD = {
+  /** Cases spéciales du terrain : elles n'agissent que sur l'âme qui s'y arrête (GDD §2.2). */
+  specialMark: { gold: '¤', trap: '✷', boost: '▲' } as const,
+  special: {
+    gold: 'Case payante : l’âme qui s’y arrête vous rapporte {n} pièces.',
+    trap: 'Piège : l’âme qui s’y arrête recule de {n} case(s).',
+    boost: 'Tremplin : l’âme qui s’y arrête avance de {n} case(s) de plus.',
+  } as const,
   tribune: 'Tribune infernale',
   tribuneTitle: 'Tribune infernale : l’âme qui s’arrête ici vous paie et repart poussée.',
   tribunePlace: 'Poser la tribune sur la case {column}',
@@ -764,7 +782,7 @@ export const HELP = {
             '**Gros tickets** — podium exact (×40), vainqueur ET dernier (×14), classement complet (×80). De quoi payer un cercle entier d’un coup… si vous lisez la course comme un livre ouvert.',
           ],
         },
-        { kind: 'p', text: 'Deux choses à savoir sur les cotes : elles **fondent** à mesure que la course avance (parier tard, c’est parier sûr, donc parier petit), et les gros tickets sont **verrouillés au début** — le stagiaire n’a pas le grade pour les encaisser. Pas encore.' },
+        { kind: 'p', text: 'Deux choses à savoir sur les cotes : elles **fondent** à mesure que la course avance (parier tard, c’est parier sûr, donc parier petit), et tout ticket qui met **deux âmes ou plus** est **verrouillé au début** — le stagiaire n’a pas le grade pour les encaisser. Les combinés s’ouvrent à son premier grade, au bout de deux cercles ; les gros tickets bien plus tard.' },
       ],
     },
     {
