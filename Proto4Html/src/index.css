@@ -155,7 +155,14 @@ p { margin: 0; }
 }
 .cells-head { height: 22px; }
 /* Une ligne de cases par couloir (couloir 0, prioritaire, en bas). La hauteur est posée en ligne selon le nombre de couloirs. */
-.track { grid-template-rows: repeat(var(--lanes), 1fr); }
+/*
+ * `--track-h` est le plancher calculé par Board.tsx (de quoi empiler les âmes d'un couloir).
+ * `--track-fill` la fait grandir de ce que la fenêtre laisse, sans jamais dépasser le double
+ * du plancher : au-delà, une case n'est plus une case, c'est un mur, et le jeton de 32 px qui
+ * flotte dedans ne dit plus où il est. Le reste du mou passe entre les deux dalles. Les jetons
+ * sont placés en pourcentage : ils suivent sans rien savoir de la hauteur réelle.
+ */
+.track { grid-template-rows: repeat(var(--lanes), 1fr); height: clamp(var(--track-h), var(--track-fill), calc(var(--track-h) * 1.9)); }
 .cell {
   /* Bloc contenant des calques posés dans la case : le marqueur de case spéciale et la cible
      de pose de la tribune, tous deux en `position: absolute; inset: …`. Sans ça ils remontent
@@ -816,7 +823,6 @@ p { margin: 0; }
 .stake-tray {
   display: flex; align-items: center; gap: 8px;
   padding: 14px 28px 24px;
-  background: url('/table/chips/tray.webp') center / 100% 100% no-repeat;
 }
 .bet-summary { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 0.9rem; }
 .bet-refusal { min-height: 1.2em; color: var(--bad); opacity: 0; transition: opacity 150ms; margin-top: -6px; }
@@ -1336,8 +1342,47 @@ p { margin: 0; }
 
 .table {
   position: relative;
-  min-height: 100vh;
-  padding: 10px 20px 32px;
+  /*
+   * Largeur des dalles et gouttière, en un seul endroit : c'est par les `--slab-*` et
+   * `--track-fill` qu'on règle l'occupation de l'écran, nulle part ailleurs. La piste gagne à
+   * être large (dix-sept colonnes), le
+   * guichet et la boutique perdent à l'être (leurs colonnes s'étirent dans le vide), d'où deux
+   * largeurs et non une. `min(…, 100%)` sur la dalle fait le reste : sous cette largeur,
+   * elles occupent tout ce que la gouttière laisse.
+   */
+  --slab-gutter: clamp(12px, 2.2vw, 44px);
+  --slab-race-w: 1760px;
+  --slab-play-w: 1560px;
+  /*
+   * Ce que la piste peut prendre en hauteur. Un `flex: 1` sur la dalle ne convient pas : la
+   * piste plafonne (sinon ses cases deviennent des dalles de pierre), et la dalle, elle,
+   * continuerait de grandir en montrant du cadre vide. On calcule donc la piste depuis la
+   * fenêtre, et chaque dalle garde la hauteur de son contenu.
+   *
+   * 860 px, c'est tout le reste mesuré à l'écran : rangée haute, en-têtes et légende du
+   * plateau, guichet ouvert sur un pari posé, réserve du bas. La piste prend ce qui dépasse,
+   * et rien quand il ne dépasse rien : sous ~1000 px de haut, elle garde sa taille naturelle
+   * et c'est la page qui défile, comme avant.
+   */
+  --track-fill: calc(100dvh - 860px);
+  /*
+   * Le parchemin de « Poser le pari » et la corne de « Lancer la course » débordent de leur
+   * bouton d'une bonne cinquantaine de pixels vers le bas (`.bp-place-art`, `.bp-start-art`).
+   * Tant que la page s'arrêtait à la hauteur de son contenu, la marge du bas suffisait ; une
+   * colonne qui remplit la fenêtre les collerait au bord et les couperait. D'où cette réserve,
+   * mesurée sur le plus gros des deux débordements (le parchemin : 60 px sous la dalle, plus
+   * son ombre portée).
+   */
+  --slab-overhang: 72px;
+  /*
+   * La colonne de l'écran de jeu : rangée haute, bandeau du boss, puis les dalles qui
+   * prennent la hauteur restante. Sans ce `flex`, la page s'arrêtait à la hauteur de son
+   * contenu et laissait le bas de l'écran vide sur un grand moniteur.
+   */
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding: 10px var(--slab-gutter) var(--slab-overhang);
   /*
    * Décor du cercle (docs/proto4/prompts-cercles.md). `--circle-bg` est posé par
    * GameScreen d'après le cercle en cours ; le dégradé au-dessus assombrit l'image pour
@@ -1353,7 +1398,7 @@ p { margin: 0; }
 
 /* ---- Rangée haute réservée au HUD (spec 08/C1) : cercle · fil d'Ariane · pièces. Rien ne la recouvre. ---- */
 .topbar-game {
-  max-width: 1400px; margin: 0 auto 10px;
+  max-width: min(var(--slab-race-w), 100%); margin: 0 auto 10px;
   display: grid; grid-template-columns: minmax(170px, 1fr) auto minmax(max-content, 1fr); align-items: center; gap: 16px;
 }
 .hud { display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; border-radius: 10px; background: rgba(20, 16, 15, 0.75); border: 1px solid var(--line); font-size: 0.85rem; min-width: 0; }
@@ -1382,7 +1427,7 @@ p { margin: 0; }
  * sous la rangée haute et au-dessus de la table, sans rien recouvrir.
  */
 .boss-bar {
-  max-width: 1400px; margin: 0 auto 10px;
+  max-width: min(var(--slab-race-w), 100%); margin: 0 auto 10px;
   display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px;
   padding: 6px 14px; border-radius: 10px;
   background: rgba(58, 14, 12, 0.82); border: 1px solid #7a2f22;
@@ -1428,7 +1473,7 @@ p { margin: 0; }
 .step-done { color: var(--ink); font-weight: 700; }
 .step-current { color: #ffd479; font-weight: 700; text-shadow: 0 0 6px var(--gold), 0 0 16px var(--gold), 0 0 30px rgba(224, 168, 60, 0.8); }
 
-/* ---- La table : zone haute · plateau · zone basse, pleine largeur (spec 08/C2) ---- */
+/* ---- La table : dalle de course (zone haute · plateau), dalle du guichet (spec 08/C2) ---- */
 /*
  * La dalle de pierre. Sa hauteur varie du simple au double selon qu'un panneau est ouvert,
  * d'où les neuf tranches ; `fill` peint aussi la surface intérieure. La dalle n'a pas de
@@ -1438,16 +1483,43 @@ p { margin: 0; }
  * `drop-shadow` plutôt que `box-shadow` pour que l'ombre suive la silhouette taillée et non
  * un rectangle.
  */
-.felt {
-  max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px;
+/*
+ * Deux dalles et non plus une : la course d'un côté, le guichet de l'autre. Une seule dalle
+ * faisait un bloc compact qui flottait au milieu d'un grand écran ; séparées, elles peuvent
+ * avoir chacune leur largeur et se partager la hauteur disponible.
+ */
+.felt-stack {
+  flex: 1; min-height: 0;
+  display: flex; flex-direction: column;
+  gap: clamp(8px, 1.6vh, 26px);
+  /* Le mou qui reste une fois les deux dalles servies passe entre elles, jamais dedans : une
+     dalle creuse se voit (un grand rectangle de panneau vide), un écart ne se voit pas. */
+  justify-content: space-between;
+}
+.slab {
+  width: 100%; max-width: min(var(--slab-w, 1400px), 100%); margin: 0 auto; min-width: 0;
+  display: flex; flex-direction: column; gap: 10px;
   padding: 10px 12px 12px;
   border: 16px solid transparent;
   border-image: url('/table/frame.webp') 48 fill stretch;
   filter: drop-shadow(0 16px 36px rgba(0, 0, 0, 0.65));
 }
-@media (max-width: 760px) { .felt { border-width: 10px; padding: 8px 8px 10px; } }
+.slab-race { --slab-w: var(--slab-race-w); flex: 0 1 auto; min-height: 0; }
+.slab-play { --slab-w: var(--slab-play-w); flex: 0 0 auto; }
+/* Seule à l'écran, la boutique se centre plutôt que de se coller sous la rangée haute. */
+.slab-shop { --slab-w: var(--slab-play-w); margin-block: auto; }
+@media (max-width: 760px) { .slab { border-width: 10px; padding: 8px 8px 10px; } }
+/* Écran bas : deux dalles coûtent deux cadres et deux fois la marge intérieure. On les
+   amincit plutôt que de pousser la moitié du guichet sous la ligne de flottaison. Le seuil
+   tient compte du cercle 6 et de ses quatre couloirs, le plateau le plus haut du jeu. */
+@media (max-height: 1100px) {
+  .table { --slab-overhang: 64px; }
+  .slab { border-width: 12px; padding: 6px 10px 8px; }
+  .felt-stack { gap: 8px; }
+}
 .zone { display: flex; flex-direction: column; gap: 8px; }
-.board-wrap .board { transform: rotateX(6deg); transform-origin: 50% 100%; }
+.board-wrap { min-height: 0; display: flex; flex-direction: column; }
+.board-wrap .board { min-height: 0; transform: rotateX(6deg); transform-origin: 50% 100%; }
 .last-event { min-height: 1.3em; margin: 6px 0 0; text-align: center; color: var(--muted); font-size: 0.85rem; display: flex; justify-content: center; align-items: baseline; gap: 12px; flex-wrap: wrap; }
 .recap-btn { background: none; border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; color: var(--muted); font-size: 0.75rem; }
 .recap-btn:hover { border-color: var(--gold); color: var(--gold); }
@@ -1606,6 +1678,13 @@ p { margin: 0; }
 .bp-count-pop { display: inline-block; animation: pop 250ms ease-out; }
 .bp-count-btn::after { content: '▾'; font-size: 0.8rem; opacity: 0.8; }
 .bp-count-btn[aria-expanded='false']::after { content: '▸'; }
+/* Repli du panneau de paris : bouton de pierre plutôt que croix, parce qu'il n'apparaît
+   qu'en course et qu'il faut lire ce qu'il fait avant de perdre le guichet de vue. */
+.bp-hide { position: absolute; top: 10px; right: 12px; }
+/* Le bouton de pierre est bien plus large que la croix : la gouttière de l'en-tête suit,
+   sinon il vient couvrir la jauge de solde. */
+.bp-head-hideable { padding-right: 130px; }
+
 .bp-close { position: absolute; top: 12px; right: 12px; width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel); color: var(--muted); font-size: 1.1rem; line-height: 1; }
 .bp-close:hover { color: var(--ink); border-color: var(--muted); }
 .bp-late { padding: 8px 20px 0; }

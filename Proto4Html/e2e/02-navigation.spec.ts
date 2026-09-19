@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { autoToResults, betsPanel, board, openShop, phaseStrip, placeBet, rollDice, shopPanel, slot, start, startRace, tokenButton } from './helpers'
+import { autoToResults, betsPanel, board, hideBets, openShop, phaseStrip, placeBet, rollDice, shopPanel, slot, start, startRace, tokenButton } from './helpers'
 import { RACES_PER_CIRCLE, RACE_SEED, SHOP_SEED, SHOP_SLOTS } from './seeds'
 
 const EMPTY_STATE = 'Posez d’abord un pari, le stagiaire n’ouvre pas la caisse aux indécis.'
@@ -10,7 +10,7 @@ test.describe('02 · Navigation Pari ↔ Boutique', () => {
     await start(page, { seed: RACE_SEED })
     await placeBet(page, { souls: [0], stake: 10 })
     await placeBet(page, { souls: [1], stake: 20 })
-    await betsPanel(page).getByRole('button', { name: 'Fermer' }).click()
+    await hideBets(page)
     await expect(page.getByTestId('tab-bets')).toHaveText('Paris (2) · 30 ¤ misés')
   })
 

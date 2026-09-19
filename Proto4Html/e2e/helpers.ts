@@ -47,6 +47,14 @@ export const slot = (page: Page, label: string): Locator => betsPanel(page).loca
 /** Liste des paris posés dans le panneau. */
 export const placedBets = (page: Page): Locator => betsPanel(page).locator('.bets').getByRole('listitem')
 
+/**
+ * Replie le panneau de paris. Le bouton « Masquer » n'existe qu'une fois la course lancée ;
+ * le raccourci P, lui, bascule le panneau à tout moment, y compris en préparation.
+ */
+export async function hideBets(page: Page): Promise<void> {
+  await page.keyboard.press('p')
+}
+
 /** Valeurs « solde / prix » d'une jauge, en texte normalisé. */
 export async function gaugeValues(g: Locator): Promise<string> {
   return (await g.locator('.gauge-values').innerText()).replace(/\s+/g, ' ').trim()

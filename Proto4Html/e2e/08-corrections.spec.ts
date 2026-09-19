@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
-import { betsPanel, board, hud, hudMoney, openShop, pairNaturally, placeBet, rollDice, shopPanel, slot, start, startRace, token, tokenButton } from './helpers'
+import { betsPanel, board, hideBets, hud, hudMoney, openShop, pairNaturally, placeBet, rollDice, shopPanel, slot, start, startRace, token, tokenButton } from './helpers'
 import { CUMUL_SEED, RACE_SEED, SHOP_SEED, START_MONEY } from './seeds'
 
 type Box = { x: number; y: number; width: number; height: number }
@@ -48,7 +48,7 @@ test.describe('08 · Corrections post-test', () => {
       await shopPanel(page).getByRole('button', { name: 'Fermer' }).click()
       await expect(page.getByTestId('drawer-bets')).toHaveAttribute('data-state', 'open')
       await expectHudClear(page, width) // paris seuls
-      await betsPanel(page).getByRole('button', { name: 'Fermer' }).click()
+      await hideBets(page)
       await expect(page.getByTestId('drawer-bets')).toHaveAttribute('data-state', 'closed')
       await expect(page.getByTestId('drawer-shop')).toHaveAttribute('data-state', 'closed')
       await expectHudClear(page, width) // aucun
@@ -217,7 +217,7 @@ test.describe('08 · Corrections post-test', () => {
     const opacity = () => g.evaluate((el) => parseFloat(getComputedStyle(el).opacity))
     await expect.poll(opacity).toBeLessThan(0.6)
     await expect(g).toContainText(`${START_MONEY} / 150`)
-    await betsPanel(page).getByRole('button', { name: 'Fermer' }).click()
+    await hideBets(page)
     await expect.poll(opacity).toBe(1)
   })
 

@@ -1121,6 +1121,7 @@ const LOG = {
 const UI = {
   menu: { noRun: 'No escape under way', devTitle: 'Developer menu (Ctrl+Shift+D)' },
   bets: {
+    hide: 'Hide',
     panel: 'Bets',
     placed: 'Bets placed',
     open: 'Place a bet',

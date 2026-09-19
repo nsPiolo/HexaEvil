@@ -1136,6 +1136,7 @@ const LOG = {
 const UI = {
   menu: { noRun: 'Aucune évasion en cours', devTitle: 'Menu développeur (Ctrl+Maj+D)' },
   bets: {
+    hide: 'Masquer',
     panel: 'Paris',
     placed: 'Paris posés',
     open: 'Poser un pari',

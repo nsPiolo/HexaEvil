@@ -71,6 +71,9 @@ export function Board({ race, lastResult, activeSoul, highlightSoul = null, onHo
   // Hauteur d'un couloir : assez pour empiler les âmes qui partagent une case au départ.
   const perLane = Math.ceil(race.souls.length / lanes)
   const laneHeight = Math.max(56, TOKEN + (perLane - 1) * STACK_GAP + 16)
+  // Hauteur plancher de la piste. Le CSS la laisse grandir quand la dalle a de la place
+  // (`.cells.track`), d'où une variable et non plus une hauteur fixe : les jetons se placent
+  // en pourcentage, ils suivent sans rien savoir de la taille réelle.
   const trackHeight = lanes > 1 ? lanes * laneHeight : SINGLE_LANE_HEIGHT
   const previewSoul = preview?.move.soul ?? null
   const previewGlyphs = preview ? consequenceGlyphs(preview) : []
@@ -132,7 +135,7 @@ export function Board({ race, lastResult, activeSoul, highlightSoul = null, onHo
           </div>
         ))}
       </div>
-      <div className="cells track" style={{ height: `${trackHeight}px` }}>
+      <div className="cells track" style={{ ['--track-h' as string]: `${trackHeight}px` }}>
         {/* Tribune infernale : posée avant la course, elle rapporte et pousse (artefacts.md n°19). */}
         {race.tribune && (
           <div className="tribune" style={cellStyle(race.tribune.column, race.tribune.lane)} title={BOARD.tribuneTitle} aria-label={BOARD.tribune}>

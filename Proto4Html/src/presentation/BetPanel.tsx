@@ -211,7 +211,7 @@ export function BetPanel({ race, money, stakes, price, bets, open, phase, level,
 
   return (
     <section className="bet-panel" aria-label={UI.bets.panel}>
-      <header className="bp-head">
+      <header className={'bp-head' + (onClose ? ' bp-head-hideable' : '')}>
         <div className="bp-title">
           <h2 className="serif">{UI.bets.open}</h2>
           <p className="muted">
@@ -225,9 +225,12 @@ export function BetPanel({ race, money, stakes, price, bets, open, phase, level,
         <div className="bp-money">
           <MoneyGauge money={money} price={price} staked={staked} />
         </div>
+        {/* Replier le panneau n'a de sens qu'en course, quand la piste est derrière : en
+            préparation on en sort par « Lancer la course », pas en le masquant. GameScreen
+            ne passe donc `onClose` qu'une fois la course partie. */}
         {onClose && (
-          <button type="button" className="bp-close" onClick={onClose} aria-label={HUD.close}>
-            ×
+          <button type="button" className="btn-stone btn-stone-sm bp-hide" onClick={onClose}>
+            {UI.bets.hide}
           </button>
         )}
       </header>

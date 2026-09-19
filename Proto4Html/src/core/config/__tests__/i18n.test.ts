@@ -25,8 +25,9 @@ describe('traduction de la configuration', () => {
   it.each(LANGS)('%s : nomme toutes les âmes, tous les cercles, tous les pouvoirs et tous les terrains', (lang) => {
     const overlay = OVERLAYS[lang as keyof typeof OVERLAYS]
     const translated = loadConfig(translateRaceConfig(rawRace, lang))
-    // Les noms d'âmes sont des noms propres : « Horace » se traduit par « Horace ». La
-    // couverture se vérifie donc sur la couche elle-même, pas sur le résultat.
+    // Les noms d'âmes sont des noms propres : rien n'interdit qu'un nom s'écrive pareil dans
+    // les deux langues, comparer le résultat au français ne prouverait donc rien. La
+    // couverture se vérifie sur la couche elle-même.
     expect(overlay.souls).toHaveLength(base.souls.names.length)
     overlay.souls.forEach((name, i) => expect(name.trim(), `âme ${i}`).not.toBe(''))
     expect(overlay.circles).toHaveLength(base.run.circles.length)

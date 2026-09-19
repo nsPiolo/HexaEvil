@@ -108,6 +108,33 @@ En overlay (en haut à droite) les possessions :
 Posé sur la table (donc pas en overlay) :
 * 2 emplacements de jeu (un en bas pour le joueur, un en haut pour l'adversaire.)
 
+### Deux dalles, pas un bloc
+
+L'écran de jeu est fait de **deux dalles de pierre empilées**, séparées par le décor du cercle :
+
+* la **dalle de course** porte la zone adverse et le plateau ;
+* la **dalle du guichet** porte le panneau de paris en préparation, les dés du joueur en course.
+
+La boutique, elle, remplace les deux le temps de son ouverture (ouverture exclusive, spec 02/C3).
+
+Deux dalles et non une seule boîte, parce que les deux n'ont pas les mêmes besoins : la piste
+gagne à être large (dix-sept colonnes), le guichet perd à l'être (ses trois colonnes s'étirent
+dans le vide). Chacune a donc sa largeur, et les trois réglages tiennent dans les variables
+`--slab-*` de `.table` (`src/index.css`) :
+
+| Variable | Rôle |
+| --- | --- |
+| `--slab-race-w` | largeur maximale de la dalle de course (et de la rangée haute, qui la suit) |
+| `--slab-play-w` | largeur maximale du guichet et de la boutique |
+| `--slab-gutter` | gouttière entre les dalles et le bord de la fenêtre |
+| `--track-fill` | hauteur que la piste prend quand la fenêtre en laisse |
+| `--slab-overhang` | réserve du bas, pour que le parchemin et la corne ne soient pas coupés |
+
+Le partage de la hauteur suit une règle simple : **la piste absorbe le mou en premier** (c'est la
+seule zone qui grandit sans se creuser, ses jetons étant posés en pourcentage), dans la limite du
+double de sa hauteur naturelle ; **ce qui reste passe entre les deux dalles**, jamais dedans. Une
+dalle creuse se voit, un écart ne se voit pas : il laisse respirer le décor du cercle.
+
 ## Interface de course
 
 Pendant la phase `pari initiaux` et `boutique`, il faut pouvoir passer des éléments de la boutique aux paris facilement.
@@ -116,6 +143,10 @@ En faite, un panneau venant du bas (brawler) affiche les options de pari.
 Un bouton permet d'afficher la boutique, qui s'affiche au dessus du champs de course dans un panneau venant du haut (brawler).
 
 Une fois la course lancé, on ne peut plus voir la boutique.
+
+En course, le panneau de paris se rouvre par sa poignée et se replie par un bouton de pierre
+« Masquer », en haut à droite de son en-tête. Ce bouton n'existe qu'en course : en préparation
+on sort du panneau en lançant la course, pas en le masquant.
 
 Tu peux retirer la zone journal 
 

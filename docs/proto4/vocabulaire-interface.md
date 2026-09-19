@@ -45,7 +45,7 @@ paris) : gardez ce croisement, c'est l'identité du jeu.
 ### 0.2 Les âmes sont des hommes, mais le mot est féminin
 
 Les concurrentes de la course s'appellent **Homère, Virgile, Aristote, Platon,
-Socrate, Ovide, Sénèque, Euclide, Horace, Lucain, Hippocrate, Ptolémée** — des
+Socrate, Ovide, Sénèque, Euclide, Cléo, Lucain, Hippocrate, Ptolémée** — des
 figures historiques masculines. Mais l'interface ne les désigne jamais autrement
 que par le mot **« âme »**, qui est féminin en français. D'où partout :
 « l'âme qui s'y arrête », « une âme percutée », « la première », « une coureuse ».

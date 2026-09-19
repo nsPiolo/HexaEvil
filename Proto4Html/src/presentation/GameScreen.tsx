@@ -43,9 +43,13 @@ function typing(): boolean {
 
 /**
  * Disposition (spec 08/C1, C2) : une rangée haute pour le HUD (cercle · fil d'Ariane · pièces),
- * puis la table en trois zones empilées, pleine largeur : zone haute (adversaire, ou boutique en
- * préparation), plateau, zone basse (dés du joueur, ou panneau de paris). Les panneaux sont dans
- * le flux : ils ne recouvrent jamais le plateau ni le HUD.
+ * puis deux dalles empilées. La dalle de course porte la zone adverse et le plateau ; la dalle
+ * du guichet porte les dés du joueur, ou le panneau de paris. La boutique, elle, remplace les
+ * deux. Les panneaux sont dans le flux : ils ne recouvrent jamais le plateau ni le HUD.
+ *
+ * Deux dalles et non une seule boîte : leurs largeurs se règlent séparément (la piste gagne à
+ * être large, le guichet non) et la hauteur restante va à la course, qui grandit sans se
+ * creuser de vide à l'intérieur. Les nombres sont dans `.table` (`--slab-*`).
  */
 export function GameScreen({ carry, unlocked, speed, onFinished, onMenu }: Props) {
   const { circle, raceInCircle } = circleOf(carry.raceIndex)
@@ -290,105 +294,110 @@ export function GameScreen({ carry, unlocked, speed, onFinished, onMenu }: Props
         </div>
       )}
 
-      {/* La table : zone haute · plateau · zone basse, en pleine largeur */}
-      <main className="felt">
-        <div className={'zone zone-top' + (shopShown ? ' zone-open' : '')} data-testid="drawer-shop" data-state={shopShown ? 'open' : 'closed'}>
-          {/* Plus de poignée « Boutique » au-dessus de la piste : on y entre par le bouton du
-              pied du panneau de paris, et par le raccourci B. Une porte, pas deux. */}
-          {shopShown && (
-            <div className="panel panel-shop">
-              {/* Les trois sorties ramènent aux paris. Depuis que la boutique masque le reste,
-                  la croix ne peut plus se contenter de la refermer : elle laisserait l'écran
-                  sans aucun panneau. */}
-              <ShopPanel
-                vitrine={ui.vitrine ?? []}
-                souls={ui.race.souls}
-                unlocked={shopUnlocked}
-                money={ui.money}
-                price={price}
-                staked={staked}
-                raceIndex={ui.raceIndex}
-                inventory={ui.inventory}
-                free={freeCharges(ui)}
-                level={level}
-                onSell={actions.sell}
-                onDecap={actions.decap}
-                pending={ui.pendingPurchase}
-                onBuy={(id, target) => actions.buy(id, target ?? null)}
-                onCancel={actions.cancelPurchase}
-                onReroll={actions.rerollVitrine}
-                onLeave={openBets}
-                onGoToBets={openBets}
-                onClose={openBets}
-              />
-              {shopUnlocked && <Inventory inventory={ui.inventory} lateBetCharges={ui.lateBetCharges} level={level} compact />}
-            </div>
-          )}
-          {!prep && <OpponentSlot ui={ui} />}
-        </div>
+      {/* La table : deux dalles empilées, la course au-dessus, le guichet en dessous. */}
+      <main className="felt-stack">
+        {/* La boutique prend la place des deux dalles : tant qu’elle est ouverte, elle est seule. */}
+        {shopShown && (
+        <section className="slab slab-shop zone zone-top zone-open" data-testid="drawer-shop" data-state="open">
+          <div className="panel panel-shop">
+            {/* Les trois sorties ramènent aux paris. Depuis que la boutique masque le reste,
+                la croix ne peut plus se contenter de la refermer : elle laisserait l'écran
+                sans aucun panneau. */}
+            <ShopPanel
+              vitrine={ui.vitrine ?? []}
+              souls={ui.race.souls}
+              unlocked={shopUnlocked}
+              money={ui.money}
+              price={price}
+              staked={staked}
+              raceIndex={ui.raceIndex}
+              inventory={ui.inventory}
+              free={freeCharges(ui)}
+              level={level}
+              onSell={actions.sell}
+              onDecap={actions.decap}
+              pending={ui.pendingPurchase}
+              onBuy={(id, target) => actions.buy(id, target ?? null)}
+              onCancel={actions.cancelPurchase}
+              onReroll={actions.rerollVitrine}
+              onLeave={openBets}
+              onGoToBets={openBets}
+              onClose={openBets}
+            />
+            {shopUnlocked && <Inventory inventory={ui.inventory} lateBetCharges={ui.lateBetCharges} level={level} compact />}
+          </div>
+        </section>
+        )}
 
         {/* Boutique ouverte : ni piste ni paris. Démontés plutôt que masqués en CSS — un
-            `display: none` laisse les boutons dans l'ordre de tabulation. */}
+            `display: none` laisse les boutons dans l’ordre de tabulation. */}
         {!shopShown && (
-        <div className="board-wrap">
-          <Board
-            race={ui.race}
-            lastResult={ui.lastResult}
-            activeSoul={activeSoul}
-            highlightSoul={hoverSoul}
-            onHoverSoul={setHoverSoul}
-            preview={preview}
-            selection={selection}
-            bettedSouls={bettedSouls}
-            personalities={ui.inventory.personalities}
-            tieColumns={tieColumns}
-            {...(placingTribune ? { onPlaceTribune: (c: number, l: number) => setItemError(actions.putTribune(c, l)) } : {})}
-            {...(placingMarkers && !placingTribune ? { onPlaceMarker: (c: number, l: number) => setItemError(actions.putMarker(c, l, markerKind)) } : {})}
-          />
-          {/* Bandeau des objets à déclencher soi-même : pose de la tribune, des bornes, pièce à deux faces, refus. */}
-          {(placingTribune || placingMarkers || canDouble || itemError) && (
-            <p className="item-bar" aria-live="polite">
-              {placingTribune && <span className="item-hint">{ITEMS.tribuneHint}</span>}
-              {/* Bornes du stagiaire : on choisit le type puis la case. La tribune passe d'abord,
-                  pour qu'une seule pose soit ouverte à la fois et qu'un clic ne soit pas ambigu. */}
-              {placingMarkers && !placingTribune && (
-                <>
-                  <span className="item-hint">{fill(ITEMS.markerHint, { n: markersLeft })}</span>
-                  {MARKER_KINDS.map((kind) => (
-                    <button
-                      key={kind}
-                      type="button"
-                      className={'btn btn-artefact' + (markerKind === kind ? ' btn-artefact-on' : '')}
-                      data-testid={`marker-kind-${kind}`}
-                      aria-pressed={markerKind === kind}
-                      onClick={() => setMarkerKind(kind)}
-                    >
-                      {MARKER_NAME[kind]}
-                    </button>
-                  ))}
-                </>
-              )}
-              {canDouble && (
-                <button type="button" className="btn btn-artefact" onClick={() => setItemError(actions.doubleStakes())}>
-                  {fill(ITEMS.double, { stake: stakedOpen(ui.bets) })}
+        <section className="slab slab-race">
+          {/* Plus de poignée « Boutique » au-dessus de la piste : on y entre par le bouton du
+              pied du panneau de paris, et par le raccourci B. Une porte, pas deux. */}
+          <div className="zone zone-top" data-testid="drawer-shop" data-state="closed">
+            {!prep && <OpponentSlot ui={ui} />}
+          </div>
+          <div className="board-wrap">
+            <Board
+              race={ui.race}
+              lastResult={ui.lastResult}
+              activeSoul={activeSoul}
+              highlightSoul={hoverSoul}
+              onHoverSoul={setHoverSoul}
+              preview={preview}
+              selection={selection}
+              bettedSouls={bettedSouls}
+              personalities={ui.inventory.personalities}
+              tieColumns={tieColumns}
+              {...(placingTribune ? { onPlaceTribune: (c: number, l: number) => setItemError(actions.putTribune(c, l)) } : {})}
+              {...(placingMarkers && !placingTribune ? { onPlaceMarker: (c: number, l: number) => setItemError(actions.putMarker(c, l, markerKind)) } : {})}
+            />
+            {/* Bandeau des objets à déclencher soi-même : pose de la tribune, des bornes, pièce à deux faces, refus. */}
+            {(placingTribune || placingMarkers || canDouble || itemError) && (
+              <p className="item-bar" aria-live="polite">
+                {placingTribune && <span className="item-hint">{ITEMS.tribuneHint}</span>}
+                {/* Bornes du stagiaire : on choisit le type puis la case. La tribune passe d'abord,
+                    pour qu'une seule pose soit ouverte à la fois et qu'un clic ne soit pas ambigu. */}
+                {placingMarkers && !placingTribune && (
+                  <>
+                    <span className="item-hint">{fill(ITEMS.markerHint, { n: markersLeft })}</span>
+                    {MARKER_KINDS.map((kind) => (
+                      <button
+                        key={kind}
+                        type="button"
+                        className={'btn btn-artefact' + (markerKind === kind ? ' btn-artefact-on' : '')}
+                        data-testid={`marker-kind-${kind}`}
+                        aria-pressed={markerKind === kind}
+                        onClick={() => setMarkerKind(kind)}
+                      >
+                        {MARKER_NAME[kind]}
+                      </button>
+                    ))}
+                  </>
+                )}
+                {canDouble && (
+                  <button type="button" className="btn btn-artefact" onClick={() => setItemError(actions.doubleStakes())}>
+                    {fill(ITEMS.double, { stake: stakedOpen(ui.bets) })}
+                  </button>
+                )}
+                {itemError && <span className="item-error">{itemError}</span>}
+              </p>
+            )}
+            <p className="last-event" aria-live="polite">
+              <span>{lastEvent}</span>
+              {recap.turn !== null && (
+                <button type="button" className="recap-btn" onClick={() => setRecapOpen(true)} title={RACE.recapTitle}>
+                  {RACE.recap}
                 </button>
               )}
-              {itemError && <span className="item-error">{itemError}</span>}
             </p>
-          )}
-          <p className="last-event" aria-live="polite">
-            <span>{lastEvent}</span>
-            {recap.turn !== null && (
-              <button type="button" className="recap-btn" onClick={() => setRecapOpen(true)} title={RACE.recapTitle}>
-                {RACE.recap}
-              </button>
-            )}
-          </p>
-        </div>
+          </div>
+        </section>
         )}
 
         {!shopShown && (
-        <div className={'zone zone-bottom' + (betsShown ? ' zone-open' : '')} data-testid="drawer-bets" data-state={betsShown ? 'open' : 'closed'}>
+        <section className={'slab slab-play zone zone-bottom' + (betsShown ? ' zone-open' : '')} data-testid="drawer-bets" data-state={betsShown ? 'open' : 'closed'}>
           <PhaseStrip phase={ui.phase} />
           {!finished && !betsShown && (
             <button type="button" className="handle handle-bottom" data-testid="tab-bets" onClick={openBets} title={fill(HUD.tabShortcut, { key: 'P' })}>
@@ -424,7 +433,7 @@ export function GameScreen({ carry, unlocked, speed, onFinished, onMenu }: Props
                 onHoverSoul={setHoverSoul}
                 onStart={actions.startRace}
                 onOpenShop={openShop}
-                onClose={() => setBetsOpen(false)}
+                {...(prep ? {} : { onClose: () => setBetsOpen(false) })}
               />
             </div>
           ) : (
@@ -452,7 +461,7 @@ export function GameScreen({ carry, unlocked, speed, onFinished, onMenu }: Props
               onSetCombinations={actions.setCombinations}
             />
           )}
-        </div>
+        </section>
         )}
       </main>
 
