@@ -33,6 +33,10 @@ export interface PriceRules {
   forgeDiscount?: number
   /** Marteau d'Héphaïstos : la première forge du cercle est offerte tant que ce drapeau est faux. */
   forgeFreeAvailable?: boolean
+  /** Sceau du stagiaire : remise sur les masques (artefacts.md n°25). */
+  maskDiscount?: number
+  /** Sceau du stagiaire : le masque brisé offert du cercle est-il encore disponible ? */
+  maskFreeAvailable?: boolean
 }
 
 /**
@@ -41,8 +45,13 @@ export interface PriceRules {
  */
 export function effectivePrice(item: ShopItem, circle: number, growth: number, rules: PriceRules = {}): number {
   if (item.kind === 'forge' && rules.forgeFreeAvailable) return 0
+  // Sceau du stagiaire : c'est le masque brisé — celui qui RETIRE une personnalité — qui est
+  // offert une fois par cercle, pas n'importe quel masque : on défait gratuitement, on ne
+  // marque pas gratuitement.
+  if (item.kind === 'personality' && item.personality === null && rules.maskFreeAvailable) return 0
   let price = priceAtCircle(item.price, circle, growth)
   if (item.kind === 'forge' && rules.forgeDiscount) price *= 1 - rules.forgeDiscount
+  if (item.kind === 'personality' && rules.maskDiscount) price *= 1 - rules.maskDiscount
   if (rules.globalDiscount) price *= 1 - rules.globalDiscount
   return Math.max(0, Math.round(price))
 }
@@ -149,6 +158,16 @@ export function forgeFace(id: ForgeId, face: Face): Face {
       return { value: 1, effect: 'magnet', altered: id, original: face.original ?? face.value }
     case 'sceau':
       return { value: 1, effect: 'betSeal', altered: id, original: face.original ?? face.value }
+    // Vague 2 (forge.md n°15 à 18). Revers et Bras de fer lisent le plateau (`BOARD_EFFECTS`),
+    // l'Écho se résout à l'association (`buildMoves`), la Fusion à l'appariement (`useRace`).
+    case 'revers':
+      return { value: 2, effect: 'reverse', altered: id, original: face.original ?? face.value }
+    case 'echo':
+      return { value: 1, effect: 'echo', altered: id, original: face.original ?? face.value }
+    case 'brasDeFer':
+      return { value: 0, effect: 'armWrestle', altered: id, original: face.original ?? face.value }
+    case 'fusion':
+      return { value: 1, effect: 'fusion', altered: id, original: face.original ?? face.value }
   }
   return face
 }

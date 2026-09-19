@@ -18,8 +18,8 @@ const fichier = (id: string): string => `${dossier}${itemArt(id).split('/').pop(
  * `python3 scripts/install-art.py objets`), pas un interdit.
  */
 describe('vignettes de la boutique', () => {
-  it('a le dessin des cinquante-neuf objets du catalogue', () => {
-    expect(shop.items.length).toBe(59)
+  it('a le dessin des soixante-quinze objets du catalogue', () => {
+    expect(shop.items.length).toBe(75)
     for (const item of shop.items) expect(existsSync(fichier(item.id)), `${item.id}.webp`).toBe(true)
   })
 

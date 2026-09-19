@@ -44,7 +44,9 @@ test.describe('12 · Personnalités des âmes', () => {
     const reveal = page.locator('.unlock-screen')
     await expect(reveal.getByRole('heading', { name: 'Une âme se découvre' })).toBeVisible()
     await expect(reveal).toContainText(first)
-    await expect(reveal.locator('.reveal-mark')).toBeVisible()
+    // Le signe qu'on retrouvera sur le jeton, et le portrait du masque qui pose cette personnalité.
+    await expect(reveal.locator('.reveal-glyph')).toBeVisible()
+    await expect(reveal.locator('.reveal-art')).toBeVisible()
     // On repart sur la carte, la personnalité acquise pour le reste du run.
     await reveal.getByRole('button', { name: 'Continuer' }).click()
     await expect(resultsDialog(page)).toHaveCount(0)

@@ -37,6 +37,15 @@ export interface RunSave {
   /** Index de la prochaine course à jouer, à partir de 0. */
   raceIndex: number
   lateBetCharges: number
+  /**
+   * Sommeil du contremaître : lancers du joueur depuis le début du run. Il ne se remet jamais à
+   * zéro, il doit donc survivre à « Continuer ». Absent d'une sauvegarde d'avant l'artefact :
+   * la partie reprend simplement le compteur à zéro.
+   */
+  rolls?: number
+  /** Roue d'Ixion et Sceau du stagiaire : charges du cercle en cours, réarmées en le payant. */
+  ixionUsed?: boolean
+  maskFreeUsed?: boolean
   /** Cercle le plus haut atteint dans ce run (pour les stats), à partir de 1. */
   bestCircle: number
   savedAt: number

@@ -20,7 +20,7 @@ import { isInBetZone, type RaceState, type Ranked, type SoulId } from './race'
 export type { BetTypeId } from './betTypes'
 export { BET_TYPE_IDS } from './betTypes'
 
-export type BetTier = 'simple' | 'intermediate' | 'advanced'
+export type BetTier = 'simple' | 'intermediate' | 'advanced' | 'exotic'
 
 export interface BetTypeDef {
   id: BetTypeId
@@ -42,19 +42,34 @@ export const BET_TYPES: readonly BetTypeDef[] = [
   { id: 'podiumExact', tier: 'advanced', souls: 3, ordered: true },
   { id: 'fullRankingExact', tier: 'advanced', souls: 'all', ordered: true },
   { id: 'winnerAndLast', tier: 'advanced', souls: 2, ordered: true },
+  // Registre des paris exotiques : on parie sur la MANIÈRE dont la course se déroule.
+  // « Aucun recul » ne désigne personne : c'est le seul pari sans âme sur le ticket.
+  { id: 'rammedTwice', tier: 'exotic', souls: 1, ordered: false },
+  { id: 'noBackward', tier: 'exotic', souls: 0, ordered: false },
 ]
+
+/**
+ * Guichets qui n'existent que si le joueur possède l'artefact nommé : le grade du stagiaire ne
+ * suffit pas à les ouvrir, il faut avoir acheté le registre.
+ */
+export const BET_TYPE_ARTEFACT: Readonly<Partial<Record<BetTypeId, string>>> = {
+  rammedTwice: 'registreExotique',
+  noBackward: 'registreExotique',
+}
 
 /** Niveau du stagiaire requis par type de pari (config economy.betUnlockLevel). */
 export type BetUnlockLevels = Readonly<Record<BetTypeId, number>>
 
 /** Le type est-il ouvert au niveau donné ? Les paris à gros multiplicateur arrivent avec les grades du stagiaire. */
-export function betUnlocked(type: BetTypeId, level: number, unlock: BetUnlockLevels): boolean {
+export function betUnlocked(type: BetTypeId, level: number, unlock: BetUnlockLevels, owned: readonly string[] = []): boolean {
+  const needed = BET_TYPE_ARTEFACT[type]
+  if (needed !== undefined && !owned.includes(needed)) return false
   return level >= unlock[type]
 }
 
 /** Types ouverts à un niveau, dans l'ordre du catalogue. */
-export function unlockedBetTypes(level: number, unlock: BetUnlockLevels): BetTypeDef[] {
-  return BET_TYPES.filter((t) => betUnlocked(t.id, level, unlock))
+export function unlockedBetTypes(level: number, unlock: BetUnlockLevels, owned: readonly string[] = []): BetTypeDef[] {
+  return BET_TYPES.filter((t) => betUnlocked(t.id, level, unlock, owned))
 }
 
 export function betType(id: BetTypeId): BetTypeDef {
@@ -145,6 +160,7 @@ export type BetRefusal =
   | { kind: 'missingSouls'; given: number; needed: number }
   | { kind: 'tooManySouls' }
   | { kind: 'unknownSoul' }
+  | { kind: 'soulBarred' }
   | { kind: 'alreadyPlaced' }
   | { kind: 'noStake' }
   | { kind: 'tooExpensive' }
@@ -170,6 +186,8 @@ export function betRefusal(
   if (souls.length > needed) return { kind: 'tooManySouls' }
   for (const id of souls) {
     if (!state.souls[id]) return { kind: 'unknownSoul' }
+    // Roue d'Ixion : une âme renvoyée au départ garde son guichet fermé, où qu'elle soit.
+    if (state.barred.includes(id)) return { kind: 'soulBarred' }
   }
   if (existing.some((b) => isSameBet(b, { type, souls }))) return { kind: 'alreadyPlaced' }
   if (stake <= 0) return { kind: 'noStake' }
@@ -211,7 +229,20 @@ function rankOf(ranked: readonly Ranked[], id: SoulId): number {
  * place. Ni « Pas dans le top 3 » ni le Podium exact ne bougent — l'artefact ne doit pas rendre
  * un pari négatif plus facile à gagner, ni relâcher un ordre exact.
  */
-export function evaluateBet(bet: Pick<Bet, 'type' | 'souls'>, ranked: readonly Ranked[], topBonus = 0): boolean {
+/**
+ * Ce que les guichets exotiques ont besoin de savoir du déroulé de la course, et que le
+ * classement ne dit pas : combien de fois chaque âme s'est fait percuter, et si une seule âme
+ * a reculé. Le moteur les compte dans `applyMove` (`RaceState.rams`, `RaceState.backward`).
+ */
+export interface RaceStats {
+  rams: Readonly<Record<number, number>>
+  backward: boolean
+}
+
+/** Percussions à atteindre pour gagner « cette âme sera percutée » (artefacts.md n°39). */
+export const RAMMED_TARGET = 2
+
+export function evaluateBet(bet: Pick<Bet, 'type' | 'souls'>, ranked: readonly Ranked[], topBonus = 0, stats?: RaceStats): boolean {
   const top = 3 + Math.max(0, topBonus)
   const s = bet.souls
   const last = ranked.reduce((m, r) => Math.max(m, r.rank), 0)
@@ -245,6 +276,12 @@ export function evaluateBet(bet: Pick<Bet, 'type' | 'souls'>, ranked: readonly R
       return s.length === ranked.length && exactOrder(ranked.length)
     case 'winnerAndLast':
       return rankOf(ranked, at(0)) === 1 && rankOf(ranked, at(1)) === last
+    // Sans statistiques de course, un pari exotique ne peut pas être gagné : on ne devine pas
+    // un déroulé qu'on n'a pas observé, et perdre est le résultat prudent.
+    case 'rammedTwice':
+      return (stats?.rams[at(0)] ?? 0) >= RAMMED_TARGET
+    case 'noBackward':
+      return stats !== undefined && !stats.backward
   }
 }
 
@@ -279,6 +316,8 @@ export interface SettleOptions {
    * c'est une prime, pas une amende. 1 (ou absent) quand aucun Juge n'est en piste.
    */
   gainFactor?: number
+  /** Registre des paris exotiques : le déroulé de la course, que le classement ne porte pas. */
+  stats?: RaceStats
 }
 
 /**
@@ -329,7 +368,7 @@ export function settleBets(bets: readonly Bet[], ranked: readonly Ranked[], opti
       returned += b.payout
       return b
     }
-    const won = evaluateBet(b, ranked, options.topBonus)
+    const won = evaluateBet(b, ranked, options.topBonus, options.stats)
     // L'Encensoir ne touche que « Dernière place » ; Le Juge, lui, pèse sur tout le tableau.
     const factor = (b.type === 'last' ? gap : 1) * (options.gainFactor ?? 1)
     const payout = won ? Math.round(potentialPayout(b.stake + stakeBonus, b.multiplier) * factor) : 0

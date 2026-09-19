@@ -415,7 +415,7 @@ const HUD = {
   tabBetsStaked: 'Paris ({n}) · {staked} ¤ misés',
   tabShop: 'Boutique · {n} objet{s}',
   tabShopClosed: 'Boutique',
-  tabResults: 'Gains — revoir le classement et le bilan',
+  tabResults: 'Gains : revoir le classement et le bilan',
   tabShortcut: 'Raccourci clavier : {key}',
   circle: '{ordinal} Cercle',
   race: '{n} course sur {total}',
@@ -462,7 +462,7 @@ const MAP = {
   race: 'Course {n}',
   bossRace: 'Course du boss',
   launch: 'Lancer la course',
-  circleOf: 'Cercle {n} — {name}',
+  circleOf: 'Cercle {n} : {name}',
 } as const
 
 const STATS = {
@@ -474,7 +474,7 @@ const STATS = {
   moneySpent: 'Argent dépensé',
   races: 'Courses jouées',
   bestBet: 'Meilleur pari',
-  none: '—',
+  none: '·',
 } as const
 
 /**
@@ -525,6 +525,8 @@ const BETS = {
   emptySlot: "Emplacement d'âme vide",
   locked: 'Ce pari s’ouvrira quand le stagiaire sera {rank}.',
   lockedBadge: 'dès {rank}',
+  lockedItemBadge: 'avec {name}',
+  lockedItem: 'Guichet ouvert par un objet de boutique : {name}.',
   tierLocked: 'verrouillé',
   gain: 'Gain potentiel : +{net} ¤ (×{mult})',
   after: 'Solde après mise : {n} ¤',
@@ -534,7 +536,7 @@ const BETS = {
   pickOnBoard: 'Cliquer pour désigner cette âme',
   unpickOnBoard: 'Cliquer pour la retirer du ticket',
   placed: 'Pari posé : {type} · {souls} · {stake} ¤ → +{net} si gagné',
-  diceSeen: 'Dés lancés : {souls} — {dist}',
+  diceSeen: 'Dés lancés : {souls} · {dist}',
   trayLabel: 'Jetons de mise',
   chipHint: 'Glissez ce jeton dans le logement, ou cliquez-le',
   chipChosen: 'Jeton posé : c’est la mise en cours',
@@ -575,7 +577,7 @@ const SHOP = {
   replaceArtefactWarning: 'L’artefact choisi est détruit, sans remboursement. Pour récupérer des pièces, revendez-le d’abord dans l’atelier.',
   forgeLimit: 'Un dé ne porte pas plus de {n} faces forgées. Décapez-en une dans l’atelier pour faire de la place.',
   /** Atelier : défaire ce qu'on possède (revente d'artefact, décapage de face). */
-  workshop: 'Atelier — {n}/{slots} artefacts, revendre ou décaper',
+  workshop: 'Atelier · {n}/{slots} artefacts, revendre ou décaper',
   sell: 'Revendre {name} (+{back} ¤)',
   sellTitle: 'Revente à 40 % du prix du cercle : {back} pièces, et l’emplacement se libère.',
   decapTitle: 'Décaper cette face : elle retrouve sa valeur d’origine pour {cost} pièces.',
@@ -595,6 +597,11 @@ const SHOP = {
 const ITEMS = {
   tribuneHint: 'Tribune infernale : choisissez une case libre, hors départ et hors zone de fin.',
   double: 'Pièce à deux faces : doubler {stake} ¤ de mises',
+  /** Bornes du stagiaire : les trois types posables, et l'aide de pose. */
+  markerHint: 'Bornes du stagiaire : choisissez un type, puis une case libre. Il en reste {n}.',
+  pit: 'Fosse',
+  springboard: 'Tremplin',
+  tar: 'Goudron',
 } as const
 
 const RACE = {
@@ -607,6 +614,15 @@ const RACE = {
   momentumTitle: 'Élan : relancer ce dé et ajouter le résultat, quel qu’il soit.',
   lock: '⚿',
   lockTitle: 'Verrou de Minos : garder ce dé sur sa face pour le prochain lancer.',
+  fuse: 'Fondre ici',
+  fuseTitle: 'Face de fusion : verser la distance de la face sur cette âme, en un seul déplacement.',
+  orb: 'Tout relancer',
+  orbTitle: 'Boule de Cocyte : relancer les cinq dés, une fois par course.',
+  orbPairedTitle: 'Dissociez d’abord vos dés : la Boule relance tout ou rien.',
+  hook: 'Crochet :',
+  styx: '⟲',
+  styxTitle: 'Écho du Styx : rejouer cette combinaison à l’identique, juste après elle.',
+  hookTitle: 'Crochet de Charon : ramener cette âme sous le seuil de pari, une fois par course.',
   phases: ['préparer', 'lancer', 'ordonner', 'résoudre', 'adversaire'] as const,
   phasesLabel: 'Étapes du tour',
   queue: 'File de combinaisons',
@@ -640,22 +656,24 @@ const BET_LIVE = {
 /** Plateau. */
 const BOARD = {
   /** Cases spéciales du terrain : elles n'agissent que sur l'âme qui s'y arrête (GDD §2.2). */
-  specialMark: { gold: '¤', trap: '✷', boost: '▲' } as const,
+  specialMark: { gold: '¤', trap: '✷', boost: '▲', tar: '≈' } as const,
   special: {
     // `{s}` porte le pluriel (voir `fill`) : ces phrases sont désormais affichées telles
     // quelles dans la bulle de survol, où « 1 case(s) » se verrait.
     gold: 'Case payante : l’âme qui s’y arrête vous rapporte {n} pièce{s}, à condition que vous ayez un pari ouvert sur elle.',
     trap: 'Piège : l’âme qui s’y arrête recule de {n} case{s}.',
     boost: 'Tremplin : l’âme qui s’y arrête avance de {n} case{s} de plus.',
+    tar: 'Goudron : l’âme qui s’y arrête perd ses déplacements induits jusqu’à la fin du tour.',
   } as const,
   blockedTitle: 'Case bloquée (colonne {column}, couloir {lane}) : aucune âme ne peut s’y arrêter.',
+  markerPlace: 'Poser une borne case {column}',
   tribune: 'Tribune infernale',
   tribuneTitle: 'Tribune infernale : l’âme qui s’arrête ici vous paie et repart poussée.',
   tribunePlace: 'Poser la tribune sur la case {column}',
   zoneClosed: 'plus de pari',
   zoneClosedTitle: 'Une âme a franchi le seuil : plus aucun pari sur cette course.',
   tieColumn: 'Même colonne : le couloir le plus bas devant.',
-  personality: 'Personnalité — {name} : {effect}',
+  personality: 'Personnalité · {name} : {effect}',
 } as const
 
 /** Modale de fin de course (spec 06). */
@@ -689,11 +707,11 @@ const GLOSSARY = {
  */
 const HELP = {
   open: 'Aide',
-  title: 'Aide — Sinner’s Bet',
+  title: 'Aide · Sinner’s Bet',
   navLabel: 'Sections de l’aide',
   close: 'Fermer',
   intro: [
-    'Vous êtes mort. Bienvenue. Le démon stagiaire qui gère votre dossier s’ennuie ferme, alors il vous propose un pacte : pariez sur des courses d’âmes damnées, gagnez assez de pièces pour payer votre passage, et remontez les neuf cercles de l’enfer. **Lui, il coache. Vous, vous misez.** Au neuvième, la porte s’ouvre — et rien ne vous oblige à la prendre.',
+    'Vous êtes mort. Bienvenue. Le démon stagiaire qui gère votre dossier s’ennuie ferme, alors il vous propose un pacte : pariez sur des courses d’âmes damnées, gagnez assez de pièces pour payer votre passage, et remontez les neuf cercles de l’enfer. **Lui, il coache. Vous, vous misez.** Au neuvième, la porte s’ouvre, et rien ne vous oblige à la prendre.',
     'Cette page répond à trois questions : *comment se joue une course ?*, *comment gagne-t-on de l’argent ?*, *comment sort-on d’un cercle ?*',
     'L’aide se consulte à tout moment : elle **n’interrompt rien** de la course en cours.',
   ],
@@ -703,7 +721,7 @@ const HELP = {
       title: 'Le but',
       icon: '⛓️',
       blocks: [
-        { kind: 'p', text: 'S’évader de l’enfer. Chaque cercle a un **prix de sortie** (150 pièces pour le premier, de plus en plus cher ensuite). Vous avez **trois courses** par cercle pour réunir la somme — la troisième se joue contre le boss du cercle.' },
+        { kind: 'p', text: 'S’évader de l’enfer. Chaque cercle a un **prix de sortie** (150 pièces pour le premier, de plus en plus cher ensuite). Vous avez **trois courses** par cercle pour réunir la somme ; la troisième se joue contre le boss du cercle.' },
         { kind: 'p', text: 'Si vous pouvez payer à la fin, vous montez. Sinon… le stagiaire a déjà choisi votre punition éternelle.' },
         { kind: 'p', text: 'Perdre une course n’est jamais la fin : c’est la caisse vide à la fin du cercle qui vous condamne.' },
       ],
@@ -713,12 +731,12 @@ const HELP = {
       title: 'Une course, tour par tour',
       icon: '🎲',
       blocks: [
-        { kind: 'p', text: 'Les âmes damnées courent sur une piste de cases. **Vous ne les contrôlez pas** — vous les poussez, discrètement. À chaque tour :' },
+        { kind: 'p', text: 'Les âmes damnées courent sur une piste de cases. **Vous ne les contrôlez pas** : vous les poussez, discrètement. À chaque tour :' },
         {
           kind: 'ol',
           items: [
             '**Lancez les dés.** Deux dés **Distance** (−1, +1, +2, +3) et trois dés **Âme** (chacun désigne une coureuse).',
-            '**Associez.** Collez un dé Âme sur un dé Distance : ça fait une combinaison « Platon avance de +2 ». Un dé Âme restera toujours sur le carreau — à vous de choisir lequel.',
+            '**Associez.** Collez un dé Âme sur un dé Distance : ça fait une combinaison « Platon avance de +2 ». Un dé Âme restera toujours sur le carreau : à vous de choisir lequel.',
             '**Ordonnez.** L’ordre de résolution, c’est VOTRE décision, et c’est là que tout se joue : avancer Platon avant ou après Virgile ne raconte pas la même course.',
             '**Résolvez, puis subissez.** Vos combinaisons s’appliquent une à une… puis l’adversaire lance sa propre paire de dés. Lui ne vous demande pas votre avis.',
           ],
@@ -746,13 +764,13 @@ const HELP = {
       title: 'Les couloirs',
       icon: '🛤️',
       blocks: [
-        { kind: 'p', text: 'Au premier cercle, la piste n’a qu’un couloir : chaque atterrissage sur une âme est une collision. Ensuite, à chaque âme ajoutée au départ, la piste gagne un couloir — jusqu’à six au neuvième cercle. Trois choses à retenir :' },
+        { kind: 'p', text: 'Au premier cercle, la piste n’a qu’un couloir : chaque atterrissage sur une âme est une collision. Ensuite, à chaque âme ajoutée au départ, la piste gagne un couloir, jusqu’à six au neuvième cercle. Trois choses à retenir :' },
         {
           kind: 'ul',
           items: [
             '**Seule la colonne compte.** Les couloirs sont des files côte à côte ; votre position dans la course, c’est votre colonne, pas votre couloir. Changer de couloir ne fait ni avancer ni reculer.',
-            '**On se rabat quand c’est pris.** Une âme atterrit dans son couloir si la case est libre. Occupée ou **bloquée** (éboulis, chaînes) ? Elle se rabat sur une case libre de la même colonne — la plus **basse** d’abord. Et si toute la colonne est pleine, alors seulement, c’est la collision : saut devant en avançant, échange en reculant.',
-            '**Le bas a toujours raison.** À colonne égale en fin de course, l’âme du couloir le plus bas — le plus proche de vous — passe devant. Jamais d’ex æquo en enfer : le classement tranche tout, couloir compris.',
+            '**On se rabat quand c’est pris.** Une âme atterrit dans son couloir si la case est libre. Occupée ou **bloquée** (éboulis, chaînes) ? Elle se rabat sur une case libre de la même colonne, la plus **basse** d’abord. Et si toute la colonne est pleine, alors seulement, c’est la collision : saut devant en avançant, échange en reculant.',
+            '**Le bas a toujours raison.** À colonne égale en fin de course, l’âme du couloir le plus bas, le plus proche de vous, passe devant. Jamais d’ex æquo en enfer : le classement tranche tout, couloir compris.',
           ],
         },
         { kind: 'p', text: 'Les cases bloquées rétrécissent la piste et créent des embouteillages : ce sont des pièges à collisions, repérez-les avant de miser.' },
@@ -763,7 +781,7 @@ const HELP = {
       title: 'L’arrivée',
       icon: '🏁',
       blocks: [
-        { kind: 'p', text: 'Dès qu’une âme franchit la ligne, **le tour se termine quand même** — vos combinaisons restantes et la paire adverse sont jouées. Le classement n’est établi qu’après.' },
+        { kind: 'p', text: 'Dès qu’une âme franchit la ligne, **le tour se termine quand même** : vos combinaisons restantes et la paire adverse sont jouées. Le classement n’est établi qu’après.' },
         { kind: 'p', text: 'Une course peut donc se retourner sur la ligne : *franchir en premier ne garantit pas de finir premier.*' },
       ],
     },
@@ -777,12 +795,12 @@ const HELP = {
         {
           kind: 'ul',
           items: [
-            '**Simples** — une seule âme sur le ticket, lisibles et ouverts dès le départ : vainqueur (×{winner}), top 3 (×{top3}), pas dans le top 3 (×{notTop3}), dernière place (×{last}).',
-            '**Combinés** — **deux âmes sur le même ticket** : le duel « A finit devant B » (×{duel}), deux âmes dans le top 3 (×{twoInTop3}), le podium dans le désordre (×{podiumAnyOrder}). La cote n’est pas toujours plus grosse — ce qui change, c’est qu’un duel se **lit** quand un vainqueur se devine.',
-            '**Gros tickets** — le podium exact (×{podiumExact}) et le classement complet (×{fullRankingExact}) : de quoi payer un cercle entier d’un coup, si vous lisez la course comme un livre ouvert. Entre les deux, « vainqueur ET dernier » (×{winnerAndLast}) ne demande que de regarder les deux bouts — presque personne ne regarde le fond du classement.',
+            '**Simples** : une seule âme sur le ticket, lisibles et ouverts dès le départ : vainqueur (×{winner}), top 3 (×{top3}), pas dans le top 3 (×{notTop3}), dernière place (×{last}).',
+            '**Combinés**, **deux âmes sur le même ticket** : le duel « A finit devant B » (×{duel}), deux âmes dans le top 3 (×{twoInTop3}), le podium dans le désordre (×{podiumAnyOrder}). La cote n’est pas toujours plus grosse ; ce qui change, c’est qu’un duel se **lit** quand un vainqueur se devine.',
+            '**Gros tickets** : le podium exact (×{podiumExact}) et le classement complet (×{fullRankingExact}) : de quoi payer un cercle entier d’un coup, si vous lisez la course comme un livre ouvert. Entre les deux, « vainqueur ET dernier » (×{winnerAndLast}) ne demande que de regarder les deux bouts, et presque personne ne regarde le fond du classement.',
           ],
         },
-        { kind: 'p', text: 'Deux choses à savoir sur les cotes : elles **fondent** à mesure que la course avance (parier tard, c’est parier sûr, donc parier petit), et tout ticket qui met **deux âmes ou plus** est **verrouillé au début** — le stagiaire n’a pas le grade pour les encaisser. Les combinés s’ouvrent à son premier grade, au bout de deux cercles ; les gros tickets bien plus tard.' },
+        { kind: 'p', text: 'Deux choses à savoir sur les cotes : elles **fondent** à mesure que la course avance (parier tard, c’est parier sûr, donc parier petit), et tout ticket qui met **deux âmes ou plus** est **verrouillé au début** : le stagiaire n’a pas le grade pour les encaisser. Les combinés s’ouvrent à son premier grade, au bout de deux cercles ; les gros tickets bien plus tard.' },
       ],
     },
     {
@@ -799,16 +817,16 @@ const HELP = {
       title: 'La boutique du stagiaire',
       icon: '🛒',
       blocks: [
-        { kind: 'p', text: 'Entre les paris et la course, le stagiaire ouvre sa petite caisse (une fois votre premier pari posé — il ne sert pas les indécis) :' },
+        { kind: 'p', text: 'Entre les paris et la course, le stagiaire ouvre sa petite caisse (une fois votre premier pari posé ; il ne sert pas les indécis) :' },
         {
           kind: 'ul',
           items: [
-            'des **dés spéciaux** qui remplacent un dé Distance — le prudent Dé des Limbes (1, 1, 2, 2), le Dé de Glace et ses extrêmes (−1, −1, 2, 5)… ;',
+            'des **dés spéciaux** qui remplacent un dé Distance : le prudent Dé des Limbes (1, 1, 2, 2), le Dé de Glace et ses extrêmes (−1, −1, 2, 5)… ;',
             'la **forge**, pour modifier une face de dé, une seule, mais pour toujours ;',
-            'des **artefacts**, effets permanents qui tordent les règles en votre faveur — l’Œil du parieur pour miser après avoir vu vos dés, le Sablier de Charon qui repousse le seuil de pari à 70 %…',
+            'des **artefacts**, effets permanents qui tordent les règles en votre faveur : l’Œil du parieur pour miser après avoir vu vos dés, le Sablier de Charon qui repousse le seuil de pari à 70 %…',
           ],
         },
-        { kind: 'p', text: 'Chaque objet annonce la couleur : **SÛR**, **AMBITIEUX** ou **DANGER** — et un objet dangereux dit toujours ce qu’il vous coûtera. En enfer, au moins, les contrats sont clairs.' },
+        { kind: 'p', text: 'Chaque objet annonce la couleur : **SÛR**, **AMBITIEUX** ou **DANGER**, et un objet dangereux dit toujours ce qu’il vous coûtera. En enfer, au moins, les contrats sont clairs.' },
       ],
     },
     {
@@ -816,8 +834,8 @@ const HELP = {
       title: 'Les personnalités des âmes',
       icon: '🎭',
       blocks: [
-        { kind: 'p', text: 'À partir du **troisième cercle**, à la fin de la première course, une âme révèle sa personnalité. Ce n’est pas un tirage : c’est **la mieux classée de celles qui n’en avaient pas**. La personnalité, elle, est tirée au sort — et elle reste attachée à cette âme **jusqu’à la fin de votre évasion**.' },
-        { kind: 'p', text: 'Une âme marquée porte un signe sur son jeton. Passez la souris dessus : la règle est écrite en toutes lettres. Elle est visible **avant les paris**, et c’est tout l’intérêt — une personnalité ne se déclenche pas, elle se lit.' },
+        { kind: 'p', text: 'À partir du **troisième cercle**, à la fin de la première course, une âme révèle sa personnalité. Ce n’est pas un tirage : c’est **la mieux classée de celles qui n’en avaient pas**. La personnalité, elle, est tirée au sort, et elle reste attachée à cette âme **jusqu’à la fin de votre évasion**.' },
+        { kind: 'p', text: 'Une âme marquée porte un signe sur son jeton. Passez la souris dessus : la règle est écrite en toutes lettres. Elle est visible **avant les paris**, et c’est tout l’intérêt : une personnalité ne se déclenche pas, elle se lit.' },
         {
           kind: 'ul',
           items: [
@@ -835,8 +853,8 @@ const HELP = {
       title: 'Les grades du stagiaire',
       icon: '👑',
       blocks: [
-        { kind: 'p', text: 'Plus votre poulain — vous — impressionne, plus le stagiaire grimpe dans la hiérarchie : Assistant, Tourmenteur, Contremaître, Sous-directeur… Chaque promotion **ouvre de nouveaux paris** et garnit la boutique.' },
-        { kind: 'p', text: 'Après le huitième cercle, il obtient même une belle promotion. Au neuvième — le cercle de la Trahison — devinez qui tient le guichet en face de vous.' },
+        { kind: 'p', text: 'Plus votre poulain (vous) impressionne, plus le stagiaire grimpe dans la hiérarchie : Assistant, Tourmenteur, Contremaître, Sous-directeur… Chaque promotion **ouvre de nouveaux paris** et garnit la boutique.' },
+        { kind: 'p', text: 'Après le huitième cercle, il obtient même une belle promotion. Au neuvième (le cercle de la Trahison), devinez qui tient le guichet en face de vous.' },
       ],
     },
     {
@@ -848,11 +866,11 @@ const HELP = {
           kind: 'ol',
           items: [
             '« Pariez avant de rêver : un ticket simple payé vaut mieux qu’un podium exact raté. Les gros tickets, c’est pour les courses que vous avez préparées. »',
-            '« L’ordre des combinaisons est gratuit et c’est le coup le plus fort du jeu. Regardez l’aperçu avant de résoudre — l’enfer est déterministe, profitez-en. »',
+            '« L’ordre des combinaisons est gratuit et c’est le coup le plus fort du jeu. Regardez l’aperçu avant de résoudre : l’enfer est déterministe, profitez-en. »',
             '« Gardez toujours de quoi payer le cercle. Je vous aime bien, mais un pacte, c’est un pacte. »',
           ],
         },
-        { kind: 'p', text: '*Bonne chance. Vous en aurez besoin — enfin, non : vous aurez besoin de bien lire.*' },
+        { kind: 'p', text: '*Bonne chance. Vous en aurez besoin… enfin, non : vous aurez besoin de bien lire.*' },
       ],
     },
   ] as const satisfies readonly HelpSection[],
@@ -895,7 +913,7 @@ const BOSS_EFFECTS: Readonly<Record<BossEffectId, string>> = {
   replayTurn: 'Le tour d’arrivée est résolu une seconde fois, adversaire compris.',
 }
 
-const BET_TIERS: Readonly<Record<BetTier, string>> = { simple: 'Simples', intermediate: 'Combinés', advanced: 'Avancés' }
+const BET_TIERS: Readonly<Record<BetTier, string>> = { simple: 'Simples', intermediate: 'Combinés', advanced: 'Avancés', exotic: 'Exotiques' }
 
 const BET_TYPE_TEXTS: Readonly<Record<BetTypeId, BetTypeText>> = {
   winner: { label: 'Vainqueur pur', description: `L'âme termine première.` },
@@ -908,6 +926,8 @@ const BET_TYPE_TEXTS: Readonly<Record<BetTypeId, BetTypeText>> = {
   podiumExact: { label: 'Podium exact', description: 'Les trois premières places, dans cet ordre exact.', slots: ['1re', '2e', '3e'] },
   fullRankingExact: { label: 'Classement complet exact', description: 'Toutes les positions finales, dans cet ordre exact.' },
   winnerAndLast: { label: 'Vainqueur + dernier', description: 'La première et la dernière âme, exactement.', slots: ['vainqueur', 'dernier'] },
+  rammedTwice: { label: 'Percutée deux fois', description: 'Cette âme se fera percuter au moins deux fois dans la course.', slots: ['l’âme'] },
+  noBackward: { label: 'Aucun recul', description: 'Aucune âme ne reculera d’une seule case de toute la course.', slots: [] },
 }
 
 const BET_REFUSALS: Readonly<Record<BetRefusal['kind'], string>> = {
@@ -916,6 +936,7 @@ const BET_REFUSALS: Readonly<Record<BetRefusal['kind'], string>> = {
   soulTwice: 'Une âme ne peut être désignée qu’une fois.',
   missingSouls: 'Désignez {needed} âme{s} ({given}/{needed}).',
   tooManySouls: 'Trop d’âmes désignées.',
+  soulBarred: 'Guichet fermé pour cette âme : elle a déjà franchi l’arrivée une fois.',
   unknownSoul: 'Âme inconnue.',
   alreadyPlaced: 'Ce pari est déjà posé.',
   noStake: 'Choisissez une mise.',
@@ -935,7 +956,7 @@ const RARITIES: Readonly<Record<Rarity, string>> = { common: 'commun', rare: 'ra
 const PURCHASE_LOG: Readonly<Record<PurchaseLog['kind'], string>> = {
   decap: 'Face décapée sur le {die} n°{n} : elle revaut {value}.',
   artefactSold: 'Artefact revendu : {name}.',
-  artefactReplaced: `{name} remplace {replaced} — l'ancien est détruit.`,
+  artefactReplaced: `{name} remplace {replaced} : l'ancien est détruit.`,
   artefactBought: 'Artefact acquis : {name}.',
   dieAdded: '{name} rejoint le lancer : {count} dés Distance.',
   dieReplaced: '{name} remplace le {die} n°{n}.',
@@ -983,6 +1004,11 @@ const MOVE_NOTES: Readonly<Record<MoveNoteId, string>> = {
   grudge: 'Rancunes du Martyr : +{value}',
   ogre: `L'Ogre bouscule : −{value}`,
   parasite: 'Le Parasite suit : +{value}',
+  reverse: 'Revers : s’arrête derrière',
+  armWrestle: 'Bras de fer : +{value} par échange',
+  echo: 'Écho : +{value}',
+  hook: 'Crochet de Charon',
+  styx: 'Écho du Styx',
 }
 
 /**
@@ -1001,7 +1027,7 @@ const PERSONALITIES: Readonly<Record<PersonalityId, { name: string; effect: stri
   },
   tricheur: {
     name: 'Le Tricheur',
-    effect: `Une fois sur quatre, le dé Âme qui le désigne est relancé — le vôtre comme celui de l'adversaire.`,
+    effect: `Une fois sur quatre, le dé Âme qui le désigne est relancé, le vôtre comme celui de l'adversaire.`,
   },
   condamne: {
     name: 'Le Condamné',
@@ -1040,8 +1066,6 @@ const PERSONALITIES: Readonly<Record<PersonalityId, { name: string; effect: stri
  */
 const REVEAL = {
   title: 'Une âme se découvre',
-  intro: `{who} a fini {rank} de la course. Le stagiaire feuillette son dossier, siffle entre ses dents, et vous tend la fiche.`,
-  rankFirst: 'en tête',
   lead: 'Désormais, et pour tout ce qui reste de votre évasion :',
   kept: 'Cette personnalité reste attachée à {who} jusqu’à la fin du run. Un masque de la boutique peut la remplacer, ou la retirer.',
   next: 'Continuer',
@@ -1051,7 +1075,7 @@ const REVEAL = {
 const LOG = {
   label: 'Journal de la course',
   title: 'Journal',
-  raceHeader: 'Cercle {circle}, course {n}/{total} — terrain « {terrain} », {souls} âmes, {columns} cases, {lanes} couloir{s}{blocked}, graine {seed}. Posez vos paris.',
+  raceHeader: 'Cercle {circle}, course {n}/{total} · terrain « {terrain} », {souls} âmes, {columns} cases, {lanes} couloir{s}{blocked}, graine {seed}. Posez vos paris.',
   raceHeaderBlocked: ', {n} case{s} bloquée{s}',
   allowance: 'Le stagiaire vous avance {n} pièces pour cette course{bonus}.',
   allowanceBonus: ' (dont {n} grâce à la {item})',
@@ -1064,10 +1088,19 @@ const LOG = {
   lateBetOpen: `Œil du parieur : vous pouvez parier après avoir vu vos dés, jusqu'à la résolution.`,
   shopOpen: 'La boutique ouvre : {n} objets en vitrine.',
   rerolled: 'Vitrine renouvelée pour {cost} pièces.',
+  ixion: 'Roue d’Ixion : {who} franchit l’arrivée sans ticket : retour à la case départ, la course continue.',
+  orb: 'Boule de Cocyte : tout relancé, {dist} sur {souls}.',
+  fusion: 'Face de fusion : les deux distances vont sur {who}.',
+  styxOn: 'Écho du Styx armé sur {who}.',
+  styxOff: 'Écho du Styx désarmé.',
+  styxEcho: 'Écho du Styx : la combinaison de {who} sera rejouée.',
+  markerPlaced: '{kind} posée case {column}. Il reste {left} borne(s).',
+  foremanAsleep: 'Sommeil du contremaître : {n}ᵉ lancer du run, l’adversaire saute son tour.',
   thresholdMoved: 'Seuil de pari à {pct} % dès cette course.',
+  trackChanged: 'Piste de {columns} colonnes, seuil de pari à {pct} %, dès cette course.',
   sold: '{name} revendu : +{back} pièces.',
   purchase: '{text} ({cost} pièces)',
-  purchaseFreeForge: `{text} — offert par le Marteau d'Héphaïstos.`,
+  purchaseFreeForge: `{text} Offert par le Marteau d'Héphaïstos.`,
   holedPurse: 'Bourse percée : +{n} pièces.',
   stand: 'Tribune infernale : +{n} pièces.',
   standPlaced: 'Tribune infernale posée case {column}.',
@@ -1077,7 +1110,7 @@ const LOG = {
   foresight: '{source} : {names}.',
   foresightAll: 'Fouet du contremaître',
   foresightFirst: 'Œil de Charon',
-  roll: 'Lancer : Distance {dist} — Âmes {souls}.',
+  roll: 'Lancer : Distance {dist} · Âmes {souls}.',
   gildedFace: 'Face dorée : +{n} pièces.',
   tip: 'Pourboire du stagiaire : +{n} pièces.',
   vial: 'Fiole de sang : dé n°{n} à {face} pour {cost} pièces.',
@@ -1115,14 +1148,14 @@ const UI = {
     rolled: 'Les dés sont lancés : les paris reprennent au prochain tour.',
     resolving: 'Paris suspendus pendant la résolution.',
     shopNeedsBet: 'La boutique n’ouvre sa caisse qu’après un premier pari',
-    raceNeedsBet: 'Lancer la course — pose d’abord un pari',
+    raceNeedsBet: 'Lancer la course : pose d’abord un pari',
     noBetYet: 'Il faut au moins un pari initial',
     diceRolled: 'Les dés sont lancés : plus de pari avant le prochain tour.',
     waitResolution: 'Attendez la fin de la résolution.',
     windowClosed: 'Guichet fermé ce tour : {type} est indisponible.',
     counterCut: 'Ce guichet prend sa part : il faut {cost} pièces pour miser {stake}.',
     thresholdPassed: 'Une âme a dépassé le seuil de {pct} % : plus de pari.',
-    pickMore: 'Choisis encore {n} âme{s} — dans le panneau ou en cliquant les jetons du plateau.',
+    pickMore: 'Choisis encore {n} âme{s} : dans le panneau ou en cliquant les jetons du plateau.',
     decayed: ' Cotes décotées : course à {pct} %.',
   },
   ticket: {
@@ -1153,18 +1186,18 @@ const UI = {
     resolving: 'Résolution de vos combinaisons…',
     finished: 'Course terminée.',
     prepNoBet: 'Posez au moins un pari initial pour ouvrir la boutique et lancer la course.',
-    idle: 'Tour {n} — lancez les dés.{lastCall}',
+    idle: 'Tour {n} · lancez les dés.{lastCall}',
     idleLastCall: ' Dernier moment pour parier ce tour.',
     pairing: `Glissez (ou cliquez) un dé Âme sur un dé Distance. L'ordre des cartes est l'ordre de résolution ({n}/{total}){unused}.`,
-    unusedOne: ' — 1 dé Âme restera inutilisé',
-    unusedMany: ' — {n} dés Âme resteront inutilisés',
+    unusedOne: ' 1 dé Âme restera inutilisé.',
+    unusedMany: ' {n} dés Âme resteront inutilisés.',
     opponentTurn: `Tour de l'adversaire…`,
     placedCount: 'Paris posés ({n})',
   },
   game: { steps: 'Étapes', auto: 'auto', autoTitle: 'Mode test : enchaîne les tours tout seul', activeArtefacts: 'Artefacts actifs', noArtefact: 'Aucun artefact. La boutique en propose entre les paris et la course.' },
   inventory: { label: 'Inventaire', distanceDice: 'Dés Distance', baseDie: 'Dé de base' },
   ranking: { final: 'Classement final', tally: 'Bilan des paris', none: 'Aucun pari sur cette course.' },
-  shop: { closed: 'La boutique est fermée.', notInWindow: 'Objet absent de la vitrine.', notEnoughMoney: 'Pas assez d’argent.', alreadyOwned: 'Déjà possédé.', noFaceLeft: 'Plus aucune face à forger.', nothingToStrip: 'Aucune âme marquée dans cette course.', sellFailed: 'Revente impossible.', decapCost: 'Le décapage coûte {cost} pièces.', pickDie: 'quel dé remplacer ?', pickFace: 'quelle face forger ?', alreadyForged: 'Déjà forgée', slotsFull: 'Emplacements pleins', afterBets: 'Paris posés : ce qui reste est à dépenser… ou à garder.', till: 'Le stagiaire tient la caisse.' },
+  shop: { closed: 'La boutique est fermée.', notInWindow: 'Objet absent de la vitrine.', notEnoughMoney: 'Pas assez d’argent.', alreadyOwned: 'Déjà possédé.', noFaceLeft: 'Plus aucune face à forger.', nothingToStrip: 'Aucune âme marquée dans cette course.', exclusive: 'Annule {name} : les deux ne se possèdent pas ensemble.', sellFailed: 'Revente impossible.', decapCost: 'Le décapage coûte {cost} pièces.', pickDie: 'quel dé remplacer ?', pickFace: 'quelle face forger ?', alreadyForged: 'Déjà forgée', slotsFull: 'Emplacements pleins', afterBets: 'Paris posés : ce qui reste est à dépenser… ou à garder.', till: 'Le stagiaire tient la caisse.' },
   /** Refus d'un objet déclenché à la main, depuis l'écran de course. */
   artefacts: {
     notOwned: 'Artefact non possédé.',
@@ -1183,6 +1216,26 @@ const UI = {
     doubleCost: 'Il faut {cost} pièces pour doubler toutes les mises.',
     noStand: 'Vous ne possédez pas la Tribune infernale.',
     badCell: 'Case impossible : hors départ, hors zone de fin, et libre.',
+    noOrb: 'Vous n’avez pas la Boule de Cocyte.',
+    orbWhen: 'La relance générale se prend après le lancer.',
+    orbUsed: 'La Boule de Cocyte a déjà servi cette course.',
+    orbPaired: 'Dissociez d’abord vos dés : on relance tout ou rien.',
+    noHook: 'Vous n’avez pas le Crochet de Charon.',
+    hookWhen: 'Le crochet se lance pendant votre tour.',
+    hookUsed: 'Le Crochet de Charon a déjà servi cette course.',
+    hookNotInZone: 'Cette âme n’est pas en zone de fin.',
+    noFusionFace: 'Aucune face de fusion associée.',
+    fusionWhen: 'La fusion se décide après le lancer.',
+    fusionTarget: 'Choisissez un dé Âme déjà associé à une autre combinaison.',
+    sleepTitle: 'Sommeil du contremaître : tous les 10 lancers du run, l’adversaire saute son tour.',
+    sleepIn: 'Sommeil dans {n} lancer(s)',
+    sleepNow: 'L’adversaire dort ce tour-ci',
+    noMarker: 'Vous n’avez pas les Bornes du stagiaire.',
+    markerWhen: 'Les bornes se posent avant la course.',
+    markerAllPlaced: 'Toutes vos bornes sont posées.',
+    noStyx: 'Vous n’avez pas l’Écho du Styx.',
+    styxWhen: 'L’écho se marque après le lancer, avant de résoudre.',
+    styxUsed: 'L’Écho du Styx a déjà servi cette course.',
   },
   map: { crossed: 'Cercle traversé.' },
   dialogue: { end: 'Terminer' },

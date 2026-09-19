@@ -1,96 +1,167 @@
 {
   "_comment": "English names for everything the player reads out of config/race.json and config/shop.json. Only the words live here: prices, odds, dice faces, blocked spaces and effect ids stay in their own file, written once. src/core/config/i18n.ts lays this over the raw config before it is validated, so a missing entry falls back to the French one rather than breaking the game — config i18n.test.ts is what fails when something is missing. souls and circles are matched by position (same order as race.json), circles[].terrains too; shop items are matched by id, so their order here does not matter.",
-  "souls": ["Homer", "Virgil", "Aristotle", "Plato", "Socrates", "Ovid", "Seneca", "Euclid", "Horace", "Lucan", "Hippocrates", "Ptolemy"],
+  "souls": [
+    "Homer",
+    "Virgil",
+    "Aristotle",
+    "Plato",
+    "Socrates",
+    "Ovid",
+    "Seneca",
+    "Euclid",
+    "Horace",
+    "Lucan",
+    "Hippocrates",
+    "Ptolemy"
+  ],
   "circles": [
     {
       "name": "Limbo",
       "boss": "Charon",
       "power": "The ferryman rolls two pairs a turn instead of one.",
-      "terrains": ["The grey plain"]
+      "terrains": [
+        "The grey plain"
+      ]
     },
     {
       "name": "Lust",
       "boss": "Minos",
       "power": "The eternal winds: every -1 becomes -2, for you as for him.",
-      "terrains": ["Low gust", "High gust", "Crosswinds"]
+      "terrains": [
+        "Low gust",
+        "High gust",
+        "Crosswinds"
+      ]
     },
     {
       "name": "Gluttony",
       "boss": "Cerberus",
       "power": "A rammed soul is bitten: it moves back one space after the jump.",
-      "terrains": ["Potholes", "Low mire", "Ruts"]
+      "terrains": [
+        "Potholes",
+        "Low mire",
+        "Ruts"
+      ]
     },
     {
       "name": "Greed",
       "boss": "Plutus",
       "power": "Bets placed during the race cost double the stake.",
-      "terrains": ["The rocks", "The convoy", "Heaps"]
+      "terrains": [
+        "The rocks",
+        "The convoy",
+        "Heaps"
+      ]
     },
     {
       "name": "Wrath",
       "boss": "Phlegyas",
       "power": "In the Styx, moving back onto a soul pushes it back too instead of swapping.",
-      "terrains": ["The shallows", "Peat bogs", "The ford"]
+      "terrains": [
+        "The shallows",
+        "Peat bogs",
+        "The ford"
+      ]
     },
     {
       "name": "Heresy",
       "boss": "The Furies",
       "power": "The betting threshold drops to 40 % of the track.",
-      "terrains": ["The tombs", "Open lids", "Necropolis"]
+      "terrains": [
+        "The tombs",
+        "Open lids",
+        "Necropolis"
+      ]
     },
     {
       "name": "Violence",
       "boss": "The Minotaur",
       "power": "The opponent’s positive distances gain +1.",
-      "terrains": ["The river of blood", "The wood of the suicides", "The burning sand"]
+      "terrains": [
+        "The river of blood",
+        "The wood of the suicides",
+        "The burning sand"
+      ]
     },
     {
       "name": "Fraud",
       "boss": "Geryon",
       "power": "The Soul dice lie: one time in four they name the neighbouring soul.",
-      "terrains": ["The ditches", "The broken bridges", "Spiral bolgia"]
+      "terrains": [
+        "The ditches",
+        "The broken bridges",
+        "Spiral bolgia"
+      ]
     },
     {
       "name": "Treachery",
       "boss": "Iscariot, boss of the ninth",
       "power": "He knows your bets: his pairs go for the souls you have bet on first, to push them back.",
-      "terrains": ["The Cocytus", "Crevasses", "The traitors caught"]
+      "terrains": [
+        "The Cocytus",
+        "Crevasses",
+        "The traitors caught"
+      ]
     },
     {
       "name": "Sea Floor",
       "boss": "The Drowned Man",
       "power": "Underwater, every positive distance loses 1: the race runs in slow motion.",
-      "terrains": ["The black sand", "The weeds", "The sunken ship"]
+      "terrains": [
+        "The black sand",
+        "The weeds",
+        "The sunken ship"
+      ]
     },
     {
       "name": "Cliff",
       "boss": "The Chainbearer",
       "power": "A rammed soul is chained: it does not move at all next turn.",
-      "terrains": ["The scree", "The chains", "The ledge"]
+      "terrains": [
+        "The scree",
+        "The chains",
+        "The ledge"
+      ]
     },
     {
       "name": "City",
       "boss": "The Clerk",
       "power": "He closes one counter a turn: a type of bet becomes unavailable.",
-      "terrains": ["The counters", "The crowd", "The iron balconies"]
+      "terrains": [
+        "The counters",
+        "The crowd",
+        "The iron balconies"
+      ]
     },
     {
       "name": "Mountain",
       "boss": "The Frost",
       "power": "The lanes freeze: a soul can no longer pull over, it rams instead.",
-      "terrains": ["The seracs", "The frozen rope", "Night snow"]
+      "terrains": [
+        "The seracs",
+        "The frozen rope",
+        "Night snow"
+      ]
     },
     {
       "name": "Sky",
       "boss": "The Breath",
       "power": "At the end of every turn, all the souls move back one space.",
-      "terrains": ["The broken bridge", "The cumulonimbus", "The silent lightning"]
+      "terrains": [
+        "The broken bridge",
+        "The cumulonimbus",
+        "The silent lightning"
+      ]
     },
     {
       "name": "Paradise",
       "boss": "The Angel",
       "power": "He replays the last turn of the race a second time, opponent included.",
-      "terrains": ["The stands", "The rings of gold", "The pale marble"]
+      "terrains": [
+        "The stands",
+        "The rings of gold",
+        "The pale marble"
+      ]
     }
   ],
   "items": {
@@ -264,7 +335,7 @@
     },
     "fraude": {
       "name": "Fraud Die",
-      "description": "Replaces a Distance die with a 1, 2, 3, ? die — the ? face takes the value of the best other Distance face in the roll."
+      "description": "Replaces a Distance die with a 1, 2, 3, ? die: the ? face takes the value of the best other Distance face in the roll."
     },
     "troisiemeDe": {
       "name": "Third Distance Die",
@@ -303,7 +374,7 @@
     },
     "masqueMartyr": {
       "name": "Mask of the Martyr",
-      "description": "Marks a soul for the whole run. Its advances lose one space (never below 1), but every time it is rammed or swapped it holds a grudge — and the whole debt comes back at once as it enters the closing zone."
+      "description": "Marks a soul for the whole run. Its advances lose one space (never below 1), but every time it is rammed or swapped it holds a grudge, and the whole debt comes back at once as it enters the closing zone."
     },
     "masqueAmbitieux": {
       "name": "Mask of the Ambitious",
@@ -311,7 +382,7 @@
     },
     "masqueTricheur": {
       "name": "Mask of the Cheat",
-      "description": "Marks a soul for the whole run. One time in four, the Soul die that names it is rerolled — yours as well as your opponent’s.",
+      "description": "Marks a soul for the whole run. One time in four, the Soul die that names it is rerolled, yours as well as your opponent’s.",
       "warning": "it cheats against you too: one Soul die in four that names it goes elsewhere"
     },
     "masqueCondamne": {
@@ -346,6 +417,73 @@
     "masqueBrise": {
       "name": "Broken Mask",
       "description": "Strips a marked soul of its personality: it goes back to being a damned soul like any other, until something marks it again."
+    },
+    "revers": {
+      "name": "Backhand Face",
+      "description": "+2. If the soul rams, it does not leap ahead: it stops on the first free space behind the soul it hit. Nothing free before its own space: it does not move."
+    },
+    "echo": {
+      "name": "Echo Face",
+      "description": "+1, and the soul of the first unused Soul die moves 1 as well. With no unused Soul die, the face is worth +2."
+    },
+    "brasDeFer": {
+      "name": "Arm Wrestle Face",
+      "description": "The soul does not advance: it swaps places with the soul ahead of it, up to 3 columns away. Nobody ahead, too far, or already finished: nothing happens."
+    },
+    "fusion": {
+      "name": "Fusion Face",
+      "description": "+1. Once both Distance dice are paired, you may melt the two combinations into one: the sum of the distances, on either of the two souls."
+    },
+    "damne": {
+      "name": "Damned Die",
+      "description": "Faces 2, 3, 4, 5: no negative or null face, the highest expectation in the catalogue. In exchange, the opponent rolls one extra pair every turn.",
+      "warning": "the opponent rolls one extra pair every turn of the race"
+    },
+    "raccourci": {
+      "name": "Malebolge Shortcut",
+      "description": "Every race is one column shorter, betting threshold recomputed. Does not stack with the Chain of Limbo."
+    },
+    "chaineDesLimbes": {
+      "name": "Chain of Limbo",
+      "description": "Every race is one column longer, betting threshold recomputed. Does not stack with the Malebolge Shortcut."
+    },
+    "coteMontante": {
+      "name": "Rising Odds",
+      "description": "Bets placed during the race pay +0.5 on the multiplier, bets placed before the first roll −0.5, never below ×1. Does not stack with the First-Hour Ticket."
+    },
+    "sommeilDuContremaitre": {
+      "name": "Foreman's Slumber",
+      "description": "A counter follows your rolls for the whole run: every 10 rolls, the opponent skips its turn. It never resets."
+    },
+    "bouleDeCocyte": {
+      "name": "Cocytus Orb",
+      "description": "Once per race, after seeing your five dice and before pairing them, roll them all again. The second result stands."
+    },
+    "crochetDeCharon": {
+      "name": "Charon's Hook",
+      "description": "Once per race, a soul in the end zone falls back to the last column before the betting threshold. It becomes bettable again.",
+      "warning": "a soul pulled back below the threshold can be bet on again, by you and against you"
+    },
+    "roueDIxion": {
+      "name": "Ixion's Wheel",
+      "description": "Once per circle: the first soul to cross the finish line, if none of your bets is on it, goes back to the starting space and the race carries on.",
+      "warning": "the soul sent back to the start stays unbettable: the window does not reopen for it"
+    },
+    "echoDuStyx": {
+      "name": "Echo of the Styx",
+      "description": "Once per race, mark a combination before resolving: it is replayed exactly as it was, right after it resolves."
+    },
+    "bornes": {
+      "name": "Intern's Markers",
+      "description": "Before each race, place two markers on free spaces: Pit (−2), Springboard (+2) or Tar (the soul loses its induced moves until the end of the turn)."
+    },
+    "sceauDuStagiaire": {
+      "name": "Intern's Seal",
+      "description": "Masks cost 30 % less, and the first broken mask of each circle is free."
+    },
+    "registreExotique": {
+      "name": "Book of Exotic Bets",
+      "description": "Adds two counters for the whole run: « this soul will be rammed at least twice » and « no soul will move backwards in the race »."
     }
   }
 }

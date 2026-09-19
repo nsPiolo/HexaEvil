@@ -41,8 +41,19 @@ export const itemArt = (id: string): string => `/objets/${id}.webp`
  */
 export const cellArt = (kind: string): string => `/table/cases/${kind}.webp`
 
+
 /** Les éboulis peints : plusieurs dessins pour la même case bloquée. */
 export const BLOCKED_ART = ['blocked', 'blocked2', 'blocked3', 'blocked4'] as const
+/**
+ * Marqueurs de case déjà peints. Une case dont le type n'est pas là se lit à son signe
+ * (`BOARD.specialMark`) plutôt qu'à une image cassée. Ajouter un id ici dès que
+ * `public/table/cases/` le contient — `cellArt.test.ts` vérifie que tout ce qu'un cercle
+ * utilise est bien peint, mais le goudron est posé par un artefact et non par un terrain :
+ * aucun cercle ne l'emploie, ce test ne le voit donc pas.
+ */
+const PAINTED_CELLS: readonly string[] = ['gold', 'trap', 'boost', 'tar', 'tribune', ...BLOCKED_ART]
+export const hasCellArt = (kind: string): boolean => PAINTED_CELLS.includes(kind)
+
 
 /**
  * Éboulis d'une case bloquée, tiré de sa position.

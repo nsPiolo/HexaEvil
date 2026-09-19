@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { config } from '../../core/config'
-import { BLOCKED_ART, blockedArt, cellArt } from '../art'
+import { BLOCKED_ART, blockedArt, cellArt, hasCellArt } from '../art'
 
 const dossier = fileURLToPath(new URL('../../../public/table/cases/', import.meta.url))
 const fichier = (url: string): string => `${dossier}${url.split('/').pop()}`
@@ -21,6 +21,17 @@ describe('marqueurs de case', () => {
 
   it('a celui de la tribune, posée par le joueur et non par un cercle', () => {
     expect(existsSync(fichier(cellArt('tribune')))).toBe(true)
+  })
+
+  /**
+   * Le goudron est posé par les Bornes du stagiaire (artefacts.md n°33), pas par un terrain :
+   * aucun cercle ne l'emploie, le test ci-dessus ne le voit donc pas. Il lui faut le sien, et
+   * il vérifie aussi `hasCellArt` — c'est elle qui décide si le plateau sert l'image ou le
+   * signe de repli, et une image posée sans être déclarée là resterait invisible.
+   */
+  it('a celui du goudron, posé par un artefact et non par un cercle', () => {
+    expect(existsSync(fichier(cellArt('tar')))).toBe(true)
+    expect(hasCellArt('tar')).toBe(true)
   })
 
   it('a chacun des éboulis', () => {

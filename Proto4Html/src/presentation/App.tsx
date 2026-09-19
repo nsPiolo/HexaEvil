@@ -37,7 +37,7 @@ type Screen =
   | { kind: 'game'; carry: SessionCarry; key: number }
   | { kind: 'dialogue'; lines: readonly Line[]; then: Screen; skip?: string; background?: string }
   | { kind: 'unlock'; item: ShopItem; remaining: number; then: Screen }
-  | { kind: 'reveal'; name: string; rank: number; personality: PersonalityId; then: Screen }
+  | { kind: 'reveal'; name: string; personality: PersonalityId; then: Screen }
   | { kind: 'debt'; carry: SessionCarry; price: number; borrow: number; circle: number }
   | { kind: 'end'; end: 'gameover' | 'escape'; price: number; money: number; carry?: SessionCarry }
 
@@ -189,7 +189,7 @@ export default function App() {
   const currentCarry = (): SessionCarry | null => {
     if (screen.kind === 'map' || screen.kind === 'game') return screen.carry
     if (screen.kind === 'dialogue' && (screen.then.kind === 'map' || screen.then.kind === 'game')) return screen.then.carry
-    return save ? { money: save.money, inventory: save.inventory, raceIndex: save.raceIndex, lateBetCharges: save.lateBetCharges } : null
+    return save ? { money: save.money, inventory: save.inventory, raceIndex: save.raceIndex, lateBetCharges: save.lateBetCharges, rolls: save.rolls ?? 0, ixionUsed: save.ixionUsed ?? false, maskFreeUsed: save.maskFreeUsed ?? false } : null
   }
 
   /** Menu développeur : on repart au début de la course choisie, avec le solde demandé, inventaire conservé. */
@@ -204,7 +204,7 @@ export default function App() {
 
   const continueRun = (): void => {
     if (!save) return
-    toMap({ money: save.money, inventory: save.inventory, raceIndex: save.raceIndex, lateBetCharges: save.lateBetCharges })
+    toMap({ money: save.money, inventory: save.inventory, raceIndex: save.raceIndex, lateBetCharges: save.lateBetCharges, rolls: save.rolls ?? 0, ixionUsed: save.ixionUsed ?? false, maskFreeUsed: save.maskFreeUsed ?? false })
   }
 
   /** Fin d'une rencontre : statistiques, sauvegarde, puis dialogue de boss, transition de cercle ou course suivante. */
@@ -241,7 +241,7 @@ export default function App() {
         : carry
       persist(after, circle)
       const next: Screen = { kind: 'map', carry: after }
-      const shown: Screen = reveal ? { kind: 'reveal', name: reveal.name, rank: reveal.rank, personality: reveal.personality, then: next } : next
+      const shown: Screen = reveal ? { kind: 'reveal', name: reveal.name, personality: reveal.personality, then: next } : next
       if (raceInCircle === config.run.racesPerCircle - 1) {
         setScreen({ kind: 'dialogue', lines: bossAnnounce(circle), then: shown })
       } else if (shown.kind === 'map') {
@@ -278,8 +278,11 @@ export default function App() {
       ...carry,
       money: carry.money + borrowed - price,
       lateBetCharges: fullCharges(carry.inventory),
-      // Le Marteau d'Héphaïstos réarme sa forge offerte à chaque cercle.
+      // Le Marteau d'Héphaïstos réarme sa forge offerte à chaque cercle, le Sceau du stagiaire
+      // son masque brisé offert, la Roue d'Ixion son unique rappel.
       forgeFreeUsed: false,
+      maskFreeUsed: false,
+      ixionUsed: false,
       debt: borrowed,
       debtUsed: carry.debtUsed || borrowed > 0,
     }
@@ -368,7 +371,6 @@ export default function App() {
         return (
           <RevealScreen
             name={screen.name}
-            rank={screen.rank}
             personality={screen.personality}
             onDone={() => {
               const then = screen.then

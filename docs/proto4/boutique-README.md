@@ -7,24 +7,22 @@ est un point de départ pour la configuration du POC (GDD §9.1).
 | Fichier | Contenu | Minimum demandé | Fourni | Implémenté |
 |---|---|---:|---:|---:|
 | [`personnalites.md`](personnalites.md) | Personnalités à donner aux âmes | 10 | 18 | 10 |
-| [`artefacts.md`](artefacts.md) | Passifs permanents du run | 20 | 41 | 30 |
-| [`forge.md`](forge.md) | Altérations de face de dé | 10 | 20 | 11 |
-| [`des.md`](des.md) | Dés spéciaux | 4 | 12 | 7 |
+| [`artefacts.md`](artefacts.md) | Passifs permanents du run | 20 | 41 | 41 |
+| [`forge.md`](forge.md) | Altérations de face de dé | 10 | 20 | 15 |
+| [`des.md`](des.md) | Dés spéciaux | 4 | 12 | 8 |
 | [`cartes.md`](cartes.md) | ~~Cartes action consommables~~ — **abandonné**, idées recyclées | — | 60 | 0 |
 
-Reste à faire, et pourquoi : le **Sceau du stagiaire** (artefact n° 25) attend les
-personnalités ; les trois **dés Âme** et les cinq **faces de dé Âme** attendent que
-les dés Âme soient modélisés — aujourd'hui `rollPlayerDice` tire une âme au hasard
-sans objet derrière.
+Reste à faire, et pourquoi : les trois **dés Âme** et les cinq **faces de dé Âme**
+attendent que les dés Âme soient modélisés — aujourd'hui `rollPlayerDice` tire une
+âme au hasard sans objet derrière. Le **Dé de Minos** (des.md n° 11) attend, lui,
+une fenêtre de jeu entre la révélation de la paire adverse et sa résolution.
 
 Les **cartes action sont abandonnées** (19 septembre 2026) : le système demandait
 une main et six fenêtres de jeu dans la boucle de tour pour de l'agentivité que la
 forge, les dés et les artefacts couvrent déjà. Les idées retenues ont été
 converties en **artefacts 33 à 42**, **faces de forge 15 à 20** et **dés 11 et
-12** — la table de conversion complète est dans [`cartes.md`](cartes.md). Cette
-vague n'est pas implémentée : elle est planifiée **après les archétypes d'âmes**.
-Un seul objet demande une modification de la boucle de tour, le **Dé de Minos**
-(fenêtre de jeu après la révélation de la paire adverse).
+12** — la table de conversion complète est dans [`cartes.md`](cartes.md). Tout est
+implémenté, vignettes comprises, sauf ce qui dépend des dés Âme et le Dé de Minos.
 
 Les objets marqués ✔ dans les listes sont implémentés dans `Proto4Html`
 (catalogue et prix dans `Proto4Html/config/shop.json`). Dans le proto, la boutique

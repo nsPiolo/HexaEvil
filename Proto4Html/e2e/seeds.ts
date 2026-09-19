@@ -50,9 +50,10 @@ export const RACES_PER_CIRCLE = 3
  * de confirmation), Face explosive 55 (danger ⚠). Tous les prix dépassent 15 : à 0 pièce
  * apportée (20 d'avance − 5 de mise), tout est trop cher (04-D).
  *
- * Re-cherchée quatre fois : à l'élargissement du catalogue (16 → 47 objets), au passage de la
+ * Re-cherchée cinq fois : à l'élargissement du catalogue (16 → 47 objets), au passage de la
  * vitrine de 4 à 3 objets, à l'arrivée du Dé du Décathlon (47 → 48 objets, le tirage se fait
- * sur tout le catalogue en mode e2e), puis à celle des onze masques de personnalité (48 → 59).
+ * sur tout le catalogue en mode e2e), à celle des onze masques de personnalité (48 → 59), puis
+ * à celle des seize objets de la vague 2 (59 → 75). L'outil de recherche est `sim/findseed.ts`.
  * Les trois objets attendus n'ont jamais changé : c'est la graine qui les redonne qu'on
  * cherche, pour que les attentes ci-dessous restent lisibles d'une version à l'autre.
  * Contraintes à retrouver si elle saute encore :
@@ -60,7 +61,7 @@ export const RACES_PER_CIRCLE = 3
  * confirmation et payable à 67 ; un artefact ambitieux entre 68 et 95 (achetable à 95, refusé
  * à 67) ; un objet à contrepartie ; rien sous 16.
  */
-export const SHOP_SEED = 22165
+export const SHOP_SEED = 120271
 export const SHOP_SEED_EXPECT = {
   order: ['Sûr', 'Ambitieux', 'Danger ⚠'],
   danger: { name: 'Face explosive', warning: "sans percussion, l'âme recule d'une case après coup", impact: 'fort' },
@@ -74,10 +75,11 @@ export const SHOP_SEED_EXPECT = {
  * Masque du Résolu 50, Face du parieur 55, Dé de Glace 60. Le masque est le moins cher des
  * trois, donc achetable sans que le test ait à choisir entre les cartes.
  *
- * Contrainte à retrouver si elle saute : un objet `kind: personality` dont `personality` n'est
- * pas null, à 50 pièces ou moins, dans la vitrine de la première ouverture.
+ * Contrainte à retrouver si elle saute (`npx vite-node sim/findseed.ts mask`) : un objet
+ * `kind: personality` dont `personality` n'est pas null, à 50 pièces ou moins, et le moins cher
+ * de la vitrine de la première ouverture.
  */
-export const MASK_SEED = 4
+export const MASK_SEED = 62
 export const MASK_SEED_EXPECT = {
   name: 'Masque du Résolu',
   personality: 'Le Résolu',

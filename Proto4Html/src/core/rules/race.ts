@@ -11,7 +11,7 @@
  * Certaines cases peuvent être bloquées (rétrécissement) : on n'y atterrit jamais.
  * Avec un seul couloir, on retrouve les règles d'origine : une case par colonne.
  */
-import type { BlockedCell, RaceConfig, SpecialCell } from '../config/schema'
+import type { BlockedCell, RaceConfig, SpecialCell, SpecialCellKind } from '../config/schema'
 import { BOARD_EFFECTS, plainFace, type DistanceDie, type Face, type FaceEffect } from './dice'
 import type { Rng } from './rng'
 import { bossValue, hasBoss, type BossEffect } from './boss'
@@ -85,6 +85,27 @@ export interface RaceState {
    * dépensé d'un bloc quand il entre en zone de fin. Par id d'âme, vidé à chaque course.
    */
   grudges: Readonly<Record<number, number>>
+  /**
+   * Roue d'Ixion (artefacts.md n°42) : âmes renvoyées au départ après avoir franchi l'arrivée.
+   * Le guichet reste fermé pour elles, même une fois repassées sous le seuil — sinon on
+   * parierait « dernière place » sur une âme qui vient de perdre tout son parcours.
+   */
+  barred: readonly SoulId[]
+  /**
+   * Borne de goudron (artefacts.md n°33) : âmes qui ont fini leur déplacement sur du goudron.
+   * Elles ne reçoivent plus aucun déplacement induit jusqu'à la fin du tour, d'où qu'il vienne.
+   */
+  tarred: readonly SoulId[]
+  /** Bornes du stagiaire déjà posées pour cette course. */
+  markers: number
+  /**
+   * Registre des paris exotiques (artefacts.md n°39) : ce que le classement ne dit pas.
+   * `rams` compte, par âme, les fois où elle s'est fait **percuter** (sautée par-dessus) ;
+   * `backward` retient qu'au moins une âme a reculé d'au moins une colonne dans la course.
+   * Comptés au fil de `applyMove`, jamais remis à zéro avant la course suivante.
+   */
+  rams: Readonly<Record<number, number>>
+  backward: boolean
 }
 
 /** Un lancer : valeurs des dés Distance (avec la face sortie), et âme désignée par chaque dé Âme. */
@@ -154,6 +175,11 @@ export type MoveNoteId =
   | 'grudge'
   | 'ogre'
   | 'parasite'
+  | 'reverse'
+  | 'armWrestle'
+  | 'echo'
+  | 'hook'
+  | 'styx'
 
 export interface MoveNote {
   id: MoveNoteId
@@ -202,6 +228,11 @@ function at<T>(arr: readonly T[], i: number, what: string): T {
 export interface RaceOptions {
   /** Remplace track.betThresholdRatio (artefact Sablier). */
   betThresholdRatio?: number
+  /**
+   * Remplace track.columns (Raccourci de Malebolge, Chaîne des Limbes) : le parcours raccourci
+   * ou rallongé change aussi la colonne du seuil de pari, qui se recalcule sur la longueur réelle.
+   */
+  columns?: number
   /** Nombre d'âmes en course (dépend du cercle) ; sinon souls.count. */
   soulCount?: number
   /** Couloirs de la piste (dépend du cercle) ; 1 par défaut. */
@@ -216,15 +247,18 @@ export function createTrack(cfg: RaceConfig['track'], options: RaceOptions = {})
   const ratio = options.betThresholdRatio ?? cfg.betThresholdRatio
   const cellsAfterFinish = cfg.cellsAfterFinish
   const lanes = Math.max(1, options.lanes ?? 1)
+  // Une piste doit garder de quoi courir : deux colonnes au minimum, quoi que demandent les
+  // artefacts de plateau.
+  const columns = Math.max(2, options.columns ?? cfg.columns)
   return {
-    columns: cfg.columns,
+    columns,
     cellsAfterFinish,
-    totalCells: cfg.columns + cellsAfterFinish,
+    totalCells: columns + cellsAfterFinish,
     betThresholdRatio: ratio,
-    betThresholdColumn: Math.ceil(cfg.columns * ratio),
+    betThresholdColumn: Math.ceil(columns * ratio),
     lanes,
-    blocked: (options.blocked ?? []).filter((b) => b.lane < lanes && b.column > 0 && b.column < cfg.columns),
-    specials: (options.specials ?? []).filter((c) => c.lane < lanes && c.column > 0 && c.column < cfg.columns),
+    blocked: (options.blocked ?? []).filter((b) => b.lane < lanes && b.column > 0 && b.column < columns),
+    specials: (options.specials ?? []).filter((c) => c.lane < lanes && c.column > 0 && c.column < columns),
   }
 }
 
@@ -245,7 +279,7 @@ export function createRace(config: RaceConfig, options: RaceOptions = {}): RaceS
   for (let i = 0; i < count; i++) {
     souls.push({ id: i, name: at(config.souls.names, i, 'souls.names'), position: 0, lane: i % track.lanes, finishOrder: null })
   }
-  return { track, souls, turn: 1, finished: false, nextFinishOrder: 1, frozen: [], links: [], fusion: null, tribune: null, chained: [], grudges: {} }
+  return { track, souls, turn: 1, finished: false, nextFinishOrder: 1, frozen: [], links: [], fusion: null, tribune: null, chained: [], grudges: {}, barred: [], tarred: [], markers: 0, rams: {}, backward: false }
 }
 
 /**
@@ -449,9 +483,18 @@ function effectiveDistance(face: Face, soul: SoulId, ctx: MoveContext | undefine
  */
 export function buildMoves(roll: Roll, combinations: readonly Combination[], source: MoveSource, ctx?: MoveContext): Move[] {
   const moves: Move[] = []
+  // Face Écho (forge.md n°16) : elle a besoin de savoir quels dés Âme restent sur le carreau.
+  // Le joueur choisit sa cible indirectement, en décidant quel dé Âme il n'associe pas.
+  const usedSoulDice = new Set(combinations.map((c) => c.soulDie))
+  const spareSoul = roll.soul.findIndex((_, i) => !usedSoulDice.has(i))
+  const echoTargets: SoulId[] = []
   for (const c of combinations) {
     const soul = at(roll.soul, c.soulDie, 'dé Âme')
-    const face = roll.faces[c.distanceDie] ?? plainFace(at(roll.distance, c.distanceDie, 'dé Distance'))
+    const rolled = roll.faces[c.distanceDie] ?? plainFace(at(roll.distance, c.distanceDie, 'dé Distance'))
+    // Sans dé Âme inutilisé (troisième dé Distance équipé), l'Écho n'a personne à viser :
+    // la face vaut alors une case de plus sur sa propre âme.
+    const face = rolled.effect === 'echo' && spareSoul < 0 ? { ...rolled, value: rolled.value + 1 } : rolled
+    if (rolled.effect === 'echo' && spareSoul >= 0) echoTargets.push(at(roll.soul, spareSoul, 'dé Âme inutilisé'))
     const notes: MoveNote[] = []
     const distance = effectiveDistance(face, soul, ctx, notes)
     const part = { soulDie: c.soulDie, distanceDie: c.distanceDie, distance }
@@ -465,6 +508,11 @@ export function buildMoves(roll: Roll, combinations: readonly Combination[], sou
     } else {
       moves.push({ source, soul, distance, parts: [part], notes, effects })
     }
+  }
+  // L'Écho se résout après la file : il est `induced`, il n'entraîne donc ni Aimant, ni
+  // Parasite, ni chaîne — un déplacement induit par âme et par tour.
+  for (const target of echoTargets) {
+    moves.push({ ...simpleMove(source, target, ECHO_STEP, [{ id: 'echo', value: ECHO_STEP }]), induced: true })
   }
   return moves
 }
@@ -568,6 +616,16 @@ export function bossMoveRules(effects: readonly BossEffect[]): MoveRules {
   if (chain !== null) r.chainTurns = chain
   return r
 }
+
+/** Face Écho (forge.md n°16) : la case rendue à l'âme d'un dé Âme inutilisé. */
+export const ECHO_STEP = 1
+
+/**
+ * Face Bras de fer (forge.md n°17) : écart maximal, en colonnes, sur lequel l'échange porte.
+ * Au-delà, la face ne fait rien — sans ce plafond elle téléporterait une âme de queue jusqu'au
+ * meneur, ce qui n'est plus un bras de fer mais un tour de magie.
+ */
+export const ARM_WRESTLE_REACH = 3
 
 /** Distance réelle de la face Bond : jusqu'à l'âme suivante, sinon la valeur de la face. */
 function leapDistance(state: RaceState, soul: SoulId, fallback: number): number {
@@ -675,8 +733,12 @@ export function applyMove(state: RaceState, move: Move, rules: MoveRules = {}): 
   let links = state.links
   let chained = state.chained
   let grudges = state.grudges
+  let tarred = state.tarred
+  let rams = state.rams
   const souls = state.souls.map((s) => ({ ...s }))
   const follow: Move[] = []
+  /** Mentions ajoutées par la résolution elle-même (faces qui lisent le plateau), pour le journal. */
+  const extraNotes: MoveNote[] = []
   // Personnalité de l'âme qui bouge : elle change le choix de la case (Le Résolu) et ce que
   // sa collision fait aux autres (L'Ogre).
   const personality = personalityOf(rules.personalities, move.soul)
@@ -687,7 +749,22 @@ export function applyMove(state: RaceState, move: Move, rules: MoveRules = {}): 
     grudges = { ...grudges, [id]: (grudges[id] ?? 0) + 1 }
   }
 
-  if (distance < 0 && from === 0) {
+  // Face Bras de fer : la face ne déplace pas, elle prend la place de l'âme devant. Hors de
+  // portée, personne devant, ou cible déjà arrivée (principe non négociable n°8 : aucun objet
+  // ne fait franchir l'arrivée) : la face ne fait rien.
+  const wrestled = move.effects.includes('armWrestle') && !move.induced ? soulAheadOf(souls, mover.id) : null
+  const wrestleTarget = wrestled && wrestled.position - from <= ARM_WRESTLE_REACH && wrestled.position < track.columns ? wrestled : null
+
+  if (wrestleTarget) {
+    const other = at(souls, wrestleTarget.id, 'âme')
+    grudge(other.id)
+    to = other.position
+    toLane = other.lane
+    collision = { kind: 'swap', with: other.id, otherFrom: other.position, otherTo: from }
+    other.position = from
+    other.lane = fromLane
+    extraNotes.push({ id: 'armWrestle', value: to - from })
+  } else if (distance < 0 && from === 0) {
     blockedAtStart = true
   } else if (distance > 0) {
     to = Math.min(maxCell, from + distance)
@@ -699,6 +776,31 @@ export function applyMove(state: RaceState, move: Move, rules: MoveRules = {}): 
       toLane = choice.lane
       detour = choice.detour
       if (!choice.occupant || to >= maxCell) break
+      // Face Revers : au lieu de sauter devant, l'âme s'arrête sur la première case libre
+      // DERRIÈRE l'âme heurtée. Rien de libre avant sa propre case : le déplacement est annulé.
+      // Elle passe avant le Bât de chameau : il n'y a pas de saut, la fusion n'est pas consommée.
+      if (move.effects.includes('reverse') && !move.induced) {
+        let back = to - 1
+        let landed = false
+        while (back > from) {
+          const behindChoice = chooseCell(track, souls, back, fromLane, mover.id, rules.frozenLanes, throughBlocked)
+          if (!behindChoice.occupant) {
+            to = back
+            toLane = behindChoice.lane
+            detour = behindChoice.detour
+            landed = true
+            break
+          }
+          back -= 1
+        }
+        if (!landed) {
+          to = from
+          toLane = fromLane
+          detour = null
+        }
+        extraNotes.push({ id: 'reverse', value: to - from })
+        break
+      }
       // Bât de chameau : la première percussion de la course fusionne au lieu de faire sauter.
       // L'âme percutée reste devant, la percutante se range juste derrière.
       if (rules.bat && fusion === null && !move.induced) {
@@ -714,8 +816,12 @@ export function applyMove(state: RaceState, move: Move, rules: MoveRules = {}): 
     }
     if (over.length > 0) {
       collision = { kind: 'jump', over }
-      // Dépassée, chaque âme percutée nourrit sa rancune — c'est le Martyr qui la garde.
-      for (const id of over) grudge(id)
+      // Dépassée, chaque âme percutée nourrit sa rancune — c'est le Martyr qui la garde — et
+      // avance d'un cran son compteur de percussions, que lit le pari « percutée deux fois ».
+      for (const id of over) {
+        grudge(id)
+        rams = { ...rams, [id]: (rams[id] ?? 0) + 1 }
+      }
       if (!move.induced) {
         // L'Ogre : ce qu'il dépasse, il l'écrase. L'âme percutée recule après le saut.
         if (personality === 'ogre') {
@@ -764,6 +870,9 @@ export function applyMove(state: RaceState, move: Move, rules: MoveRules = {}): 
   }
 
   const crossedFinish = from < track.columns && to >= track.columns
+  // Pari « aucun recul » : une seule âme reculant d'une seule colonne le fait perdre, que le
+  // recul vienne du joueur, de l'adversaire, d'un piège ou d'un échange de place.
+  const backward = state.backward || to < from || (collision?.kind === 'swap' && collision.otherTo < collision.otherFrom)
   const moved = at(souls, mover.id, 'âme')
   moved.position = to
   moved.lane = toLane
@@ -827,13 +936,19 @@ export function applyMove(state: RaceState, move: Move, rules: MoveRules = {}): 
       if (cell.kind === 'gold' && rules.bettedSouls?.has(move.soul)) coins += cell.value
       if (cell.kind === 'trap') follow.push({ ...simpleMove('artefact', move.soul, -cell.value, [{ id: 'trap', value: cell.value }]), induced: true })
       if (cell.kind === 'boost') follow.push({ ...simpleMove('artefact', move.soul, cell.value, [{ id: 'boost', value: cell.value }]), induced: true })
+      // Borne de goudron : l'âme s'englue. Ses propres déplacements induits tombent avec le
+      // reste — le goudron arrête tout, y compris le piège ou le tremplin d'à côté.
+      if (cell.kind === 'tar' && !tarred.includes(move.soul)) tarred = [...tarred, move.soul]
     }
   }
+  // Goudron : aucun déplacement induit ne touche une âme engluée, d'où qu'il vienne.
+  const notTarred = tarred.length === 0 ? follow : follow.filter((m) => !tarred.includes(m.soul))
 
+  const told = extraNotes.length === 0 ? move : { ...move, notes: [...move.notes, ...extraNotes] }
   return {
-    state: { ...state, souls, nextFinishOrder, frozen: state.frozen, links, fusion, chained, grudges },
-    result: { move, from, to, fromLane, toLane, detour, blockedAtStart, collision, crossedFinish, frozen: false },
-    follow,
+    state: { ...state, souls, nextFinishOrder, frozen: state.frozen, links, fusion, chained, grudges, tarred, rams, backward },
+    result: { move: told, from, to, fromLane, toLane, detour, blockedAtStart, collision, crossedFinish, frozen: false },
+    follow: notTarred,
     coins,
   }
 }
@@ -861,7 +976,51 @@ export function endTurn(state: RaceState, effects: readonly BossEffect[] = []): 
   // d'arrivée on n'y touche pas — le classement est déjà joué.
   const gust = bossValue(effects, 'backdraft')
   const souls = !finished && gust ? state.souls.map((so) => ({ ...so, position: Math.max(0, so.position - gust) })) : state.souls
-  return { ...state, souls, finished, turn, frozen: [], links: [], chained: state.chained.filter((c) => c.untilTurn >= turn) }
+  return { ...state, souls, finished, turn, frozen: [], links: [], tarred: [], chained: state.chained.filter((c) => c.untilTurn >= turn) }
+}
+
+/**
+ * Roue d'Ixion (artefacts.md n°42) : l'âme qui vient de franchir l'arrivée repart de la case
+ * de départ et, pour le moteur, n'a jamais fini — `finishOrder` redevient null et le numéro
+ * d'arrivée est rendu au suivant, sinon le classement compterait une place fantôme.
+ *
+ * La case de départ accepte plusieurs âmes (`createRace` les y empile), il n'y a donc ni
+ * collision ni choix de case à faire. L'âme rejoint `barred` : le guichet ne rouvre pas pour
+ * elle, même si le recul rouvre les paris pour les autres.
+ */
+export function sendToStart(state: RaceState, soul: SoulId): RaceState {
+  const target = state.souls.find((s) => s.id === soul)
+  if (!target) return state
+  const souls = state.souls.map((s) => (s.id === soul ? { ...s, position: 0, lane: s.id % state.track.lanes, finishOrder: null } : s))
+  const nextFinishOrder = target.finishOrder === null ? state.nextFinishOrder : Math.max(1, state.nextFinishOrder - 1)
+  return { ...state, souls, nextFinishOrder, barred: state.barred.includes(soul) ? state.barred : [...state.barred, soul] }
+}
+
+/**
+ * Crochet de Charon (artefacts.md n°41) : distance à appliquer pour ramener une âme de la zone
+ * de fin à la dernière colonne AVANT le seuil de pari — donc de nouveau pariable. Zéro si
+ * l'âme n'est pas en zone de fin : l'appelant n'a rien à faire.
+ */
+export function hookDistance(state: RaceState, soul: SoulId): number {
+  const target = state.souls.find((s) => s.id === soul)
+  if (!target || !isInBetZone(state.track, target.position)) return 0
+  return Math.max(1, state.track.betThresholdColumn - 1) - target.position
+}
+
+/**
+ * Bornes du stagiaire (artefacts.md n°33) : une case spéciale de plus sur la piste, posée avant
+ * la course. Même règle de position que la tribune — hors départ, hors zone de fin, case non
+ * bloquée — et une seule borne par case, tribune et cases du terrain comprises : deux effets
+ * sur la même case ne se liraient pas. Renvoie l'état inchangé si la case ne convient pas.
+ */
+export function placeMarker(state: RaceState, column: number, lane: number, kind: SpecialCellKind, value: number, max: number): RaceState {
+  if (state.markers >= max) return state
+  if (column <= 0 || column >= state.track.betThresholdColumn) return state
+  if (lane < 0 || lane >= state.track.lanes || isBlocked(state.track, column, lane)) return state
+  if (specialAt(state.track, column, lane)) return state
+  if (state.tribune && state.tribune.column === column && state.tribune.lane === lane) return state
+  const specials = [...state.track.specials, { column, lane, kind, value }]
+  return { ...state, track: { ...state.track, specials }, markers: state.markers + 1 }
 }
 
 /**

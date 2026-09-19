@@ -18,6 +18,10 @@ const EFFECT_ICON: Record<NonNullable<Face['effect']>, string> = {
   explosive: '✸',
   magnet: '⊃',
   freeze: '❄',
+  reverse: '↩',
+  armWrestle: '⇄',
+  echo: '⁂',
+  fusion: '⋈',
 }
 
 export function FaceChip({ face, dim }: { face: Face; dim?: boolean }) {

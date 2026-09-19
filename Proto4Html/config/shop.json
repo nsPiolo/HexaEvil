@@ -502,7 +502,7 @@
       "price": 115,
       "impact": "fort",
       "name": "Dé de Fraude",
-      "description": "Remplace un dé Distance par un dé 1, 2, 3, ? — la face ? prend la valeur de la meilleure autre face Distance du lancer.",
+      "description": "Remplace un dé Distance par un dé 1, 2, 3, ? : la face ? prend la valeur de la meilleure autre face Distance du lancer.",
       "faces": [
         1,
         2,
@@ -609,7 +609,7 @@
       "impact": "moyen",
       "minRank": 1,
       "name": "Masque du Martyr",
-      "description": "Marque une âme pour tout le run. Ses avancées perdent une case (jamais moins de 1), mais chaque fois qu'on la percute ou qu'on l'échange elle garde rancune — et tout lui revient d'un bloc en entrant en zone de fin."
+      "description": "Marque une âme pour tout le run. Ses avancées perdent une case (jamais moins de 1), mais chaque fois qu'on la percute ou qu'on l'échange elle garde rancune, et tout lui revient d'un bloc en entrant en zone de fin."
     },
     {
       "kind": "personality",
@@ -632,7 +632,7 @@
       "minRank": 2,
       "warning": "il triche aussi contre vous : un dé Âme sur quatre qui le désigne part ailleurs",
       "name": "Masque du Tricheur",
-      "description": "Marque une âme pour tout le run. Une fois sur quatre, le dé Âme qui la désigne est relancé — le vôtre comme celui de l'adversaire."
+      "description": "Marque une âme pour tout le run. Une fois sur quatre, le dé Âme qui la désigne est relancé, le vôtre comme celui de l'adversaire."
     },
     {
       "kind": "personality",
@@ -722,6 +722,190 @@
       "minRank": 1,
       "name": "Masque brisé",
       "description": "Retire sa personnalité à une âme marquée : elle redevient une damnée comme les autres, jusqu'à ce qu'on la marque de nouveau."
+    },
+{
+      "kind": "forge",
+      "id": "revers",
+      "rarity": "common",
+      "price": 40,
+      "impact": "moyen",
+      "target": 2,
+      "name": "Face de revers",
+      "description": "+2. Si l'âme percute, elle ne saute pas devant : elle s'arrête sur la première case libre derrière l'âme heurtée. Rien de libre avant sa propre case : elle ne bouge pas."
+    },
+{
+      "kind": "forge",
+      "id": "echo",
+      "rarity": "rare",
+      "price": 55,
+      "impact": "fort",
+      "target": 1,
+      "name": "Face d’écho",
+      "description": "+1, et l'âme du premier dé Âme inutilisé avance de 1 elle aussi. Sans dé Âme inutilisé, la face vaut +2."
+    },
+{
+      "kind": "forge",
+      "id": "brasDeFer",
+      "rarity": "rare",
+      "price": 50,
+      "impact": "fort",
+      "target": -1,
+      "params": {
+        "reach": 3
+      },
+      "name": "Face de bras de fer",
+      "description": "L'âme n'avance pas : elle échange sa place avec l'âme devant elle, jusqu'à 3 colonnes d'écart. Personne devant, trop loin, ou déjà arrivée : rien ne se passe."
+    },
+{
+      "kind": "forge",
+      "id": "fusion",
+      "rarity": "common",
+      "price": 45,
+      "impact": "moyen",
+      "target": 1,
+      "name": "Face de fusion",
+      "description": "+1. Une fois les deux dés Distance associés, vous pouvez fondre les deux combinaisons en une seule : la somme des distances, sur l'une des deux âmes."
+    },
+{
+      "kind": "die",
+      "id": "damne",
+      "rarity": "rare",
+      "price": 95,
+      "impact": "fort",
+      "faces": [
+        2,
+        3,
+        4,
+        5
+      ],
+      "params": {
+        "opponentPairs": 1
+      },
+      "warning": "l'adversaire lance une paire de plus à chaque tour de la course",
+      "name": "Dé du Damné",
+      "description": "Faces 2, 3, 4, 5 : aucune face négative ni nulle, la plus forte espérance du catalogue. En échange, l'adversaire lance une paire de plus à chaque tour."
+    },
+{
+      "kind": "artefact",
+      "id": "raccourci",
+      "rarity": "rare",
+      "price": 80,
+      "impact": "fort",
+      "params": {
+        "columns": -1
+      },
+      "name": "Raccourci de Malebolge",
+      "description": "Le parcours de chaque course est raccourci d'une colonne, seuil de pari recalculé. Ne se cumule pas avec la Chaîne des Limbes."
+    },
+{
+      "kind": "artefact",
+      "id": "chaineDesLimbes",
+      "rarity": "common",
+      "price": 70,
+      "impact": "moyen",
+      "params": {
+        "columns": 1
+      },
+      "name": "Chaîne des Limbes",
+      "description": "Le parcours de chaque course est rallongé d'une colonne, seuil de pari recalculé. Ne se cumule pas avec le Raccourci de Malebolge."
+    },
+{
+      "kind": "artefact",
+      "id": "coteMontante",
+      "rarity": "common",
+      "price": 50,
+      "impact": "moyen",
+      "params": {
+        "during": 0.5,
+        "before": 0.5
+      },
+      "name": "Cote montante",
+      "description": "Vos paris posés en course paient +0,5 au multiplicateur, ceux posés avant le premier lancer −0,5, jamais sous ×1. Ne se cumule pas avec le Ticket de la première heure."
+    },
+{
+      "kind": "artefact",
+      "id": "sommeilDuContremaitre",
+      "rarity": "rare",
+      "price": 80,
+      "impact": "fort",
+      "params": {
+        "everyRolls": 10
+      },
+      "name": "Sommeil du contremaître",
+      "description": "Un compteur suit vos lancers pour tout le run : tous les 10 lancers, l'adversaire saute son tour. Il ne se remet jamais à zéro."
+    },
+{
+      "kind": "artefact",
+      "id": "bouleDeCocyte",
+      "rarity": "rare",
+      "price": 75,
+      "impact": "fort",
+      "name": "Boule de Cocyte",
+      "description": "Une fois par course, après avoir vu vos cinq dés et avant de les associer, relancez-les tous. Le second résultat est gardé."
+    },
+{
+      "kind": "artefact",
+      "id": "crochetDeCharon",
+      "rarity": "rare",
+      "price": 85,
+      "impact": "fort",
+      "warning": "une âme ramenée sous le seuil peut de nouveau être pariée par vous comme contre vous",
+      "name": "Crochet de Charon",
+      "description": "Une fois par course, une âme en zone de fin recule jusqu'à la dernière colonne avant le seuil de pari. Elle redevient pariable."
+    },
+{
+      "kind": "artefact",
+      "id": "roueDIxion",
+      "rarity": "rare",
+      "price": 110,
+      "impact": "extreme",
+      "warning": "l'âme renvoyée au départ reste impariable : le guichet ne rouvre pas pour elle",
+      "name": "Roue d'Ixion",
+      "description": "Une fois par cercle : la première âme à franchir l'arrivée, si aucun de vos paris ne porte sur elle, repart de la case départ et la course continue."
+    },
+{
+      "kind": "artefact",
+      "id": "echoDuStyx",
+      "rarity": "rare",
+      "price": 85,
+      "impact": "fort",
+      "name": "Écho du Styx",
+      "description": "Une fois par course, marquez une combinaison avant de résoudre : elle est rejouée à l'identique juste après s'être résolue."
+    },
+{
+      "kind": "artefact",
+      "id": "bornes",
+      "rarity": "rare",
+      "price": 70,
+      "impact": "fort",
+      "params": {
+        "count": 2,
+        "pit": 2,
+        "springboard": 2
+      },
+      "name": "Bornes du stagiaire",
+      "description": "Avant chaque course, posez deux bornes sur des cases libres : Fosse (−2), Tremplin (+2) ou Goudron (l'âme perd ses déplacements induits jusqu'à la fin du tour)."
+    },
+{
+      "kind": "artefact",
+      "id": "sceauDuStagiaire",
+      "rarity": "common",
+      "price": 55,
+      "impact": "moyen",
+      "params": {
+        "discount": 0.3
+      },
+      "name": "Sceau du stagiaire",
+      "description": "Les masques coûtent 30 % de moins, et le premier masque brisé de chaque cercle est offert."
+    },
+{
+      "kind": "artefact",
+      "id": "registreExotique",
+      "rarity": "common",
+      "price": 55,
+      "impact": "moyen",
+      "name": "Registre des paris exotiques",
+      "description": "Ajoute deux guichets pour tout le run : « cette âme sera percutée au moins deux fois » et « aucune âme ne reculera de la course »."
     }
   ]
 }

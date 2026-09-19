@@ -4,9 +4,9 @@ import type { PersonalityId } from '../rules/personalities'
 /**
  * Artefacts implémentés, numérotés comme dans docs/proto4/artefacts.md. Un id ne peut entrer
  * dans `config/shop.json` que s'il figure ici : le chargeur refuse un objet sans code derrière.
- * Manque encore le Sceau du stagiaire (n°25), qui ouvre un emplacement de personnalité de plus
- * — le proto n'en compte pas, une âme porte une personnalité et rien ne limite le nombre d'âmes
- * marquées — et les objets qui demandent des dés Âme modélisés.
+ * Manquent encore les objets qui demandent des dés Âme modélisés (n°11 à 14 de forge.md, n°8 à
+ * 10 de des.md) et le Dé de Minos, qui demande une fenêtre de jeu après la révélation de la
+ * paire adverse.
  */
 export const ARTEFACT_IDS = [
   // Dés et combinaisons
@@ -21,12 +21,20 @@ export const ARTEFACT_IDS = [
   // Information et tour adverse
   'oeilDeCharon', 'fouetDuContremaitre', 'miroirDeNarcisse',
   // Boutique
-  'marteauHephaistos', 'rabaisDePloutos',
+  'marteauHephaistos', 'rabaisDePloutos', 'sceauDuStagiaire',
+  // Plateau (artefacts.md n°33 à 35, 41, 42) : ils touchent le circuit lui-même (GDD §7).
+  'bornes', 'raccourci', 'chaineDesLimbes', 'crochetDeCharon', 'roueDIxion',
+  // Vague 2 : dés, tour adverse et paris (artefacts.md n°36 à 40).
+  'bouleDeCocyte', 'echoDuStyx', 'sommeilDuContremaitre', 'registreExotique', 'coteMontante',
 ] as const
 export type ArtefactId = (typeof ARTEFACT_IDS)[number]
 
 /** Altérations de forge implémentées, numérotées comme dans docs/proto4/forge.md. */
-export const FORGE_IDS = ['limee', 'retournee', 'doree', 'explosive', 'bond', 'miroir', 'feuFollet', 'elan', 'gel', 'aimant', 'sceau'] as const
+export const FORGE_IDS = [
+  'limee', 'retournee', 'doree', 'explosive', 'bond', 'miroir', 'feuFollet', 'elan', 'gel', 'aimant', 'sceau',
+  // Vague 2 (forge.md n°15 à 18), recyclée du catalogue de cartes abandonné.
+  'revers', 'echo', 'brasDeFer', 'fusion',
+] as const
 export type ForgeId = (typeof FORGE_IDS)[number]
 
 export type Rarity = 'common' | 'rare' | 'legendary'
@@ -155,6 +163,26 @@ export function sortByRisk<T extends Pick<ShopItem, 'impact' | 'warning'>>(items
     .map((it, i) => ({ it, i }))
     .sort((a, b) => RISK_ORDER[riskOf(a.it)] - RISK_ORDER[riskOf(b.it)] || IMPACTS.indexOf(a.it.impact) - IMPACTS.indexOf(b.it.impact) || a.i - b.i)
     .map((x) => x.it)
+}
+
+/**
+ * Artefacts qui s'annulent exactement et qu'on ne peut donc pas posséder ensemble
+ * (artefacts.md § Combinaisons à surveiller). Les posséder tous les deux ne serait pas un
+ * choix coûteux mais un emplacement perdu : la boutique refuse l'achat plutôt que de laisser
+ * le joueur payer pour rien.
+ */
+export const EXCLUSIVE_ARTEFACTS: readonly (readonly [ArtefactId, ArtefactId])[] = [
+  ['raccourci', 'chaineDesLimbes'],
+  ['coteMontante', 'ticketPremiereHeure'],
+]
+
+/** L'artefact déjà possédé qui interdit l'achat de `id`, ou null. */
+export function exclusiveWith(id: string, owned: readonly ArtefactId[]): ArtefactId | null {
+  for (const [a, b] of EXCLUSIVE_ARTEFACTS) {
+    if (id === a && owned.includes(b)) return b
+    if (id === b && owned.includes(a)) return a
+  }
+  return null
 }
 
 export function isArtefactId(id: string): id is ArtefactId {

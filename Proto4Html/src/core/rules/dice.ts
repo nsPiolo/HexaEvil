@@ -9,14 +9,28 @@ import type { RaceConfig } from '../config/schema'
  * qui décident où chaque effet est câblé :
  *
  * - **au lancer** (`rollPlayerDice`) : `mirror` copie l'autre dé, `willOWisp` relance le dé ;
- * - **à l'association** (`useRace`) : `gold` verse des pièces, `momentum` propose une relance ;
- * - **à la résolution** (`applyMove`) : `betSeal`, `leap`, `explosive`, `magnet`, `freeze`
- *   dépendent du plateau ou des paris et ne se réduisent pas à une valeur.
+ * - **à l'association** (`buildMoves`) : `gold` verse des pièces, `momentum` propose une relance,
+ *   `echo` rejoue sa distance sur l'âme d'un dé Âme inutilisé ;
+ * - **à la résolution** (`applyMove`) : `betSeal`, `leap`, `explosive`, `magnet`, `freeze`,
+ *   `reverse`, `armWrestle` dépendent du plateau ou des paris et ne se réduisent pas à une valeur.
  */
-export type FaceEffect = 'gold' | 'betSeal' | 'mirror' | 'willOWisp' | 'momentum' | 'leap' | 'explosive' | 'magnet' | 'freeze'
+export type FaceEffect =
+  | 'gold'
+  | 'betSeal'
+  | 'mirror'
+  | 'willOWisp'
+  | 'momentum'
+  | 'leap'
+  | 'explosive'
+  | 'magnet'
+  | 'freeze'
+  | 'reverse'
+  | 'armWrestle'
+  | 'echo'
+  | 'fusion'
 
 /** Effets qui se résolvent contre le plateau, dans `applyMove` : leur valeur de face ne suffit pas. */
-export const BOARD_EFFECTS: readonly FaceEffect[] = ['leap', 'explosive', 'magnet', 'freeze']
+export const BOARD_EFFECTS: readonly FaceEffect[] = ['leap', 'explosive', 'magnet', 'freeze', 'reverse', 'armWrestle']
 
 export interface Face {
   value: number

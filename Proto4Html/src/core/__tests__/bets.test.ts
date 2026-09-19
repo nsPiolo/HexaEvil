@@ -112,7 +112,17 @@ describe('déblocage des paris par niveau du stagiaire', () => {
     expect(betUnlocked('fullRankingExact', 4, unlock)).toBe(true)
     expect(betUnlocked('podiumExact', 2, unlock)).toBe(false)
     expect(betUnlocked('podiumExact', 3, unlock)).toBe(true)
-    expect(unlockedBetTypes(99, unlock)).toHaveLength(BET_TYPES.length)
+    // Les guichets exotiques ne s'ouvrent pas au grade : il faut le Registre (artefacts.md n°39).
+    expect(unlockedBetTypes(99, unlock)).toHaveLength(BET_TYPES.length - 2)
+    expect(unlockedBetTypes(99, unlock, ['registreExotique'])).toHaveLength(BET_TYPES.length)
+  })
+  it('n’ouvre les guichets exotiques qu’avec le Registre des paris exotiques', () => {
+    expect(betUnlocked('rammedTwice', 99, unlock)).toBe(false)
+    expect(betUnlocked('noBackward', 99, unlock)).toBe(false)
+    expect(betUnlocked('rammedTwice', 0, unlock, ['registreExotique'])).toBe(true)
+    expect(betUnlocked('noBackward', 0, unlock, ['registreExotique'])).toBe(true)
+    // Un autre artefact n'ouvre rien : c'est bien le registre que le guichet demande.
+    expect(betUnlocked('rammedTwice', 99, unlock, ['boursePercee'])).toBe(false)
   })
   it('la plus grosse cote accessible croît avec le niveau, le ×80 en dernier', () => {
     const maxAt = (level: number): number => Math.max(...unlockedBetTypes(level, unlock).map((t) => cfg.economy.multipliers[t.id]))

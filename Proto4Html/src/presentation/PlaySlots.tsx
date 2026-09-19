@@ -1,7 +1,7 @@
 import { useEffect, useState, type DragEvent } from 'react'
 import { config } from '../core/config'
 import { bettingClosed } from '../core/rules/bets'
-import { isPairingComplete, type Combination, type MoveResult, type RaceState } from '../core/rules/race'
+import { isInBetZone, isPairingComplete, type Combination, type MoveResult, type RaceState } from '../core/rules/race'
 import { opponentRolls, type Phase, type RaceUi } from './useRace'
 import { dieTilt, distDieStyle, fmtDistance, hasDistArt, soulColor, soulDieStyle } from './souls'
 import { FaceChip } from './Inventory'
@@ -81,6 +81,14 @@ interface PlayerProps {
   onMomentum?: (i: number) => void
   /** Verrou de Minos : garder ce dé sur sa face pour le prochain lancer (null = lever le verrou). */
   onLock?: (i: number | null) => void
+  /** Boule de Cocyte : relancer les cinq dés, une fois par course. Absent si le joueur ne l'a pas. */
+  onOrb?: () => void
+  /** Face de fusion : verser la distance de la face sur l'âme de ce dé Âme déjà associé. */
+  onFuse?: (soulDie: number) => void
+  /** Crochet de Charon : ramener une âme de la zone de fin sous le seuil, une fois par course. */
+  onHook?: (soul: number) => void
+  /** Écho du Styx : marquer la combinaison de cette âme pour qu'elle soit rejouée. */
+  onStyx?: (soul: number) => void
   onReset: () => void
   onResolve: () => void
   /** Glisser-déposer : dé Âme déposé sur un dé Distance. */
@@ -126,7 +134,7 @@ export function cardsOf(roll: RaceUi['roll'], combinations: readonly Combination
 }
 
 /** Emplacement du bas : les dés du joueur, l'association et les boutons d'action. */
-export function PlayerSlot({ ui, speed, preview, highlightSoul, onHoverSoul, onStart, onRoll, onPickSoul, onPickDistance, onFiole, onMomentum, onLock, onReset, onResolve, onPairDice, onRemoveCombinations, onSetCombinations }: PlayerProps) {
+export function PlayerSlot({ ui, speed, preview, highlightSoul, onHoverSoul, onStart, onRoll, onPickSoul, onPickDistance, onFiole, onMomentum, onLock, onOrb, onFuse, onHook, onStyx, onReset, onResolve, onPairDice, onRemoveCombinations, onSetCombinations }: PlayerProps) {
   const { phase, roll, race, combinations, selectedSoulDie, resolvingIndex } = ui
   const pairing = phase === 'pairing'
   const rolling = phase === 'rolling'
@@ -139,6 +147,12 @@ export function PlayerSlot({ ui, speed, preview, highlightSoul, onHoverSoul, onS
   const soulCount = roll?.soul.length ?? config.dice.soulDice
   const distCount = roll?.distance.length ?? ui.inventory.dice.length
   const unused = soulCount - distCount
+  // Face de fusion : proposable seulement quand elle est associée et qu'il reste une autre
+  // combinaison à absorber — sinon le bouton parlerait d'un geste impossible.
+  const fusionPaired = roll !== null && combinations.some((c) => roll.faces[c.distanceDie]?.effect === 'fusion')
+  const canFuse = pairing && fusionPaired && combinations.length > 1
+  // Crochet de Charon : les âmes déjà en zone de fin, les seules qu'il peut rappeler.
+  const hookable = onHook && !ui.hookUsed ? race.souls.filter((so) => isInBetZone(race.track, so.position)) : []
 
   // Bouton qui pulse (spec 05/C5) : appariement complet et aucune interaction pendant idlePulseMs.
   const [pulse, setPulse] = useState(false)
@@ -254,9 +268,8 @@ export function PlayerSlot({ ui, speed, preview, highlightSoul, onHoverSoul, onS
                 if (phase === 'resolving' && resolvingIndex !== null && combinations[resolvingIndex]?.soulDie === i) cls.push('die-resolving')
                 if (id !== undefined && highlightSoul === id && !rolling) cls.push('die-hot')
                 const hover = (on: boolean): void => onHoverSoul(on && id !== undefined && !rolling ? id : null)
-                return (
+                const button = (
                   <button
-                    key={i}
                     type="button"
                     className={cls.join(' ')}
                     data-testid={`die-soul-${i}`}
@@ -275,6 +288,25 @@ export function PlayerSlot({ ui, speed, preview, highlightSoul, onHoverSoul, onS
                     {rolling || id === undefined ? '?' : soulName(race, id)}
                     {order >= 0 && <span className="die-order">{order + 1}</span>}
                   </button>
+                )
+                // Face de fusion : le bouton se pose sous le dé Âme qui ACCUEILLE la distance,
+                // c'est-à-dire un dé déjà associé à une autre combinaison que celle de la face.
+                const fusable =
+                  canFuse &&
+                  onFuse !== undefined &&
+                  order >= 0 &&
+                  combinations.some((c) => c.soulDie === i && roll?.faces[c.distanceDie]?.effect !== 'fusion')
+                return (
+                  <span key={i} className="die-wrap">
+                    {button}
+                    {fusable && (
+                      <span className="die-tools">
+                        <button type="button" className="die-tool" onClick={() => onFuse(i)} title={RACE.fuseTitle}>
+                          {RACE.fuse}
+                        </button>
+                      </span>
+                    )}
+                  </span>
                 )
               })}
             </div>
@@ -397,6 +429,20 @@ export function PlayerSlot({ ui, speed, preview, highlightSoul, onHoverSoul, onS
                         <button type="button" className="combo-btn" disabled={i === cards.length - 1} onClick={() => reorder(i, i + 1)} aria-label={RACE.moveDown} title={RACE.moveDown}>
                           →
                         </button>
+                        {/* Écho du Styx : la carte marquée sera rejouée juste après s'être résolue. */}
+                        {onStyx && !ui.styxUsed && id !== undefined && (
+                          <button
+                            type="button"
+                            className={'combo-btn' + (ui.styxSoul === id ? ' combo-btn-on' : '')}
+                            data-testid={`styx-${i}`}
+                            aria-pressed={ui.styxSoul === id}
+                            onClick={() => onStyx(id)}
+                            aria-label={RACE.styxTitle}
+                            title={RACE.styxTitle}
+                          >
+                            {RACE.styx}
+                          </button>
+                        )}
                         <button type="button" className="combo-btn combo-btn-x" onClick={() => onRemoveCombinations(card.indices)} aria-label={RACE.remove} title={RACE.removeTitle}>
                           ×
                         </button>
@@ -426,7 +472,24 @@ export function PlayerSlot({ ui, speed, preview, highlightSoul, onHoverSoul, onS
           <>
             <button type="button" className={'btn btn-primary' + (pulse ? ' btn-pulse' : '')} data-state={pulse ? 'pulse' : 'idle'} disabled={!complete} onClick={onResolve}>{UI.play.resolve}</button>
             <button type="button" className="btn" disabled={combinations.length === 0} onClick={onReset}>{UI.play.reset}</button>
+            {/* Boule de Cocyte : tout relancer, une fois par course, avant d'associer quoi que ce soit. */}
+            {onOrb && !ui.cocytusUsed && (
+              <button type="button" className="btn" data-testid="orb" disabled={combinations.length > 0} onClick={onOrb} title={combinations.length > 0 ? RACE.orbPairedTitle : RACE.orbTitle}>
+                {RACE.orb}
+              </button>
+            )}
           </>
+        )}
+        {/* Crochet de Charon : une âme de la zone de fin par bouton, une seule sera rappelée. */}
+        {onHook && hookable.length > 0 && (phase === 'idle' || pairing) && (
+          <span className="hook-tools" aria-label={RACE.hookTitle}>
+            <span className="hook-label">{RACE.hook}</span>
+            {hookable.map((so) => (
+              <button key={so.id} type="button" className="btn btn-small" data-testid={`hook-${so.id}`} onClick={() => onHook(so.id)} title={RACE.hookTitle} style={{ color: soulColor(so.id) }}>
+                {so.name}
+              </button>
+            ))}
+          </span>
         )}
       </div>
     </section>

@@ -41,7 +41,7 @@ information, tour adverse, boutique, plateau.
 | 21 | Œil de Charon ✔ | information | R | Fort | 95 |
 | 22 | Fouet du contremaître ✔ | tour adverse | R | Fort | 90 |
 | 23 | Miroir de Narcisse ✔ | tour adverse | L | Extrême | 180 |
-| 25 | Sceau du stagiaire | boutique | C | Moyen | 55 |
+| 25 | Sceau du stagiaire ✔ | boutique | C | Moyen | 55 |
 | 26 | Marteau d'Héphaïstos ✔ | boutique / forge | C | Moyen | 50 |
 | 27 | Œil du parieur ✔ | paris / information | R | Fort | 80 |
 | 28 | Pourboire du stagiaire ✔ | argent | C | Faible | 35 |
@@ -49,30 +49,37 @@ information, tour adverse, boutique, plateau.
 | 30 | Rabais de Ploutos ✔ | boutique | C | Faible | 30 |
 | 31 | Baume du perdant ✔ | paris / argent | C | Moyen | 50 |
 | 32 | Tirelire du stagiaire ✔ | argent | C | Moyen | 45 |
-| 33 | Bornes du stagiaire | plateau | R | Fort | 70 |
-| 34 | Raccourci de Malebolge | plateau | R | Fort | 80 |
-| 35 | Chaîne des Limbes | plateau | C | Moyen | 70 |
-| 36 | Boule de Cocyte | dés | R | Fort | 75 |
-| 37 | Écho du Styx | dés | R | Fort | 85 |
-| 38 | Sommeil du contremaître | tour adverse | R | Fort | 80 |
-| 39 | Registre des paris exotiques | paris | C | Moyen | 55 |
-| 40 | Cote montante | paris | C | Moyen | 50 |
-| 41 | Crochet de Charon ⚠ | plateau / paris | R | Fort | 85 |
-| 42 | Roue d'Ixion ⚠ | plateau / paris | R | Extrême | 110 |
+| 33 | Bornes du stagiaire ✔ | plateau | R | Fort | 70 |
+| 34 | Raccourci de Malebolge ✔ | plateau | R | Fort | 80 |
+| 35 | Chaîne des Limbes ✔ | plateau | C | Moyen | 70 |
+| 36 | Boule de Cocyte ✔ | dés | R | Fort | 75 |
+| 37 | Écho du Styx ✔ | dés | R | Fort | 85 |
+| 38 | Sommeil du contremaître ✔ | tour adverse | R | Fort | 80 |
+| 39 | Registre des paris exotiques ✔ | paris | C | Moyen | 55 |
+| 40 | Cote montante ✔ | paris | C | Moyen | 50 |
+| 41 | Crochet de Charon ⚠ ✔ | plateau / paris | R | Fort | 85 |
+| 42 | Roue d'Ixion ⚠ ✔ | plateau / paris | R | Extrême | 110 |
 
 Le n° 24 (Filet du pêcheur) est retiré, voir [Retirés](#retirés). Les numéros
 restent stables pour que les autres documents puissent y renvoyer.
 
-**État du proto** : 30 des 31 artefacts d'origine sont implémentés. Seul le
-**n° 25 (Sceau du stagiaire)** ne l'est pas : il porte sur le prix et le retrait
-des **personnalités**, système qui n'existe pas encore dans `Proto4Html`. Il
-entrera avec elles. Le n° 32 (Tirelire du stagiaire) a été fiché après coup : il
-était déjà en boutique sans figurer ici.
+**État du proto** : les 41 artefacts sont implémentés. Le **n° 25 (Sceau du
+stagiaire)** est entré avec les **personnalités** : il remise les masques et offre
+le premier masque brisé de chaque cercle. Le n° 32 (Tirelire du stagiaire) a été
+fiché après coup : il était déjà en boutique sans figurer ici.
 
-Les artefacts **33 à 42** sont une vague nouvelle, non implémentée. Ils recyclent
-les idées du catalogue de cartes abandonné ([`cartes.md`](cartes.md)) sous forme
-de passifs permanents ou de charges par course, et attendent la fin du chantier
-des **archétypes d'âmes**. Chaque fiche indique ce qu'elle demande au moteur.
+Les artefacts **33 à 42** sont la vague 2, recyclée du catalogue de cartes
+abandonné ([`cartes.md`](cartes.md)). Ce qu'ils ont ajouté au moteur : la longueur
+de piste (`RaceOptions.columns`), les bornes (`placeMarker` et la case `tar`), le
+renvoi au départ (`sendToStart` et `RaceState.barred`), le rappel
+(`hookDistance`), les statistiques de course (`RaceState.rams` et `backward`) et
+deux guichets exotiques (`BET_TYPE_ARTEFACT`). Leurs règles sont éprouvées dans
+`src/core/__tests__/vague2.test.ts`, leurs vignettes sont peintes et posées, y
+compris le marqueur de case du **Goudron** (`public/table/cases/tar.webp`, source
+`docs/proto4/raw/cases/tar.png`). Comme il est posé par un artefact et non par un
+terrain de cercle, aucun terrain ne l'emploie : il a donc son propre test dans
+`cellArt.test.ts`, qui vérifie aussi qu'il est déclaré dans `hasCellArt`
+(presentation/art.ts) — une image posée sans y être déclarée resterait invisible.
 
 ## Fiches
 
@@ -202,8 +209,17 @@ des comptes : le Baume s'applique à ce qui reste après le remboursement.*
 
 **39. Registre des paris exotiques — 55, C.** Ajoute deux types de paris à la
 table de mise, pour tout le run : « l'âme X sera percutée au moins deux fois »
-(×3) et « aucune âme ne reculera de la course » (×4). Les deux ne se posent
-qu'avant la course. *Recyclé de la carte 53. Le seul artefact qui **élargit** le
+(×3) et « aucune âme ne reculera de la course » (×4).
+
+C'est le seul verrou de pari qui ne soit pas un **grade** : le palier **Exotiques**
+n'existe qu'une fois le Registre acheté (`BET_TYPE_ARTEFACT`, `rules/bets.ts`).
+Un palier fermé par le grade reste affiché, désactivé, parce qu'il s'ouvrira tout
+seul en jouant (01/C3) ; celui-ci est **masqué** tant qu'on ne possède pas l'objet,
+et prend la largeur entière de la grille quand il apparaît — sans quoi il ouvrirait
+une quatrième case sur une ligne de trois. C'est la carte de boutique du Registre
+qui annonce ce qu'il ouvre. L'objet lui-même suit la méta-progression ordinaire :
+scellé au départ, descellé par un cercle payé (`shop/unlocks.ts`), puis tiré en
+vitrine comme n'importe quel commun. *Recyclé de la carte 53. Le seul artefact qui **élargit** le
 catalogue de paris au lieu d'en modifier les cotes : il fait parier sur la manière
 dont la course se déroule, pas sur son classement. Synergie évidente avec la
 Bourse percée ; anti-synergie avec les faces Explosive et Revers, qui fabriquent
@@ -335,8 +351,10 @@ directe avec le n° 34** : les deux s'annulent, il faut interdire de posséder l
 deux.*
 
 **41. Crochet de Charon ⚠ — 85, R.** Une fois par course, une âme en zone de fin
-recule jusqu'à la colonne du **seuil de pari** (échange de place si la colonne est
-pleine). Elle **redevient pariable**. *Recyclé de la carte 26 (Rappel). Il frotte
+recule jusqu'à la **dernière colonne avant le seuil de pari** (échange de place si
+la colonne est pleine). Elle **redevient pariable** — c'est bien la colonne avant
+le seuil, et non le seuil lui-même : posée dessus, l'âme serait encore en zone de
+fin et le guichet resterait clos, ce qui viderait l'artefact de son effet. *Recyclé de la carte 26 (Rappel). Il frotte
 contre le principe non négociable n° 4 (pas de pari au-delà de 60 %) : l'esprit
 est respecté puisque l'âme n'est plus au-delà du seuil, mais c'est le point à
 surveiller au POC. Le prix doit rester élevé et la charge unique par course.*

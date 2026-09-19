@@ -17,8 +17,11 @@ export interface BlockedCell {
  * - `boost` : elle avance de `value` cases ;
  * - `gold` : elle vous rapporte `value` pièces, **à condition d'avoir un pari ouvert sur cette
  *   âme** : la case paie le parieur, pas le spectateur.
+ * - `tar` : l'âme qui s'y arrête perd ses déplacements induits jusqu'à la fin du tour
+ *   (Parasite, Jumeaux, Aimant, Bât, Boussole, Écho). Posée par les Bornes du stagiaire, pas
+ *   par un terrain de cercle.
  */
-export type SpecialCellKind = 'trap' | 'boost' | 'gold'
+export type SpecialCellKind = 'trap' | 'boost' | 'gold' | 'tar'
 
 export interface SpecialCell {
   column: number

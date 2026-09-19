@@ -14,3 +14,16 @@ export function LockBadge({ level }: { level: number }) {
 export function lockTitle(level: number): string {
   return fill(BETS.locked, { rank: rankOfLevel(level).name })
 }
+
+/**
+ * Second motif : « verrouillé tant qu'on ne possède pas cet objet ». Les guichets exotiques
+ * (artefacts.md n°39) ne s'ouvrent pas au grade mais à l'achat du Registre des paris
+ * exotiques — leur dire « dès Stagiaire », le grade de départ, ne voudrait rien dire.
+ */
+export function ItemLockBadge({ name }: { name: string }) {
+  return <span className="lock-badge">🔒 {fill(BETS.lockedItemBadge, { name })}</span>
+}
+
+export function itemLockTitle(name: string): string {
+  return fill(BETS.lockedItem, { name })
+}

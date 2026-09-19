@@ -43,6 +43,15 @@ export function personalityName(id: PersonalityId): string {
   return PERSONALITIES[id].name
 }
 
+/**
+ * Le masque de boutique qui pose une personnalité donnée : sa vignette est le portrait de
+ * cette personnalité, et sert donc à l'illustrer partout ailleurs, révélation comprise.
+ * Null si aucun masque ne la pose (la personnalité existe mais ne se vend pas).
+ */
+export function maskIdOf(id: PersonalityId): string | null {
+  return shop.items.find((i) => i.kind === 'personality' && i.personality === id)?.id ?? null
+}
+
 /** La règle d'une personnalité, en une phrase : ce que le joueur lit au survol d'un jeton marqué. */
 export function personalityEffect(id: PersonalityId): string {
   return PERSONALITIES[id].effect

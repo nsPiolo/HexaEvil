@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { config, shop } from '../core/config'
 import { circleAt } from '../core/rules/circles'
+import type { SpecialCellKind } from '../core/config/schema'
 import { stakesAtCircle } from '../core/rules/stakes'
 import { circleArt } from './art'
 import { betType, bettingClosed, slotCount } from '../core/rules/bets'
 import { ranking } from '../core/rules/race'
 import { BetPanel, EMPTY_DRAFT, toggleDraftSoul, type BetDraft } from './BetPanel'
-import { demonRankAtRace } from './demon'
 import { Board } from './Board'
 import { HelpPanel } from './HelpPanel'
 import { Inventory } from './Inventory'
@@ -15,7 +15,7 @@ import { Ranking } from './Ranking'
 import { ShopPanel } from './ShopPanel'
 import { OpponentSlot, PhaseStrip, PlayerSlot } from './PlaySlots'
 import { HELP, HUD, ITEMS, RACE, UI, fill, ordinalOf } from './texts'
-import { betBase, bettedSouls as bettedSoulsOf, bossPowerText, canBetNow, circleOf, has, itemName, previewNext, stakedOpen, useRace, type RaceUi, type SessionCarry } from './useRace'
+import { MARKER_KINDS, betBase, bettedSouls as bettedSoulsOf, bossPowerText, canBetNow, circleOf, freeCharges, has, itemName, markerCount, previewNext, rollsBeforeSleep, stakedOpen, useRace, type RaceUi, type SessionCarry } from './useRace'
 
 interface Props {
   carry: SessionCarry
@@ -63,7 +63,12 @@ export function GameScreen({ carry, unlocked, speed, onFinished, onMenu }: Props
   /** Refus du dernier objet déclenché à la main (Fiole, Élan, Verrou, Pièce, Tribune). */
   const [itemError, setItemError] = useState<string | null>(null)
   /** Tribune infernale : la pose est ouverte tant qu'elle n'a pas eu lieu, en préparation. */
+  const MARKER_NAME: Readonly<Record<string, string>> = { trap: ITEMS.pit, boost: ITEMS.springboard, tar: ITEMS.tar }
   const placingTribune = ui.phase === 'prep' && has(ui.inventory, 'tribuneInfernale') && !ui.tribunePlaced
+  // Bornes du stagiaire : deux poses avant la course, chacune d'un type choisi ici.
+  const [markerKind, setMarkerKind] = useState<SpecialCellKind>('trap')
+  const markersLeft = markerCount(ui.inventory) - ui.race.markers
+  const placingMarkers = ui.phase === 'prep' && has(ui.inventory, 'bornes') && markersLeft > 0
   /** Pièce à deux faces : jetable une fois, après le premier lancer, sur des paris ouverts. */
   const canDouble = ui.phase === 'pairing' && ui.race.turn === 1 && has(ui.inventory, 'pieceADeuxFaces') && !ui.doubledStakes && ui.bets.some((b) => b.status === 'open')
   const [resultsOpen, setResultsOpen] = useState(false)
@@ -78,7 +83,6 @@ export function GameScreen({ carry, unlocked, speed, onFinished, onMenu }: Props
   // Le pouvoir du boss ne s'applique qu'à sa course : il est annoncé sur la carte, il est rappelé ici tant qu'elle dure.
   const bossPower = isBoss ? bossPowerText(circle) : null
   const ordinal = ordinalOf(circle)
-  const rank = demonRankAtRace(carry.raceIndex)
   const price = circleCfg.price
   const staked = stakedOpen(ui.bets)
   const racesLeft = config.run.racesPerCircle - raceInCircle
@@ -220,6 +224,10 @@ export function GameScreen({ carry, unlocked, speed, onFinished, onMenu }: Props
   const draftSlots = slotCount(betType(draft.type), ui.race.souls.length)
   const selection = betsShown && betOpen ? { souls: draft.souls, max: draftSlots, onToggle: (id: number) => setDraft((d) => toggleDraftSoul(d, id, draftSlots)) } : null
 
+  // Sommeil du contremaître : lancers restants avant que l'adversaire ne saute son tour. 0 = ce
+  // tour-ci. Null quand l'artefact n'est pas dans la besace : rien ne s'affiche.
+  const sleepIn = ui.opponentAsleep ? 0 : rollsBeforeSleep(ui.inventory, ui.rolls)
+  const raceLabel = isBoss ? fill(HUD.bossRace, { n: raceInCircle, total: config.run.racesPerCircle }) : fill(HUD.race, { n: HUD.raceOrdinals[raceInCircle - 1] ?? raceInCircle, total: config.run.racesPerCircle })
   const tabBets = staked > 0 && betOpen ? fill(HUD.tabBetsStaked, { n: ui.bets.length, staked }) : fill(HUD.tabBets, { n: ui.bets.length })
 
   return (
@@ -228,10 +236,20 @@ export function GameScreen({ carry, unlocked, speed, onFinished, onMenu }: Props
       <header className="topbar-game" data-testid="hud-row">
         <div className="hud hud-left" data-testid="hud-left">
           <span className="hud-big">{fill(HUD.circle, { ordinal })}</span>
-          <span>{isBoss ? fill(HUD.bossRace, { n: raceInCircle, total: config.run.racesPerCircle }) : fill(HUD.race, { n: HUD.raceOrdinals[raceInCircle - 1] ?? raceInCircle, total: config.run.racesPerCircle })}</span>
-          <span className="muted small">{fill(HUD.demon, { rank: rank.name })}</span>
-          {/* Le terrain change d'une course à l'autre dans un même cercle : il est nommé ici, comme le coach. */}
-          <span className="muted small">{fill(HUD.terrain, { name: ui.terrain.name })}</span>
+          {/* Où l'on en est dans le cercle : un rond par course, rempli jusqu'à celle en cours, la
+              dernière étant celle du boss. Le texte reste en libellé accessible et en infobulle. */}
+          <ol className="circle-dots" data-testid="circle-dots" aria-label={raceLabel} title={raceLabel}>
+            {Array.from({ length: config.run.racesPerCircle }, (_, i) => (
+              <li key={i} className={'circle-dot' + (i < raceInCircle - 1 ? ' circle-dot-done' : '') + (i === raceInCircle - 1 ? ' circle-dot-current' : '') + (i === config.run.racesPerCircle - 1 ? ' circle-dot-boss' : '')} aria-hidden="true" />
+            ))}
+          </ol>
+          {/* Sommeil du contremaître : sans compteur visible, le tour sauté arrive comme un
+              accident. Avec lui, le joueur peut décider d'en garder un pour le bon moment. */}
+          {sleepIn !== null && (
+            <span className="muted small" data-testid="foreman-counter" title={UI.artefacts.sleepTitle}>
+              {sleepIn === 0 ? UI.artefacts.sleepNow : fill(UI.artefacts.sleepIn, { n: sleepIn })}
+            </span>
+          )}
         </div>
         <ol className="steps" aria-label={UI.game.steps} data-testid="steps">
           {HUD.steps.map((label, i) => (
@@ -291,7 +309,7 @@ export function GameScreen({ carry, unlocked, speed, onFinished, onMenu }: Props
                 staked={staked}
                 raceIndex={ui.raceIndex}
                 inventory={ui.inventory}
-                forgeFree={!ui.forgeFreeUsed}
+                free={freeCharges(ui)}
                 level={level}
                 onSell={actions.sell}
                 onDecap={actions.decap}
@@ -325,11 +343,31 @@ export function GameScreen({ carry, unlocked, speed, onFinished, onMenu }: Props
             personalities={ui.inventory.personalities}
             tieColumns={tieColumns}
             {...(placingTribune ? { onPlaceTribune: (c: number, l: number) => setItemError(actions.putTribune(c, l)) } : {})}
+            {...(placingMarkers && !placingTribune ? { onPlaceMarker: (c: number, l: number) => setItemError(actions.putMarker(c, l, markerKind)) } : {})}
           />
-          {/* Bandeau des objets à déclencher soi-même : pose de la tribune, pièce à deux faces, refus. */}
-          {(placingTribune || canDouble || itemError) && (
+          {/* Bandeau des objets à déclencher soi-même : pose de la tribune, des bornes, pièce à deux faces, refus. */}
+          {(placingTribune || placingMarkers || canDouble || itemError) && (
             <p className="item-bar" aria-live="polite">
               {placingTribune && <span className="item-hint">{ITEMS.tribuneHint}</span>}
+              {/* Bornes du stagiaire : on choisit le type puis la case. La tribune passe d'abord,
+                  pour qu'une seule pose soit ouverte à la fois et qu'un clic ne soit pas ambigu. */}
+              {placingMarkers && !placingTribune && (
+                <>
+                  <span className="item-hint">{fill(ITEMS.markerHint, { n: markersLeft })}</span>
+                  {MARKER_KINDS.map((kind) => (
+                    <button
+                      key={kind}
+                      type="button"
+                      className={'btn btn-artefact' + (markerKind === kind ? ' btn-artefact-on' : '')}
+                      data-testid={`marker-kind-${kind}`}
+                      aria-pressed={markerKind === kind}
+                      onClick={() => setMarkerKind(kind)}
+                    >
+                      {MARKER_NAME[kind]}
+                    </button>
+                  ))}
+                </>
+              )}
               {canDouble && (
                 <button type="button" className="btn btn-artefact" onClick={() => setItemError(actions.doubleStakes())}>
                   {fill(ITEMS.double, { stake: stakedOpen(ui.bets) })}
@@ -373,6 +411,7 @@ export function GameScreen({ carry, unlocked, speed, onFinished, onMenu }: Props
                 open={betOpen}
                 phase={ui.phase}
                 level={level}
+                owned={ui.inventory.artefacts}
                 roll={ui.roll}
                 lateBet={ui.inventory.artefacts.includes('lateBet') ? { charges: ui.lateBetCharges, active: ui.lateBetOpen } : null}
                 onUseLateBet={actions.useLateBet}
@@ -402,6 +441,10 @@ export function GameScreen({ carry, unlocked, speed, onFinished, onMenu }: Props
               {...(has(ui.inventory, 'fioleDeSang') ? { onFiole: (i: number) => setItemError(actions.useFiole(i)) } : {})}
               {...(ui.inventory.dice.some((d) => d.faces.some((f) => f.effect === 'momentum')) ? { onMomentum: (i: number) => setItemError(actions.useMomentum(i)) } : {})}
               {...(has(ui.inventory, 'verrouDeMinos') ? { onLock: (i: number | null) => setItemError(actions.lockDie(i)) } : {})}
+              {...(has(ui.inventory, 'bouleDeCocyte') ? { onOrb: () => setItemError(actions.useCocytus()) } : {})}
+              {...(ui.inventory.dice.some((d) => d.faces.some((f) => f.effect === 'fusion')) ? { onFuse: (i: number) => setItemError(actions.fuseCombination(i)) } : {})}
+              {...(has(ui.inventory, 'crochetDeCharon') ? { onHook: (id: number) => setItemError(actions.useHook(id)) } : {})}
+              {...(has(ui.inventory, 'echoDuStyx') ? { onStyx: (id: number) => setItemError(actions.markStyx(id)) } : {})}
               onReset={actions.resetPairing}
               onResolve={() => void actions.resolve()}
               onPairDice={actions.pairDice}

@@ -2,7 +2,7 @@ import { isBlocked, isInBetZone, specialAt, type MoveResult, type RaceState } fr
 import { personalityOf, type Personalities } from '../core/rules/personalities'
 import { PersonalityMark } from './PersonalityMark'
 import { personalityEffect, personalityName } from './messages'
-import { blockedArt, cellArt } from './art'
+import { blockedArt, cellArt, hasCellArt } from './art'
 import { fmtDistance, soulColor } from './souls'
 import { bettingClosed } from '../core/rules/bets'
 import { BETS, BET_LIVE, BOARD, GLOSSARY, RACE, UI, fill, plural } from './texts'
@@ -34,6 +34,8 @@ interface Props {
   tieColumns?: readonly number[]
   /** Tribune infernale : pose en cours ; chaque case permise devient cliquable. */
   onPlaceTribune?: (column: number, lane: number) => void
+  /** Bornes du stagiaire : pose d'une borne sur cette case (même fenêtre que la tribune). */
+  onPlaceMarker?: (column: number, lane: number) => void
 }
 
 /** Écart vertical entre deux jetons empilés sur la même case, en pixels ; taille d'un jeton. */
@@ -57,7 +59,7 @@ export function consequenceGlyphs(r: MoveResult): { glyph: string; title: string
  * EN BAS, au plus près du joueur. Les cases bloquées sont hachurées. Les âmes qui partagent
  * une case (départ, dernière case) s'empilent visuellement.
  */
-export function Board({ race, lastResult, activeSoul, highlightSoul = null, onHoverSoul, preview = null, selection = null, bettedSouls, personalities, tieColumns = [], onPlaceTribune }: Props) {
+export function Board({ race, lastResult, activeSoul, highlightSoul = null, onHoverSoul, preview = null, selection = null, bettedSouls, personalities, tieColumns = [], onPlaceTribune, onPlaceMarker }: Props) {
   const closed = bettingClosed(race)
   const { track } = race
   const cols = Array.from({ length: track.totalCells }, (_, i) => i)
@@ -146,15 +148,22 @@ export function Board({ race, lastResult, activeSoul, highlightSoul = null, onHo
               {/* Case spéciale (GDD §2.2) : elle n'agit que sur l'âme qui s'y arrête. */}
               {(() => {
                 const sp = specialAt(track, c, lane)
-                return sp ? (
+                if (!sp) return null
+                // Un type de case pas encore peint se lit à son signe : mieux vaut un glyphe
+                // net qu'une image cassée (voir `hasCellArt`).
+                return (
                   <span className={`cell-special cell-${sp.kind}`}>
-                    <img src={cellArt(sp.kind)} alt="" />
+                    {hasCellArt(sp.kind) ? <img src={cellArt(sp.kind)} alt="" /> : <span aria-hidden="true">{BOARD.specialMark[sp.kind]}</span>}
                   </span>
-                ) : null
+                )
               })()}
               {/* Pose de la tribune : seules les cases permises sont cliquables. */}
               {onPlaceTribune && c > 0 && c < track.betThresholdColumn && !isBlocked(track, c, lane) && (
                 <button type="button" className="cell-tribune" onClick={() => onPlaceTribune(c, lane)} aria-label={fill(BOARD.tribunePlace, { column: c })} title={fill(BOARD.tribunePlace, { column: c })} />
+              )}
+              {/* Pose d'une borne : mêmes cases permises que la tribune, et pas deux effets sur une même case. */}
+              {onPlaceMarker && c > 0 && c < track.betThresholdColumn && !isBlocked(track, c, lane) && !specialAt(track, c, lane) && !(race.tribune?.column === c && race.tribune.lane === lane) && (
+                <button type="button" className="cell-tribune" data-testid={`place-marker-${c}-${lane}`} onClick={() => onPlaceMarker(c, lane)} aria-label={fill(BOARD.markerPlace, { column: c })} title={fill(BOARD.markerPlace, { column: c })} />
               )}
               {/* Au survol : ce que la case fait. Elle sort vers le haut, sauf sur la ligne du
                   haut où elle sortirait du plateau — `.board` défile en x, donc il coupe en y. */}

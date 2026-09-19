@@ -43,19 +43,22 @@ cible recommandée, avec un supplément si l'on choisit une autre face.
 | 12 | Face vide (dé Âme) | une âme | choix | Fort | 60 |
 | 13 | Face double (dé Âme) | une âme | cumul | Moyen | 40 |
 | 14 | Face du meneur (dé Âme) | une âme | position | Fort | 65 |
-| 15 | Revers | 2 | collision | Moyen | 40 |
-| 16 | Écho | 1 | dés / position | Fort | 55 |
-| 17 | Bras de fer | -1 | position | Fort | 50 |
-| 18 | Fusion | 1 | dés | Moyen | 45 |
+| 15 | Revers ✔ | 2 | collision | Moyen | 40 |
+| 16 | Écho ✔ | 1 | dés / position | Fort | 55 |
+| 17 | Bras de fer ✔ | -1 | position | Fort | 50 |
+| 18 | Fusion ✔ | 1 | dés | Moyen | 45 |
 | 19 | Face du suiveur (dé Âme) | une âme | position | Faible | 35 |
 | 20 | Face grégaire (dé Âme) | une âme | cumul | Moyen | 40 |
 
-**État du proto** : les onze faces de **dé Distance** (n° 1 à 11) sont
-implémentées. Les faces de **dé Âme** (n° 12 à 14, 19, 20) attendent la
-modélisation des dés Âme, voir [`des.md`](des.md). Les faces **15 à 18** sont
-nouvelles et non implémentées : elles recyclent des idées du catalogue de cartes
-abandonné (voir [`cartes.md`](cartes.md)) et attendent la fin du chantier des
-archétypes d'âmes.
+**État du proto** : les quinze faces de **dé Distance** (n° 1 à 11 et 15 à 18)
+sont implémentées. Les faces de **dé Âme** (n° 12 à 14, 19, 20) attendent la
+modélisation des dés Âme, voir [`des.md`](des.md).
+
+Où vit chaque face de la vague 2 : **Revers** et **Bras de fer** lisent le plateau
+(`BOARD_EFFECTS`, `applyMove`), l'**Écho** se résout à l'association
+(`buildMoves`), la **Fusion** à l'appariement (`fuseCombination`, `useRace`).
+Leurs règles sont éprouvées dans `src/core/__tests__/vague2.test.ts`, leurs
+vignettes sont peintes et posées.
 
 Chaque effet se résout à l'un de trois moments, ce qui décide où il vit dans le
 code (`FaceEffect`, `src/core/rules/dice.ts`) : **au lancer** (Miroir, Feu

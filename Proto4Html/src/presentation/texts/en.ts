@@ -409,7 +409,7 @@ const HUD = {
   tabBetsStaked: 'Bets ({n}) · {staked} ¤ staked',
   tabShop: 'Shop · {n} item{s}',
   tabShopClosed: 'Shop',
-  tabResults: 'Winnings — review the standings and the tally',
+  tabResults: 'Winnings: review the standings and the tally',
   tabShortcut: 'Keyboard shortcut: {key}',
   circle: '{ordinal} Circle',
   race: '{n} race of {total}',
@@ -456,7 +456,7 @@ const MAP = {
   race: 'Race {n}',
   bossRace: 'Boss race',
   launch: 'Start the race',
-  circleOf: 'Circle {n} — {name}',
+  circleOf: 'Circle {n}: {name}',
 } as const
 
 const STATS = {
@@ -468,7 +468,7 @@ const STATS = {
   moneySpent: 'Money spent',
   races: 'Races played',
   bestBet: 'Best bet',
-  none: '—',
+  none: '·',
 } as const
 
 /**
@@ -503,8 +503,6 @@ const UNLOCK = {
  */
 const REVEAL = {
   title: 'A soul shows its hand',
-  intro: '{who} finished {rank} in that race. The intern leafs through its file, whistles through his teeth, and hands you the sheet.',
-  rankFirst: 'in the lead',
   lead: 'From now on, and for whatever is left of your escape:',
   kept: 'This personality stays on {who} until the end of the run. A mask from the shop can replace it, or strip it.',
   next: 'Continue',
@@ -533,6 +531,8 @@ const BETS = {
   emptySlot: 'Empty soul slot',
   locked: 'This bet opens when the intern makes {rank}.',
   lockedBadge: 'from {rank}',
+  lockedItemBadge: 'with {name}',
+  lockedItem: 'Counter opened by a shop item: {name}.',
   tierLocked: 'locked',
   gain: 'Potential return: +{net} ¤ (×{mult})',
   after: 'Balance after stake: {n} ¤',
@@ -542,7 +542,7 @@ const BETS = {
   pickOnBoard: 'Click to name this soul',
   unpickOnBoard: 'Click to take it off the ticket',
   placed: 'Bet placed: {type} · {souls} · {stake} ¤ → +{net} if it lands',
-  diceSeen: 'Dice rolled: {souls} — {dist}',
+  diceSeen: 'Dice rolled: {souls} · {dist}',
   trayLabel: 'Stake chips',
   chipHint: 'Drag this chip into the slot, or click it',
   chipChosen: 'Chip down: that’s the current stake',
@@ -583,7 +583,7 @@ const SHOP = {
   replaceArtefactWarning: 'The chosen artefact is destroyed, with no refund. To get coins back, sell it in the workshop first.',
   forgeLimit: 'A die carries no more than {n} forged faces. Strip one in the workshop to make room.',
   /** Workshop: undoing what you own (selling an artefact, stripping a face). */
-  workshop: 'Workshop — {n}/{slots} artefacts, sell or strip',
+  workshop: 'Workshop · {n}/{slots} artefacts, sell or strip',
   sell: 'Sell back {name} (+{back} ¤)',
   sellTitle: 'Sold back at 40 % of the circle price: {back} coins, and the slot frees up.',
   decapTitle: 'Strip this face: it goes back to its original value for {cost} coins.',
@@ -602,6 +602,11 @@ const SHOP = {
 const ITEMS = {
   tribuneHint: 'Infernal stand: pick a free space, outside the start and outside the finishing zone.',
   double: 'Two-headed coin: double {stake} ¤ of stakes',
+  /** Intern's markers: the three kinds you can place, and the placing hint. */
+  markerHint: 'Intern’s markers: pick a kind, then a free space. {n} left.',
+  pit: 'Pit',
+  springboard: 'Springboard',
+  tar: 'Tar',
 } as const
 
 const RACE = {
@@ -614,6 +619,15 @@ const RACE = {
   momentumTitle: 'Momentum: reroll this die and add the result, whatever it is.',
   lock: '⚿',
   lockTitle: 'Minos’s lock: keep this die on its face for the next roll.',
+  fuse: 'Melt here',
+  fuseTitle: 'Fusion face: pour the face’s distance onto this soul, as a single move.',
+  orb: 'Reroll all',
+  orbTitle: 'Cocytus Orb: roll all five dice again, once per race.',
+  orbPairedTitle: 'Unpair your dice first: the Orb is all or nothing.',
+  hook: 'Hook:',
+  styx: '⟲',
+  styxTitle: 'Echo of the Styx: replay this combination exactly, right after it.',
+  hookTitle: 'Charon’s Hook: pull this soul back below the betting threshold, once per race.',
   phases: ['prepare', 'roll', 'order', 'resolve', 'opponent'] as const,
   phasesLabel: 'Steps of the turn',
   queue: 'Queue of combinations',
@@ -647,22 +661,24 @@ const BET_LIVE = {
 /** Board. */
 const BOARD = {
   /** Special terrain spaces: they only act on the soul that stops there (GDD §2.2). */
-  specialMark: { gold: '¤', trap: '✷', boost: '▲' } as const,
+  specialMark: { gold: '¤', trap: '✷', boost: '▲', tar: '≈' } as const,
   special: {
     // `{s}` carries the plural (see `fill`): these sentences are now shown as they are in
     // the hover bubble, where “1 space(s)” would be visible.
     gold: 'Paying space: the soul that stops here earns you {n} coin{s}, provided you have a bet open on it.',
     trap: 'Trap: the soul that stops here moves back {n} space{s}.',
     boost: 'Springboard: the soul that stops here moves {n} extra space{s}.',
+    tar: 'Tar: the soul that stops here loses its induced moves until the end of the turn.',
   } as const,
   blockedTitle: 'Blocked space (column {column}, lane {lane}): no soul can stop there.',
   tribune: 'Infernal stand',
   tribuneTitle: 'Infernal stand: the soul that stops here pays you and leaves with a shove.',
   tribunePlace: 'Place the stand on space {column}',
+  markerPlace: 'Place a marker on space {column}',
   zoneClosed: 'betting closed',
   zoneClosedTitle: 'A soul has crossed the threshold: no more bets on this race.',
   tieColumn: 'Same column: the lowest lane goes first.',
-  personality: 'Personality — {name}: {effect}',
+  personality: 'Personality · {name}: {effect}',
 } as const
 
 /** End-of-race modal (spec 06). */
@@ -691,11 +707,11 @@ const GLOSSARY = {
 
 const HELP = {
   open: 'Help',
-  title: 'Help — Sinner’s Bet',
+  title: 'Help · Sinner’s Bet',
   navLabel: 'Help sections',
   close: 'Close',
   intro: [
-    'You are dead. Welcome. The demon intern handling your file is bored stiff, so he offers you a pact: bet on races of damned souls, win enough coins to pay your passage, and climb the nine circles of hell. **He coaches. You stake.** At the ninth, the door opens — and nothing obliges you to take it.',
+    'You are dead. Welcome. The demon intern handling your file is bored stiff, so he offers you a pact: bet on races of damned souls, win enough coins to pay your passage, and climb the nine circles of hell. **He coaches. You stake.** At the ninth, the door opens, and nothing obliges you to take it.',
     'This page answers three questions: *how is a race played?*, *how do you make money?*, *how do you get out of a circle?*',
     'Help can be read at any time: it **interrupts nothing** in the race under way.',
   ],
@@ -705,7 +721,7 @@ const HELP = {
       title: 'The goal',
       icon: '⛓️',
       blocks: [
-        { kind: 'p', text: 'Escape from hell. Every circle has an **exit price** (150 coins for the first, dearer and dearer after). You have **three races** per circle to gather the sum — the third is played against the circle boss.' },
+        { kind: 'p', text: 'Escape from hell. Every circle has an **exit price** (150 coins for the first, dearer and dearer after). You have **three races** per circle to gather the sum; the third is played against the circle boss.' },
         { kind: 'p', text: 'If you can pay at the end, you climb. If not… the intern has already chosen your eternal punishment.' },
         { kind: 'p', text: 'Losing a race is never the end: it’s an empty till at the end of the circle that condemns you.' },
       ],
@@ -715,12 +731,12 @@ const HELP = {
       title: 'A race, turn by turn',
       icon: '🎲',
       blocks: [
-        { kind: 'p', text: 'The damned souls run along a track of spaces. **You don’t control them** — you nudge them, discreetly. Each turn:' },
+        { kind: 'p', text: 'The damned souls run along a track of spaces. **You don’t control them**: you nudge them, discreetly. Each turn:' },
         {
           kind: 'ol',
           items: [
             '**Roll the dice.** Two **Distance** dice (−1, +1, +2, +3) and three **Soul** dice (each names a runner).',
-            '**Pair them.** Stick a Soul die onto a Distance die: that makes a combination, “Plato moves +2”. One Soul die will always be left out — you choose which.',
+            '**Pair them.** Stick a Soul die onto a Distance die: that makes a combination, “Plato moves +2”. One Soul die will always be left out: you choose which.',
             '**Order them.** The resolution order is YOUR decision, and that’s where it’s all decided: moving Plato before or after Virgil doesn’t tell the same race.',
             '**Resolve, then take it.** Your combinations apply one by one… then the opponent rolls his own pair of dice. He doesn’t ask your opinion.',
           ],
@@ -748,13 +764,13 @@ const HELP = {
       title: 'Lanes',
       icon: '🛤️',
       blocks: [
-        { kind: 'p', text: 'In the first circle the track has a single lane: every landing on a soul is a collision. After that, each soul added at the start earns the track another lane — up to six in the ninth circle. Three things to remember:' },
+        { kind: 'p', text: 'In the first circle the track has a single lane: every landing on a soul is a collision. After that, each soul added at the start earns the track another lane, up to six in the ninth circle. Three things to remember:' },
         {
           kind: 'ul',
           items: [
             '**Only the column counts.** Lanes are queues side by side; your position in the race is your column, not your lane. Changing lane moves you neither forwards nor backwards.',
-            '**You pull over when it’s taken.** A soul lands in its own lane if the space is free. Taken or **blocked** (rockfall, chains)? It pulls over to a free space in the same column — the **lowest** first. And only if the whole column is full does it come to a collision: jump in front when moving forwards, swap when moving backwards.',
-            '**The bottom is always right.** On equal columns at the end of the race, the soul in the lowest lane — the one nearest you — goes first. No dead heats in hell: the standings settle everything, lane included.',
+            '**You pull over when it’s taken.** A soul lands in its own lane if the space is free. Taken or **blocked** (rockfall, chains)? It pulls over to a free space in the same column, the **lowest** first. And only if the whole column is full does it come to a collision: jump in front when moving forwards, swap when moving backwards.',
+            '**The bottom is always right.** On equal columns at the end of the race, the soul in the lowest lane, the one nearest you, goes first. No dead heats in hell: the standings settle everything, lane included.',
           ],
         },
         { kind: 'p', text: 'Blocked spaces narrow the track and create jams: they are collision traps, spot them before you stake.' },
@@ -765,7 +781,7 @@ const HELP = {
       title: 'The finish',
       icon: '🏁',
       blocks: [
-        { kind: 'p', text: 'The moment a soul crosses the line, **the turn still finishes** — your remaining combinations and the opponent’s pair are played. The standings are only settled afterwards.' },
+        { kind: 'p', text: 'The moment a soul crosses the line, **the turn still finishes**: your remaining combinations and the opponent’s pair are played. The standings are only settled afterwards.' },
         { kind: 'p', text: 'A race can therefore turn on the line: *crossing first does not guarantee finishing first.*' },
       ],
     },
@@ -779,12 +795,12 @@ const HELP = {
         {
           kind: 'ul',
           items: [
-            '**Simple** — one soul on the ticket, readable and open from the start: winner (×{winner}), top 3 (×{top3}), outside the top 3 (×{notTop3}), last place (×{last}).',
-            '**Combined** — **two souls on the same ticket**: the duel “A finishes ahead of B” (×{duel}), two souls in the top 3 (×{twoInTop3}), the podium in any order (×{podiumAnyOrder}). The odds aren’t always bigger — what changes is that a duel is **read** where a winner is guessed.',
-            '**Big tickets** — the exact podium (×{podiumExact}) and the full standings (×{fullRankingExact}): enough to pay for a whole circle in one go, if you read the race like an open book. Between the two, “winner AND last” (×{winnerAndLast}) only asks you to watch both ends — almost nobody watches the bottom of the standings.',
+            '**Simple**: one soul on the ticket, readable and open from the start: winner (×{winner}), top 3 (×{top3}), outside the top 3 (×{notTop3}), last place (×{last}).',
+            '**Combined**, **two souls on the same ticket**: the duel “A finishes ahead of B” (×{duel}), two souls in the top 3 (×{twoInTop3}), the podium in any order (×{podiumAnyOrder}). The odds aren’t always bigger; what changes is that a duel is **read** where a winner is guessed.',
+            '**Big tickets**: the exact podium (×{podiumExact}) and the full standings (×{fullRankingExact}): enough to pay for a whole circle in one go, if you read the race like an open book. Between the two, “winner AND last” (×{winnerAndLast}) only asks you to watch both ends, and almost nobody watches the bottom of the standings.',
           ],
         },
-        { kind: 'p', text: 'Two things to know about the odds: they **melt** as the race goes on (betting late is betting safe, so betting small), and any ticket with **two souls or more** is **locked at the start** — the intern hasn’t the grade to settle them. Combined tickets open at his first grade, after two circles; the big ones much later.' },
+        { kind: 'p', text: 'Two things to know about the odds: they **melt** as the race goes on (betting late is betting safe, so betting small), and any ticket with **two souls or more** is **locked at the start**: the intern hasn’t the grade to settle them. Combined tickets open at his first grade, after two circles; the big ones much later.' },
       ],
     },
     {
@@ -801,16 +817,16 @@ const HELP = {
       title: 'The intern’s shop',
       icon: '🛒',
       blocks: [
-        { kind: 'p', text: 'Between the bets and the race, the intern opens his little till (once your first bet is down — he doesn’t serve the undecided):' },
+        { kind: 'p', text: 'Between the bets and the race, the intern opens his little till (once your first bet is down; he doesn’t serve the undecided):' },
         {
           kind: 'ul',
           items: [
-            '**special dice** that replace a Distance die — the cautious Limbo Die (1, 1, 2, 2), the Ice Die and its extremes (−1, −1, 2, 5)…;',
+            '**special dice** that replace a Distance die: the cautious Limbo Die (1, 1, 2, 2), the Ice Die and its extremes (−1, −1, 2, 5)…;',
             'the **forge**, to alter one face of a die, only one, but forever;',
-            '**artefacts**, permanent effects that bend the rules your way — the Bettor’s Eye to stake after seeing your dice, Charon’s Hourglass that pushes the betting threshold to 70 %…',
+            '**artefacts**, permanent effects that bend the rules your way: the Bettor’s Eye to stake after seeing your dice, Charon’s Hourglass that pushes the betting threshold to 70 %…',
           ],
         },
-        { kind: 'p', text: 'Every item states its colours: **SAFE**, **BOLD** or **DANGER** — and a dangerous item always says what it will cost you. In hell, at least, the contracts are clear.' },
+        { kind: 'p', text: 'Every item states its colours: **SAFE**, **BOLD** or **DANGER**, and a dangerous item always says what it will cost you. In hell, at least, the contracts are clear.' },
       ],
     },
     {
@@ -818,8 +834,8 @@ const HELP = {
       title: 'The souls’ personalities',
       icon: '🎭',
       blocks: [
-        { kind: 'p', text: 'From the **third circle** on, at the end of the first race, a soul shows its personality. It is not a draw: it is **the best placed of those that had none**. The personality itself is drawn at random — and it stays on that soul **until the end of your escape**.' },
-        { kind: 'p', text: 'A marked soul carries a sign on its token. Hover it: the rule is spelled out. It is visible **before the bets**, and that is the whole point — a personality is not triggered, it is read.' },
+        { kind: 'p', text: 'From the **third circle** on, at the end of the first race, a soul shows its personality. It is not a draw: it is **the best placed of those that had none**. The personality itself is drawn at random, and it stays on that soul **until the end of your escape**.' },
+        { kind: 'p', text: 'A marked soul carries a sign on its token. Hover it: the rule is spelled out. It is visible **before the bets**, and that is the whole point: a personality is not triggered, it is read.' },
         {
           kind: 'ul',
           items: [
@@ -837,8 +853,8 @@ const HELP = {
       title: 'The intern’s grades',
       icon: '👑',
       blocks: [
-        { kind: 'p', text: 'The more your runner — you — impresses, the higher the intern climbs the hierarchy: Assistant, Tormentor, Foreman, Deputy Director… Every promotion **opens new bets** and stocks the shop.' },
-        { kind: 'p', text: 'After the eighth circle he even lands a fine promotion. In the ninth — the circle of Treachery — guess who is working the counter opposite you.' },
+        { kind: 'p', text: 'The more your runner (you) impresses, the higher the intern climbs the hierarchy: Assistant, Tormentor, Foreman, Deputy Director… Every promotion **opens new bets** and stocks the shop.' },
+        { kind: 'p', text: 'After the eighth circle he even lands a fine promotion. In the ninth (the circle of Treachery), guess who is working the counter opposite you.' },
       ],
     },
     {
@@ -850,11 +866,11 @@ const HELP = {
           kind: 'ol',
           items: [
             '“Bet before you dream: one simple ticket paid beats one exact podium missed. Big tickets are for races you have prepared.”',
-            '“Ordering your combinations is free and it’s the strongest move in the game. Look at the preview before resolving — hell is deterministic, make the most of it.”',
+            '“Ordering your combinations is free and it’s the strongest move in the game. Look at the preview before resolving: hell is deterministic, make the most of it.”',
             '“Always keep enough to pay the circle. I like you well enough, but a pact is a pact.”',
           ],
         },
-        { kind: 'p', text: '*Good luck. You’ll need it — well, no: you’ll need to read carefully.*' },
+        { kind: 'p', text: '*Good luck. You’ll need it… well, no: you’ll need to read carefully.*' },
       ],
     },
   ] as const satisfies readonly HelpSection[],
@@ -894,7 +910,7 @@ const BOSS_EFFECTS: Readonly<Record<BossEffectId, string>> = {
   replayTurn: 'The finishing turn is resolved a second time, opponent included.',
 }
 
-const BET_TIERS: Readonly<Record<BetTier, string>> = { simple: 'Simple', intermediate: 'Combined', advanced: 'Advanced' }
+const BET_TIERS: Readonly<Record<BetTier, string>> = { simple: 'Simple', intermediate: 'Combined', advanced: 'Advanced', exotic: 'Exotic' }
 
 const BET_TYPE_TEXTS: Readonly<Record<BetTypeId, BetTypeText>> = {
   winner: { label: 'Outright winner', description: 'The soul finishes first.' },
@@ -907,6 +923,8 @@ const BET_TYPE_TEXTS: Readonly<Record<BetTypeId, BetTypeText>> = {
   podiumExact: { label: 'Exact podium', description: 'The first three places, in that exact order.', slots: ['1st', '2nd', '3rd'] },
   fullRankingExact: { label: 'Exact full standings', description: 'Every final position, in that exact order.' },
   winnerAndLast: { label: 'Winner + last', description: 'The first and the last soul, exactly.', slots: ['winner', 'last'] },
+  rammedTwice: { label: 'Rammed twice', description: 'This soul will be rammed at least twice during the race.', slots: ['the soul'] },
+  noBackward: { label: 'No setback', description: 'Not one soul will move back a single space in the whole race.', slots: [] },
 }
 
 const BET_REFUSALS: Readonly<Record<BetRefusal['kind'], string>> = {
@@ -915,6 +933,7 @@ const BET_REFUSALS: Readonly<Record<BetRefusal['kind'], string>> = {
   soulTwice: 'A soul can only be named once.',
   missingSouls: 'Name {needed} soul{s} ({given}/{needed}).',
   tooManySouls: 'Too many souls named.',
+  soulBarred: 'The window is shut for this soul: it has already crossed the line once.',
   unknownSoul: 'Unknown soul.',
   alreadyPlaced: 'That bet is already placed.',
   noStake: 'Choose a stake.',
@@ -934,7 +953,7 @@ const RARITIES: Readonly<Record<Rarity, string>> = { common: 'common', rare: 'ra
 const PURCHASE_LOG: Readonly<Record<PurchaseLog['kind'], string>> = {
   decap: 'Face stripped on {die} no. {n}: it is worth {value} again.',
   artefactSold: 'Artefact sold: {name}.',
-  artefactReplaced: '{name} replaces {replaced} — the old one is destroyed.',
+  artefactReplaced: '{name} replaces {replaced}: the old one is destroyed.',
   artefactBought: 'Artefact acquired: {name}.',
   dieAdded: '{name} joins the roll: {count} Distance dice.',
   dieReplaced: '{name} replaces {die} no. {n}.',
@@ -982,6 +1001,11 @@ const MOVE_NOTES: Readonly<Record<MoveNoteId, string>> = {
   grudge: 'Martyr’s grudges: +{value}',
   ogre: 'The Ogre shoves: −{value}',
   parasite: 'The Parasite follows: +{value}',
+  reverse: 'Backhand: stops behind',
+  armWrestle: 'Arm Wrestle: +{value} by swap',
+  echo: 'Echo: +{value}',
+  hook: 'Charon’s Hook',
+  styx: 'Echo of the Styx',
 }
 
 /**
@@ -1000,7 +1024,7 @@ const PERSONALITIES: Readonly<Record<PersonalityId, { name: string; effect: stri
   },
   tricheur: {
     name: 'The Cheat',
-    effect: 'One time in four, the Soul die that names it is rerolled — yours as well as your opponent’s.',
+    effect: 'One time in four, the Soul die that names it is rerolled, yours as well as your opponent’s.',
   },
   condamne: {
     name: 'The Condemned',
@@ -1036,7 +1060,7 @@ const PERSONALITIES: Readonly<Record<PersonalityId, { name: string; effect: stri
 const LOG = {
   label: 'Race log',
   title: 'Log',
-  raceHeader: 'Circle {circle}, race {n}/{total} — terrain “{terrain}”, {souls} souls, {columns} spaces, {lanes} lane{s}{blocked}, seed {seed}. Place your bets.',
+  raceHeader: 'Circle {circle}, race {n}/{total} · terrain “{terrain}”, {souls} souls, {columns} spaces, {lanes} lane{s}{blocked}, seed {seed}. Place your bets.',
   raceHeaderBlocked: ', {n} blocked space{s}',
   allowance: 'The intern advances you {n} coins for this race{bonus}.',
   allowanceBonus: ' ({n} of them thanks to the {item})',
@@ -1049,10 +1073,19 @@ const LOG = {
   lateBetOpen: 'Bettor’s Eye: you can bet after seeing your dice, up until resolution.',
   shopOpen: 'The shop opens: {n} items in the window.',
   rerolled: 'Window restocked for {cost} coins.',
+  ixion: 'Ixion’s Wheel: {who} crosses the line with no ticket on it: back to the start, the race carries on.',
+  orb: 'Cocytus Orb: everything rerolled, {dist} on {souls}.',
+  fusion: 'Fusion face: both distances go to {who}.',
+  styxOn: 'Echo of the Styx armed on {who}.',
+  styxOff: 'Echo of the Styx disarmed.',
+  styxEcho: 'Echo of the Styx: {who}’s combination will be replayed.',
+  markerPlaced: '{kind} placed on space {column}. {left} marker(s) left.',
+  foremanAsleep: 'Foreman’s Slumber: roll #{n} of the run, the opponent skips its turn.',
   thresholdMoved: 'Betting threshold at {pct} % from this race on.',
+  trackChanged: '{columns}-column track, betting threshold at {pct} %, from this race on.',
   sold: '{name} sold: +{back} coins.',
   purchase: '{text} ({cost} coins)',
-  purchaseFreeForge: '{text} — on the house, courtesy of Hephaestus’s Hammer.',
+  purchaseFreeForge: '{text} On the house, courtesy of Hephaestus’s Hammer.',
   holedPurse: 'Holed Purse: +{n} coins.',
   stand: 'Infernal Stand: +{n} coins.',
   standPlaced: 'Infernal Stand placed on space {column}.',
@@ -1062,7 +1095,7 @@ const LOG = {
   foresight: '{source}: {names}.',
   foresightAll: 'Foreman’s Whip',
   foresightFirst: 'Charon’s Eye',
-  roll: 'Roll: Distance {dist} — Souls {souls}.',
+  roll: 'Roll: Distance {dist} · Souls {souls}.',
   gildedFace: 'Gilded Face: +{n} coins.',
   tip: 'Intern’s Tip: +{n} coins.',
   vial: 'Vial of Blood: die no. {n} at {face} for {cost} coins.',
@@ -1100,14 +1133,14 @@ const UI = {
     rolled: 'The dice are rolled: betting resumes next turn.',
     resolving: 'Betting suspended during resolution.',
     shopNeedsBet: 'The shop only opens its till after a first bet',
-    raceNeedsBet: 'Start the race — place a bet first',
+    raceNeedsBet: 'Start the race: place a bet first',
     noBetYet: 'At least one opening bet is needed',
     diceRolled: 'The dice are rolled: no more betting before the next turn.',
     waitResolution: 'Wait for the resolution to finish.',
     windowClosed: 'Counter closed this turn: {type} is unavailable.',
     counterCut: 'This counter takes its cut: staking {stake} costs {cost} coins.',
     thresholdPassed: 'A soul has passed the {pct} % threshold: no more bets.',
-    pickMore: 'Name {n} more soul{s} — in the panel or by clicking the tokens on the board.',
+    pickMore: 'Name {n} more soul{s}: in the panel or by clicking the tokens on the board.',
     decayed: ' Odds have melted: race at {pct} %.',
   },
   ticket: {
@@ -1138,18 +1171,18 @@ const UI = {
     resolving: 'Resolving your combinations…',
     finished: 'Race over.',
     prepNoBet: 'Place at least one opening bet to open the shop and start the race.',
-    idle: 'Turn {n} — roll the dice.{lastCall}',
+    idle: 'Turn {n} · roll the dice.{lastCall}',
     idleLastCall: ' Last moment to bet this turn.',
     pairing: 'Drag (or click) a Soul die onto a Distance die. The order of the cards is the resolution order ({n}/{total}){unused}.',
-    unusedOne: ' — 1 Soul die will go unused',
-    unusedMany: ' — {n} Soul dice will go unused',
+    unusedOne: ' 1 Soul die will go unused.',
+    unusedMany: ' {n} Soul dice will go unused.',
     opponentTurn: 'The opponent’s turn…',
     placedCount: 'Bets placed ({n})',
   },
   game: { steps: 'Steps', auto: 'auto', autoTitle: 'Test mode: plays the turns by itself', activeArtefacts: 'Active artefacts', noArtefact: 'No artefacts. The shop stocks them between the bets and the race.' },
   inventory: { label: 'Inventory', distanceDice: 'Distance dice', baseDie: 'Base die' },
   ranking: { final: 'Final standings', tally: 'Bet tally', none: 'No bets on this race.' },
-  shop: { closed: 'The shop is closed.', notInWindow: 'Item not in the window.', notEnoughMoney: 'Not enough money.', alreadyOwned: 'Already owned.', noFaceLeft: 'No face left to forge.', nothingToStrip: 'No marked soul in this race.', sellFailed: 'Sale failed.', decapCost: 'Stripping costs {cost} coins.', pickDie: 'which die to replace?', pickFace: 'which face to forge?', alreadyForged: 'Already forged', slotsFull: 'Slots full', afterBets: 'Bets placed: what’s left is to spend… or to keep.', till: 'The intern works the till.' },
+  shop: { closed: 'The shop is closed.', notInWindow: 'Item not in the window.', notEnoughMoney: 'Not enough money.', alreadyOwned: 'Already owned.', noFaceLeft: 'No face left to forge.', nothingToStrip: 'No marked soul in this race.', exclusive: 'Cancels out {name}: the two cannot be owned together.', sellFailed: 'Sale failed.', decapCost: 'Stripping costs {cost} coins.', pickDie: 'which die to replace?', pickFace: 'which face to forge?', alreadyForged: 'Already forged', slotsFull: 'Slots full', afterBets: 'Bets placed: what’s left is to spend… or to keep.', till: 'The intern works the till.' },
   /** Refusals from an item the player triggers by hand, on the race screen. */
   artefacts: {
     notOwned: 'Artefact not owned.',
@@ -1168,6 +1201,26 @@ const UI = {
     doubleCost: 'It takes {cost} coins to double every stake.',
     noStand: 'You don’t own the Infernal Stand.',
     badCell: 'Impossible space: outside the start, outside the finishing zone, and free.',
+    noOrb: 'You do not have the Cocytus Orb.',
+    orbWhen: 'The full reroll is taken after the roll.',
+    orbUsed: 'The Cocytus Orb has already been used this race.',
+    orbPaired: 'Unpair your dice first: it is all or nothing.',
+    noHook: 'You do not have Charon’s Hook.',
+    hookWhen: 'The hook is thrown during your turn.',
+    hookUsed: 'Charon’s Hook has already been used this race.',
+    hookNotInZone: 'That soul is not in the finishing zone.',
+    noFusionFace: 'No fusion face paired.',
+    fusionWhen: 'Fusion is decided after the roll.',
+    fusionTarget: 'Pick a Soul die already paired with another combination.',
+    sleepTitle: 'Foreman’s Slumber: every 10 rolls of the run, the opponent skips its turn.',
+    sleepIn: 'Slumber in {n} roll(s)',
+    sleepNow: 'The opponent sleeps this turn',
+    noMarker: 'You do not have the Intern’s Markers.',
+    markerWhen: 'Markers are placed before the race.',
+    markerAllPlaced: 'All your markers are placed.',
+    noStyx: 'You do not have the Echo of the Styx.',
+    styxWhen: 'The echo is marked after the roll, before resolving.',
+    styxUsed: 'The Echo of the Styx has already been used this race.',
   },
   map: { crossed: 'Circle crossed.' },
   dialogue: { end: 'Finish' },

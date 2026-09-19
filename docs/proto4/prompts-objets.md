@@ -1,11 +1,12 @@
 # Objets achetables — images à générer (Gemini)
 
-Les cinquante-neuf objets de la boutique (`Proto4Html/config/shop.json`) : trente
-artefacts, sept dés, onze opérations de forge et onze masques de personnalité. Chacun
+Les soixante-quinze objets de la boutique (`Proto4Html/config/shop.json`) : quarante et un
+artefacts, huit dés, quinze opérations de forge et onze masques de personnalité. Chacun
 reçoit une **vignette carrée** posée à gauche de son nom dans la carte de vitrine, et en
-réduction dans la pastille d'inventaire. **Les cinquante-neuf sont peintes et installées**
-(2026-09-19). Ce fichier reste la référence pour en ajouter une, ou en refaire une qui ne
-tient pas à 18 px.
+réduction dans la pastille d'inventaire. **Les soixante-quinze sont peintes et installées**
+(2026-09-19, les seize dernières avec la vague 2 : artefacts n° 25 et 33 à 42, Dé du Damné,
+faces de revers, d'écho, de bras de fer et de fusion). Ce fichier reste la référence pour en
+ajouter une, ou en refaire une qui ne tient pas à 18 px.
 
 | Où | Sélecteur | Taille affichée |
 |---|---|---|
@@ -145,10 +146,11 @@ Un seul prompt, dont seule la **phrase d'objet** change d'une vignette à l'autr
 
 ## Les phrases d'objet
 
-Six objets sont sombres par nature — `sablier`, `livreDesComptes`, `colere`,
-`limee`, `retournee`, `sceau`. Leur phrase porte une mention explicite d'arête de
-lumière, en plus de celle du squelette : sur fond sombre, c'est elle qui décide si la
-silhouette existe.
+Onze objets sont sombres par nature — `sablier`, `livreDesComptes`, `colere`,
+`limee`, `retournee`, `sceau`, et dans la vague 2 `chaineDesLimbes`,
+`sommeilDuContremaitre`, `crochetDeCharon`, `damne`, `revers`. Leur phrase porte une
+mention explicite d'arête de lumière, en plus de celle du squelette : sur fond sombre,
+c'est elle qui décide si la silhouette existe.
 
 ### Artefacts (`kind: "artefact"`)
 
@@ -184,6 +186,17 @@ silhouette existe.
 | `miroirDeNarcisse.webp` | Miroir de Narcisse | a small hand mirror in tarnished silver with an ornate handle, its glass cracked across once and reflecting nothing but flat grey |
 | `marteauHephaistos.webp` | Marteau d'Héphaïstos | a blacksmith's hammer with a scarred steel head and a short charred wooden handle, its striking face still glowing dull orange from the anvil |
 | `rabaisDePloutos.webp` | Rabais de Ploutos | a merchant's brass scale weight, squat and round with a ring handle on top, visibly filed down along its base, brass dust caught in the cuts |
+| `sceauDuStagiaire.webp` | Sceau du stagiaire | a small official signet ring in dull office brass resting on a folded scrap of parchment, its flat bezel worn smooth by use, a smear of scarlet ink dried on its rim |
+| `bornes.webp` | Bornes du stagiaire | three short surveyor's stakes tied together with coarse cord, one tipped with a spiked iron cap, one with a small hinged wooden plank, one crusted with thick black tar |
+| `raccourci.webp` | Raccourci de Malebolge | a carved stone milestone snapped clean in two, its halves pushed back together so the break runs right through the worn engraving, dry dust caught in the seam |
+| `chaineDesLimbes.webp` | Chaîne des Limbes | a long heavy iron chain loosely coiled, three of its links visibly newer than the rest and still bright from the forge, a cold pale rim light running along the coil |
+| `bouleDeCocyte.webp` | Boule de Cocyte | a clouded sphere of river ice held in a small blackened iron claw stand, pale blue light moving deep inside it, frost crusted where the claws grip |
+| `echoDuStyx.webp` | Écho du Styx | a small bronze bell with no clapper, its mouth ringed with green patina, a second fainter bell rippling out of it like a reflection spreading on still water |
+| `sommeilDuContremaitre.webp` | Sommeil du contremaître | a coiled leather whip gone slack on a blackened iron bracket, its handle drooping and its lash uncoiling, a thin curl of smoke rising from the coil, a cold pale rim light along the handle |
+| `registreExotique.webp` | Registre des paris exotiques | a slim betting ledger lying open on its spine, its ruled pages blank, a carved bone token and a small brass counter resting in the gutter, a frayed green ribbon marker hanging out |
+| `coteMontante.webp` | Cote montante | a small brass balance scale with one pan tipped high, a single amber glass token resting in the raised pan, the beam notched along its length |
+| `crochetDeCharon.webp` | Crochet de Charon | a long boat hook, its curved barb in blackened iron still wet and trailing a strand of river weed, its shaft of dark waterlogged wood, a cold pale rim light along the barb and the shaft |
+| `roueDIxion.webp` | Roue d'Ixion | a broken cartwheel of charred wood bound in iron, two of its spokes snapped and a length of chain wound through the hub, a faint orange glow caught in the burnt grain |
 
 ### Dés (`kind: "die"`)
 
@@ -198,10 +211,11 @@ regarde. Dans la vitrine il est seul, entre un creuset et une bourse, et la silh
 doit suffire — une dalle épaisse s'y lit comme une pierre. Le cube dit « dé »
 immédiatement, la face de céramique non.
 
-Les quatre partagent donc la même silhouette — cube vu de trois quarts, trois faces
+Ils partagent donc la même silhouette — cube vu de trois quarts, trois faces
 visibles — et ne se distinguent que par la **matière**, qui emporte le traitement des
 arêtes : la pierre des Limbes est usée et ses angles émoussés, la glace reste vive et
-ébréchée, l'or est gonflé comme à demi fondu, le basalte est fendu.
+ébréchée, l'or est gonflé comme à demi fondu, le basalte est fendu, la corne brûlée du
+Damné est prise dans une chaîne.
 
 **Une seule exception : le Décathlon**, seul dé à dix faces du catalogue. Il se dessine
 en trapézoèdre pentagonal, parce que c'est là sa règle entière — dix valeurs au lieu de
@@ -220,6 +234,7 @@ un « 3 » ou avec des points mentirait dès la première opération.
 | `fraude.webp` | Dé de Fraude | a single cube with the proportions of a gaming die, seen at a three-quarter angle so three faces are visible, its corners rounded and its edges worn, cast in tarnished green-grey lead, one face visibly slumped and re-cast as if tampered with; its faces completely blank — no pips, no dots, no numbers, no carving of any kind |
 | `troisiemeDe.webp` | Troisième dé Distance | a single cube with the proportions of a gaming die, seen at a three-quarter angle so three faces are visible, its corners rounded and its edges crisp, carved from plain bone yellowed with age, a hairline crack running across one face; its faces completely blank — no pips, no dots, no numbers, no carving of any kind |
 | `decathlon.webp` | Dé du Décathlon | a single ten-sided die, a pentagonal trapezohedron, standing on one point and seen at a three-quarter angle so several faces are visible, cut from polished white marble faintly veined with grey, its edges crisp and one edge chipped away, a thin dry olive-leaf wreath resting around its widest ring, a cold pale rim light along its edges; its faces completely blank — no pips, no dots, no numbers, no carving of any kind |
+| `damne.webp` | Dé du Damné | a single cube with the proportions of a gaming die, seen at a three-quarter angle so three faces are visible, its corners rounded and its edges sharp, carved from black scorched horn shot through with a dull red inner heat, a thin iron chain biting into two of its edges, a cold pale rim light along its edges; its faces completely blank — no pips, no dots, no numbers, no carving of any kind |
 
 ### Forge (`kind: "forge"`)
 
@@ -239,6 +254,10 @@ montre l'outil ou la marque, pas le dé.
 | `elan.webp` | Face d'élan | a heavy iron flywheel on a short axle, its rim nicked and scarred, spinning fast enough to blur along one side |
 | `gel.webp` | Face de gel | a blacksmith's tongs gripping a metal plate that has frozen instead of glowing, blue-white frost creeping up the jaws |
 | `aimant.webp` | Face aimant | a squat grey bar lodestone, pitted and dark, iron filings and two bent nails clinging in dense tufts to each end |
+| `revers.webp` | Face de revers | an iron drawknife with two short wooden handles, its blade curved back on itself and worn bright where it has been drawn backwards over and over, a cold pale rim light along the blade |
+| `echo.webp` | Face d'écho | a steel punch standing upright on a scarred anvil block, an identical second punch doubling out of it and slightly fainter, as if the first one's shadow had been struck solid |
+| `brasDeFer.webp` | Face de bras de fer | two heavy iron gauntlets locked hand in hand on a scarred oak block, knuckles braced and straining against each other, the oak splintered under the grip |
+| `fusion.webp` | Face de fusion | two thick iron ingots half melted into one another in a shallow stone mould, the seam between them still glowing orange, a thread of slag pooled at the lip |
 
 ### Masques de personnalité (`kind: "personality"`)
 
@@ -276,7 +295,7 @@ Le masque brisé, lui, ne porte rien : c'est le même masque fendu en deux, fron
 
 Le script `Proto4Html/scripts/gen-images.mjs` appelle Gemini pour les objets
 (famille `objets` ; la famille `boss` fait les portraits, voir [`prompts-boss.md`](prompts-boss.md)).
-Il **lit ce document** — le squelette de prompt et les trois tableaux de phrases — donc
+Il **lit ce document** — le squelette de prompt et les quatre tableaux de phrases — donc
 il n'existe pas de copie des prompts ailleurs : éditer une phrase ci-dessus suffit à
 changer ce qui sera généré.
 

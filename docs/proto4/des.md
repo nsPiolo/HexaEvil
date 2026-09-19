@@ -25,7 +25,7 @@ Les faces des dés spéciaux peuvent ensuite être forgées (voir [`forge.md`](f
 | 9 | Dé du Meneur | Âme | meneur / traînard / 3 âmes | remplace | Fort | 85 | 2 |
 | 10 | Dé de Cerbère ⚠ | Âme + Distance | dé à 6 faces mixte | ajoute | Extrême | 160 | 4 |
 | 11 | Dé de Minos ⚠ | Âme + Distance | dé à 6 faces mixte (tour adverse) | ajoute | Extrême | 140 | 4 |
-| 12 | Dé du Damné ⚠ | Distance | `2, 3, 4, 5` | remplace | Fort | 95 | 2 |
+| 12 | Dé du Damné ⚠ ✔ | Distance | `2, 3, 4, 5` | remplace | Fort | 95 | 2 |
 
 **État du proto** : les sept dés **Distance** (n° 1 à 7) sont implémentés. Les
 trois dés **Âme** (n° 8 à 10) ne le sont pas : `rollPlayerDice` tire aujourd'hui
@@ -33,10 +33,11 @@ une âme au hasard (`rng.int(soulCount)`) sans objet « dé Âme » derrière. L
 modéliser est un chantier à part, qui débloquerait d'un coup ces trois dés et les
 cinq faces de dé Âme de [`forge.md`](forge.md).
 
-Les dés **11 et 12** sont nouveaux et non implémentés : ils recyclent des idées du
-catalogue de cartes abandonné (voir [`cartes.md`](cartes.md)) et attendent la fin
-du chantier des archétypes d'âmes. Le **Dé de Minos** a en plus un prérequis
-propre, décrit dans sa fiche.
+Le **Dé du Damné** (n° 12) est implémenté ; sa contrepartie passe par
+`opponentRolls` (`useRace`), comme celle de la Pièce à deux faces. Le **Dé de
+Minos** (n° 11) ne l'est pas : il demande une fenêtre de jeu après la révélation
+de la paire adverse, décrite dans sa fiche — c'est le seul objet de la vague 2 qui
+touche la boucle de tour.
 
 ## Fiches
 

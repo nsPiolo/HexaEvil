@@ -12,7 +12,7 @@ import { ItemArt } from './ItemArt'
 import { MoneyGauge } from './MoneyGauge'
 import { BOARD, HUD, ITEM_KINDS, RARITIES, SHOP, UI, fill } from './texts'
 import { dieName } from './messages'
-import { priceFor, rerollCostFor } from './useRace'
+import { priceFor, rerollCostFor, type FreeCharges } from './useRace'
 
 interface Props {
   vitrine: readonly ShopItem[]
@@ -27,7 +27,8 @@ interface Props {
   raceIndex: number
   inventory: Inv
   /** Marteau d'Héphaïstos : la forge offerte du cercle est-elle encore disponible ? */
-  forgeFree: boolean
+  /** Ce qui est encore offert dans ce cercle (forge du Marteau, masque brisé du Sceau). */
+  free: FreeCharges
   /** Grade du stagiaire : il ouvre des emplacements d'artefacts et des faces de forge. */
   level: number
   /** Revente d'un artefact possédé (40 % du prix). */
@@ -44,7 +45,7 @@ interface Props {
 }
 
 
-export function ShopPanel({ vitrine, souls, unlocked, money, price, staked, raceIndex, inventory, forgeFree, level, onSell, onDecap, pending, onBuy, onCancel, onReroll, onLeave, onGoToBets, onClose }: Props) {
+export function ShopPanel({ vitrine, souls, unlocked, money, price, staked, raceIndex, inventory, free, level, onSell, onDecap, pending, onBuy, onCancel, onReroll, onLeave, onGoToBets, onClose }: Props) {
   const [error, setError] = useState<string | null>(null)
   /** Objet dont le bouton affiche « Confirmer » (spec 04/C4) ; retombe seul après confirmResetMs. */
   const [confirming, setConfirming] = useState<string | null>(null)
@@ -251,7 +252,7 @@ export function ShopPanel({ vitrine, souls, unlocked, money, price, staked, race
           {inventory.artefacts.length > 0 && (
             <div className="shop-artefacts">
               {inventory.artefacts.map((id) => {
-                const back = resaleValue(shop, priceFor(findItem(shop, id), raceIndex, inventory, false))
+                const back = resaleValue(shop, priceFor(findItem(shop, id), raceIndex, inventory))
                 return (
                   <button key={id} type="button" className="btn" onClick={() => setError(onSell(id))} title={fill(SHOP.sellTitle, { back })}>
                     {fill(SHOP.sell, { name: findItem(shop, id).name, back })}
@@ -287,7 +288,7 @@ export function ShopPanel({ vitrine, souls, unlocked, money, price, staked, race
         <div className="vitrine">
           {sorted.length === 0 && <p className="muted shop-empty-vitrine">{SHOP.emptyVitrine}</p>}
           {sorted.map((item) => {
-            const itemPrice = priceFor(item, raceIndex, inventory, forgeFree)
+            const itemPrice = priceFor(item, raceIndex, inventory, free)
             const blocked = money < itemPrice || (item.kind === 'artefact' && artefactsFull)
             const risk = riskOf(item)
             const confirm = confirming === item.id

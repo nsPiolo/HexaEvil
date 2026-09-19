@@ -1,13 +1,13 @@
 import { useMemo, useState, type DragEvent } from 'react'
 import { config } from '../core/config'
-import { BET_TYPES, betRefusal, betType, betUnlocked, bettingClosed, currentMultiplier, evaluateBet, fmtMultiplier, potentialPayout, raceProgress, slotCount, type Bet, type BetTier, type BetTypeId } from '../core/rules/bets'
+import { BET_TYPES, BET_TYPE_ARTEFACT, betRefusal, betType, betUnlocked, bettingClosed, currentMultiplier, evaluateBet, fmtMultiplier, potentialPayout, raceProgress, slotCount, type Bet, type BetTier, type BetTypeId } from '../core/rules/bets'
 import { isInBetZone, ranking, type RaceState, type Roll } from '../core/rules/race'
 import type { Phase } from './useRace'
-import { LockBadge, lockTitle } from './LockBadge'
+import { ItemLockBadge, LockBadge, itemLockTitle, lockTitle } from './LockBadge'
 import { MoneyGauge } from './MoneyGauge'
 import { fmtDistance, soulColor } from './souls'
 import { BETS, BET_LIVE, BET_TIERS, BET_TYPE_TEXTS, HUD, UI, fill, plural } from './texts'
-import { betRefusalText } from './messages'
+import { betRefusalText, itemNameOf } from './messages'
 
 /** Brouillon de ticket : type choisi et âmes désignées. Partagé avec le plateau (spec 03/C2). */
 export interface BetDraft {
@@ -43,6 +43,8 @@ interface Props {
   phase: Phase
   /** Niveau du stagiaire : les types de paris au-dessus sont affichés verrouillés. */
   level: number
+  /** Artefacts possédés : certains guichets (paris exotiques) n'existent que par eux. */
+  owned: readonly string[]
   /** Dés lancés (Œil du parieur) : rappelés en tête, puisque le panneau recouvre la zone des dés. */
   roll?: Roll | null
   /** Œil du parieur : null si non possédé. */
@@ -65,7 +67,7 @@ interface Props {
   onClose?: () => void
 }
 
-const TIERS: readonly BetTier[] = ['simple', 'intermediate', 'advanced']
+const TIERS: readonly BetTier[] = ['simple', 'intermediate', 'advanced', 'exotic']
 const NUMERALS = ['I', 'II', 'III'] as const
 
 /**
@@ -82,7 +84,7 @@ function readStake(e: DragEvent): number | null {
   return /^\d+$/.test(raw) ? Number(raw) : null
 }
 
-export function BetPanel({ race, money, stakes, price, bets, open, phase, level, roll = null, lateBet, onUseLateBet, onPlace, onCancel, baseFor, draft, onDraftChange, highlightSoul, onHoverSoul, onStart, onOpenShop, onClose }: Props) {
+export function BetPanel({ race, money, stakes, price, bets, open, phase, level, owned, roll = null, lateBet, onUseLateBet, onPlace, onCancel, baseFor, draft, onDraftChange, highlightSoul, onHoverSoul, onStart, onOpenShop, onClose }: Props) {
   const [localDraft, setLocalDraft] = useState<BetDraft>(EMPTY_DRAFT)
   const d = draft ?? localDraft
   const setDraft = onDraftChange ?? setLocalDraft
@@ -109,7 +111,12 @@ export function BetPanel({ race, money, stakes, price, bets, open, phase, level,
   const decay = config.economy.decay
   const multOf = (id: BetTypeId): number => currentMultiplier(baseFor(id), progress, decay)
   const unlock = config.economy.betUnlockLevel
-  const isLocked = (id: BetTypeId): boolean => !betUnlocked(id, level, unlock)
+  const isLocked = (id: BetTypeId): boolean => !betUnlocked(id, level, unlock, owned)
+  /** L'objet qui ouvre ce guichet, tant qu'on ne l'a pas : le verrou n'est alors pas un grade. */
+  const lockingItem = (id: BetTypeId): string | null => {
+    const needed = BET_TYPE_ARTEFACT[id]
+    return needed !== undefined && !owned.includes(needed) ? itemNameOf(needed) : null
+  }
   const mult = multOf(type)
   const refusal = useMemo(() => betRefusal(race, type, souls, stake, money, bets), [race, type, souls, stake, money, bets])
   const missing = Math.max(0, slots - souls.length)
@@ -117,6 +124,16 @@ export function BetPanel({ race, money, stakes, price, bets, open, phase, level,
   const staked = bets.filter((b) => b.status === 'open').reduce((s, b) => s + b.stake, 0)
   const ready = open && missing === 0 && !refusal
   const soulName = (id: number): string => race.souls[id]?.name ?? `#${id}`
+
+  /**
+   * Paliers montrés au joueur. Un palier fermé par le **grade** reste affiché, désactivé : il
+   * s'ouvrira tout seul en jouant, et l'annoncer fait partie de la progression (01/C3). Un
+   * palier fermé par un **objet** est masqué tant qu'on ne l'a pas — il ne s'ouvrira jamais de
+   * lui-même, et un onglet mort qui nomme un objet encore inconnu encombre la grille des trois
+   * paliers ordinaires plus qu'il ne renseigne. C'est la carte de boutique du Registre qui dit
+   * ce qu'il ouvre (artefacts.md n°39).
+   */
+  const shownTiers = TIERS.filter((t) => BET_TYPES.some((b) => b.tier === t && (!isLocked(b.id) || lockingItem(b.id) === null)))
 
   /** Fourchette de cotes des types ouverts d'un palier, pour l'onglet ; « verrouillé » si aucun. */
   const range = (t: BetTier): string => {
@@ -230,8 +247,11 @@ export function BetPanel({ race, money, stakes, price, bets, open, phase, level,
           <h3 className="bp-section">
             <span className="numeral">{NUMERALS[0]}</span> Type de pari
           </h3>
-          <div className="tiers" role="tablist">
-            {TIERS.map((t) => (
+          {/* `data-count` : les trois paliers ordinaires tiennent sur une ligne de trois ; le
+              palier exotique, quand il apparaît, prend la largeur entière plutôt que d'ouvrir
+              une seconde ligne aux deux tiers vide. */}
+          <div className="tiers" role="tablist" data-count={shownTiers.length}>
+            {shownTiers.map((t) => (
               <button key={t} type="button" role="tab" aria-selected={tier === t} className={'tier' + (tier === t ? ' tier-on' : '')} disabled={!open || BET_TYPES.every((b) => b.tier !== t || isLocked(b.id))} onClick={() => changeTier(t)}>
                 <span className="tier-name">{BET_TIERS[t]}</span>
                 <span className="tier-range">{range(t)}</span>
@@ -241,14 +261,19 @@ export function BetPanel({ race, money, stakes, price, bets, open, phase, level,
           <ul className="types">
             {BET_TYPES.filter((b) => b.tier === tier).map((b) => {
               const locked = isLocked(b.id)
+              // Un pari fermé par un objet dans un palier par ailleurs ouvert : le cas ne se
+              // présente pas aujourd'hui (les deux guichets exotiques partagent le Registre, et
+              // leur palier est masqué sans lui), mais dire « dès Stagiaire » le jour où il se
+              // présentera serait le retour exact du défaut qu'on vient de corriger.
+              const item = locked ? lockingItem(b.id) : null
               return (
                 <li key={b.id}>
-                  <button type="button" className={'type' + (type === b.id ? ' type-on' : '') + (locked ? ' type-locked' : '')} disabled={!open || locked} onClick={() => changeType(b.id)} aria-pressed={type === b.id} title={locked ? lockTitle(unlock[b.id]) : undefined}>
+                  <button type="button" className={'type' + (type === b.id ? ' type-on' : '') + (locked ? ' type-locked' : '')} disabled={!open || locked} onClick={() => changeType(b.id)} aria-pressed={type === b.id} title={locked ? (item ?? '') !== '' ? itemLockTitle(item!) : lockTitle(unlock[b.id]) : undefined}>
                     <span className="type-text">
                       <span className="type-name">{BET_TYPE_TEXTS[b.id].label}</span>
                       <span className="type-desc">{BET_TYPE_TEXTS[b.id].description}</span>
                     </span>
-                    {locked ? <LockBadge level={unlock[b.id]} /> : <span className="mult-badge serif">{fmtMultiplier(multOf(b.id))}</span>}
+                    {locked ? (item ? <ItemLockBadge name={item} /> : <LockBadge level={unlock[b.id]} />) : <span className="mult-badge serif">{fmtMultiplier(multOf(b.id))}</span>}
                   </button>
                 </li>
               )

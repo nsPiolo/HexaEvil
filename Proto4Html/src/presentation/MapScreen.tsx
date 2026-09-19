@@ -212,7 +212,7 @@ export function MapScreen({ carry, onLaunch, onMenu }: Props) {
                   {info.terrains.map((t) => (
                     <li key={t.name}>
                       <span className="map-terrain-name">{t.name}</span>
-                      {' — '}
+                      {' · '}
                       {t.blocked.length > 0
                         ? fill(MAP.blocked, { n: t.blocked.length, s: t.blocked.length > 1 ? 's' : '', columns: [...new Set(t.blocked.map((b) => b.column))].sort((a, b) => a - b).join(', ') })
                         : MAP.noBlocked}

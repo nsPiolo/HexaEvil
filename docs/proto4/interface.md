@@ -97,9 +97,9 @@ En haut de la table de jeu (imprimé sur la table) les étapes de la partie à l
 
 Une étape terminée est en gras, une étape en cours possède un halo lumineux.
 
-En overlay (en haut à gauche) le cercle en cours et le nombdre de rencontre prévu : 
+En overlay (en haut à gauche) le cercle en cours et la progression dans ce cercle : 
 * `1er Cercle`
-* `1ère course sur 3`
+* trois ronds alignés, un par course, remplis jusqu'à celle en cours (le dernier, celui du boss, est cerclé d'or) ; le texte « 1re course sur 3 » reste en libellé accessible et en infobulle
 
 En overlay (en haut à droite) les possessions : 
 * `17 Pièces`

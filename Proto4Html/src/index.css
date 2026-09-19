@@ -343,6 +343,11 @@ p { margin: 0; }
 .shop-soul { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; border-left: 3px solid var(--soul, var(--line)); }
 .shop-soul-name { font-weight: 600; }
 .reveal-mark { font-size: 2.6rem; width: 64px; display: flex; align-items: center; justify-content: center; color: var(--gold); }
+/* Révélation : le portrait du masque tient la place de la vignette de boutique, en un peu plus
+   grand parce que l'écran ne montre que lui ; le glyphe passe près du nom, à hauteur de texte,
+   puisque c'est ce signe-là qu'on retrouvera sur le jeton de l'âme. */
+.reveal-card .reveal-art { width: clamp(84px, 34%, 116px); }
+.reveal-glyph { color: var(--gold); margin-right: 6px; }
 .reveal-card { min-width: 320px; }
 .legend-btn { display: flex; align-items: center; gap: 6px; background: none; border: 0; padding: 0; font: inherit; font-weight: 600; }
 .legend-btn:disabled { opacity: 0.45; cursor: not-allowed; }
@@ -600,6 +605,8 @@ p { margin: 0; }
 .combo-btn:hover:not(:disabled) { border-color: var(--ink); }
 .combo-btn:disabled { opacity: 0.3; }
 .combo-btn-x:hover:not(:disabled) { border-color: var(--bad); color: var(--bad); }
+/* Écho du Styx : la carte marquée sera rejouée juste après s'être résolue. */
+.combo-btn-on { background: var(--gold); border-color: var(--gold); color: var(--bg); }
 
 /* Frise de sous-phases (spec 05/C3) : préparer · lancer · ordonner · résoudre · adversaire. */
 /*
@@ -897,6 +904,13 @@ p { margin: 0; }
 .artefact-charges { font-size: 0.75rem; color: var(--gold); font-weight: 600; }
 .btn-artefact { border-color: var(--gold); color: var(--gold); }
 .btn-artefact:hover:not(:disabled) { background: #2f2216; }
+/* Choix retenu parmi plusieurs boutons d'objet (type de borne du stagiaire). */
+.btn-artefact-on { background: var(--gold); border-color: var(--gold); color: var(--bg); }
+.btn-artefact-on:hover:not(:disabled) { background: var(--gold); }
+.btn-small { padding: 2px 8px; font-size: 0.85rem; }
+/* Crochet de Charon : une âme rappelable par bouton, sous la barre d'actions. */
+.hook-tools { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.hook-label { color: var(--muted); font-size: 0.85rem; }
 .late-bet { display: flex; flex-direction: column; gap: 8px; }
 
 .inventory { display: flex; gap: 24px; flex-wrap: wrap; padding: 8px 16px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
@@ -1348,6 +1362,13 @@ p { margin: 0; }
 .hud-right { justify-self: end; flex-direction: row; align-items: center; gap: 14px; }
 .hud-money { display: flex; flex-direction: column; align-items: flex-end; gap: 0; }
 .hud-big { font-weight: 700; font-size: 1.05rem; }
+/* Progression dans le cercle : trois ronds alignés qui se remplissent course après course.
+   Le dernier est celui du boss, cerclé d'or pour qu'on voie où mène le cercle. */
+.circle-dots { display: flex; align-items: center; gap: 7px; list-style: none; margin: 3px 0 1px; padding: 0; }
+.circle-dot { width: 9px; height: 9px; border-radius: 50%; border: 1px solid var(--line); background: transparent; }
+.circle-dot-boss { border-color: var(--gold); }
+.circle-dot-done { background: var(--muted); border-color: var(--muted); }
+.circle-dot-current { background: var(--gold); border-color: var(--gold); box-shadow: 0 0 6px rgba(224, 168, 60, 0.6); }
 .hud-link { background: none; border: none; padding: 0; color: var(--gold); text-decoration: underline dotted; font-size: 0.85rem; }
 .hud-tools { display: flex; gap: 6px; margin-top: 4px; }
 @media (max-width: 1100px) {
@@ -1609,6 +1630,9 @@ p { margin: 0; }
  * rehaut blanc d'une gravure en creux.
  */
 .tiers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+/* Quatrième palier (Exotiques, ouvert par le Registre) : il prend la ligne entière plutôt que
+   de laisser deux tiers de vide à côté de lui. */
+.tiers[data-count='4'] .tier:last-child { grid-column: 1 / -1; }
 .tier {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
   padding: 5px 8px; border: 10px solid transparent;
@@ -1909,6 +1933,8 @@ p { margin: 0; }
 .cell-gold img { filter: drop-shadow(0 0 2px rgba(224, 168, 60, 0.55)); }
 .cell-trap img { filter: drop-shadow(0 0 2px rgba(255, 123, 114, 0.5)); }
 .cell-boost img { filter: drop-shadow(0 0 2px rgba(78, 168, 106, 0.5)); }
+/* Borne de goudron : elle n'a pas encore sa vignette, elle se lit donc à son signe. */
+.cell-tar { color: #c8a24a; font-size: 1.1rem; line-height: 1; text-shadow: 0 0 3px rgba(0, 0, 0, 0.6); }
 
 /* ---- Atelier de la boutique ---- */
 /* Revente d'artefact et décapage de face : on n'y achète rien, on fait de la place. Replié par
