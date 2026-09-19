@@ -163,7 +163,11 @@ Le premier cercle est au centre.
 
 Le joueur doit cliquer sur la course suivante pour lancer la course.
 
-C'est aussi sur cette page qu'on pourra voir le pouvoir de chaque boss et le monant attendu par le cercle en cours. (on ne peut pas voir le montant des cercles suivants).
+C'est aussi sur cette page qu'on voit le pouvoir du boss et le montant attendu par le cercle,
+mais **seulement pour les cercles déjà atteints**. Un cercle où le joueur n'est pas encore ne
+donne que son numéro et son nom : ni boss, ni pouvoir, ni nombre de couloirs, ni terrains, ni
+prix. L'infobulle des braseros suit la même règle : « Course du boss » sans le nom du boss tant
+que le cercle est verrouillé.
 
 ## Fin de la seconde course
 

@@ -79,6 +79,10 @@ function spiralPath(center: number, fromRace: number, toRace: number): string {
  * Écran entre deux courses : les cercles ouverts, la progression, le boss et le prix du cercle
  * en cours. « Ouverts » et non « écrits » : voir `rings` ci-dessous, la carte ne révèle pas
  * l'après-neuvième avant que le joueur y soit.
+ *
+ * Même retenue à l'intérieur des neuf : la fiche de droite ne s'ouvre que sur un cercle atteint
+ * (`revealed`). Au-delà, numéro et nom, rien d'autre. Le joueur n'a rien à préparer pour une
+ * course qui vient dans deux cercles, et la carte n'a pas à vendre la mèche du prochain boss.
  */
 export function MapScreen({ carry, onLaunch, onMenu }: Props) {
   const next = carry.raceIndex
@@ -100,6 +104,8 @@ export function MapScreen({ carry, onLaunch, onMenu }: Props) {
   // effets tirés, pas le texte du dernier cercle écrit, qui ne décrit plus rien.
   const powerText = bossPowerText(selected)
   const texts = CIRCLES[selected - 1]
+  /** Cercle atteint : la fiche s'ouvre. Cercle à venir : numéro et nom, rien d'autre. */
+  const revealed = selected <= currentCircle
   const path = spiralPath(CENTER, 0, total - 1)
 
   return (
@@ -151,7 +157,9 @@ export function MapScreen({ carry, onLaunch, onMenu }: Props) {
             const isBoss = i % per === per - 1
             const state = i < next ? 'done' : i === next ? 'next' : 'locked'
             const n = Math.floor(i / per) + 1
-            const label = isBoss ? `${MAP.bossRace} — ${circleAt(config.run, n).boss}` : fill(MAP.race, { n: (i % per) + 1 })
+            // Le nom du boss est une information du cercle : l'infobulle d'un brasero encore
+            // verrouillé dit « Course du boss » et rien de plus.
+            const label = isBoss ? (n <= currentCircle ? `${MAP.bossRace} · ${circleAt(config.run, n).boss}` : MAP.bossRace) : fill(MAP.race, { n: (i % per) + 1 })
             const w = isBoss ? BRAZIER_BOSS : BRAZIER
             return (
               <g
@@ -185,50 +193,59 @@ export function MapScreen({ carry, onLaunch, onMenu }: Props) {
 
         <aside className="map-info">
           <h2>{fill(MAP.circleOf, { n: selected, name: info.name })}</h2>
-          <p className="muted small">
-            {selected < currentCircle ? UI.map.crossed : selected === currentCircle ? MAP.current : MAP.locked}
-            {' · '}
-            {info.souls} âmes en course
-          </p>
-          <dl className="map-dl">
-            <div>
-              <dt>{MAP.boss}</dt>
-              <dd>{info.boss}</dd>
-            </div>
-            <div>
-              <dt>{MAP.power}</dt>
-              <dd>{powerText}</dd>
-            </div>
-            <div>
-              <dt>{MAP.track}</dt>
-              <dd>{fill(MAP.lanes, { n: info.lanes, s: info.lanes > 1 ? 's' : '' })}</dd>
-            </div>
-            {/* Le terrain n'est tiré qu'au départ de la course : la carte annonce les variantes possibles, pas celle qui sera jouée. */}
-            <div>
-              <dt>{MAP.terrain}</dt>
-              <dd>
-                {info.terrains.length > 1 ? MAP.terrainDrawn : MAP.terrainOne}
-                <ul className="map-terrains">
-                  {info.terrains.map((t) => (
-                    <li key={t.name}>
-                      <span className="map-terrain-name">{t.name}</span>
-                      {' · '}
-                      {t.blocked.length > 0
-                        ? fill(MAP.blocked, { n: t.blocked.length, s: t.blocked.length > 1 ? 's' : '', columns: [...new Set(t.blocked.map((b) => b.column))].sort((a, b) => a - b).join(', ') })
-                        : MAP.noBlocked}
-                    </li>
-                  ))}
-                </ul>
-              </dd>
-            </div>
-            <div>
-              <dt>{MAP.price}</dt>
-              <dd>{selected <= currentCircle ? fill(UI.ticket.coins, { n: info.price }) : <span className="muted">{MAP.priceHidden}</span>}</dd>
-            </div>
-          </dl>
-          {texts && selected < currentCircle && <p className="muted small">Payé. {MENU.continue} vers le cercle {selected + 1}.</p>}
+          {/* Un cercle où le joueur n'est pas encore ne dit que son numéro et son nom. Boss,
+              pouvoir, piste, terrain, prix : tout cela se découvre en y arrivant, sinon la carte
+              sert à préparer des courses qu'on ne jouera pas avant deux cercles. */}
+          {revealed ? (
+            <>
+              <p className="muted small">
+                {selected < currentCircle ? UI.map.crossed : MAP.current}
+                {' · '}
+                {info.souls} âmes en course
+              </p>
+              <dl className="map-dl">
+                <div>
+                  <dt>{MAP.boss}</dt>
+                  <dd>{info.boss}</dd>
+                </div>
+                <div>
+                  <dt>{MAP.power}</dt>
+                  <dd>{powerText}</dd>
+                </div>
+                <div>
+                  <dt>{MAP.track}</dt>
+                  <dd>{fill(MAP.lanes, { n: info.lanes, s: info.lanes > 1 ? 's' : '' })}</dd>
+                </div>
+                {/* Le terrain n'est tiré qu'au départ de la course : la carte annonce les variantes possibles, pas celle qui sera jouée. */}
+                <div>
+                  <dt>{MAP.terrain}</dt>
+                  <dd>
+                    {info.terrains.length > 1 ? MAP.terrainDrawn : MAP.terrainOne}
+                    <ul className="map-terrains">
+                      {info.terrains.map((t) => (
+                        <li key={t.name}>
+                          <span className="map-terrain-name">{t.name}</span>
+                          {' · '}
+                          {t.blocked.length > 0
+                            ? fill(MAP.blocked, { n: t.blocked.length, s: t.blocked.length > 1 ? 's' : '', columns: [...new Set(t.blocked.map((b) => b.column))].sort((a, b) => a - b).join(', ') })
+                            : MAP.noBlocked}
+                        </li>
+                      ))}
+                    </ul>
+                  </dd>
+                </div>
+                <div>
+                  <dt>{MAP.price}</dt>
+                  <dd>{fill(UI.ticket.coins, { n: info.price })}</dd>
+                </div>
+              </dl>
+              {texts && selected < currentCircle && <p className="muted small">Payé. {MENU.continue} vers le cercle {selected + 1}.</p>}
+            </>
+          ) : (
+            <p className="muted small">{MAP.ahead}</p>
+          )}
           <button type="button" className="btn btn-primary" onClick={onLaunch}>
-            {MAP.launch} — {next % per === per - 1 ? MAP.bossRace : fill(MAP.race, { n: (next % per) + 1 })}
+            {MAP.launch} · {next % per === per - 1 ? MAP.bossRace : fill(MAP.race, { n: (next % per) + 1 })}
           </button>
         </aside>
       </div>

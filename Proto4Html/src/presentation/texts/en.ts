@@ -452,7 +452,7 @@ const MAP = {
   terrainDrawn: 'drawn at the start of each race',
   terrainOne: 'single terrain',
   price: 'Circle price',
-  priceHidden: 'unknown until you get there',
+  ahead: 'Locked circle: it reveals itself only once you get there.',
   race: 'Race {n}',
   bossRace: 'Boss race',
   launch: 'Start the race',

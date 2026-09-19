@@ -458,7 +458,7 @@ const MAP = {
   terrainDrawn: 'tiré au sort au départ de chaque course',
   terrainOne: 'terrain unique',
   price: 'Prix du cercle',
-  priceHidden: 'inconnu tant que vous n’y êtes pas',
+  ahead: 'Cercle verrouillé : il ne se découvre qu’en y arrivant.',
   race: 'Course {n}',
   bossRace: 'Course du boss',
   launch: 'Lancer la course',
