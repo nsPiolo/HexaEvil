@@ -145,6 +145,34 @@ test.describe('03 · Écran Paris (le ticket de guichet)', () => {
     await expect(socket.locator('.stake-flames')).toHaveCount(0)
   })
 
+  /**
+   * Au-delà du dernier cercle écrit (quinze), l'échelle passe en croissance géométrique et un
+   * cinquième jeton apparaît : tout le solde d'un coup. C'est le seul jeton dont la valeur suit
+   * la bourse, et la seule mise possible une fois qu'elle a dépassé les quatre paliers.
+   */
+  test('E2E-03-H : le jeton All-in n’existe qu’au-delà des cercles écrits, et vaut ce que le guichet accepte', async ({ page }) => {
+    const WRITTEN = 15
+    await start(page, { race: (WRITTEN - 1) * RACES_PER_CIRCLE, money: 5000 })
+    await expect(betsPanel(page).locator('.stake-chip-allin')).toHaveCount(0)
+
+    await start(page, { race: WRITTEN * RACES_PER_CIRCLE, money: 5000 })
+    const panel = betsPanel(page)
+    // L'échelle compose au lieu de suivre la droite : 40·80·160·400 au quinzième, ×1,35 au seizième.
+    await expect(panel.locator('.stake-tray .stake-chip')).toHaveText(['', '110', '215', '540', 'All-in'])
+    // 5000 de bourse plus l'avance du cercle : le jeton annonce la somme, il ne la cache pas.
+    const allin = panel.locator('.stake-chip-allin')
+    await expect(allin).toHaveAttribute('aria-label', 'All-in : 5320 ¤')
+    await tokenButton(page, 0).click()
+    await allin.click()
+    await expect(panel.getByTestId('stake-socket')).toContainText('5320')
+    await panel.getByRole('button', { name: 'Poser le pari' }).click()
+    await expect(placedBets(page)).toHaveCount(1)
+    await expect(placedBets(page).first()).toContainText('5320')
+    // Bourse vide : le jeton s'éteint plutôt que de proposer une mise de zéro.
+    await expect(allin).toBeDisabled()
+    await expect(allin).toHaveAttribute('aria-label', 'Plus rien à miser')
+  })
+
   test('E2E-03-G : seule la mise maximum enflamme le logement', async ({ page }) => {
     // 03/AC1 · le feu dit « tu joues gros », pas « tu as choisi »
     await start(page, { seed: RACE_SEED, money: 200 })

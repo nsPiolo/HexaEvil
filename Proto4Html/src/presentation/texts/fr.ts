@@ -541,6 +541,10 @@ const BETS = {
   chipHint: 'Glissez ce jeton dans le logement, ou cliquez-le',
   chipChosen: 'Jeton posé : c’est la mise en cours',
   tooRich: 'Solde insuffisant ({n} ¤)',
+  allIn: 'All-in',
+  allInLabel: 'All-in : {n} ¤',
+  allInHint: 'Miser tout le solde : {n} ¤',
+  allInBroke: 'Plus rien à miser',
 } as const
 
 /** Jauge des trois usages : solde, misé en course, prix du cercle (spec 01/C1). */

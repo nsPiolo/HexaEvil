@@ -771,7 +771,15 @@ p { margin: 0; }
    et les flammes baissent : sans ça, il masque le trou allumé qu'on vient viser. */
 .stake-socket-armed, .stake-socket-over { background-position: center bottom; }
 .stake-socket-over { transform: scale(1.05); filter: drop-shadow(0 0 10px var(--ember)); }
-.stake-socket-over .stake-chip-active { transform: translateY(-12px) scale(0.84); opacity: 0.45; }
+.stake-socket-over /* Jeton All-in (cercles au-delà des écrits) : il porte un mot, pas un nombre, donc une chasse
+   plus petite pour tenir dans les 52 px, et un liseré d'or pour qu'il se distingue des paliers
+   sans dépendre de sa seule couleur — le mot et l'infobulle disent déjà ce qu'il fait. */
+.stake-chip-allin { font-size: 0.68rem; letter-spacing: 0.01em; box-shadow: 0 0 0 2px var(--gold), 0 0 12px rgba(224, 168, 60, 0.45); }
+/* Posé dans le logement, sa place sur le rebord redevient un creux comme les autres : le
+   liseré doré n'a plus rien à cercler. */
+.stake-chip-allin.stake-chip-gone { box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.85); }
+
+.stake-chip-active { transform: translateY(-12px) scale(0.84); opacity: 0.45; }
 .stake-socket-over .stake-flames { opacity: 0.3; }
 /* Les flammes sont peintes par-dessus le jeton posé : si lui seul grossissait au survol,
    il leur passerait au travers. Elles suivent donc le même transform. */

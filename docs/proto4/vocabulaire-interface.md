@@ -208,6 +208,7 @@ Champ lexical **des courses hippiques et du guichet de paris**. Tenez-le.
 | **Miser** | Engager une somme. | Pivot : *to stake / to wager*. |
 | **Misé en course** | Total des mises actuellement engagées sur la course en cours. | Pivot : *staked in this race*. |
 | **Jeton de mise** | Le **jeton de casino** qu'on glisse dans le logement pour choisir le montant de la mise (5, 10, 20, 50…). | ⚠️ Voir §3 « Jeton » : le plateau utilise aussi ce mot pour les pions des âmes. |
+| **All-in** | Le **cinquième jeton de mise**, apparu au-delà du quinzième cercle : il vaut toute la bourse au lieu d'un palier de l'échelle. | Terme de poker, gardé tel quel en français comme en anglais. Pas « tapis » : le mot sert déjà aux commentaires de code pour la mise maximum, et « tapis » se confond avec le feutre de la table. |
 | **Logement** / **emplacement d'âme** | Les **cases vides du ticket** où l'on dépose les âmes désignées (une, deux ou trois selon le type de pari). | Pivot : *slot*. Pas un logement au sens habitation. |
 | **Désigner une âme** | Choisir l'âme sur laquelle porte le pari, en cliquant sur le plateau ou dans la liste. | Pivot : *to pick*. |
 | **Cote** | Le **multiplicateur de gain** d'un pari (« ×3,5 »). ⚠️ La cote **fond à mesure que la course avance** : parier tard, c'est parier sûr, donc parier petit. | Pivot : *odds*. Faux ami redoutable : ni « côte » (rivage/côtelette), ni une cote de popularité, ni une cotation boursière. C'est la **cote d'un cheval**. |

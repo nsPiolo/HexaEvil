@@ -35,6 +35,12 @@ interface Props {
   money: number
   /** Échelle des mises du cercle en cours (`stakesAtCircle`), croissante. */
   stakes: readonly number[]
+  /**
+   * Mise du jeton « All-in », ou `null` tant que le cercle est écrit dans la configuration.
+   * C'est la plus grosse mise réellement payable (`maxStake`), pas le solde brut : quand le
+   * guichet prend sa part, All-in vaut la moitié de la bourse, sinon le bouton serait refusé.
+   */
+  allIn?: number | null
   /** Prix du cercle, pour la jauge. */
   price: number
   bets: readonly Bet[]
@@ -77,14 +83,18 @@ const NUMERALS = ['I', 'II', 'III'] as const
  * avec le cercle (`stakesAtCircle`), les quatre jetons restent les mêmes, seuls les chiffres changent.
  */
 const CHIP_ART = ['/table/chips/chip-1.webp', '/table/chips/chip-2.webp', '/table/chips/chip-3.webp', '/table/chips/chip-4.webp'] as const
-const chipArtIn = (stakes: readonly number[], v: number): string => CHIP_ART[Math.max(0, stakes.indexOf(v)) % CHIP_ART.length] as string
+/** Une mise hors échelle (All-in) prend le jeton le plus riche : elle est, par construction, au-dessus de tous. */
+const chipArtIn = (stakes: readonly number[], v: number): string => {
+  const i = stakes.indexOf(v)
+  return CHIP_ART[(i < 0 ? CHIP_ART.length - 1 : i) % CHIP_ART.length] as string
+}
 const STAKE_MIME = 'application/x-sinnersbet-stake'
 function readStake(e: DragEvent): number | null {
   const raw = e.dataTransfer.getData(STAKE_MIME)
   return /^\d+$/.test(raw) ? Number(raw) : null
 }
 
-export function BetPanel({ race, money, stakes, price, bets, open, phase, level, owned, roll = null, lateBet, onUseLateBet, onPlace, onCancel, baseFor, draft, onDraftChange, highlightSoul, onHoverSoul, onStart, onOpenShop, onClose }: Props) {
+export function BetPanel({ race, money, stakes, allIn = null, price, bets, open, phase, level, owned, roll = null, lateBet, onUseLateBet, onPlace, onCancel, baseFor, draft, onDraftChange, highlightSoul, onHoverSoul, onStart, onOpenShop, onClose }: Props) {
   const [localDraft, setLocalDraft] = useState<BetDraft>(EMPTY_DRAFT)
   const d = draft ?? localDraft
   const setDraft = onDraftChange ?? setLocalDraft
@@ -99,8 +109,8 @@ export function BetPanel({ race, money, stakes, price, bets, open, phase, level,
   const stake = d.stake ?? stakes[0] ?? 5
   const setStake = (v: number): void => setDraft({ ...d, stake: v })
   const chipArt = (v: number): string => chipArtIn(stakes, v)
-  /** La mise la plus forte du cercle, la seule qui prenne feu dans le logement. */
-  const hottest = Math.max(...stakes)
+  /** La mise la plus forte offerte, la seule qui prenne feu dans le logement. */
+  const hottest = Math.max(...stakes, allIn ?? 0)
   const [error, setError] = useState<string | null>(null)
 
   const prep = phase === 'prep'
@@ -382,6 +392,26 @@ export function BetPanel({ race, money, stakes, price, bets, open, phase, level,
                   </button>
                 )
               })}
+              {/* Cinquième jeton des cercles au-delà des écrits : il ne porte pas un palier de
+                  l'échelle mais toute la bourse, d'où le mot à la place du chiffre. Le montant
+                  reste lisible par `aria-label` et par l'infobulle, jamais par la seule forme. */}
+              {allIn !== null && (
+                <button
+                  type="button"
+                  className={'stake-chip stake-chip-allin' + (allIn === stake ? ' stake-chip-gone' : '') + (dragStake === allIn ? ' stake-chip-dragging' : '')}
+                  style={allIn === stake ? undefined : { backgroundImage: `url(${chipArt(allIn)})` }}
+                  draggable={open && allIn > 0 && allIn !== stake}
+                  onDragStart={startStakeDrag(allIn)}
+                  onDragEnd={endStakeDrag}
+                  disabled={!open || allIn <= 0}
+                  aria-pressed={allIn === stake}
+                  aria-label={allIn > 0 ? fill(BETS.allInLabel, { n: allIn }) : BETS.allInBroke}
+                  title={allIn <= 0 ? BETS.allInBroke : allIn === stake ? BETS.chipChosen : fill(BETS.allInHint, { n: allIn })}
+                  onClick={() => chooseStake(allIn)}
+                >
+                  {allIn === stake ? null : BETS.allIn}
+                </button>
+              )}
             </div>
           </div>
         </div>

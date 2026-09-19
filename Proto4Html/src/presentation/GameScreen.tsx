@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { config, shop } from '../core/config'
-import { circleAt } from '../core/rules/circles'
+import { circleAt, isBeyondWritten } from '../core/rules/circles'
 import type { SpecialCellKind } from '../core/config/schema'
 import { stakesAtCircle } from '../core/rules/stakes'
 import { circleArt } from './art'
@@ -15,7 +15,7 @@ import { Ranking } from './Ranking'
 import { ShopPanel } from './ShopPanel'
 import { OpponentSlot, PhaseStrip, PlayerSlot } from './PlaySlots'
 import { HELP, HUD, ITEMS, RACE, UI, fill, ordinalOf } from './texts'
-import { MARKER_KINDS, betBase, bettedSouls as bettedSoulsOf, bossPowerText, canBetNow, circleOf, freeCharges, has, itemName, markerCount, previewNext, rollsBeforeSleep, stakedOpen, useRace, type RaceUi, type SessionCarry } from './useRace'
+import { MARKER_KINDS, betBase, bettedSouls as bettedSoulsOf, bossPowerText, canBetNow, circleOf, freeCharges, has, itemName, markerCount, maxStake, previewNext, rollsBeforeSleep, stakedOpen, useRace, type RaceUi, type SessionCarry } from './useRace'
 
 interface Props {
   carry: SessionCarry
@@ -55,7 +55,15 @@ export function GameScreen({ carry, unlocked, speed, onFinished, onMenu }: Props
   const { circle, raceInCircle } = circleOf(carry.raceIndex)
   const circleCfg = circleAt(config.run, circle)
   // Les jetons grandissent avec le cercle, le premier restant à portée de l'avance (rules/stakes.ts).
-  const stakes = useMemo(() => stakesAtCircle(config.economy, circle), [circle])
+  const stakes = useMemo(() => stakesAtCircle(config, circle), [circle])
+  /**
+   * Cinquième jeton, réservé aux cercles au-delà des écrits : tout le solde d'un coup. Les
+   * quatre paliers suivent désormais la courbe des prix, mais ils restent une offre fixe ; une
+   * bourse qui a pris de l'avance sur eux n'aurait plus rien à faire de son surplus. `null`
+   * jusqu'au quinzième : là, l'échelle suffit, et un All-in au premier cercle n'est pas un pari,
+   * c'est un jet de dé sur toute la partie.
+   */
+  const beyondWritten = isBeyondWritten(config.run, circle)
   const { ui, auto, setAuto, shopUnlocked, level, actions } = useRace({ carry, unlocked, soulCount: circleCfg.souls, lanes: circleCfg.lanes, terrains: circleCfg.terrains, speed })
   const [betsOpen, setBetsOpen] = useState(true)
   const [shopOpen, setShopOpen] = useState(false)
@@ -93,6 +101,8 @@ export function GameScreen({ carry, unlocked, speed, onFinished, onMenu }: Props
   // Parier : la phase le permet et aucune âme n'a franchi le seuil (sinon le panneau l'écrit et ferme chips et jetons).
   const betOpen = canBetNow(ui) && !bettingClosed(ui.race)
   const prep = ui.phase === 'prep'
+  // Valeur du jeton All-in : ce que le joueur peut vraiment payer au guichet, taxe de Ploutos comprise.
+  const allIn = beyondWritten ? maxStake(ui.money, ui.boss, prep) : null
   const finished = ui.phase === 'finished'
   const shopShown = prep && shopOpen
   const betsShown = !finished && betsOpen
@@ -433,6 +443,7 @@ export function GameScreen({ carry, unlocked, speed, onFinished, onMenu }: Props
                 onHoverSoul={setHoverSoul}
                 onStart={actions.startRace}
                 onOpenShop={openShop}
+                allIn={allIn}
                 {...(prep ? {} : { onClose: () => setBetsOpen(false) })}
               />
             </div>

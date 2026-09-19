@@ -107,6 +107,10 @@ export function loadConfig(raw: unknown): RaceConfig {
   if (stakes[0]! > raceAllowance) fail('economy.stakes', `la plus petite mise (${stakes[0]}) dépasse l'avance de course (${raceAllowance}) : l'avance doit toujours permettre le pari minimum`)
   const stakeGrowthPerCircle = num(economy.stakeGrowthPerCircle, 'economy.stakeGrowthPerCircle')
   if (stakeGrowthPerCircle < 0) fail('economy.stakeGrowthPerCircle', 'doit être ≥ 0')
+  // Sous 1, les jetons rétréciraient de cercle en cercle au-delà des écrits, là où le prix de
+  // sortie, lui, continue de composer : le mode démon deviendrait injouable sans prévenir.
+  const beyondStakeGrowth = num(economy.beyondStakeGrowth, 'economy.beyondStakeGrowth')
+  if (beyondStakeGrowth < 1) fail('economy.beyondStakeGrowth', 'doit être ≥ 1')
   const mults = obj(economy.multipliers, 'economy.multipliers')
   const multipliers = {} as Record<BetTypeId, number>
   for (const id of BET_TYPE_IDS) {
@@ -217,7 +221,7 @@ export function loadConfig(raw: unknown): RaceConfig {
     track: { columns, cellsAfterFinish, betThresholdRatio },
     dice: { distanceFaces, distanceDice, soulDice },
     opponent: { rollsPerTurn },
-    economy: { startingMoney, raceAllowance, allowanceGrowthPerCircle, stakes, stakeGrowthPerCircle, multipliers, betUnlockLevel, decay: { exponent, minMultiplier } },
+    economy: { startingMoney, raceAllowance, allowanceGrowthPerCircle, stakes, stakeGrowthPerCircle, beyondStakeGrowth, multipliers, betUnlockLevel, decay: { exponent, minMultiplier } },
     run: { racesPerCircle, escapeCircle, beyondPriceGrowth, circles },
     artefacts: { lateBet: { chargesPerCircle }, sablier: { betThresholdRatio: sablierRatio } },
     animation: { stepMs, diceMs, pauseMs, betRevealMs, idlePulseMs, gaugeMs, betConfirmMs },

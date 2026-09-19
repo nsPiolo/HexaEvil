@@ -95,6 +95,8 @@ export interface RaceConfig {
     stakes: readonly number[]
     /** Croissance de l'échelle des mises par cercle (0,25 = +25 % du cercle 1 à chaque cercle). */
     stakeGrowthPerCircle: number
+    /** Croissance des mises au-delà du dernier cercle écrit, géométrique (1,35 = +35 % par cercle, composé). Voir `stakesAtCircle`. */
+    beyondStakeGrowth: number
     multipliers: Readonly<Record<BetTypeId, number>>
     /** Niveau du stagiaire (index de grade, 0 au départ) à partir duquel chaque type de pari est ouvert. */
     betUnlockLevel: Readonly<Record<BetTypeId, number>>

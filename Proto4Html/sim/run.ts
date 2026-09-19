@@ -158,7 +158,7 @@ export function soulsFor(type: BetTypeId, state: RaceState, plan: Plan): number[
 }
 
 /** Mises proposées au cercle, de la plus grosse à la plus petite — la même échelle que celle du joueur à l'écran. */
-const stakesDesc = (circle: number): number[] => stakesAtCircle(config.economy, circle).sort((a, b) => b - a)
+const stakesDesc = (circle: number): number[] => stakesAtCircle(config, circle).sort((a, b) => b - a)
 
 /** Paris posés avant le départ, selon le profil. Renvoie les paris et ce qu'ils ont coûté. */
 function placeBets(state: RaceState, money: number, inventory: Inventory, level: number, profile: Profile, plan: Plan, ladder: readonly number[]): { bets: Bet[]; staked: number } {

@@ -239,6 +239,29 @@ export function bossEffectsFor(raceIndex: number): BossEffect[] {
 }
 
 /**
+ * Ce que coûte au guichet une mise de `stake` (boss Ploutos, `costlyLateBets` : le passage est
+ * taxé en course, pas en préparation). La mise enregistrée sur le ticket reste celle qu'on a
+ * choisie ; c'est le prix du geste qui monte.
+ */
+export function stakeCost(stake: number, boss: readonly BossEffect[], initial: boolean): number {
+  return Math.round(stake * cutFactor(boss, initial))
+}
+
+function cutFactor(boss: readonly BossEffect[], initial: boolean): number {
+  return initial ? 1 : (bossValue(boss, 'costlyLateBets') ?? 1)
+}
+
+/**
+ * Plus grosse mise que le joueur peut réellement payer : sa bourse entière quand le guichet ne
+ * prend pas sa part, la moitié quand Ploutos taxe. C'est la valeur du jeton « All-in », et elle
+ * se déduit de `stakeCost` plutôt que de la recopier — un All-in refusé pour cause de taxe
+ * serait un bouton qui ment.
+ */
+export function maxStake(money: number, boss: readonly BossEffect[], initial: boolean): number {
+  return Math.max(0, Math.floor(money / cutFactor(boss, initial)))
+}
+
+/**
  * Pouvoir du boss d'un cercle, tel qu'il s'annonce au joueur : le texte écrit de `race.json`, ou
  * la description des effets assemblés au-delà des cercles écrits. La carte et le bandeau de la
  * course du boss lisent la même phrase — annoncer un pouvoir puis en jouer un autre serait une
@@ -700,7 +723,7 @@ export function useRace({ carry, unlocked, soulCount, lanes, terrains, speed }: 
     const initial = u.phase === 'prep'
     // Boss Ploutos : un pari posé en course coûte plus cher que sa mise affichée. La mise
     // enregistrée reste celle du ticket : c'est le passage au guichet qui est taxé, pas le gain.
-    const cost = Math.round(stake * (initial ? 1 : (bossValue(u.boss, 'costlyLateBets') ?? 1)))
+    const cost = stakeCost(stake, u.boss, initial)
     const refusal = betRefusal(u.race, type, souls, stake, u.money, u.bets)
     if (refusal) return betRefusalText(refusal)
     if (cost > u.money) return fill(UI.bets.counterCut, { cost, stake })
@@ -1311,7 +1334,7 @@ export function useRace({ carry, unlocked, soulCount, lanes, terrains, speed }: 
   useEffect(() => {
     if (!auto) return
     if (ui.phase === 'prep') {
-      if (ui.bets.length === 0 && placeBet('winner', [0], stakesAtCircle(config.economy, circleOf(ui.raceIndex).circle)[0] ?? 0) !== null) {
+      if (ui.bets.length === 0 && placeBet('winner', [0], stakesAtCircle(config, circleOf(ui.raceIndex).circle)[0] ?? 0) !== null) {
         setAuto(false)
         return
       }

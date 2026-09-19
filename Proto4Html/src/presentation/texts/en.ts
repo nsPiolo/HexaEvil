@@ -547,6 +547,10 @@ const BETS = {
   chipHint: 'Drag this chip into the slot, or click it',
   chipChosen: 'Chip down: that’s the current stake',
   tooRich: 'Not enough in the balance ({n} ¤)',
+  allIn: 'All-in',
+  allInLabel: 'All-in: {n} ¤',
+  allInHint: 'Stake the whole balance: {n} ¤',
+  allInBroke: 'Nothing left to stake',
 } as const
 
 /** Gauge of the three uses: balance, staked in the race, circle price (spec 01/C1). */

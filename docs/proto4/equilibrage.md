@@ -371,6 +371,45 @@ rapporte 11 au lieu de 18, donc 106 pièces au lieu de 113 et « encore 44 ¤ »
 (e2e/seeds.ts, 06-B). Les graines elles-mêmes n'ont pas bougé — une cote n'entre pas dans le
 hasard. Les deux cotes affichées dans `03-paris` ont suivi.
 
+## Au-delà du quinzième cercle : les jetons composent, et un All-in apparaît
+
+Jusqu'ici, deux courbes de nature différente se faisaient face. Les prix de sortie composent
+(`beyondPriceGrowth` = 1,35, à l'infini) ; l'échelle des mises, elle, était une **droite**
+(`stakeGrowthPerCircle` = 0,5, soit +50 % de l'échelle du cercle 1 à chaque cercle, jamais
+composé). Une droite ne rattrape pas une exponentielle : le plus gros jeton valait le tiers du
+prix de sortie au cercle 1, le vingt-cinquième au quinzième, le trois-centième au vingt-cinquième.
+La bourse pouvait grossir, elle ne pouvait plus être engagée, et le raisonnement qui justifie
++35 % (« 50 % du solde misé ») cessait de tenir dès que le solde dépassait deux fois le gros jeton.
+
+**Deux corrections, toutes deux réservées aux cercles au-delà des écrits.**
+
+`economy.beyondStakeGrowth` (1,35) : au-delà du dernier cercle écrit, l'échelle quitte la droite
+et compose, exactement au pas du prix de sortie (`src/core/rules/stakes.ts`). Les deux taux étant
+égaux, le rapport entre le gros jeton et le prix **se fige sur celui du quinzième cercle** au lieu
+de s'effondrer. Le plafond du plus petit jeton sur l'avance continue de s'appliquer, et il mord
+désormais : l'avance reste linéaire, donc au vingt-cinquième cercle le premier jeton vaut
+l'avance (500) et le deuxième 1 610. C'est voulu — après avoir payé un cercle, l'avance seule
+doit encore permettre de parier.
+
+| Cercle | 15 | 16 | 18 | 20 | 25 |
+|---|---:|---:|---:|---:|---:|
+| Gros jeton, avant | 400 | 425 | 475 | 525 | 650 |
+| Gros jeton, après | 400 | 540 | 985 | 1 795 | 8 045 |
+| Prix de sortie | 10 020 | 13 550 | 24 650 | 44 950 | 201 450 |
+| Prix / gros jeton, avant | 25 | 32 | 52 | 86 | 310 |
+| **Prix / gros jeton, après** | **25** | **25** | **25** | **25** | **25** |
+
+**Le jeton « All-in »**, cinquième jeton du plateau, n'apparaît lui aussi qu'au-delà des cercles
+écrits. Les quatre paliers suivent maintenant la courbe des prix, mais ils restent une offre
+fixe : ils ne savent rien de la bourse du joueur. L'All-in est la seule mise qui la suit. Sa
+valeur n'est pas le solde brut mais `maxStake` (`presentation/useRace.ts`), c'est-à-dire ce que
+le guichet accepte vraiment : sous le pouvoir de Ploutos (`costlyLateBets`), où un pari en course
+coûte deux fois sa mise, l'All-in vaut la moitié de la bourse. Un bouton qui promet une mise
+refusée serait un bouton qui ment.
+
+Pourquoi pas avant le quinzième : jusque-là l'échelle suffit, et un All-in au premier cercle
+n'est pas un pari, c'est un jet de dé sur toute la partie.
+
 ## Régler quelque chose
 
 1. Modifier `Proto4Html/config/race.json` (`economy`, `run.circles[].price`).
