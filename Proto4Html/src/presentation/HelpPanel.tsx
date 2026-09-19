@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { config } from '../core/config'
+import { rich } from './rich'
 import { HELP, fill, oddsText, type HelpBlock } from './texts'
 
 /**
@@ -16,21 +17,6 @@ function odds(): Record<string, string> {
 
 interface Props {
   onClose: () => void
-}
-
-/**
- * Balisage inline minimal des textes d'aide : `**gras**` et `*italique*`. Les textes
- * restent de simples chaînes dans texts.ts (traduisibles), le rendu se fait ici.
- */
-function rich(text: string): ReactNode[] {
-  return text
-    .split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g)
-    .filter((part) => part !== '')
-    .map((part, i) => {
-      if (part.startsWith('**')) return <strong key={i}>{part.slice(2, -2)}</strong>
-      if (part.startsWith('*')) return <em key={i}>{part.slice(1, -1)}</em>
-      return part
-    })
 }
 
 /** Rendu d'un texte d'aide : cotes de la config d'abord, balisage inline ensuite. */

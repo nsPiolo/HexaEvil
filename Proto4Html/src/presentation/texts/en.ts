@@ -41,13 +41,13 @@ const MENU = {
 const INTRO: readonly Line[] = [
   D('Congratulations, you’re dead!', 'fier'),
   D('We looked over your file, and to nobody’s surprise, you ended up here.', 'neutre'),
-  D('Iscariot, demon intern. I don’t have the clearance to assign you your proper punishment — and it’s under repair anyway.', 'normal'),
+  D('Iscariot, demon intern. I don’t have the clearance to assign you your proper punishment… *and it’s under repair anyway*.', 'normal'),
   D('…so we’ll have to wait for the boss. Sorry about that.', 'doute'),
   D('Fancy a little wager while we wait? You’ve got eternity ahead of you, may as well lose a piece of it.', 'fier'),
   P('No thanks. I already lost everything once.'),
   D('Exactly, you know the drill. And I’m bored stiff: I’ll lend you a stake, you keep your winnings.', 'doute'),
   P('Fine. But no funny business.'),
-  D('None whatsoever. You have my word — and on that point, believe me, I have a reputation.', 'fier'),
+  D('None whatsoever. You have my word… *and on that point, believe me, I have a reputation*.', 'fier'),
   D('Down here we bet on a race of damned souls, so here’s {money} coins to start. And before every race, I’ll advance you {allowance} more.', 'neutre'),
   D('Oh, and I’m only cleared to take simple bets: winner, top 3, outside the top 3, last. Anything that puts two souls on one ticket is above my grade. For now.', 'doute'),
   D('One last thing, do what you like with it: down here, everything has a price. The punishments, the passages… the doors. Win enough, and you might not be staying.', 'neutre'),
@@ -59,7 +59,7 @@ const INTRO: readonly Line[] = [
  */
 const BOSS_ANNOUNCE: readonly Line[] = [
   D('My boss is back, he saw us playing. He wants his cut: {price} coins at the end of the circle, and he’ll run the last race himself.', 'normal'),
-  D('You pay, he lets you climb a circle. You don’t pay, he keeps you — it’s his job, and he’s good at it.', 'doute'),
+  D('You pay, he lets you climb a circle. You don’t pay, he keeps you… *it’s his job, and he’s good at it*.', 'doute'),
 ]
 
 /**
@@ -73,9 +73,9 @@ const BOSS_ANNOUNCE_NEXT: readonly (readonly Line[])[] = [
   [D('You know the house rules now: the last race of the circle belongs to the boss. {price} coins in hand at the finish and we move on.', 'neutre')],
   [D('Next race, last of the circle. The landlord comes down to work the counter himself, and it’ll take {price} coins for him to open the door.', 'normal')],
   [D('One more, then it’s the boss’s. I’ll be straight with you: without {price} coins at the end, we don’t leave this circle.', 'doute')],
-  [D('The boss booked the last race. He always books — there’s never anyone. {price} coins at the end, not one less: I keep the books.', 'neutre')],
+  [D('The boss booked the last race. He always books… *there’s never anyone*. {price} coins at the end, not one less: I keep the books.', 'neutre')],
   [D('Last race of the circle, so last chance to scrape together the {price} coins. The boss doesn’t take instalments.', 'normal')],
-  [D('The next one’s the boss’s — they all insist, it’s their one moment of glory. {price} coins and we’re off to the next circle.', 'fier')],
+  [D('The next one’s the boss’s… *they all insist, it’s their one moment of glory*. {price} coins and we’re off to the next circle.', 'fier')],
   [D('We’re at the end of the circle, and the end of a circle is always a boss. {price} coins at the finish, or we stay.', 'neutre')],
 ]
 
@@ -117,7 +117,7 @@ const DEMON_RANKS: readonly DemonRank[] = [
       D('I’m allowed to torment now. Officially. I’ll start with my old department head.'),
       P('Am I on the list?'),
       D('You? You earn me too much. As long as you’re winning, I only torment your rivals.'),
-      D('And I’ve got one more stamp: the “Winner + last” bet is open to you, at ×{winnerAndLast}. Two bets in one, and it plays out at the bottom of the standings — where nobody ever looks.'),
+      D('And I’ve got one more stamp: the “Winner + last” bet is open to you, at ×{winnerAndLast}. Two bets in one, and it plays out at the bottom of the standings… *where nobody ever looks*.'),
     ],
   },
   {
@@ -167,7 +167,7 @@ const CIRCLES: readonly CircleTexts[] = [
       D('I did try to send your name up. They told me a single circle happens to any dead man. Hold two and it becomes a file.', 'doute'),
       D('Next stop: Lust. Eternal winds toss the souls about, there’ll be {souls} at the start, one more than here. And the exit fee climbs to {price} coins.'),
     ],
-    failure: [D('Right. The repairs are done, I got my clearances back this morning — and your eternal punishment with them. Shame, we were having fun. Bye.', 'degout')],
+    failure: [D('Right. The repairs are done, I got my clearances back this morning… *and your eternal punishment with them*. Shame, we were having fun. Bye.', 'degout')],
     bossIntro: [
       B('So it’s you. The dead man who plays dice instead of going down.'),
       D('Charon, sir. He paid his passage, technically…', 'normal'),
@@ -292,12 +292,12 @@ const CIRCLES: readonly CircleTexts[] = [
     ],
     failure: [D('One coin short. This is the circle of Treachery, what were you expecting? Welcome to the ice. Bye.')],
     bossIntro: [
-      B('There you are. Last circle, last counter — and on my side of it, this time.'),
+      B('There you are. Last circle, last counter… *and on my side of it, this time*.'),
       P('You gave me your word.'),
       B('And I kept it. Eight circles, not one trick. You never asked me what was in the ninth.'),
       P('Iscariot. I should have been suspicious of a name like that.'),
       B('Everyone says so afterwards. Nobody says it before: that’s the whole trade.'),
-      B('{price} coins. I don’t cheat, I have never cheated. I win — it isn’t the same thing.'),
+      B('{price} coins. I don’t cheat, I have never cheated. I win… *it isn’t the same thing*.'),
     ],
   },
   {
@@ -375,7 +375,7 @@ const CIRCLES: readonly CircleTexts[] = [
   {
     ordinal: '15th',
     success: [
-      D('Here we are. There’s nothing above — so we start again here, and the rate goes up.'),
+      D('Here we are. There’s nothing above… *so we start again here, and the rate goes up*.'),
       D('The stands fill once more, the rings turn, and the counter stays open. {souls} souls at the start, {price} coins for the next lap.'),
       P('Does it ever stop?'),
       D('You had a door. You didn’t take it.'),

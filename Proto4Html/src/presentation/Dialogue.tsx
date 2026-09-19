@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { rich } from './rich'
 import { MENU, SPEAKERS, UI, type Line } from './texts'
 
 interface Props {
@@ -52,7 +53,7 @@ export function Dialogue({ lines, skipLabel, background, onDone }: Props) {
           {lines.slice(0, index + 1).map((l, i) => (
             <p key={i} className={`bubble-line bubble-${l.who}` + (i === index ? ' bubble-current' : ' bubble-past')}>
               <span className="bubble-who">{l.label ?? SPEAKERS[l.who]}</span>
-              {l.text}
+              {rich(l.text)}
             </p>
           ))}
         </div>

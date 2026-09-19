@@ -38,13 +38,13 @@ const MENU = {
 const INTRO: readonly Line[] = [
   D('Félicitations, vous êtes mort !', 'fier'),
   D('On a étudié votre dossier, et sans grande surprise, vous avez fini ici.', 'neutre'),
-  D("Iscariote, démon stagiaire. Je n'ai pas les accréditations pour vous affecter à la bonne punition — et de toute façon, elle est en réfection.", 'normal'),
+  D("Iscariote, démon stagiaire. Je n'ai pas les accréditations pour vous affecter à la bonne punition… *et de toute façon, elle est en réfection*.", 'normal'),
   D('…on va devoir attendre le boss. Désolé.', 'doute'),
   D("Ça vous tente un petit pari en attendant ? Vous avez l'éternité devant vous, autant en perdre un morceau.", 'fier'),
   P("Non merci. J'ai déjà tout perdu une fois."),
   D("Justement, vous connaissez la procédure. Et moi je m'ennuie ferme : je vous prête de quoi miser, vous gardez vos gains.", 'doute'),
   P("Bon, d'accord. Mais pas d'entourloupe."),
-  D("Aucune. Vous avez ma parole — et sur ce point, croyez-moi, j'ai une réputation.", 'fier'),
+  D("Aucune. Vous avez ma parole… *et sur ce point, croyez-moi, j'ai une réputation*.", 'fier'),
   D("Ici on mise sur une course d'âmes damnées, donc voilà {money} pièces pour commencer. Et avant chaque course, je vous avancerai {allowance} pièces de plus.", 'neutre'),
   D("Ah, et je n'ai le droit de prendre que les paris simples : vainqueur, top 3, pas dans le top 3, dernier. Tout ce qui met deux âmes sur le même ticket, c'est au-dessus de mon grade. Pour l'instant.", 'doute'),
   D("Une dernière chose, vous en ferez ce que vous voudrez : ici, tout se paie. Les punitions, les passages… les portes. Gagnez assez, et vous ne resterez peut-être pas.", 'neutre'),
@@ -56,7 +56,7 @@ const INTRO: readonly Line[] = [
  */
 const BOSS_ANNOUNCE: readonly Line[] = [
   D("Mon boss est de retour, il nous a vus jouer. Il veut sa part : {price} pièces à la fin du cercle, et il tiendra lui-même la dernière course.", 'normal'),
-  D("Vous payez, il vous laisse monter d'un cercle. Vous ne payez pas, il vous garde — c'est son métier, il le fait bien.", 'doute'),
+  D("Vous payez, il vous laisse monter d'un cercle. Vous ne payez pas, il vous garde… *c'est son métier, il le fait bien*.", 'doute'),
 ]
 
 /**
@@ -70,9 +70,9 @@ const BOSS_ANNOUNCE_NEXT: readonly (readonly Line[])[] = [
   [D("Vous connaissez la maison, maintenant : la dernière course du cercle, c'est le boss qui la tient. {price} pièces en poche à l'arrivée, et on passe.", 'neutre')],
   [D("Prochaine course, dernière du cercle. Le patron d'ici descend tenir le guichet lui-même, et il faudra {price} pièces pour qu'il ouvre la porte.", 'normal')],
   [D("Encore une, et c'est celle du boss. Je vous le dis franchement : sans {price} pièces au bout, on ne sort pas de ce cercle.", 'doute')],
-  [D("Le boss a réservé la dernière course. Il réserve toujours — il n'y a jamais personne. {price} pièces à la fin, pas une de moins : c'est moi qui tiens les comptes.", 'neutre')],
+  [D("Le boss a réservé la dernière course. Il réserve toujours… *il n'y a jamais personne*. {price} pièces à la fin, pas une de moins : c'est moi qui tiens les comptes.", 'neutre')],
   [D("Dernière course du cercle, donc dernière chance de réunir les {price} pièces. Le boss, lui, n'accepte pas les acomptes.", 'normal')],
-  [D("La suivante est pour le boss — ils y tiennent tous, c'est leur seul moment de gloire. {price} pièces et on file au cercle d'après.", 'fier')],
+  [D("La suivante est pour le boss… *ils y tiennent tous, c'est leur seul moment de gloire*. {price} pièces et on file au cercle d'après.", 'fier')],
   [D("On arrive au bout du cercle, et le bout d'un cercle, c'est toujours un boss. {price} pièces à l'arrivée, sinon on reste.", 'neutre')],
 ]
 
@@ -123,7 +123,7 @@ const DEMON_RANKS: readonly DemonRank[] = [
       D("J'ai le droit de tourmenter, maintenant. Officiellement. Je vais commencer par mon ancien chef de service."),
       P("Et moi, je suis sur la liste ?"),
       D("Vous ? Vous me rapportez trop. Tant que vous gagnez, je ne tourmente que vos adversaires."),
-      D("Et j'ai un tampon de plus : le pari « Vainqueur + dernier » vous est ouvert, à ×{winnerAndLast}. Deux paris en un, et il se joue au fond du classement — là où personne ne regarde jamais."),
+      D("Et j'ai un tampon de plus : le pari « Vainqueur + dernier » vous est ouvert, à ×{winnerAndLast}. Deux paris en un, et il se joue au fond du classement… *là où personne ne regarde jamais*."),
     ],
   },
   {
@@ -173,7 +173,7 @@ const CIRCLES: readonly CircleTexts[] = [
       D("J'ai bien tenté de faire remonter votre nom. On m'a répondu qu'un cercle, ça arrive à n'importe quel mort. Tenez-en deux et ça devient un dossier.", 'doute'),
       D('Prochain arrêt : la Luxure. Des vents éternels y bousculent les âmes, il y en aura {souls} au départ, une de plus. Et le tarif de sortie monte à {price} pièces.'),
     ],
-    failure: [D("Bon. Les travaux sont finis, j'ai récupéré mes accréditations ce matin — et votre punition éternelle avec. Dommage, on s'amusait bien. Bye.", 'degout')],
+    failure: [D("Bon. Les travaux sont finis, j'ai récupéré mes accréditations ce matin… *et votre punition éternelle avec*. Dommage, on s'amusait bien. Bye.", 'degout')],
     bossIntro: [
       B('Alors c\'est vous. Le mort qui joue aux dés au lieu de descendre.'),
       D('Charon, monsieur. Il a payé son passage, techniquement…', 'normal'),
@@ -298,12 +298,12 @@ const CIRCLES: readonly CircleTexts[] = [
     ],
     failure: [D("À une pièce près. C'est le cercle de la Trahison, vous vous attendiez à quoi ? Bienvenue dans la glace. Bye.")],
     bossIntro: [
-      B('Vous voilà. Dernier cercle, dernier guichet — et de mon côté du comptoir, cette fois.'),
+      B('Vous voilà. Dernier cercle, dernier guichet… *et de mon côté du comptoir, cette fois*.'),
       P("Vous aviez donné votre parole."),
       B("Et je l'ai tenue. Huit cercles, pas une entourloupe. Vous ne m'avez jamais demandé ce qu'il y avait au neuvième."),
       P("Iscariote. J'aurais dû me méfier d'un nom pareil."),
       B("Tout le monde le dit après. Personne ne le dit avant : c'est tout le métier."),
-      B("{price} pièces. Je ne triche pas, je n'ai jamais triché. Je gagne — ce n'est pas la même chose."),
+      B("{price} pièces. Je ne triche pas, je n'ai jamais triché. Je gagne… *ce n'est pas la même chose*."),
     ],
   },
   {
@@ -381,7 +381,7 @@ const CIRCLES: readonly CircleTexts[] = [
   {
     ordinal: '15e',
     success: [
-      D("Nous y sommes. Au-dessus, il n'y a plus rien — alors on recommence ici, et le tarif monte."),
+      D("Nous y sommes. Au-dessus, il n'y a plus rien… *alors on recommence ici, et le tarif monte*."),
       D("Les gradins se remplissent à nouveau, les anneaux tournent, et le guichet reste ouvert. {souls} âmes au départ, {price} pièces pour le tour suivant."),
       P("Ça ne s'arrête jamais ?"),
       D("Vous avez eu une porte. Vous ne l'avez pas prise."),
