@@ -77,13 +77,19 @@ de fin de cercle.
 - Le menu `Collection` de l'accueil liste les objets descellés et compte les
   scellés **sans les nommer** (voir [`interface.md`](interface.md) § Collection).
 
-Socle livré aujourd'hui (**9 objets sur 47**), réparti sur les trois familles pour
+Socle livré aujourd'hui (**9 objets sur 48**), réparti sur les trois familles pour
 qu'une vitrine de trois puisse toujours offrir autre chose qu'une seule sorte de
 geste : Clepsydre fêlée, Bourse percée, Tirelire du stagiaire, Semelles de plomb,
-Dé des Limbes, Dé de la Colère, Face limée, Face dorée, Face de gel.
+Dé des Limbes, Dé du Décathlon, Face limée, Face dorée, Face de gel.
 
-Un run complet jusqu'au neuvième cercle descelle 9 objets. Avec 38 objets scellés,
-il faut quatre runs complets pour ouvrir tout le catalogue : c'est le chiffre à
+Le Dé de la Colère a quitté ce socle : ses deux dés y disaient la même chose
+(remplacer un dé pour aller plus vite ou plus fort), et le premier achat de dé se
+jouait donc sur la seule variance. Le Décathlon, qui échange la vitesse contre le
+choix de la valeur, ouvre l'autre geste — freiner une âme — dès le premier cercle ;
+la Colère reste au catalogue, scellée comme les autres.
+
+Un run complet jusqu'au neuvième cercle descelle 9 objets. Avec 39 objets scellés,
+il faut cinq runs complets pour ouvrir tout le catalogue : c'est le chiffre à
 surveiller si le rythme paraît trop lent — il se règle par `unlockedAtStart`, sans
 toucher au code.
 

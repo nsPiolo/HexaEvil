@@ -888,7 +888,7 @@ p { margin: 0; }
 .inv-artefact { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; background: #2f2216; border: 1px solid #4a331b; color: var(--gold); font-size: 0.8rem; font-weight: 600; }
 /* Vignette de l'objet possédé, à la hauteur du texte de la pastille (ItemArt.tsx ; point d'interrogation tant que le dessin manque). */
 .inv-art { width: 18px; height: 18px; object-fit: contain; }
-.inv-die { display: inline-flex; align-items: center; gap: 3px; padding: 3px 8px; border-radius: 8px; background: var(--panel-2); font-size: 0.8rem; }
+.inv-die { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 3px; padding: 3px 8px; border-radius: 8px; background: var(--panel-2); font-size: 0.8rem; }
 .inv-die-name { font-weight: 600; margin-right: 6px; }
 .face { display: inline-flex; align-items: center; min-width: 26px; justify-content: center; padding: 1px 5px; border-radius: 5px; background: var(--bg-2); border: 1px solid var(--line); font-variant-numeric: tabular-nums; font-weight: 700; font-size: 0.8rem; }
 .face-neg { color: var(--bad); }
@@ -922,7 +922,7 @@ p { margin: 0; }
 .shop-rarity.rarity-legendary { color: var(--gold); }
 .shop-price { font-weight: 700; color: var(--gold); font-variant-numeric: tabular-nums; }
 .shop-price-over { color: var(--bad); }
-.shop-faces-preview { display: flex; gap: 4px; }
+.shop-faces-preview { display: flex; gap: 4px; flex-wrap: wrap; }
 /* Triade sûr / ambitieux / dangereux (spec 04/C2) : bandeau de tête, texte + couleur. */
 .shop-item { position: relative; padding-top: 30px; }
 .shop-risk { position: absolute; top: 0; left: 0; right: 0; padding: 3px 12px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; border-radius: 0 0 6px 6px; }
@@ -944,7 +944,8 @@ p { margin: 0; }
 .shop-target { display: flex; flex-direction: column; gap: 10px; padding: 12px; border-radius: 10px; background: var(--panel-2); border: 1px dashed var(--gold); }
 .shop-dice { display: flex; flex-direction: column; gap: 8px; }
 .shop-die { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-.shop-faces { display: flex; gap: 6px; }
+/* Les faces reviennent à la ligne : un dé à dix faces (Décathlon) déborderait sinon de la carte. */
+.shop-faces { display: flex; gap: 6px; flex-wrap: wrap; }
 .face-btn { padding: 4px; border-radius: 8px; border: 2px solid transparent; background: none; transition: border-color 150ms, transform 120ms; }
 .face-btn:hover:not(:disabled) { border-color: var(--ink); transform: translateY(-2px); }
 .face-btn:disabled { opacity: 0.4; }

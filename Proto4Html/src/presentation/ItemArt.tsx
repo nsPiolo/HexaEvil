@@ -24,7 +24,7 @@ function choisir(src: string): string | null {
 }
 
 /**
- * Vignette d'un objet achetable. Les quarante-sept sont peintes ; le repli reste pour les
+ * Vignette d'un objet achetable. Les quarante-huit sont peintes ; le repli reste pour les
  * objets à venir : tant qu'un fichier manque, la carte montre le point d'interrogation
  * (`public/objets/qmark.webp`) plutôt qu'un trou, pour que toutes les cartes gardent la même
  * silhouette. Il suffit de poser le `.webp` dans `public/objets/` pour qu'il remplace le repli

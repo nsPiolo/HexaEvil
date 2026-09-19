@@ -47,19 +47,20 @@ export const RACES_PER_CIRCLE = 3
 /**
  * Vitrine du cercle 1, inventaire de départ (la vitrine est tirée à la première ouverture de la
  * boutique, avant tout lancer) : Dé des Limbes 30 (sûr), Verrou de Minos 85 (ambitieux, ≥ seuil
- * de confirmation), Dé de la Colère 55 (danger ⚠). Tous les prix dépassent 15 : à 0 pièce
+ * de confirmation), Face explosive 55 (danger ⚠). Tous les prix dépassent 15 : à 0 pièce
  * apportée (20 d'avance − 5 de mise), tout est trop cher (04-D).
  *
- * Re-cherchée deux fois : à l'élargissement du catalogue (16 → 47 objets), puis au passage de
- * la vitrine de 4 à 3 objets. Contraintes à retrouver si elle saute encore : `SHOP_SLOTS`
- * objets triés sûr, ambitieux, danger ; un dé à remplacer, sûr, sous le seuil de confirmation
- * et payable à 67 ; un artefact ambitieux entre 68 et 95 (achetable à 95, refusé à 67) ; un
- * objet à contrepartie ; rien sous 16.
+ * Re-cherchée trois fois : à l'élargissement du catalogue (16 → 47 objets), au passage de la
+ * vitrine de 4 à 3 objets, puis à l'arrivée du Dé du Décathlon (47 → 48 objets, le tirage se
+ * fait sur tout le catalogue en mode e2e). Contraintes à retrouver si elle saute encore :
+ * `SHOP_SLOTS` objets triés sûr, ambitieux, danger ; un dé à remplacer, sûr, sous le seuil de
+ * confirmation et payable à 67 ; un artefact ambitieux entre 68 et 95 (achetable à 95, refusé
+ * à 67) ; un objet à contrepartie ; rien sous 16.
  */
-export const SHOP_SEED = 918
+export const SHOP_SEED = 4766
 export const SHOP_SEED_EXPECT = {
   order: ['Sûr', 'Ambitieux', 'Danger ⚠'],
-  danger: { name: 'Dé de la Colère', warning: 'une face à −2 : un recul de deux cases est possible', impact: 'moyen' },
+  danger: { name: 'Face explosive', warning: "sans percussion, l'âme recule d'une case après coup", impact: 'fort' },
   confirm: { name: 'Verrou de Minos', price: 85 },
   die: { name: 'Dé des Limbes', price: 30, faces: ['+1', '+1', '+2', '+2'] },
   cheapest: 30,

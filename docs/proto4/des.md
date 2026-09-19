@@ -20,12 +20,13 @@ Les faces des dés spéciaux peuvent ensuite être forgées (voir [`forge.md`](f
 | 4 | Dé de Prodigalité ⚠ ✔ | Distance | `2, 3, 3, 4` | remplace | Fort | 80 | 2 |
 | 5 | Dé de Fraude ✔ | Distance | `1, 2, 3, ?` | remplace | Fort | 90 | 2 |
 | 6 | Troisième dé Distance ✔ | Distance | `-1, 1, 2, 3` | ajoute | Fort | 100 | 2 |
-| 7 | Dé Âme pipé | Âme | 2 faces d'une âme choisie | remplace | Moyen | 50 | 0 |
-| 8 | Dé du Meneur | Âme | meneur / traînard / 3 âmes | remplace | Fort | 85 | 2 |
-| 9 | Dé de Cerbère ⚠ | Âme + Distance | dé à 6 faces mixte | ajoute | Extrême | 160 | 4 |
+| 7 | Dé du Décathlon ✔ | Distance | `-3, -2, -1, -1, 0, 1, 1, 2, 2, 3` (d10) | remplace | Fort | 60 | 0 |
+| 8 | Dé Âme pipé | Âme | 2 faces d'une âme choisie | remplace | Moyen | 50 | 0 |
+| 9 | Dé du Meneur | Âme | meneur / traînard / 3 âmes | remplace | Fort | 85 | 2 |
+| 10 | Dé de Cerbère ⚠ | Âme + Distance | dé à 6 faces mixte | ajoute | Extrême | 160 | 4 |
 
-**État du proto** : les six dés **Distance** (n° 1 à 6) sont implémentés. Les
-trois dés **Âme** (n° 7 à 9) ne le sont pas : `rollPlayerDice` tire aujourd'hui
+**État du proto** : les sept dés **Distance** (n° 1 à 7) sont implémentés. Les
+trois dés **Âme** (n° 8 à 10) ne le sont pas : `rollPlayerDice` tire aujourd'hui
 une âme au hasard (`rng.int(soulCount)`) sans objet « dé Âme » derrière. Les
 modéliser est un chantier à part, qui débloquerait d'un coup ces trois dés et les
 trois faces de dé Âme de [`forge.md`](forge.md).
@@ -62,20 +63,29 @@ copie : avec le Dé de Glace à côté, `?` vaut souvent 5.*
 *Plus de déplacements par tour = courses plus courtes et plus de collisions. À
 mesurer : le tour adverse pèse relativement moins.*
 
+**7. Dé du Décathlon — 60, remplace.** Faces `-3, -2, -1, -1, 0, 1, 1, 2, 2, 3`,
+le seul dé à dix faces du catalogue. Espérance 0,2 : bien moins que le dé de base
+(1,25). *Ce n'est pas un dé de vitesse mais un dé d'outils — toutes les valeurs de
+-3 à +3 y sont, donc il y a toujours la bonne à jouer sur l'âme qu'il faut : le
+grand recul pour l'âme pariée par l'adversaire, le +3 pour la sienne. Il remplace
+le Dé de la Colère dans le socle de départ (voir [`boutique-README.md`](boutique-README.md)).
+À mesurer : est-ce que quatre faces négatives sur dix ralentissent trop la course,
+ou est-ce que le joueur les retourne toujours contre quelqu'un ?*
+
 ### Dés Âme
 
-**7. Dé Âme pipé — 50, remplace.** À l'achat, le joueur choisit une âme : elle
+**8. Dé Âme pipé — 50, remplace.** À l'achat, le joueur choisit une âme : elle
 occupe **deux faces** du dé, une autre âme (au choix) disparaît du dé. Le choix
 peut être refait à chaque début de cercle pour 10. *Contrôle faible mais
 permanent : l'âme choisie sort deux fois plus souvent sur ce dé.*
 
-**8. Dé du Meneur — 85, remplace, rang 2.** Faces : `Meneur`, `Traînard`, et
+**9. Dé du Meneur — 85, remplace, rang 2.** Faces : `Meneur`, `Traînard`, et
 trois âmes fixes (les autres sont retirées). `Meneur` et `Traînard` désignent
 l'âme en tête ou en queue **au moment de la résolution** de la combinaison. *Un
 dé qui lit le plateau : l'ordre des combinaisons décide de sa cible. Avec 6 âmes
 ou plus, une face « âme aléatoire parmi les absentes » remplace la troisième âme fixe.*
 
-**9. Dé de Cerbère ⚠ — 160, ajoute, rang 4.** Dé à six faces mixte, lancé en plus
+**10. Dé de Cerbère ⚠ — 160, ajoute, rang 4.** Dé à six faces mixte, lancé en plus
 du lancer normal : `Âme +1`, `Âme +2`, `Âme -1`, `Adversaire relance`, `Rien`,
 `Morsure`. Les faces `Âme ±n` désignent une âme aléatoire et s'appliquent avant
 vos combinaisons (le joueur ne choisit ni l'âme ni l'ordre). `Adversaire relance`
@@ -90,6 +100,7 @@ C'est l'objet « je joue autrement ce run » (inspi §5).*
 |---|---|
 | Limbes + base | le joueur qui sécurise gagne-t-il moins mais plus souvent ? |
 | Colère + Glace | les courses de 14 cases finissent-elles en 5 tours ? |
+| Décathlon + base | le joueur s'en sert-il pour freiner les autres, ou seulement pour avancer ? |
 | Prodigalité + Comptable + Dorée | l'économie de course s'auto-alimente-t-elle ? |
 | Meneur + Face du meneur (forge) | le joueur peut-il viser la tête à chaque tour ? Trop fort ? |
 | Cerbère seul | le chaos supplémentaire est-il amusant ou frustrant ? |

@@ -18,7 +18,7 @@
     "tirelire",
     "semellesDePlomb",
     "limbes",
-    "colere",
+    "decathlon",
     "limee",
     "doree",
     "gel"
@@ -185,6 +185,27 @@
         4
       ],
       "costPerUse": 3
+    },
+    {
+      "id": "decathlon",
+      "kind": "die",
+      "rarity": "common",
+      "price": 60,
+      "impact": "fort",
+      "name": "Dé du Décathlon",
+      "description": "Remplace un dé Distance par un dé à dix faces -3, -2, -1, -1, 0, 1, 1, 2, 2, 3 : toute la palette, du grand recul au grand bond, mais quatre faces sur dix reculent.",
+      "faces": [
+        -3,
+        -2,
+        -1,
+        -1,
+        0,
+        1,
+        1,
+        2,
+        2,
+        3
+      ]
     },
     {
       "id": "limee",

@@ -146,6 +146,10 @@
       "description": "Replaces a Distance die with a 2, 3, 3, 4 die. Every pairing of this die costs 3 coins; with no money, it is worth 0.",
       "warning": "every pairing costs 3 ¤; with no money, the face is worth 0"
     },
+    "decathlon": {
+      "name": "Decathlon Die",
+      "description": "Replaces a Distance die with a ten-faced -3, -2, -1, -1, 0, 1, 1, 2, 2, 3 die: the whole range, from a long step back to a long leap, but four faces out of ten go backwards."
+    },
     "limee": {
       "name": "Filed Face",
       "description": "The chosen face is worth 0: the soul is named but does not move. Suggested target: the -1."

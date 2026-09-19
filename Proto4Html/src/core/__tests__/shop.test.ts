@@ -113,6 +113,16 @@ describe('achats', () => {
     expect(r.inventory.dice[0]?.kind).toBe('base')
     expect(() => applyPurchase(findItem(shop, 'glace'), inv, null)).toThrow(/choisissez/)
   })
+  it('le Décathlon remplace un dé par dix faces, et le lancer ne sort que les siennes', () => {
+    const faces = [-3, -2, -1, -1, 0, 1, 1, 2, 2, 3]
+    const r = applyPurchase(findItem(shop, 'decathlon'), inv, { dieIndex: 0 })
+    expect(r.inventory.dice[0]?.faces.map((f) => f.value)).toEqual(faces)
+    // Un dé à dix faces est le premier du catalogue à dépasser quatre : le tirage se fait sur
+    // `faces.length`, donc rien à câbler — c'est ce que vérifie la série de lancers.
+    const sorties = new Set<number>()
+    for (let seed = 0; seed < 200; seed++) sorties.add(rollPlayerDice(cfg, 5, seededRng(seed), r.inventory.dice).distance[0]!)
+    expect([...sorties].sort((x, y) => x - y)).toEqual([...new Set(faces)].sort((x, y) => x - y))
+  })
   it('forge une face, une seule fois, en gardant une face positive', () => {
     const r = applyPurchase(findItem(shop, 'limee'), inv, { dieIndex: 0, faceIndex: 0 })
     expect(r.inventory.dice[0]?.faces[0]).toEqual({ value: 0, effect: null, altered: 'limee', original: -1 })

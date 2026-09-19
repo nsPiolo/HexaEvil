@@ -52,7 +52,7 @@ test.describe('01 · Jauge des trois usages', () => {
     await expect(hudMoney(page)).toHaveText('67 Pièces')
     await openShop(page)
     const shop = shopPanel(page)
-    // À 67 pièces : le dé à 30 s'achète, l'objet à 80 non — solde réellement insuffisant.
+    // À 67 pièces : le dé à 30 s'achète, l'objet à 85 non — solde réellement insuffisant.
     await expect(shop.getByRole('article').filter({ hasText: SHOP_SEED_EXPECT.die.name }).getByRole('button', { name: 'Acheter' })).toBeEnabled()
     await expect(shop.getByRole('article').filter({ hasText: SHOP_SEED_EXPECT.confirm.name }).getByRole('button', { name: 'Acheter' })).toBeDisabled()
   })

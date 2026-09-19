@@ -1,9 +1,9 @@
 # Objets achetables — images à générer (Gemini)
 
-Les quarante-sept objets de la boutique (`Proto4Html/config/shop.json`) : trente
-artefacts, six dés et onze opérations de forge. Chacun reçoit une **vignette carrée**
+Les quarante-huit objets de la boutique (`Proto4Html/config/shop.json`) : trente
+artefacts, sept dés et onze opérations de forge. Chacun reçoit une **vignette carrée**
 posée à gauche de son nom dans la carte de vitrine, et en réduction dans la
-pastille d'inventaire. **Les quarante-sept sont peintes et installées** (2026-09-18) ; ce
+pastille d'inventaire. **Les quarante-huit sont peintes et installées** (2026-09-19) ; ce
 fichier reste la référence pour en ajouter une, ou en refaire une qui ne tient pas à 18 px.
 
 | Où | Sélecteur | Taille affichée |
@@ -186,7 +186,7 @@ silhouette existe.
 
 ### Dés (`kind: "die"`)
 
-**En vitrine, les quatre dés sont des cubes.** C'est un écart assumé avec la table, où
+**En vitrine, les dés sont des cubes.** C'est un écart assumé avec la table, où
 un dé n'est pas un cube mais une **face de céramique arrondie**, épaisse et émaillée
 (`public/table/dice/`, posée en fond de `.die` par le CSS), la valeur étant écrite
 par-dessus en HTML.
@@ -202,6 +202,10 @@ visibles — et ne se distinguent que par la **matière**, qui emporte le traite
 arêtes : la pierre des Limbes est usée et ses angles émoussés, la glace reste vive et
 ébréchée, l'or est gonflé comme à demi fondu, le basalte est fendu.
 
+**Une seule exception : le Décathlon**, seul dé à dix faces du catalogue. Il se dessine
+en trapézoèdre pentagonal, parce que c'est là sa règle entière — dix valeurs au lieu de
+quatre — et qu'une silhouette qui la dit avant le texte vaut mieux qu'un cube de plus.
+
 **Aucun dé ne porte de chiffre ni de point.** C'est la règle qui ne bouge pas : les
 valeurs sont affichées sous la carte en HTML et changent avec la forge, un dé peint avec
 un « 3 » ou avec des points mentirait dès la première opération.
@@ -214,6 +218,7 @@ un « 3 » ou avec des points mentirait dès la première opération.
 | `prodigalite.webp` | Dé de Prodigalité | a single cube with the proportions of a gaming die, seen at a three-quarter angle so three faces are visible, cast in soft gold, its corners rounded and its edges swollen as if half melted, slightly slumped out of true, a few gold droplets frozen along its lower edges; its faces completely blank — no pips, no dots, no numbers, no carving of any kind |
 | `fraude.webp` | Dé de Fraude | a single cube with the proportions of a gaming die, seen at a three-quarter angle so three faces are visible, its corners rounded and its edges worn, cast in tarnished green-grey lead, one face visibly slumped and re-cast as if tampered with; its faces completely blank — no pips, no dots, no numbers, no carving of any kind |
 | `troisiemeDe.webp` | Troisième dé Distance | a single cube with the proportions of a gaming die, seen at a three-quarter angle so three faces are visible, its corners rounded and its edges crisp, carved from plain bone yellowed with age, a hairline crack running across one face; its faces completely blank — no pips, no dots, no numbers, no carving of any kind |
+| `decathlon.webp` | Dé du Décathlon | a single ten-sided die, a pentagonal trapezohedron, standing on one point and seen at a three-quarter angle so several faces are visible, cut from polished white marble faintly veined with grey, its edges crisp and one edge chipped away, a thin dry olive-leaf wreath resting around its widest ring, a cold pale rim light along its edges; its faces completely blank — no pips, no dots, no numbers, no carving of any kind |
 
 ### Forge (`kind: "forge"`)
 
