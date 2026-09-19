@@ -350,7 +350,9 @@ Un artefact est toujours actif après acquisition, sauf si sa description indiqu
 
 ### 6.5 Archétypes d'âmes
 
-Le coaching peut attribuer des bonus ou malus de long terme aux âmes et introduire des archétypes reconnaissables. Les six archétypes de base sont :
+Le coaching peut attribuer des bonus ou malus de long terme aux âmes et introduire des archétypes reconnaissables. **Dans l'interface, on les appelle des personnalités** — « archétype » reste le mot du document de conception, « personnalité » celui que lit le joueur.
+
+Les six archétypes de base sont :
 
 | Archétype | Description et rôle dans les paris |
 |---|---|
@@ -360,6 +362,17 @@ Le coaching peut attribuer des bonus ou malus de long terme aux âmes et introdu
 | **Le Condamné** | Commence avec un malus, devient de plus en plus rapide en approchant de l'arrivée. Il favorise les paris tardifs et les scénarios de rattrapage. |
 | **Le Parasite** | Avance lorsqu'une autre âme avance, peut voler des cases ou des bonus. Il crée des dépendances entre paris et retournements de classement. |
 | **Le Juge** | Ne gagne pas forcément la course, modifie les gains des paris en fonction de son classement. Il influence l'économie même sans terminer premier. |
+
+Quatre archétypes s'y ajoutent dans le proto, pour couvrir les axes que les six premiers laissaient vides — traverser le plateau, lire le dé à l'envers, ne jamais varier, bousculer :
+
+| Archétype | Description et rôle dans les paris |
+|---|---|
+| **Le Résolu** | Passe sur les cases bloquées comme si elles étaient normales. Son intérêt dépend entièrement du terrain tiré, annoncé avant les paris : c'est le seul archétype dont la valeur change d'une course à l'autre. |
+| **L'Opposant** | Prend la valeur opposée sur le dé Distance : un +2 le fait reculer de deux cases, un −1 l'avance d'une. Le joueur doit inverser sa main pour lui. |
+| **Le Constant** | Considère que la valeur du dé est toujours de 1. L'âme la plus prévisible du plateau, un mètre étalon contre lequel se lisent les autres. |
+| **L'Ogre** | Quand il saute devant une âme, l'âme dépassée subit un mouvement de −1. Son voisinage est dangereux, ses duels très lisibles. |
+
+**Attribution.** À partir du troisième cercle, à la fin de la première course de chaque cercle, une âme **révèle** sa personnalité. Le choix de l'âme n'est pas tiré au sort : c'est la mieux classée de cette course parmi celles qui n'en ont pas — la révélation se lit donc comme une conséquence de la course que le joueur vient de jouer. La personnalité, elle, est tirée au hasard. La boutique vend en plus un objet par personnalité, qui la pose sur l'âme choisie par le joueur — en remplacement si elle en portait déjà une — et un objet qui en retire une. Une personnalité attribuée tient jusqu'à la fin du run.
 
 Les archétypes peuvent être combinés à des effets de cercle, de boss, de cartes ou d'artefacts, mais leur comportement de base doit rester identifiable.
 
@@ -453,3 +466,4 @@ Les paramètres suivants doivent vivre dans un fichier de configuration et être
 5. Une course perdue n'interrompt pas à elle seule le run.
 6. La condition de fin de run est l'impossibilité de payer le prix du cercle à la fin des trois courses et de la rencontre avec le boss.
 7. Les chiffres de prototype restent configurables jusqu'à validation par le POC.
+8. Aucun objet ne fait franchir la ligne d'arrivée : seuls les dés font gagner. Un déplacement induit par un artefact, une borne ou une face qui atteindrait l'arrivée s'arrête sur la dernière colonne avant elle (règle empruntée à *Long Shot: The Dice Game*).

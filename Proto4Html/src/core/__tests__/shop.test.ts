@@ -8,7 +8,7 @@ import { seededRng } from '../rules/rng'
 import { loadShopConfig } from '../shop/load'
 import { riskOf, sortByRisk } from '../shop/items'
 import { allIds } from '../shop/unlocks'
-import { applyPurchase, defaultInventory, findItem, forgeFace, generateVitrine, opponentNegativesFlipped, priceAtCircle } from '../shop/shop'
+import { applyPurchase, defaultInventory, findItem, forgeFace, generateVitrine, opponentNegativesFlipped, priceAtCircle, type Inventory } from '../shop/shop'
 
 const cfg = loadConfig(rawConfig)
 const shop = loadShopConfig(rawShop)
@@ -75,15 +75,15 @@ describe('vitrine', () => {
   it('continue à proposer des artefacts quand les emplacements sont pleins : on en remplace un', () => {
     // Avant la revente et le remplacement (artefacts.md), la vitrine cachait les artefacts dès
     // que les emplacements étaient pleins. Ils restent offerts : c'est un choix, pas un blocage.
-    const inv = { ...defaultInventory(cfg), artefacts: ['lateBet', 'sablier', 'boussole', 'clepsydre', 'ferACheval'] as const }
+    const inv: Inventory = { ...defaultInventory(cfg), artefacts: ['lateBet', 'sablier', 'boussole', 'clepsydre', 'ferACheval'] }
     const seen = new Set<string>()
     for (let seed = 1; seed < 40; seed++) {
-      for (const it of generateVitrine(shop, { artefacts: [...inv.artefacts], dice: inv.dice }, all, seededRng(seed))) seen.add(it.kind)
+      for (const it of generateVitrine(shop, { ...inv, artefacts: [...inv.artefacts] }, all, seededRng(seed))) seen.add(it.kind)
     }
     expect(seen.has('artefact')).toBe(true)
     // Les artefacts déjà possédés, eux, ne reviennent jamais.
     for (let seed = 1; seed < 40; seed++) {
-      const v = generateVitrine(shop, { artefacts: [...inv.artefacts], dice: inv.dice }, all, seededRng(seed))
+      const v = generateVitrine(shop, { ...inv, artefacts: [...inv.artefacts] }, all, seededRng(seed))
       expect(v.some((i) => (inv.artefacts as readonly string[]).includes(i.id))).toBe(false)
     }
   })

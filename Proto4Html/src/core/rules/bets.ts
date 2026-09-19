@@ -273,6 +273,12 @@ export interface SettleOptions {
   lossRelief?: number
   /** Encensoir du dernier : facteur sur « Dernière place » quand l'écart avec l'avant-dernière est assez grand. */
   lastGap?: { cells: number; factor: number }
+  /**
+   * Le Juge (personnalité, GDD §6.5) : facteur sur tous les gains de la course selon sa
+   * place — 1,5 dans le top 3, 0,5 s'il finit dernier. Les pertes ne sont pas touchées :
+   * c'est une prime, pas une amende. 1 (ou absent) quand aucun Juge n'est en piste.
+   */
+  gainFactor?: number
 }
 
 /**
@@ -307,7 +313,8 @@ export function effectiveBase(type: BetTypeId, base: number, mods: BaseModifiers
  * Règle tous les paris ouverts contre le classement définitif, à la cote figée de chaque pari.
  *
  * Ordre des artefacts d'argent, qui compte : le gain se calcule sur `mise + stakeBonus`
- * (Denier du cercle), l'Encensoir multiplie ensuite le seul pari Dernière place, puis le Livre
+ * (Denier du cercle), l'Encensoir multiplie ensuite le seul pari Dernière place et Le Juge
+ * tous les gains de la course (`gainFactor`, personnalités), puis le Livre
  * des comptes rembourse un perdant tiré au sort, et le Baume du perdant s'applique en dernier
  * sur ce qui reste perdu — les deux filets se cumulent sans jamais rendre plus que la mise.
  */
@@ -323,7 +330,8 @@ export function settleBets(bets: readonly Bet[], ranked: readonly Ranked[], opti
       return b
     }
     const won = evaluateBet(b, ranked, options.topBonus)
-    const factor = b.type === 'last' ? gap : 1
+    // L'Encensoir ne touche que « Dernière place » ; Le Juge, lui, pèse sur tout le tableau.
+    const factor = (b.type === 'last' ? gap : 1) * (options.gainFactor ?? 1)
     const payout = won ? Math.round(potentialPayout(b.stake + stakeBonus, b.multiplier) * factor) : 0
     returned += payout
     return { ...b, status: won ? 'won' : 'lost', payout } as Bet

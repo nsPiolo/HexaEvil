@@ -526,5 +526,126 @@
     "octets": 1986625,
     "genereLe": "2026-09-19T10:45:23.109Z",
     "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: a single ten-sided die, a pentagonal trapezohedron, standing on one point and seen at a three-quarter angle so several faces are visible, cut from polished white marble faintly veined with grey, its edges crisp and one edge chipped away, a thin dry olive-leaf wreath resting around its widest ring, a cold pale rim light along its edges; its faces completely blank — no pips, no dots, no numbers, no carving of any kind. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
+  },
+  "masqueMartyr": {
+    "cle": "1a54388888be0e00",
+    "modele": "gemini-3-pro-image",
+    "taille": "2K",
+    "ratio": "1:1",
+    "fichier": "masqueMartyr.jpg",
+    "mime": "image/jpeg",
+    "octets": 2061293,
+    "genereLe": "2026-09-19T11:41:36.447Z",
+    "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: a plain oval face-mask of pale bone-coloured ceramic, featureless except for two narrow empty eye slits, hanging from a short frayed leather cord, a cold pale rim light along its whole edge, and one geometric mark branded dark into its forehead: an equal-armed cross with plain square ends. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
+  },
+  "masqueAmbitieux": {
+    "cle": "8452feb53d836601",
+    "modele": "gemini-3-pro-image",
+    "taille": "2K",
+    "ratio": "1:1",
+    "fichier": "masqueAmbitieux.jpg",
+    "mime": "image/jpeg",
+    "octets": 2162022,
+    "genereLe": "2026-09-19T11:42:20.806Z",
+    "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: a plain oval face-mask of pale bone-coloured ceramic, featureless except for two narrow empty eye slits, hanging from a short frayed leather cord, a cold pale rim light along its whole edge, and one geometric mark branded dark into its forehead: a solid triangle pointing upwards. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
+  },
+  "masqueTricheur": {
+    "cle": "a15d7b8f2aebacf1",
+    "modele": "gemini-3-pro-image",
+    "taille": "2K",
+    "ratio": "1:1",
+    "fichier": "masqueTricheur.jpg",
+    "mime": "image/jpeg",
+    "octets": 1975947,
+    "genereLe": "2026-09-19T11:42:42.293Z",
+    "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: a plain oval face-mask of pale bone-coloured ceramic, featureless except for two narrow empty eye slits, hanging from a short frayed leather cord, a cold pale rim light along its whole edge, and one geometric mark branded dark into its forehead: a ring crossed out by two diagonal strokes forming an X inside it. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
+  },
+  "masqueCondamne": {
+    "cle": "5788660374add310",
+    "modele": "gemini-3-pro-image",
+    "taille": "2K",
+    "ratio": "1:1",
+    "fichier": "masqueCondamne.jpg",
+    "mime": "image/jpeg",
+    "octets": 1652952,
+    "genereLe": "2026-09-19T11:43:04.049Z",
+    "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: a plain oval face-mask of pale bone-coloured ceramic, featureless except for two narrow empty eye slits, hanging from a short frayed leather cord, a cold pale rim light along its whole edge, and one geometric mark branded dark into its forehead: a horizontal arrow striking a vertical bar at its tip. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
+  },
+  "masqueParasite": {
+    "cle": "9dc5733f1b5ea166",
+    "modele": "gemini-3-pro-image",
+    "taille": "2K",
+    "ratio": "1:1",
+    "fichier": "masqueParasite.jpg",
+    "mime": "image/jpeg",
+    "octets": 2071035,
+    "genereLe": "2026-09-19T11:43:27.650Z",
+    "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: a plain oval face-mask of pale bone-coloured ceramic, featureless except for two narrow empty eye slits, hanging from a short frayed leather cord, a cold pale rim light along its whole edge, and one geometric mark branded dark into its forehead: a narrow chevron lying on its side, pointing left like an arrowhead. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
+  },
+  "masqueJuge": {
+    "cle": "b385e0c8ef72ea13",
+    "modele": "gemini-3-pro-image",
+    "taille": "2K",
+    "ratio": "1:1",
+    "fichier": "masqueJuge.jpg",
+    "mime": "image/jpeg",
+    "octets": 1785576,
+    "genereLe": "2026-09-19T11:43:48.082Z",
+    "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: a plain oval face-mask of pale bone-coloured ceramic, featureless except for two narrow empty eye slits, hanging from a short frayed leather cord, a cold pale rim light along its whole edge, and one geometric mark branded dark into its forehead: two interlaced curls stacked one above the other, like an old section mark. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
+  },
+  "masqueResolu": {
+    "cle": "783ec572378de9e0",
+    "modele": "gemini-3-pro-image",
+    "taille": "2K",
+    "ratio": "1:1",
+    "fichier": "masqueResolu.jpg",
+    "mime": "image/jpeg",
+    "octets": 2163084,
+    "genereLe": "2026-09-19T11:44:10.157Z",
+    "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: a plain oval face-mask of pale bone-coloured ceramic, featureless except for two narrow empty eye slits, hanging from a short frayed leather cord, a cold pale rim light along its whole edge, and one geometric mark branded dark into its forehead: a ring cut through by a single diagonal stroke. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
+  },
+  "masqueOpposant": {
+    "cle": "bb1d6d45856a0a60",
+    "modele": "gemini-3-pro-image",
+    "taille": "2K",
+    "ratio": "1:1",
+    "fichier": "masqueOpposant.jpg",
+    "mime": "image/jpeg",
+    "octets": 1918584,
+    "genereLe": "2026-09-19T11:44:29.873Z",
+    "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: a plain oval face-mask of pale bone-coloured ceramic, featureless except for two narrow empty eye slits, hanging from a short frayed leather cord, a cold pale rim light along its whole edge, and one geometric mark branded dark into its forehead: two parallel horizontal arrows pointing in opposite directions. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
+  },
+  "masqueConstant": {
+    "cle": "6e53600f787919a0",
+    "modele": "gemini-3-pro-image",
+    "taille": "2K",
+    "ratio": "1:1",
+    "fichier": "masqueConstant.jpg",
+    "mime": "image/jpeg",
+    "octets": 1924279,
+    "genereLe": "2026-09-19T11:44:50.829Z",
+    "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: a plain oval face-mask of pale bone-coloured ceramic, featureless except for two narrow empty eye slits, hanging from a short frayed leather cord, a cold pale rim light along its whole edge, and one geometric mark branded dark into its forehead: three short horizontal bars stacked evenly one above the other. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
+  },
+  "masqueOgre": {
+    "cle": "5d7319f80f0138d0",
+    "modele": "gemini-3-pro-image",
+    "taille": "2K",
+    "ratio": "1:1",
+    "fichier": "masqueOgre.jpg",
+    "mime": "image/jpeg",
+    "octets": 2007886,
+    "genereLe": "2026-09-19T11:45:12.335Z",
+    "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: a plain oval face-mask of pale bone-coloured ceramic, featureless except for two narrow empty eye slits, hanging from a short frayed leather cord, a cold pale rim light along its whole edge, and one geometric mark branded dark into its forehead: a thick saltire, two heavy strokes crossing in an X. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
+  },
+  "masqueBrise": {
+    "cle": "1b8e3bd8e25f9578",
+    "modele": "gemini-3-pro-image",
+    "taille": "2K",
+    "ratio": "1:1",
+    "fichier": "masqueBrise.jpg",
+    "mime": "image/jpeg",
+    "octets": 1892559,
+    "genereLe": "2026-09-19T11:45:36.304Z",
+    "prompt": "Digital concept painting with wide visible brush strokes, misty and ethereal atmosphere, dramatic theatrical lighting with strong chromatic contrast between warm firelight and cold blue-grey rock, expressionist and textured, like a speed-painting concept art. A single object on its own, seen at a three-quarter angle, centered and filling about 85 % of the image, nothing touching the borders: a plain oval face-mask of pale bone-coloured ceramic, featureless except for two narrow empty eye slits, hanging from a short frayed leather cord, a cold pale rim light along its whole edge, cracked clean in two down the middle with the halves slightly apart and the fracture edges chipped, its forehead completely bare with no mark of any kind. Pure flat dark violet background (#2A1240), perfectly even, no drop shadow, no glow or light spilling onto the background, crisp closed edges between the object and the background; a faint cool rim light running along the whole silhouette so the object separates cleanly; no violet, purple or magenta anywhere on the object itself, and no pure black either — its darkest areas stay a deep blue-grey, lighter than the background. The misty atmosphere, the smoke and the brush texture stay strictly inside the object's silhouette: the background is one perfectly flat colour and completely empty, no mist, no smoke, no brush strokes, no vignette, no gradient. Everything painted in the image belongs to that one object — no detached brush strokes, specks, flecks or floating fragments anywhere in the background, and no frame, border, outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo, no user interface, no hands, no character."
   }
 }

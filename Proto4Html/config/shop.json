@@ -34,6 +34,7 @@
     4
   ],
   "resaleRatio": 0.4,
+  "_personnalites": "Masques (kind = personality, GDD §6.5) : ils posent une personnalité sur une âme choisie à l'achat, pour tout le run ; `personality` nomme laquelle, ou vaut null pour le masque brisé, qui en retire une. Les dix personnalités et leurs effets sont dans src/core/rules/personalities.ts — un id absent de cette liste est refusé au chargement. Ils ne sont pas dans unlockedAtStart : c'est la révélation de fin de première course (à partir du cercle 3) qui fait découvrir le système, gratuitement et dans tous les runs.",
   "_progression": "Déblocage par la hiérarchie du stagiaire (boutique-README) : minRank = grade minimal pour qu'un objet sorte en vitrine ; absent, il se déduit de la rareté (common 0, rare 2, legendary 4). artefactSlotLevels = grades qui ouvrent un emplacement d'artefact de plus (5 au départ, +1 aux rangs 2 et 4). resaleRatio = part du prix rendue à la revente. forge = règles de forge (forge.md) : maxAltered faces altérées par dé, maxAlteredAdvanced à partir du grade advancedLevel, decapCost pour rendre une face à son état d'origine.",
   "items": [
     {
@@ -145,7 +146,7 @@
       "impact": "moyen",
       "warning": "une face à −2 : un recul de deux cases est possible",
       "name": "Dé de la Colère",
-      "description": "Remplace un dé Distance par un dé -2, 0, 3, 4 : même moyenne, bien plus de variance.",
+      "description": "Remplace un dé Distance par un dé -2, 0, 3, 4 : la colère ne connaît pas la mesure.",
       "faces": [
         -2,
         0,
@@ -193,7 +194,7 @@
       "price": 60,
       "impact": "fort",
       "name": "Dé du Décathlon",
-      "description": "Remplace un dé Distance par un dé à dix faces -3, -2, -1, -1, 0, 1, 1, 2, 2, 3 : toute la palette, du grand recul au grand bond, mais quatre faces sur dix reculent.",
+      "description": "Remplace un dé Distance par un dé à dix faces -3, -2, -1, -1, 0, 1, 1, 2, 2, 3 : toute la palette, du grand recul au grand bond.",
       "faces": [
         -3,
         -2,
@@ -214,7 +215,7 @@
       "price": 15,
       "impact": "faible",
       "name": "Face limée",
-      "description": "La face choisie vaut 0 : l'âme est désignée mais ne bouge pas. Cible conseillée : le -1.",
+      "description": "La face choisie vaut 0 : l'âme est désignée mais ne bouge pas.",
       "target": -1
     },
     {
@@ -224,7 +225,7 @@
       "price": 30,
       "impact": "faible",
       "name": "Face dorée",
-      "description": "La face choisie vaut +1 et rapporte 5 pièces à chaque sortie. Cible conseillée : le 1.",
+      "description": "La face choisie vaut +1 et rapporte 5 pièces à chaque sortie.",
       "target": 1,
       "params": {
         "coins": 5
@@ -238,7 +239,7 @@
       "impact": "moyen",
       "warning": "les −1 de l'adversaire valent aussi +1 pour le reste du run",
       "name": "Face retournée",
-      "description": "La face choisie vaut +1. Contrepartie : les -1 de l'adversaire valent aussi +1 pour le reste du run. Cible conseillée : le -1.",
+      "description": "La face choisie vaut +1. Contrepartie : les -1 de l'adversaire valent aussi +1 pour le reste du run.",
       "target": -1
     },
     {
@@ -248,7 +249,7 @@
       "price": 55,
       "impact": "moyen",
       "name": "Sceau du parieur",
-      "description": "La face choisie vaut +1, ou +3 si l'âme déplacée fait l'objet d'un de vos paris. Cible conseillée : le 1.",
+      "description": "La face choisie vaut +1, ou +3 si l'âme déplacée fait l'objet d'un de vos paris.",
       "target": 1
     },
     {
@@ -267,7 +268,7 @@
       "price": 115,
       "impact": "fort",
       "name": "Quatrième tête de Cerbère",
-      "description": "Le lancer comporte un dé Âme de plus : plus de choix, et un dé inutilisé supplémentaire.",
+      "description": "Le lancer comporte un dé Âme de plus : quatre âmes désignées, toujours deux associations.",
       "params": {
         "soulDice": 1
       }
@@ -556,7 +557,7 @@
       "impact": "moyen",
       "name": "Face miroir",
       "target": 1,
-      "description": "La face copie la valeur de l'autre dé Distance du lancer, en bien comme en mal."
+      "description": "La face copie la valeur de l'autre dé Distance du lancer."
     },
     {
       "kind": "forge",
@@ -598,6 +599,129 @@
       "name": "Face aimant",
       "target": 1,
       "description": "La face vaut +1 et l'âme juste derrière avance de 1 aussi, dans la case libérée."
+    },
+    {
+      "kind": "personality",
+      "id": "masqueMartyr",
+      "personality": "martyr",
+      "rarity": "common",
+      "price": 35,
+      "impact": "moyen",
+      "minRank": 1,
+      "name": "Masque du Martyr",
+      "description": "Marque une âme pour tout le run. Ses avancées perdent une case (jamais moins de 1), mais chaque fois qu'on la percute ou qu'on l'échange elle garde rancune — et tout lui revient d'un bloc en entrant en zone de fin."
+    },
+    {
+      "kind": "personality",
+      "id": "masqueAmbitieux",
+      "personality": "ambitieux",
+      "rarity": "common",
+      "price": 40,
+      "impact": "moyen",
+      "minRank": 1,
+      "name": "Masque de l'Ambitieux",
+      "description": "Marque une âme pour tout le run. Ses avancées de 3 ou plus gagnent une case, ses reculs en perdent une : elle finit rarement au milieu du classement."
+    },
+    {
+      "kind": "personality",
+      "id": "masqueTricheur",
+      "personality": "tricheur",
+      "rarity": "rare",
+      "price": 60,
+      "impact": "fort",
+      "minRank": 2,
+      "warning": "il triche aussi contre vous : un dé Âme sur quatre qui le désigne part ailleurs",
+      "name": "Masque du Tricheur",
+      "description": "Marque une âme pour tout le run. Une fois sur quatre, le dé Âme qui la désigne est relancé — le vôtre comme celui de l'adversaire."
+    },
+    {
+      "kind": "personality",
+      "id": "masqueCondamne",
+      "personality": "condamne",
+      "rarity": "common",
+      "price": 40,
+      "impact": "moyen",
+      "minRank": 1,
+      "name": "Masque du Condamné",
+      "description": "Marque une âme pour tout le run. Ses avancées du premier tour perdent une case ; celles qu'elle entame depuis la zone de fin en gagnent une."
+    },
+    {
+      "kind": "personality",
+      "id": "masqueParasite",
+      "personality": "parasite",
+      "rarity": "rare",
+      "price": 55,
+      "impact": "fort",
+      "minRank": 2,
+      "name": "Masque du Parasite",
+      "description": "Marque une âme pour tout le run. Dès que l'âme juste devant elle avance de 2 cases ou plus, elle avance de 1 dans la foulée."
+    },
+    {
+      "kind": "personality",
+      "id": "masqueJuge",
+      "personality": "juge",
+      "rarity": "rare",
+      "price": 70,
+      "impact": "fort",
+      "minRank": 2,
+      "warning": "s'il finit dernier, vos gains de la course sont divisés par deux",
+      "name": "Masque du Juge",
+      "description": "Marque une âme pour tout le run. Elle ne court pas plus vite, elle compte : dans le top 3, tous vos gains de la course sont multipliés par 1,5. Vos pertes, elles, ne bougent pas."
+    },
+    {
+      "kind": "personality",
+      "id": "masqueResolu",
+      "personality": "resolu",
+      "rarity": "common",
+      "price": 50,
+      "impact": "moyen",
+      "minRank": 1,
+      "name": "Masque du Résolu",
+      "description": "Marque une âme pour tout le run. Les cases bloquées n'existent pas pour elle : elle s'y arrête comme sur n'importe quelle autre, sans jamais dévier de couloir."
+    },
+    {
+      "kind": "personality",
+      "id": "masqueOpposant",
+      "personality": "opposant",
+      "rarity": "common",
+      "price": 45,
+      "impact": "moyen",
+      "minRank": 1,
+      "name": "Masque de l'Opposant",
+      "description": "Marque une âme pour tout le run. Elle lit l'inverse du dé Distance : un +2 la fait reculer de deux cases, un -1 l'avance d'une."
+    },
+    {
+      "kind": "personality",
+      "id": "masqueConstant",
+      "personality": "constant",
+      "rarity": "common",
+      "price": 35,
+      "impact": "faible",
+      "minRank": 1,
+      "name": "Masque du Constant",
+      "description": "Marque une âme pour tout le run. Quel que soit le dé Distance, elle avance d'une case. Jamais plus, jamais moins, jamais en arrière."
+    },
+    {
+      "kind": "personality",
+      "id": "masqueOgre",
+      "personality": "ogre",
+      "rarity": "common",
+      "price": 45,
+      "impact": "moyen",
+      "minRank": 1,
+      "name": "Masque de l'Ogre",
+      "description": "Marque une âme pour tout le run. L'âme qu'elle dépasse en la percutant recule d'une case de plus."
+    },
+    {
+      "kind": "personality",
+      "id": "masqueBrise",
+      "personality": null,
+      "rarity": "common",
+      "price": 10,
+      "impact": "faible",
+      "minRank": 1,
+      "name": "Masque brisé",
+      "description": "Retire sa personnalité à une âme marquée : elle redevient une damnée comme les autres, jusqu'à ce qu'on la marque de nouveau."
     }
   ]
 }

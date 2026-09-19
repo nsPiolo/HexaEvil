@@ -13,6 +13,7 @@
 import type { BetRefusal, BetTier, CancelRefusal } from '../../core/rules/bets'
 import type { BetTypeId } from '../../core/rules/betTypes'
 import type { BossEffectId } from '../../core/rules/boss'
+import type { PersonalityId } from '../../core/rules/personalities'
 import type { MoveNoteId } from '../../core/rules/race'
 import type { ItemKind, Rarity } from '../../core/shop/items'
 import type { PurchaseLog } from '../../core/shop/shop'
@@ -495,6 +496,20 @@ const UNLOCK = {
   last: 'That was the last one. The catalogue is whole.',
 } as const
 
+/**
+ * Personality reveal: the screen played at the end of a circle’s first race, from the third
+ * on. The soul is not drawn at random — it is the best placed one that had nothing to say
+ * about itself yet, and the text says so, so the player can see the rule.
+ */
+const REVEAL = {
+  title: 'A soul shows its hand',
+  intro: '{who} finished {rank} in that race. The intern leafs through its file, whistles through his teeth, and hands you the sheet.',
+  rankFirst: 'in the lead',
+  lead: 'From now on, and for whatever is left of your escape:',
+  kept: 'This personality stays on {who} until the end of the run. A mask from the shop can replace it, or strip it.',
+  next: 'Continue',
+} as const
+
 /** Infernal debt: the deal offered when the circle’s price is out of reach. */
 const DEBT = {
   title: 'The intern produces a ledger',
@@ -573,6 +588,14 @@ const SHOP = {
   sellTitle: 'Sold back at 40 % of the circle price: {back} coins, and the slot frees up.',
   decapTitle: 'Strip this face: it goes back to its original value for {cost} coins.',
   replace: 'Replace this die',
+  /** Masks (GDD §6.5): the purchase ends with the choice of the soul to mark. */
+  pickSoul: 'which soul do you mark?',
+  pickSoulStrip: 'which soul do you free?',
+  markWarning: 'The mask holds until the end of the run and replaces whatever the soul already wore.',
+  stripWarning: 'Only marked souls can be freed.',
+  soulPlain: 'no personality',
+  mark: 'Mark',
+  strip: 'Strip',
 } as const
 
 /** Items the player triggers themselves from the race screen. */
@@ -639,6 +662,7 @@ const BOARD = {
   zoneClosed: 'betting closed',
   zoneClosedTitle: 'A soul has crossed the threshold: no more bets on this race.',
   tieColumn: 'Same column: the lowest lane goes first.',
+  personality: 'Personality — {name}: {effect}',
 } as const
 
 /** End-of-race modal (spec 06). */
@@ -790,6 +814,25 @@ const HELP = {
       ],
     },
     {
+      id: 'personnalites',
+      title: 'The souls’ personalities',
+      icon: '🎭',
+      blocks: [
+        { kind: 'p', text: 'From the **third circle** on, at the end of the first race, a soul shows its personality. It is not a draw: it is **the best placed of those that had none**. The personality itself is drawn at random — and it stays on that soul **until the end of your escape**.' },
+        { kind: 'p', text: 'A marked soul carries a sign on its token. Hover it: the rule is spelled out. It is visible **before the bets**, and that is the whole point — a personality is not triggered, it is read.' },
+        {
+          kind: 'ul',
+          items: [
+            'some change the **reading of the die**: The Steady always moves one space, The Contrarian takes the opposite of what the die says;',
+            'others change the **amplitude**: The Ambitious amplifies big swings, The Martyr drags then catches up at once, The Condemned starts slow and finishes fast;',
+            'others still change the **board**: The Resolute walks through blocked spaces, The Ogre crushes what it passes, The Parasite follows the soul ahead of it;',
+            'The Judge does not run any differently: it **changes your winnings** according to its own place. Watch it even when you have no bet on it.',
+          ],
+        },
+        { kind: 'p', text: 'The shop sells one **mask** per personality: you pick the soul, and the mask replaces whatever it wore. The broken mask frees a marked soul instead.' },
+      ],
+    },
+    {
       id: 'grades',
       title: 'The intern’s grades',
       icon: '👑',
@@ -884,7 +927,7 @@ const CANCEL_REFUSALS: Readonly<Record<CancelRefusal, string>> = {
   alreadySettled: 'That bet is already settled.',
 }
 
-const ITEM_KINDS: Readonly<Record<ItemKind, string>> = { artefact: 'Artefact', die: 'Die', forge: 'Forge' }
+const ITEM_KINDS: Readonly<Record<ItemKind, string>> = { artefact: 'Artefact', die: 'Die', forge: 'Forge', personality: 'Mask' }
 const RARITIES: Readonly<Record<Rarity, string>> = { common: 'common', rare: 'rare', legendary: 'legendary' }
 
 /** A purchase’s log line. `{name}` is the item, `{die}` the die aimed at, `{n}` its number. */
@@ -896,7 +939,12 @@ const PURCHASE_LOG: Readonly<Record<PurchaseLog['kind'], string>> = {
   dieAdded: '{name} joins the roll: {count} Distance dice.',
   dieReplaced: '{name} replaces {die} no. {n}.',
   faceForged: '{name} engraved on {die} no. {n}, face {value}.',
+  personalityGiven: '{who} now wears {personality}{replaced}.',
+  personalityRemoved: '{who} loses {personality}: nothing sets it apart any more.',
 }
+
+/** What a mask laid on an already marked soul replaces: slipped into `personalityGiven`. */
+const PURCHASE_REPLACED = ' (in place of {personality})'
 
 /** A move, told in the log. The last four are appended to `move`. */
 const MOVE = {
@@ -929,6 +977,59 @@ const MOVE_NOTES: Readonly<Record<MoveNoteId, string>> = {
   stand: 'Infernal Stand',
   trap: 'Trap',
   boost: 'Springboard',
+  personalityDie: '{who} reads {from} → {to}',
+  personalityMove: '{who}: {from} → {to}',
+  grudge: 'Martyr’s grudges: +{value}',
+  ogre: 'The Ogre shoves: −{value}',
+  parasite: 'The Parasite follows: +{value}',
+}
+
+/**
+ * The ten personalities (GDD §6.5). `name` is the name shown everywhere — token, shop mask,
+ * log — and `effect` the rule in one sentence, the one read when hovering a marked token.
+ * The symbol is engraved on the mask’s art, not written here.
+ */
+const PERSONALITIES: Readonly<Record<PersonalityId, { name: string; effect: string }>> = {
+  martyr: {
+    name: 'The Martyr',
+    effect: 'Moves forward one space less (never below 1). Every time it is rammed or swapped it holds a grudge: the whole debt comes back at once as it enters the closing zone.',
+  },
+  ambitieux: {
+    name: 'The Ambitious',
+    effect: 'Advances of 3 or more gain a space, setbacks lose one. It rarely finishes mid-pack.',
+  },
+  tricheur: {
+    name: 'The Cheat',
+    effect: 'One time in four, the Soul die that names it is rerolled — yours as well as your opponent’s.',
+  },
+  condamne: {
+    name: 'The Condemned',
+    effect: 'First-turn advances lose a space; the ones it starts from the closing zone gain one.',
+  },
+  parasite: {
+    name: 'The Parasite',
+    effect: 'Whenever the soul right ahead of it moves forward 2 spaces or more, it moves forward 1 straight after.',
+  },
+  juge: {
+    name: 'The Judge',
+    effect: 'Does not run any differently, but keeps the books: in the top 3, your winnings for the race are multiplied by 1.5; last, they are halved. Your losses do not move.',
+  },
+  resolu: {
+    name: 'The Resolute',
+    effect: 'Blocked spaces do not exist for it: it stops there like on any other, and never swerves lane.',
+  },
+  opposant: {
+    name: 'The Contrarian',
+    effect: 'Reads the Distance die backwards: a +2 sends it back two spaces, a -1 moves it forward one.',
+  },
+  constant: {
+    name: 'The Steady',
+    effect: 'Whatever the Distance die says, it moves forward one space. Never more, never less, never backwards.',
+  },
+  ogre: {
+    name: 'The Ogre',
+    effect: 'The soul it rams on its way past moves back one extra space.',
+  },
 }
 
 /** Race log, under the board. */
@@ -973,6 +1074,8 @@ const LOG = {
   dieUnpaid: '{name}: not enough money, the face is worth 0.',
   angelReplay: 'The Angel replays the last turn.',
   raceEnd: 'A soul has crossed the line: the race ends on turn {turn}.',
+  judgeTop: 'The Judge ({who}) finishes {rank}: your winnings for the race are multiplied by 1.5.',
+  judgeLast: 'The Judge ({who}) finishes last: your winnings for the race are halved. Your losses stay whole.',
   bookRefund: 'Book of Accounts: {n} coins refunded.',
   balmRefund: 'Loser’s Balm: {n} coins returned on the losing stakes.',
   tally: 'Bet tally: {net}. Money: {money}.',
@@ -1046,7 +1149,7 @@ const UI = {
   game: { steps: 'Steps', auto: 'auto', autoTitle: 'Test mode: plays the turns by itself', activeArtefacts: 'Active artefacts', noArtefact: 'No artefacts. The shop stocks them between the bets and the race.' },
   inventory: { label: 'Inventory', distanceDice: 'Distance dice', baseDie: 'Base die' },
   ranking: { final: 'Final standings', tally: 'Bet tally', none: 'No bets on this race.' },
-  shop: { closed: 'The shop is closed.', notInWindow: 'Item not in the window.', notEnoughMoney: 'Not enough money.', alreadyOwned: 'Already owned.', noFaceLeft: 'No face left to forge.', sellFailed: 'Sale failed.', decapCost: 'Stripping costs {cost} coins.', pickDie: 'which die to replace?', pickFace: 'which face to forge?', alreadyForged: 'Already forged', suggested: 'Suggested target', slotsFull: 'Slots full', afterBets: 'Bets placed: what’s left is to spend… or to keep.', till: 'The intern works the till.' },
+  shop: { closed: 'The shop is closed.', notInWindow: 'Item not in the window.', notEnoughMoney: 'Not enough money.', alreadyOwned: 'Already owned.', noFaceLeft: 'No face left to forge.', nothingToStrip: 'No marked soul in this race.', sellFailed: 'Sale failed.', decapCost: 'Stripping costs {cost} coins.', pickDie: 'which die to replace?', pickFace: 'which face to forge?', alreadyForged: 'Already forged', slotsFull: 'Slots full', afterBets: 'Bets placed: what’s left is to spend… or to keep.', till: 'The intern works the till.' },
   /** Refusals from an item the player triggers by hand, on the race screen. */
   artefacts: {
     notOwned: 'Artefact not owned.',
@@ -1101,6 +1204,7 @@ export const EN = {
   STATS,
   COLLECTION,
   UNLOCK,
+  REVEAL,
   DEBT,
   OPTIONS,
   BETS,
@@ -1122,6 +1226,8 @@ export const EN = {
   ITEM_KINDS,
   RARITIES,
   PURCHASE_LOG,
+  PURCHASE_REPLACED,
+  PERSONALITIES,
   MOVE,
   MOVE_NOTES,
   LOG,

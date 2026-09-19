@@ -1,178 +1,233 @@
 # Personnalités d'âmes
 
-Une personnalité s'achète en boutique et s'attache à une âme nommée pour **tout
-le cercle** (les trois courses, boss compris). Elle est visible de tous avant les
-paris initiaux : elle ne donne pas de contrôle direct, elle change la lecture de
-la course (GDD §1.3, §6.5). Retirer une personnalité coûte 10.
+Une personnalité est un comportement **collé à une âme**, pas un pouvoir du joueur :
+elle ne se déclenche pas, elle change la façon dont cette âme lit les dés, percute et
+encaisse. Visible avant les paris initiaux, elle ne donne aucun contrôle direct — elle
+change la **lecture** de la course (GDD §1.3, §6.5).
 
-Le nombre de personnalités actives par course dépend du rang du stagiaire
-(voir [`boutique-README.md`](boutique-README.md)) : 1 au rang 1, 2 au rang 2,
-3 au rang 3. Une âme n'a qu'une personnalité à la fois.
+**Dix sont implémentées dans le proto** (`Proto4Html/src/core/rules/personalities.ts`) :
+les six archétypes du GDD, chiffrés ici, et quatre ajoutées pour couvrir les axes qui
+manquaient — traverser le plateau, lire le dé à l'envers, ne jamais varier, bousculer.
+Les huit autres fiches du bas de page restent en réserve, non codées.
 
-Les six archétypes du GDD sont chiffrés ici ; huit personnalités supplémentaires
-couvrent les axes manquants : information, économie, liens entre âmes, tempo.
+## Comment une âme en reçoit une
+
+**La révélation.** À la fin de la **première course de chaque cercle, à partir du
+troisième**, une âme révèle sa personnalité. Le choix de l'âme n'est pas tiré au sort :
+c'est **la mieux classée de la course parmi celles qui n'en ont pas**. La personnalité,
+elle, est tirée au hasard — de préférence parmi celles que personne ne porte encore, pour
+que deux Martyrs ne disent pas deux fois la même chose au joueur. Un écran dédié l'annonce,
+entre la course et la carte.
+
+Le choix déterministe de l'âme est le point : le joueur voit le classement se faire, donc
+il sait qui va se découvrir. La révélation se lit comme une **conséquence de la course
+qu'il vient de jouer**, pas comme une surprise posée dessus.
+
+**Le masque.** La boutique vend un masque par personnalité, plus un **masque brisé** qui
+en retire une. Le joueur choisit l'âme à l'achat, y compris une âme déjà marquée : le
+masque remplace ce qu'elle portait. Les masques ne sont pas dans le socle de départ de
+`shop.json` — c'est la révélation qui fait découvrir le système, gratuitement et dans tous
+les runs ; les masques sont ce qu'on en fait ensuite.
+
+**Durée : tout le run.** Une personnalité, révélée ou achetée, tient jusqu'à la fin de
+l'évasion. Elle voyage dans l'inventaire du joueur, donc dans la sauvegarde. Une âme n'en
+porte qu'une à la fois ; rien ne limite le nombre d'âmes marquées.
+
+## Où chaque effet se résout
+
+Aucune personnalité ne se résout au même endroit, et c'est ce qui décide du câblage.
+
+| Moment | Personnalités | Code |
+|---|---|---|
+| lecture de la face du dé | Le Constant, L'Opposant | `readDie`, appelé par `effectiveDistance` |
+| amplitude du déplacement | L'Ambitieux, Le Martyr, Le Condamné | `shapeMove`, idem |
+| tirage des dés Âme | Le Tricheur | `rollPlayerDice`, `rollOpponentPair` |
+| contre le plateau | Le Résolu, L'Ogre, Le Parasite, les rancunes du Martyr | `applyMove` |
+| règlement des paris | Le Juge | `settleBets` (`gainFactor`) |
+
+L'ordre compte : la lecture de la face passe **avant** le pouvoir du boss et les artefacts
+du joueur — Le Constant et L'Opposant ne modifient pas un déplacement, ils changent ce que
+le dé veut dire pour cette âme-là — et l'amplitude passe **après** tout le reste.
 
 ## Récapitulatif
 
-| # | Personnalité | Axe | Impact | Prix | Rang |
-|---:|---|---|---|---:|---:|
-| 1 | Le Martyr | remontée tardive | Moyen | 35 | 1 |
-| 2 | L'Ambitieux | variance | Moyen | 40 | 1 |
-| 3 | Le Tricheur | incertitude sur les dés Âme | Fort | 60 | 2 |
-| 4 | Le Condamné | accélération | Moyen | 40 | 1 |
-| 5 | Le Parasite | dépendance | Fort | 55 | 2 |
-| 6 | Le Juge | économie des paris | Fort | 70 | 2 |
-| 7 | Le Fantôme | collisions | Moyen | 45 | 1 |
-| 8 | Le Bélier | collisions agressives | Moyen | 45 | 1 |
-| 9 | Le Prophète | information | Fort | 65 | 2 |
-| 10 | Le Comptable | argent | Moyen | 50 | 1 |
-| 11 | Les Jumeaux | lien entre deux âmes | Fort | 80 | 2 |
-| 12 | Le Paresseux | stabilité | Faible | 25 | 1 |
-| 13 | Le Somnambule | tour adverse | Moyen | 45 | 2 |
-| 14 | Le Pénitent ⚠ | souffrance récompensée | Fort | 60 | 3 |
+| # | Personnalité | Signe | Axe | Impact | Prix | Rang | Proto |
+|---:|---|:--:|---|---|---:|---:|:--:|
+| 1 | Le Martyr | ✚ | remontée tardive | Moyen | 35 | 1 | ✔ |
+| 2 | L'Ambitieux | ▲ | variance | Moyen | 40 | 1 | ✔ |
+| 3 | Le Tricheur | ⊗ | incertitude sur les dés Âme | Fort | 60 | 2 | ✔ |
+| 4 | Le Condamné | ⇥ | accélération | Moyen | 40 | 1 | ✔ |
+| 5 | Le Parasite | ≺ | dépendance | Fort | 55 | 2 | ✔ |
+| 6 | Le Juge | § | économie des paris | Fort | 70 | 2 | ✔ |
+| 7 | Le Résolu | ⊘ | terrain | Moyen | 50 | 1 | ✔ |
+| 8 | L'Opposant | ⇄ | inversion | Moyen | 45 | 1 | ✔ |
+| 9 | Le Constant | ≡ | stabilité absolue | Faible | 35 | 1 | ✔ |
+| 10 | L'Ogre | ✖ | collisions agressives | Moyen | 45 | 1 | ✔ |
+| — | Masque brisé | — | retire une personnalité | Faible | 10 | 1 | ✔ |
 
-## Fiches
+Le **signe** est le glyphe posé sur le jeton de l'âme marquée
+(`PERSONALITY_GLYPH`, `presentation/PersonalityMark.tsx`) et gravé sur la vignette du
+masque (`prompts-objets.md` § Masques) : le joueur doit reconnaître sur la piste ce qu'il
+a acheté en vitrine.
 
-### 1. Le Martyr — 35
+## Fiches — les dix du proto
 
-- **Effet.** Ses distances positives sont réduites de 1 (minimum 1). Chaque fois
-  qu'il est percuté ou dépassé, il gagne un jeton *Rancune*. Dès qu'il entre en
-  zone de fin, ou au premier déplacement qui le fait passer la moitié du parcours,
-  il dépense toutes ses Rancunes : +1 case par jeton, en une fois.
-- **Lecture pour les paris.** Mauvais pari Vainqueur précoce, excellent pari
-  Top 3 tardif ou Duel contre une âme qui l'a beaucoup dépassé.
-- **Pourquoi ce prix.** Il crée un retournement visible, mais il faut qu'il soit
-  malmené pour que ça paie : le joueur peut l'organiser avec l'ordre des combinaisons.
+### 1. Le Martyr ✚ — 35
 
-### 2. L'Ambitieux — 40
+- **Effet.** Ses avancées perdent une case (jamais moins de 1). Chaque fois qu'il est
+  percuté (dépassé par un saut) ou échangé, il gagne une **rancune**. En entrant en zone de
+  fin, il les dépense toutes d'un coup : +1 case par rancune, en un seul déplacement.
+- **Lecture pour les paris.** Mauvais pari Vainqueur précoce, excellent pari Top 3 tardif
+  ou Duel contre une âme qui l'a beaucoup bousculé.
+- **Écart avec le GDD.** La dépense se fait à l'entrée en zone de fin seulement ; la clause
+  « à la moitié du parcours » a sauté, le seuil de pari étant déjà à 60 %.
 
-- **Effet.** Toute distance de 3 devient 4. Toute distance de -1 devient -2. Sur
-  une case spéciale dangereuse (à venir) il subit le double.
-- **Lecture.** Le pari Vainqueur pur ou Dernier sur la même âme : il finit
-  rarement au milieu. Un pari Pas dans le top 3 est presque toujours perdant ou gagnant.
+### 2. L'Ambitieux ▲ — 40
+
+- **Effet.** Une avancée de 3 ou plus gagne une case ; un recul de 1 ou plus en perd une.
+- **Lecture.** Le pari Vainqueur pur ou Dernier sur la même âme : il finit rarement au
+  milieu. Un pari Pas dans le top 3 sur lui est presque toujours franc.
 - **Prix.** Variance pure, ni bonne ni mauvaise : prix moyen.
 
-### 3. Le Tricheur — 60
+### 3. Le Tricheur ⊗ — 60
 
-- **Effet.** Quand un dé Âme désigne le Tricheur, le joueur peut au moment de
-  l'association décider qu'il désigne à la place **l'âme immédiatement devant ou
-  derrière lui**. Une fois par course, l'adversaire subit la même chose : si
-  sa paire désigne l'âme juste devant le Tricheur, c'est le Tricheur qui bouge.
-  Un boss peut annuler ce pouvoir (règle spéciale annoncée).
-- **Lecture.** Rend le dé Âme moins aléatoire pour le joueur : c'est un outil de
-  contrôle moyen (inspi §2). Excellent avec le pari Duel.
-- **Prix.** Fort : il change la valeur de chaque lancer contenant son nom.
+- **Effet.** Quand un dé Âme le désigne, **une fois sur quatre** le dé est relancé et c'est
+  le second tirage qui compte — quitte à le redésigner. Vaut pour les dés du joueur comme
+  pour les paires de l'adversaire.
+- **Lecture.** Son nom sur un dé ne veut plus dire grand-chose : c'est de l'incertitude
+  ajoutée là où le joueur croyait décider.
+- **Écart avec le GDD.** Le GDD lui faisait changer l'identité désignée, au choix du
+  joueur. Le proto en garde l'incertitude sans l'interaction : pas d'écran de plus pendant
+  l'appariement, et l'effet reste symétrique — il triche aussi contre son propriétaire,
+  d'où la contrepartie affichée sur le masque.
+- **Le hasard n'est consulté que pour les dés qui le nomment** : une course sans Tricheur
+  tire exactement la même suite qu'avant, et les graines de référence restent valables.
 
-### 4. Le Condamné — 40
+### 4. Le Condamné ⇥ — 40
 
-- **Effet.** Part avec un malus : son premier déplacement positif de la course est
-  réduit de 1. Ensuite, chaque déplacement positif effectué depuis la zone de fin
-  reçoit +1.
+- **Effet.** Ses avancées du **premier tour** perdent une case ; celles qu'il entame
+  **depuis la zone de fin** en gagnent une. Un recul reste un recul.
 - **Lecture.** Récompense les paris posés tard, juste avant le seuil.
-- **Prix.** Moyen : bonus fiable mais qui n'arrive qu'en fin de course.
+- **Écart avec le GDD.** Le malus porte sur le premier tour et non sur le premier
+  déplacement positif : même lecture pour le joueur (il part lent), sans compteur par âme
+  qu'un artefact ou une case spéciale déréglerait sans que ça se voie.
 
-### 5. Le Parasite — 55
+### 5. Le Parasite ≺ — 55
 
-- **Effet.** Quand l'âme directement **devant** lui avance de 2 ou plus, il avance
-  de 1 aussitôt après (une fois par déplacement hôte). S'il percute une âme, il lui
-  vole 1 case en plus (l'âme percutée recule de 1).
-- **Lecture.** Crée des paris couplés : parier sur l'hôte, c'est parier un peu sur
-  le Parasite. Le pari Deux âmes dans le top 3 devient lisible.
-- **Prix.** Fort : il bouge plus souvent que les dés ne le désignent.
+- **Effet.** Quand l'âme **directement devant lui** avance de 2 cases ou plus, il avance de
+  1 aussitôt après. Les positions lues sont celles d'avant le déplacement : c'est bien son
+  hôte du moment qui vient de bouger.
+- **Lecture.** Crée des paris couplés : parier sur l'hôte, c'est parier un peu sur le
+  Parasite. Le pari Deux âmes dans le top 3 devient lisible.
+- **Écart avec le GDD.** Le vol de case à la percussion a été retiré : c'est le métier de
+  L'Ogre, et deux personnalités qui font la même chose ne se distinguent plus sur la piste.
 
-### 6. Le Juge — 70
+### 6. Le Juge § — 70
 
-- **Effet.** Ne modifie pas ses déplacements. À la résolution des paris : s'il
-  finit dans le top 3, tous les gains du joueur sont multipliés par 1,5 ; s'il
-  finit dernier, ils sont divisés par 2. Les pertes ne sont pas affectées.
-- **Lecture.** Une méta-couche : le joueur doit lire le Juge même s'il ne parie
-  pas dessus. Pousse à couvrir avec un pari Pas dans le top 3 sur lui.
-- **Prix.** Fort : c'est le seul objet qui touche tout le tableau de paris.
+- **Effet.** Ne modifie aucun déplacement. Au règlement : s'il finit dans le top 3, **tous
+  les gains de la course sont multipliés par 1,5** ; s'il finit dernier, ils sont divisés
+  par deux. Les pertes ne sont pas touchées.
+- **Lecture.** Une méta-couche : le joueur doit lire le Juge même s'il ne parie pas dessus.
+  Pousse à couvrir avec un pari Pas dans le top 3 sur lui.
+- **Prix.** Fort : le seul effet qui touche tout le tableau de paris.
 
-### 7. Le Fantôme — 45
+### 7. Le Résolu ⊘ — 50
 
-- **Effet.** Immatériel : personne ne le percute ni ne l'échange. Une âme qui
-  atterrit sur sa case s'y arrête, en cohabitation. Lui-même traverse : il ne
-  saute jamais devant, il s'arrête où le dé le dit.
-- **Lecture.** Réduit le chaos autour de lui. Bon pari Top 3 sans ordre, mauvais
-  candidat aux remontées par saut.
-- **Prix.** Moyen : c'est une lecture plus simple, pas un avantage.
+- **Effet.** Les cases bloquées n'existent pas pour lui : il s'y arrête comme sur n'importe
+  quelle autre, et ne dévie donc jamais de couloir à cause d'un rétrécissement.
+- **Lecture.** Sur un terrain chargé d'éboulis, c'est l'âme dont la trajectoire est la plus
+  prévisible — et la seule qui ne perd jamais de temps en détour. Son intérêt dépend
+  entièrement du terrain tiré, annoncé avant les paris.
+- **Prix.** Moyen, mais très variable d'une course à l'autre : c'est ce qui le rend
+  intéressant à poser sur une âme plutôt qu'une autre.
 
-### 8. Le Bélier — 45
+### 8. L'Opposant ⇄ — 45
 
-- **Effet.** Quand il percute une âme, celle-ci recule de 1 case après le saut.
-  Quand il est percuté, l'âme qui saute n'avance que sur sa case (elle s'arrête
-  dessus, il recule de 1).
-- **Lecture.** Son voisinage est dangereux. Il crée des Duels très lisibles.
-- **Prix.** Moyen : symétrique, offensif comme défensif.
+- **Effet.** Il prend la valeur **opposée** du dé Distance : un +2 le fait reculer de deux
+  cases, un −1 l'avance d'une.
+- **Lecture.** Le joueur doit inverser sa main : les dés qu'il gardait pour freiner une âme
+  la poussent, et réciproquement. Avec deux dés Distance et trois dés Âme, c'est un choix
+  d'ordre, pas une fatalité.
+- **Prix.** Moyen : l'espérance baisse un peu (le dé de base est positif en moyenne), mais
+  le contrôle offert la compense.
 
-### 9. Le Prophète — 65
+### 9. Le Constant ≡ — 35
 
-- **Effet.** Tant qu'il n'est pas dans la zone de fin, le joueur voit la **paire
-  de l'adversaire** avant de choisir ses associations. Quand il franchit le seuil
-  60 %, l'information disparaît pour le reste de la course.
-- **Lecture.** Le joueur joue avec un coup d'avance : il peut ordonner ses
-  combinaisons pour préparer ou parer le tour adverse. Il perd tout intérêt si le
-  Prophète file en tête, ce qui rend le choix de cible cornélien.
-- **Prix.** Fort : information = contrôle (inspi §2, contrôle moyen).
-
-### 10. Le Comptable — 50
-
-- **Effet.** Chaque fois qu'il se déplace (positif ou négatif), le joueur gagne 2
-  pièces. S'il finit dernier, le joueur rend 10 pièces.
-- **Lecture.** Rentabilise les dés Âme « perdus » sur une âme sans intérêt. Argent
-  à usages multiples : ces pièces financent la boutique ou le prix du cercle.
-- **Prix.** Moyen : gain régulier, plafonné par la durée d'une course (~8 tours).
-
-### 11. Les Jumeaux — 80 (s'applique à deux âmes)
-
-- **Effet.** Deux âmes sont liées pour le cercle. Quand l'un se déplace d'au moins
-  2, l'autre se déplace de 1 dans la même direction juste après. Si l'un percute
-  l'autre, pas de saut : ils cohabitent.
-- **Lecture.** Le pari Deux âmes dans le top 3 et le Podium exact deviennent des
-  paris sur un bloc. À l'inverse, Vainqueur + dernier exacts sur les deux jumeaux
-  est presque impossible.
-- **Prix.** Fort et double : occupe deux emplacements de personnalité.
-
-### 12. Le Paresseux — 25
-
-- **Effet.** Ses -1 deviennent 0. Ses 3 deviennent 2. Il n'est jamais désigné par
-  la première paire de l'adversaire du tour 1.
-- **Lecture.** L'âme la plus prévisible du plateau : idéale pour un pari
-  intermédiaire sûr, inutile pour les gros multiplicateurs.
+- **Effet.** Quel que soit le dé, il avance d'une case. Jamais plus, jamais moins, jamais
+  en arrière.
+- **Lecture.** L'âme la plus prévisible du plateau : un mètre étalon contre lequel se lisent
+  toutes les autres. Idéale pour un Duel, inutile pour un gros multiplicateur.
 - **Prix.** Faible : c'est de la stabilité, pas de la puissance.
 
-### 13. Le Somnambule — 45
+### 10. L'Ogre ✖ — 45
 
-- **Effet.** Sur les paires de l'adversaire, ses déplacements sont doublés. Sur
-  les combinaisons du joueur, ils sont réduits de 1 (minimum 0 pour un positif,
-  -1 reste -1).
-- **Lecture.** Le joueur ne peut pas vraiment le pousser ; c'est l'ordinateur qui
-  décide de son destin. Bon pari « spéculatif » à multiplicateur élevé.
-- **Prix.** Moyen : espérance neutre, mais contrôle retiré au joueur, ce qui a une
-  valeur de lecture (l'adversaire est lisible : une paire par tour).
+- **Effet.** L'âme qu'il dépasse en la percutant recule d'une case après le saut.
+- **Lecture.** Son voisinage est dangereux, et il gagne deux fois à chaque percussion :
+  il passe devant et creuse l'écart. Duels très lisibles.
+- **Prix.** Moyen : offensif, mais il faut que les dés le fassent percuter.
 
-### 14. Le Pénitent ⚠ — 60, rang 3
+## Réserve — fiches non implémentées
 
-- **Effet.** Chaque échange de place qu'il subit lui donne +1 permanent à ses
-  prochains déplacements positifs pour la course (cumulable). Contrepartie : tout
-  pari Vainqueur pur posé sur lui coûte le double de mise.
-- **Lecture.** Le joueur peut « nourrir » le Pénitent en faisant reculer des âmes
-  dessus dans l'ordre des combinaisons. Effet boule de neige, typiquement Balatro.
-- **Prix.** Fort, avec contrepartie : rangé parmi les objets dangereux.
+Ces huit-là restent au dossier : elles complètent les axes information, économie, liens
+entre âmes et tempo, et attendent d'être chiffrées en jeu.
+
+### Le Fantôme — 45
+
+Immatériel : personne ne le percute ni ne l'échange. Une âme qui atterrit sur sa case s'y
+arrête, en cohabitation. Lui-même ne saute jamais devant : il s'arrête où le dé le dit.
+
+### Le Prophète — 65
+
+Tant qu'il n'est pas dans la zone de fin, le joueur voit la paire de l'adversaire avant de
+choisir ses associations. Au-delà du seuil, l'information disparaît.
+
+### Le Comptable — 50
+
+Chaque fois qu'il se déplace, positif ou négatif, le joueur gagne 2 pièces. S'il finit
+dernier, le joueur en rend 10.
+
+### Les Jumeaux — 80 (deux âmes)
+
+Deux âmes liées pour le cercle : quand l'une se déplace d'au moins 2, l'autre se déplace de
+1 dans la même direction. Si l'une percute l'autre, elles cohabitent.
+
+### Le Paresseux — 25
+
+Ses −1 deviennent 0, ses 3 deviennent 2. Il n'est jamais désigné par la première paire de
+l'adversaire au tour 1.
+
+### Le Somnambule — 45
+
+Sur les paires de l'adversaire, ses déplacements sont doublés ; sur les combinaisons du
+joueur, réduits de 1.
+
+### Le Pénitent ⚠ — 60, rang 3
+
+Chaque échange de place subi lui donne +1 permanent sur ses déplacements positifs de la
+course, cumulable. Contrepartie : un pari Vainqueur pur posé sur lui coûte double mise.
+
+### Le Bélier — 45
+
+Absorbé par L'Ogre dans le proto (percussion qui fait reculer). Sa moitié défensive —
+l'âme qui le percute s'arrête sur sa case au lieu de sauter devant — reste à prendre si
+l'on veut une personnalité purement défensive.
 
 ## Interactions notables
 
 | Couple | Effet |
 |---|---|
 | Parasite derrière Ambitieux | le Parasite bouge presque à chaque déplacement de l'hôte |
-| Bélier devant Martyr | le Martyr récolte des Rancunes en série |
-| Prophète + Somnambule | on voit ce que l'adversaire va faire au Somnambule avant d'ordonner ses combinaisons |
-| Juge + Comptable | économie doublement liée à des âmes que l'on ne fait pas gagner |
-| Jumeaux + Fantôme | interdit : le Fantôme ne peut pas être lié (cohabitation déjà gérée) |
+| Ogre devant Martyr | le Martyr récolte des rancunes en série |
+| Opposant + Constant | deux façons opposées de rendre une âme lisible : l'une inverse la main du joueur, l'autre la lui retire |
+| Juge + Ogre | le joueur a intérêt à faire monter le Juge, l'Ogre est le moyen le plus direct de bousculer ce qui le gêne |
+| Résolu sur un terrain sans éboulis | rien du tout : c'est le seul effet qui peut être nul selon le terrain tiré |
 
 ## À mesurer dans le POC
 
-- Fréquence des Rancunes du Martyr sur une course de 14 cases.
-- Le Prophète est-il trop fort avec 3 dés Âme (le joueur a déjà du choix) ?
+- Fréquence des rancunes du Martyr sur une course de 14 colonnes : assez pour que le
+  retournement se voie ?
 - Le Juge doit-il agir sur les pertes aussi, pour créer un vrai enjeu négatif ?
+- Le rythme de révélation (une âme par cercle à partir du troisième) donne 7 âmes marquées
+  au neuvième cercle, qui en aligne 10. Est-ce trop de choses à lire avant de parier ?
+- L'Opposant est-il un cadeau ou une punition ? À deux dés Distance, le joueur choisit
+  souvent l'ordre : mesurer s'il perd réellement de la vitesse.

@@ -12,7 +12,7 @@ objets ✔ sont déjà implémentés dans `Proto4Html` (achetables en boutique),
 les règles de ce document.
 
 Familles couvertes : dés et combinaisons, collisions, paris, économie,
-information, tour adverse, boutique.
+information, tour adverse, boutique, plateau.
 
 ## Récapitulatif
 
@@ -49,15 +49,30 @@ information, tour adverse, boutique.
 | 30 | Rabais de Ploutos ✔ | boutique | C | Faible | 30 |
 | 31 | Baume du perdant ✔ | paris / argent | C | Moyen | 50 |
 | 32 | Tirelire du stagiaire ✔ | argent | C | Moyen | 45 |
+| 33 | Bornes du stagiaire | plateau | R | Fort | 70 |
+| 34 | Raccourci de Malebolge | plateau | R | Fort | 80 |
+| 35 | Chaîne des Limbes | plateau | C | Moyen | 70 |
+| 36 | Boule de Cocyte | dés | R | Fort | 75 |
+| 37 | Écho du Styx | dés | R | Fort | 85 |
+| 38 | Sommeil du contremaître | tour adverse | R | Fort | 80 |
+| 39 | Registre des paris exotiques | paris | C | Moyen | 55 |
+| 40 | Cote montante | paris | C | Moyen | 50 |
+| 41 | Crochet de Charon ⚠ | plateau / paris | R | Fort | 85 |
+| 42 | Roue d'Ixion ⚠ | plateau / paris | R | Extrême | 110 |
 
 Le n° 24 (Filet du pêcheur) est retiré, voir [Retirés](#retirés). Les numéros
 restent stables pour que les autres documents puissent y renvoyer.
 
-**État du proto** : 29 des 30 artefacts actifs sont implémentés. Seul le **n° 25
-(Sceau du stagiaire)** ne l'est pas : il porte sur le prix et le retrait des
-**personnalités**, système qui n'existe pas encore dans `Proto4Html`. Il entrera
-avec elles. Le n° 32 (Tirelire du stagiaire) a été fiché après coup : il était
-déjà en boutique sans figurer ici.
+**État du proto** : 30 des 31 artefacts d'origine sont implémentés. Seul le
+**n° 25 (Sceau du stagiaire)** ne l'est pas : il porte sur le prix et le retrait
+des **personnalités**, système qui n'existe pas encore dans `Proto4Html`. Il
+entrera avec elles. Le n° 32 (Tirelire du stagiaire) a été fiché après coup : il
+était déjà en boutique sans figurer ici.
+
+Les artefacts **33 à 42** sont une vague nouvelle, non implémentée. Ils recyclent
+les idées du catalogue de cartes abandonné ([`cartes.md`](cartes.md)) sous forme
+de passifs permanents ou de charges par course, et attendent la fin du chantier
+des **archétypes d'âmes**. Chaque fiche indique ce qu'elle demande au moteur.
 
 ## Fiches
 
@@ -93,6 +108,22 @@ course (inspi §3) ; la mise et le +1 se disputent la même bourse.*
 **6. Verrou de Minos — 85, R.** Avant chaque lancer, vous pouvez verrouiller un
 dé Distance sur sa face du tour précédent au lieu de le relancer. *Contrôle moyen
 emprunté à Dice Legends : on fabrique le hasard qu'on veut.*
+
+**36. Boule de Cocyte — 75, R.** Une fois par course, après avoir vu vos cinq dés
+et avant de les associer, relancez-les **tous**. Le second résultat est gardé.
+*Recyclé de la carte 38 (Divination). Le mulligan complet : il sauve le tour où
+deux `-1` sortent avec les mauvaises âmes. Ne se combine pas avec le **Verrou de
+Minos** (n° 6) sur le même lancer — on ne verrouille pas une face pour ensuite
+tout relancer ; trancher l'ordre des deux effets, ou interdire le cumul dans le
+tour.*
+
+**37. Écho du Styx — 85, R.** Une fois par course, juste après la résolution
+d'une combinaison, rejouez-la **à l'identique** : même âme, même distance, mêmes
+règles de collision. *Recyclé de la carte 42 (Second souffle). La charge unique
+en fait un outil de dernier tour : un `+3` devient `+6` sur l'âme pariée, ou une
+collision se répète sur la même grappe. Comme il copie la combinaison résolue, il
+copie aussi ses effets de face (Bond, Explosive, Aimant) — c'est voulu, mais
+c'est le point à mesurer.*
 
 ### Collisions
 
@@ -169,6 +200,25 @@ qu'un gros.*
 réduite de 10 % (10 % de la mise rendue au règlement). *Cumulable avec le Livre
 des comptes : le Baume s'applique à ce qui reste après le remboursement.*
 
+**39. Registre des paris exotiques — 55, C.** Ajoute deux types de paris à la
+table de mise, pour tout le run : « l'âme X sera percutée au moins deux fois »
+(×3) et « aucune âme ne reculera de la course » (×4). Les deux ne se posent
+qu'avant la course. *Recyclé de la carte 53. Le seul artefact qui **élargit** le
+catalogue de paris au lieu d'en modifier les cotes : il fait parier sur la manière
+dont la course se déroule, pas sur son classement. Synergie évidente avec la
+Bourse percée ; anti-synergie avec les faces Explosive et Revers, qui fabriquent
+précisément ce qu'il faut éviter pour le second pari. Les deux cotes sont des
+suppositions : « aucun recul » dépend entièrement du nombre de faces négatives en
+jeu (dés adverses compris) et doit être mesuré avant d'être figé.*
+
+**40. Cote montante — 50, C.** Vos paris posés **en course** paient +0,5 au
+multiplicateur ; vos paris posés **avant le premier lancer** paient -0,5, sans
+jamais descendre sous ×1. *Le miroir exact du **Ticket de la première heure**
+(n° 13), qui manquait au catalogue : sans lui, le build « parieur tardif » n'a
+aucun objet à lui alors que le Sablier de Charon et l'Œil du parieur le préparent.
+Recyclé de la carte 57 (Cote glissante). **Interdire le cumul avec le n° 13** :
+les deux s'annulent exactement.*
+
 ### Argent
 
 **18. Bourse percée — 50, C.** Chaque collision (saut ou échange) rapporte 2
@@ -218,6 +268,18 @@ combinez en connaissant le plateau final du tour adverse. *Casse l'ordre du tour
 (GDD §2.5.2) : information complète et dernier mot sur les collisions. Rend
 l'Œil de Charon et le Fouet inutiles, interdire le cumul. Réservé au rang 4.*
 
+**38. Sommeil du contremaître — 80, R.** Un compteur suit vos **lancers de dés**
+pour tout le run : **tous les 10 lancers**, l'adversaire saute son tour. Le
+compteur ne se réinitialise ni entre les courses, ni entre les cercles — il court
+du premier lancer du run au dernier. *Recyclé de la carte 43 (Temps mort), mais
+transformé : la carte laissait choisir le moment, l'artefact ne le laisse pas. Une
+course dure 5 à 8 tours, donc le saut tombe environ une fois toutes les une à
+deux courses, et jamais quand on l'aurait voulu. **Le compteur doit être visible
+en permanence** (« 7 / 10 avant le sommeil ») : sans lui, le tour sauté arrive
+comme un accident et l'artefact n'est plus qu'un bonus statistique ; avec lui, le
+joueur peut décider de faire durer un tour ou d'en presser un autre pour placer
+le sommeil au bon endroit. C'est là qu'est le jeu.*
+
 ### Boutique
 
 **25. Sceau du stagiaire — 55, C.** Les personnalités coûtent 30 % de moins et
@@ -229,6 +291,90 @@ cercle est gratuite ; les autres coûtent 20 % de moins.
 **30. Rabais de Ploutos — 30, C.** Tout ce que vend la boutique coûte 3 % de
 moins (arrondi à la pièce, le renouvellement de vitrine compris). *Petit et
 permanent : il se rentabilise sur un run long, pas sur un cercle.*
+
+### Plateau
+
+Une famille nouvelle : ces artefacts ne touchent ni les dés ni les cotes, ils
+touchent **le circuit lui-même** (GDD §7). C'est le premier pas hors du plateau
+fixe, et c'est ce que le catalogue de cartes abandonné faisait le mieux.
+
+**33. Bornes du stagiaire — 70, R.** Avant chaque course, placez **deux bornes**
+sur des cases libres (hors départ, hors zone de fin), choisies librement parmi
+trois types, deux fois le même type compris :
+
+- **Fosse** — l'âme qui s'y arrête recule de 2 ;
+- **Tremplin** — l'âme qui s'y arrête avance de 2 ;
+- **Goudron** — l'âme qui s'y arrête perd ses **déplacements induits** jusqu'à la
+  fin du tour (Parasite, Jumeaux, Aimant, Bât de chameau, Boussole des Limbes).
+
+Une borne se déclenche à chaque passage, pour toute la course, et suit les règles
+de collision normales après déplacement.
+
+*Le geste « je prépare le plateau avant la course » sans main de cartes : il
+recycle d'un coup les cartes 2 (Éboulement), 5 (Sables mouvants), 6 (Tremplin),
+9 (Fosse de Malebolge) et 11 (Goudron). Même modèle d'implémentation que la
+**Tribune infernale** (n° 19) — une paire `{ column, lane }`, voir `placeTribune`
+dans `rules/race.ts` — mais deux emplacements et un type par borne. À surveiller :
+avec la Tribune, cela fait **trois cases posées** sur une piste de 14 colonnes. Ne
+pas monter plus haut sans allonger la piste.*
+
+**34. Raccourci de Malebolge — 80, R.** Le parcours de chaque course est
+**raccourci d'une colonne** pour le reste du run. Le seuil de pari (60 %) est
+recalculé sur la nouvelle longueur. *Moins de tours par course : les paris
+initiaux pèsent plus lourd, l'argent gagné en course pèse moins, les remontées
+tardives deviennent rares. C'est l'artefact du joueur qui lit les personnalités
+avant le départ et veut encaisser vite. Recyclé des cartes 3 (Pont branlant) et
+10 (Ligne d'arrivée avancée).*
+
+**35. Chaîne des Limbes — 70, C.** Le parcours de chaque course est **rallongé
+d'une colonne** pour le reste du run. Le seuil est recalculé. *L'inverse exact :
+plus de tours, donc plus de lancers, plus d'avance versée, plus d'occasions de
+parier en course et plus de remontées. Le socle du build Martyr / Bourse percée /
+Pourboire du stagiaire. Recyclé de la carte 4 (Rallonge). **Anti-synergie
+directe avec le n° 34** : les deux s'annulent, il faut interdire de posséder les
+deux.*
+
+**41. Crochet de Charon ⚠ — 85, R.** Une fois par course, une âme en zone de fin
+recule jusqu'à la colonne du **seuil de pari** (échange de place si la colonne est
+pleine). Elle **redevient pariable**. *Recyclé de la carte 26 (Rappel). Il frotte
+contre le principe non négociable n° 4 (pas de pari au-delà de 60 %) : l'esprit
+est respecté puisque l'âme n'est plus au-delà du seuil, mais c'est le point à
+surveiller au POC. Le prix doit rester élevé et la charge unique par course.*
+
+**42. Roue d'Ixion ⚠ — 110, R, rang 2.** **Une fois par cercle** : quand une âme
+franchit la ligne d'arrivée **en premier** dans une course, si **aucun de vos
+paris actifs ne porte sur elle**, elle ne termine pas. Elle est replacée sur la
+case de départ, dans son couloir d'origine, et la course continue comme si la
+ligne n'avait pas été franchie.
+
+Points de règle retenus :
+
+- **Déclenchement automatique**, sur la première âme à franchir seulement. Si
+  plusieurs âmes franchissent dans le même tour, seule celle qui a le plus petit
+  `finishOrder` est concernée.
+- L'âme repart à la colonne 0 avec `finishOrder` remis à `null` : pour le moteur,
+  elle n'a jamais fini.
+- La case de départ accepte déjà plusieurs âmes (`createSouls` les y empile au
+  premier cercle), donc aucune collision au retour.
+- **Le guichet reste fermé pour elle** : elle ne redevient pas pariable, bien
+  qu'elle soit repassée sous le seuil. Sans cette restriction, l'artefact est une
+  machine à sous — une âme renvoyée au départ à mi-course finit dernière à coup
+  sûr, et on poserait un pari Dernière place gagné d'avance.
+
+*L'objet qui refuse un résultat. Il ne prolonge pas la course pour tout le monde
+comme le faisait la carte 47 (Tour supplémentaire) : il annule le tour d'arrivée
+d'une seule âme, celle sur qui vous n'aviez rien. C'est donc autant une
+élimination qu'une prolongation, et le joueur le pilote en amont, par les paris
+qu'il **ne pose pas**. Il respecte le principe non négociable n° 3 : le classement
+reste établi après la résolution complète du tour d'arrivée, c'est le fait même
+d'arriver qui est annulé.*
+
+**À trancher au POC** : le déclenchement automatique peut gâcher la charge du
+cercle sur la première course, quand le joueur aurait préféré la garder pour la
+course du boss. Deux options : une confirmation au moment du franchissement, ou
+un interrupteur posé avant la course (« la Roue est armée / désarmée »). La
+seconde est plus lisible et n'interrompt pas la résolution.
+
 
 ## Retirés
 
@@ -249,6 +395,14 @@ permanent : il se rentabilise sur un run long, pas sur un cercle.*
 | Denier du cercle + Ticket de la première heure | bonus de mise et bonus de cote sur les mêmes paris initiaux : à mesurer aux cercles 7 à 9 |
 | Ticket de la première heure + Prophète | aucun conflit, mais le Prophète devient inutile pour parier : les deux se choisissent rarement ensemble, bon signe |
 | Dette infernale | doit être proposée tard (rang 4) sinon elle enlève la peur du prix du cercle |
+| Raccourci de Malebolge + Chaîne des Limbes | s'annulent exactement : interdire de posséder les deux |
+| Cote montante + Ticket de la première heure | s'annulent exactement : interdire de posséder les deux |
+| Bornes du stagiaire + Tribune infernale | trois cases posées sur 14 colonnes : plafond atteint, ne pas ajouter un quatrième poseur |
+| Roue d'Ixion + Encensoir du dernier + « vainqueur ET dernier » | une âme renvoyée au départ finit dernière à coup sûr : c'est la raison pour laquelle le guichet reste fermé pour elle |
+| Roue d'Ixion + Chaîne des Limbes | piste plus longue et retour au départ : la course peut s'étirer très au-delà du budget de tours, à mesurer |
+| Écho du Styx + Bond / Explosive | la combinaison rejouée rejoue aussi l'effet de face : le `+6` et la double explosion sont-ils encore lisibles ? |
+| Boule de Cocyte + Verrou de Minos | ordre des deux effets à trancher, ou cumul interdit dans le tour |
+| Face grégaire (forge n° 20) + Relance jumelle | la face fabrique le doublon que l'artefact relance : trancher lequel gagne |
 
 ## Sources d'inspiration
 

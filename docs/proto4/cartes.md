@@ -1,4 +1,15 @@
-# Cartes action
+# Cartes action — catalogue abandonné
+
+> **Décision (19 septembre 2026) : les cartes action ne seront pas
+> implémentées.** Le système demandait une main, une limite de cartes par tour,
+> six fenêtres de jeu dans la boucle de tour et une interface propre pour chacune
+> — pour de l'agentivité ponctuelle que la forge, les dés spéciaux et les
+> artefacts couvrent déjà de façon permanente.
+>
+> Le document reste ici comme **réservoir d'idées** : les meilleures ont été
+> converties en faces de forge, en dés et en artefacts. Voir
+> [Ce qui a été recyclé](#ce-qui-a-été-recyclé) ci-dessous. Les chiffres et les
+> effets ci-après ne sont plus des spécifications : ce sont des notes.
 
 Consommables à usage unique achetés en boutique (GDD §6.2). Elles agissent sur le
 plateau et la résolution, jamais seulement sur l'argent.
@@ -124,6 +135,87 @@ déplacent un enjeu, elles ne donnent pas simplement des pièces.
 | 60 | Mécénat | FC | L'âme classée dernière vous rapporte 10 si aucun pari n'était posé sur elle. | 8 |
 
 ---
+
+## Ce qui a été recyclé
+
+La règle de conversion : une carte, c'est de l'agentivité **ponctuelle à un
+moment choisi**. Chaque système permanent a son propre déclencheur, et c'est lui
+qui décide où une carte peut atterrir.
+
+| Système | Déclencheur | Cartes qui s'y prêtent |
+|---|---|---|
+| Face de forge | la face sort — le joueur ne choisit que l'âme et l'ordre | AA / AL qui touchent un déplacement |
+| Dé spécial | une distribution, subie à chaque lancer | cartes qui sont « une valeur » ou un chaos récurrent |
+| Artefact | règle permanente, ou charge « une fois par course / par cercle » | AC, FC, TA, et toute la famille Mécanique |
+
+### Converties
+
+| Carte | Devient | Où |
+|---|---|---|
+| 2, 5, 6, 9, 11 (Éboulement, Sables mouvants, Tremplin, Fosse, Goudron) | Bornes du stagiaire (artefact 33) | [`artefacts.md`](artefacts.md) |
+| 3, 10 (Pont branlant, Ligne d'arrivée avancée) | Raccourci de Malebolge (artefact 34) | [`artefacts.md`](artefacts.md) |
+| 4 (Rallonge) | Chaîne des Limbes (artefact 35) | [`artefacts.md`](artefacts.md) |
+| 17 (Transfert) | Face du suiveur (forge 19) | [`forge.md`](forge.md) |
+| 24 (Bras de fer) | Bras de fer (forge 17) | [`forge.md`](forge.md) |
+| 26 (Rappel) | Crochet de Charon (artefact 41) | [`artefacts.md`](artefacts.md) |
+| 30 (Double face) | Écho (forge 16) | [`forge.md`](forge.md) |
+| 35 (Dé chargé) | Dé du Damné (dé 12) | [`des.md`](des.md) |
+| 37 (Fusion) | Fusion (forge 18) | [`forge.md`](forge.md) |
+| 38 (Divination) | Boule de Cocyte (artefact 36) | [`artefacts.md`](artefacts.md) |
+| 39 (Inversion) | Revers (forge 15) | [`forge.md`](forge.md) |
+| 42 (Second souffle) | Écho du Styx (artefact 37) | [`artefacts.md`](artefacts.md) |
+| 43 (Temps mort) | Sommeil du contremaître (artefact 38) | [`artefacts.md`](artefacts.md) |
+| 44, 49, 50 (cartes TA) | Dé de Minos (dé 11) | [`des.md`](des.md) |
+| 48 (Cumul forcé) | Face grégaire (forge 20) | [`forge.md`](forge.md) |
+| 53 (Pari exotique) | Registre des paris exotiques (artefact 39) | [`artefacts.md`](artefacts.md) |
+| 57 (Cote glissante) | Cote montante (artefact 40) | [`artefacts.md`](artefacts.md) |
+
+S'y ajoute un objet **sans carte d'origine**, né de la même discussion : la **Roue
+d'Ixion** (artefact 42), qui renvoie au départ la première âme franchissant la
+ligne si aucun pari du joueur ne porte sur elle.
+
+### Déjà couvertes par un objet existant
+
+1 → Tribune infernale (artefact 19) · 22 → Bât de chameau (artefact 8) ·
+28 → Verrou de Minos (artefact 6) · 33 → Troisième dé Distance (dé 6) ·
+31 → Face vide (forge 12) · 32 → Miroir (forge 6) · 27 → Feu follet (forge 7) ·
+45 → Sablier de Charon (artefact 12) · 51 → Œil du parieur (artefact 27) ·
+54 → Bourse percée (artefact 18) · 59 → Dette infernale (artefact 20) ·
+52 → Livre des comptes (artefact 14) et Baume du perdant (artefact 31).
+
+### Écartées, et pourquoi
+
+- **7 (Glace noire), 41 (Cohabitation)** et tout ce qui fait tenir deux âmes sur
+  la même case : le jeu ne tolère aucune position partagée. Les **couloirs** sont
+  déjà la réponse à l'encombrement (une âme se rabat sur une case libre de la même
+  colonne, et ne percute que si la colonne entière est pleine), et le classement
+  ne connaît pas d'ex æquo — « le bas a toujours raison », voir
+  [`regles-du-jeu.md`](regles-du-jeu.md). Une carte qui empile casse les deux.
+- **12 (Point de rassemblement)** : il départage des ex æquo qui n'existent pas.
+  Même raison que le retrait du Filet du pêcheur (artefact 24).
+- **19 (Ailes de cire)** : écartée.
+- **20 (Éveil), 21 (Amnésie)** : elles dépendent du système de **personnalités**,
+  qui n'existe pas encore dans le proto. Même blocage que le Sceau du stagiaire
+  (artefact 25) ; à réexaminer quand les archétypes d'âmes seront en place.
+- **25 (Faux départ), 46 (Arrêt sur image), 47 (Tour supplémentaire), 58 (Pot
+  commun)** : effets à usage strictement unique ou touchant le principe non
+  négociable n° 3 sans contrepartie lisible. La Roue d'Ixion (artefact 42) reprend
+  l'intention de la 47 d'une manière qui ne fige pas de classement provisoire.
+- Le reste de la famille E (paris et économie) est trop proche d'artefacts
+  existants pour justifier un slot.
+
+### À conserver ailleurs
+
+- La **règle de Long Shot** — aucune aide ne fait franchir la ligne d'arrivée,
+  seuls les dés font gagner — est montée dans les principes non négociables du
+  GDD (§9.3, principe 8). C'est elle qui contraint le Bond, l'Explosive, la
+  Boussole des Limbes et les nouveaux artefacts de plateau.
+- Le tableau des **moments de jeu** (AC, AL, AA, EC, TA, FC) reste la meilleure
+  description des déclencheurs du jeu, cartes ou non. `forge.md` en a une version
+  à trois moments (au lancer, à l'association, contre le plateau) ;
+  [`ergonomie-ecrans.md`](ergonomie-ecrans.md) s'appuie sur la version à six pour
+  la frise de tour. Le **Dé de Minos** est le premier objet à exiger l'ouverture
+  réelle de la fenêtre **TA** dans la boucle de tour.
 
 ## Répartition et cohérence
 

@@ -51,8 +51,15 @@ function isRunSave(v: unknown): v is RunSave {
   return Array.isArray(inv.dice) && inv.dice.length > 0 && Array.isArray(inv.artefacts)
 }
 
+/**
+ * Sauvegarde relue. Les âmes marquées (GDD §6.5) sont arrivées après les premières parties :
+ * une sauvegarde d'avant n'a pas la clé, et une partie reprise repart simplement sans
+ * personnalité plutôt que de planter sur un `undefined` au premier déplacement.
+ */
 export function loadRun(): RunSave | null {
-  return read<RunSave | null>(KEYS.save, null, (v): v is RunSave | null => v === null || isRunSave(v))
+  const save = read<RunSave | null>(KEYS.save, null, (v): v is RunSave | null => v === null || isRunSave(v))
+  if (save === null) return null
+  return { ...save, inventory: { ...save.inventory, personalities: save.inventory.personalities ?? {} } }
 }
 
 export function saveRun(save: RunSave): void {

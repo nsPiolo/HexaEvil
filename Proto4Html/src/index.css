@@ -327,6 +327,23 @@ p { margin: 0; }
 .token-body { position: relative; }
 .token-bet { position: absolute; bottom: -3px; right: -6px; width: 14px; height: 14px; border-radius: 50%; background: var(--gold); color: var(--bg); font-size: 0.6rem; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 1px solid var(--bg); z-index: 3; pointer-events: none; }
 .token-unpickable.token-picked .token-body { opacity: 1; }
+
+/*
+ * Personnalités (GDD §6.5). Le signe se pose en haut à gauche du jeton, à l'opposé du
+ * marqueur de pari : les deux peuvent être là en même temps sur la même âme, et une âme
+ * marquée sur laquelle on a un ticket est justement le cas qui se lit le plus souvent.
+ * Fond sombre plutôt que doré — le doré est réservé à l'argent, partout dans l'habillage.
+ */
+.pmark { font-size: 0.72rem; line-height: 1; color: var(--ink); }
+.token-mark { position: absolute; top: -4px; left: -6px; width: 15px; height: 15px; border-radius: 50%; background: var(--bg); color: var(--ink); font-size: 0.62rem; display: flex; align-items: center; justify-content: center; border: 1px solid var(--line); z-index: 3; pointer-events: none; }
+.legend-mark { margin-left: 2px; opacity: 0.85; cursor: help; }
+.rank-mark { margin-left: 4px; opacity: 0.85; cursor: help; }
+/* Choix de l'âme à marquer, en boutique : une carte par âme, sa couleur en liseré. */
+.shop-souls { display: flex; flex-wrap: wrap; gap: 8px; }
+.shop-soul { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; border-left: 3px solid var(--soul, var(--line)); }
+.shop-soul-name { font-weight: 600; }
+.reveal-mark { font-size: 2.6rem; width: 64px; display: flex; align-items: center; justify-content: center; color: var(--gold); }
+.reveal-card { min-width: 320px; }
 .legend-btn { display: flex; align-items: center; gap: 6px; background: none; border: 0; padding: 0; font: inherit; font-weight: 600; }
 .legend-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 .legend-picked { border-color: var(--ember); background: #2c1a12; }
@@ -918,6 +935,8 @@ p { margin: 0; }
 .kind-artefact { border-top-color: var(--gold); }
 .kind-die { border-top-color: var(--human); }
 .kind-forge { border-top-color: var(--ember); }
+/* Masques : le liseré des personnalités, distinct des trois autres familles. */
+.kind-personality { border-top-color: var(--good); }
 .shop-rarity.rarity-rare { color: var(--human); }
 .shop-rarity.rarity-legendary { color: var(--gold); }
 .shop-price { font-weight: 700; color: var(--gold); font-variant-numeric: tabular-nums; }
@@ -949,7 +968,6 @@ p { margin: 0; }
 .face-btn { padding: 4px; border-radius: 8px; border: 2px solid transparent; background: none; transition: border-color 150ms, transform 120ms; }
 .face-btn:hover:not(:disabled) { border-color: var(--ink); transform: translateY(-2px); }
 .face-btn:disabled { opacity: 0.4; }
-.face-btn-hint { border-color: var(--gold); animation: pulse 900ms ease-in-out infinite; }
 .phase-shop { border-color: var(--ember); background: #3a1d12; }
 
 /* ---- Classement (dans la modale de fin de course) -------------------------- */

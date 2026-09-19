@@ -15,6 +15,16 @@ import type { BlockedCell, RaceConfig, SpecialCell } from '../config/schema'
 import { BOARD_EFFECTS, plainFace, type DistanceDie, type Face, type FaceEffect } from './dice'
 import type { Rng } from './rng'
 import { bossValue, hasBoss, type BossEffect } from './boss'
+import {
+  OGRE_PUSH,
+  PARASITE_STEP,
+  PARASITE_TRIGGER,
+  personalityOf,
+  readDie,
+  shapeMove,
+  type Personalities,
+  type PersonalityId,
+} from './personalities'
 
 export type SoulId = number
 
@@ -70,6 +80,11 @@ export interface RaceState {
   tribune: { column: number; lane: number } | null
   /** Boss Porte-chaînes : âmes immobilisées, avec le dernier tour où elles le restent. */
   chained: readonly { soul: SoulId; untilTurn: number }[]
+  /**
+   * Rancunes du Martyr (GDD §6.5) : un jeton par fois où il s'est fait percuter ou échanger,
+   * dépensé d'un bloc quand il entre en zone de fin. Par id d'âme, vidé à chaque course.
+   */
+  grudges: Readonly<Record<number, number>>
 }
 
 /** Un lancer : valeurs des dés Distance (avec la face sortie), et âme désignée par chaque dé Âme. */
@@ -134,12 +149,19 @@ export type MoveNoteId =
   | 'stand'
   | 'trap'
   | 'boost'
+  | 'personalityDie'
+  | 'personalityMove'
+  | 'grudge'
+  | 'ogre'
+  | 'parasite'
 
 export interface MoveNote {
   id: MoveNoteId
   value?: number
   from?: number
   to?: number
+  /** Personnalité derrière la mention : l'écran en tire le nom dans sa langue. */
+  personality?: PersonalityId
 }
 
 export function simpleMove(source: MoveSource, soul: SoulId, distance: number, notes: readonly MoveNote[] = []): Move {
@@ -223,7 +245,7 @@ export function createRace(config: RaceConfig, options: RaceOptions = {}): RaceS
   for (let i = 0; i < count; i++) {
     souls.push({ id: i, name: at(config.souls.names, i, 'souls.names'), position: 0, lane: i % track.lanes, finishOrder: null })
   }
-  return { track, souls, turn: 1, finished: false, nextFinishOrder: 1, frozen: [], links: [], fusion: null, tribune: null, chained: [] }
+  return { track, souls, turn: 1, finished: false, nextFinishOrder: 1, frozen: [], links: [], fusion: null, tribune: null, chained: [], grudges: {} }
 }
 
 /**
@@ -266,6 +288,19 @@ export interface RollOptions {
   rerollTwins?: boolean
   /** Boss Géryon : une fois sur n, un dé Âme désigne l'âme voisine au lieu de la sienne. */
   lying?: number
+  /** Le Tricheur (personnalité) : le dé Âme qui le désigne est relancé une fois sur `oneIn`. */
+  trickster?: { soul: SoulId; oneIn: number }
+}
+
+/**
+ * Le Tricheur (GDD §6.5) : son nom sur un dé Âme ne veut pas dire grand-chose — une fois sur
+ * `oneIn`, le dé est relancé et c'est ce second tirage qui compte, quitte à le redésigner. Le
+ * hasard n'est consulté que pour les dés qui le nomment : une course sans Tricheur tire
+ * exactement la même suite qu'avant, et les graines de référence restent valables.
+ */
+function trickSoulDice(soul: readonly SoulId[], soulCount: number, rng: Rng, trickster: { soul: SoulId; oneIn: number }): SoulId[] {
+  if (trickster.oneIn <= 0) return [...soul]
+  return soul.map((id) => (id === trickster.soul && rng.int(trickster.oneIn) === 0 ? rng.int(soulCount) : id))
 }
 
 /** Lancer du joueur avec ses propres dés Distance (forgés ou spéciaux). */
@@ -276,6 +311,8 @@ export function rollPlayerDice(config: RaceConfig, soulCount: number, rng: Rng, 
   const drawSouls = (): SoulId[] => Array.from({ length: count }, () => rng.int(soulCount))
   let soul = drawSouls()
   if (options.rerollTwins && new Set(soul).size < soul.length) soul = drawSouls()
+  // Le Tricheur avant le mensonge de Géryon : il triche sur le tirage, le boss ment sur le résultat.
+  if (options.trickster) soul = trickSoulDice(soul, soulCount, rng, options.trickster)
   // Boss Géryon : le mensonge se glisse après le tirage, pour que la relance jumelle porte sur
   // ce que les dés ont vraiment dit — sinon l'artefact corrigerait le pouvoir du boss.
   if (options.lying && options.lying > 0) soul = soul.map((id) => (rng.int(options.lying!) === 0 ? (id + 1) % soulCount : id))
@@ -292,6 +329,8 @@ export interface OpponentOptions {
    * pariées et la font reculer. Vide = il tire au hasard comme d'habitude.
    */
   targets?: readonly SoulId[]
+  /** Le Tricheur (personnalité) : il triche aussi sur les paires de l'adversaire. */
+  trickster?: { soul: SoulId; oneIn: number }
 }
 
 /** Une paire de l'adversaire : un dé Âme, un dé Distance de base (§2.5.2). */
@@ -305,7 +344,8 @@ export function rollOpponentPair(config: RaceConfig, soulCount: number, rng: Rng
     value = -Math.abs(value === 0 ? 1 : value)
     return { distance: [value], faces: [plainFace(value)], soul: [at(targets, rng.int(targets.length), 'âme pariée')] }
   }
-  return { distance: [value], faces: [plainFace(value)], soul: [rng.int(soulCount)] }
+  const soul = options.trickster ? trickSoulDice([rng.int(soulCount)], soulCount, rng, options.trickster) : [rng.int(soulCount)]
+  return { distance: [value], faces: [plainFace(value)], soul }
 }
 
 /** Contexte des modificateurs appliqués aux distances du joueur. */
@@ -322,11 +362,28 @@ export interface MoveContext {
    * (Minos aggrave les reculs, le Noyé ralentit les avancées). Voir `bossContext`.
    */
   boss?: { harshNegatives?: number; slowWater?: number }
+  /**
+   * Personnalités des âmes (GDD §6.5) et ce que leurs effets ont besoin de lire du plateau.
+   * Absent = personne n'est marqué, et rien ne change aux distances.
+   */
+  souls?: SoulsContext
 }
 
-/** Contexte minimal pour l'adversaire : il subit les effets de boss, pas vos artefacts. */
-export function bossContext(turn: number, effects: readonly BossEffect[]): MoveContext {
-  return { turn, clepsydre: false, bettedSouls: new Set(), sealBonus: 0, boss: bossDistanceMods(effects) }
+/** Ce qu'une personnalité doit savoir du plateau pour modifier une distance. */
+export interface SoulsContext {
+  personalities: Personalities
+  /** Colonne de chaque âme au moment où les déplacements sont construits, par id d'âme. */
+  positions: readonly number[]
+  /** Première colonne de la zone de fin (`Track.betThresholdColumn`). */
+  betThresholdColumn: number
+}
+
+/**
+ * Contexte minimal pour l'adversaire : il subit les effets de boss, pas vos artefacts. Les
+ * personnalités, elles, le suivent — une âme ne change pas de caractère selon qui la pousse.
+ */
+export function bossContext(turn: number, effects: readonly BossEffect[], souls?: SoulsContext): MoveContext {
+  return { turn, clepsydre: false, bettedSouls: new Set(), sealBonus: 0, boss: bossDistanceMods(effects), ...(souls ? { souls } : {}) }
 }
 
 /** Part du pouvoir de boss qui modifie les distances, extraite une fois pour toutes. */
@@ -342,6 +399,16 @@ export function bossDistanceMods(effects: readonly BossEffect[]): { harshNegativ
 function effectiveDistance(face: Face, soul: SoulId, ctx: MoveContext | undefined, notes: MoveNote[]): number {
   let d = face.value
   if (!ctx) return d
+  // Personnalité d'abord, moitié « lecture du dé » : Le Constant et L'Opposant ne modifient
+  // pas un déplacement, ils changent ce que la face veut dire pour cette âme-là.
+  const personality = personalityOf(ctx.souls?.personalities, soul)
+  if (personality) {
+    const read = readDie(personality, d)
+    if (read !== d) {
+      notes.push({ id: 'personalityDie', personality, from: d, to: read })
+      d = read
+    }
+  }
   // Pouvoir de boss d'abord : il pèse sur la face sortie, avant tout ce que le joueur y ajoute.
   if (ctx.boss?.harshNegatives && d < 0) {
     d -= ctx.boss.harshNegatives
@@ -363,6 +430,14 @@ function effectiveDistance(face: Face, soul: SoulId, ctx: MoveContext | undefine
   if (face.effect === 'betSeal' && ctx.bettedSouls.has(soul)) {
     notes.push({ id: 'seal', value: ctx.sealBonus })
     d += ctx.sealBonus
+  }
+  // Personnalité, seconde moitié : l'amplitude du déplacement, une fois tout le reste appliqué.
+  if (personality && ctx.souls) {
+    const shaped = shapeMove(personality, d, { turn: ctx.turn, position: ctx.souls.positions[soul] ?? 0, betThresholdColumn: ctx.souls.betThresholdColumn })
+    if (shaped !== d) {
+      notes.push({ id: 'personalityMove', personality, from: d, to: shaped })
+      d = shaped
+    }
   }
   return d
 }
@@ -429,11 +504,14 @@ export interface CellChoice {
  * 2. sa case est bloquée : une case vide de la colonne, la plus en bas ; sinon la case
  *    la plus en bas, et collision avec son occupante ;
  * 3. sa case est occupée : une autre case vide, la plus en bas ; sinon collision sur place.
+ *
+ * `ignoreBlocked` est Le Résolu (GDD §6.5) : pour lui les cases bloquées sont des cases
+ * comme les autres, il n'y a donc plus de rétrécissement ni de détour à son endroit.
  */
-export function chooseCell(track: Track, souls: readonly Soul[], column: number, preferredLane: number, except: SoulId, frozenLanes = false): CellChoice {
+export function chooseCell(track: Track, souls: readonly Soul[], column: number, preferredLane: number, except: SoulId, frozenLanes = false, ignoreBlocked = false): CellChoice {
   const occupantOf = (lane: number): Soul | null => souls.find((s) => s.id !== except && s.position === column && s.lane === lane) ?? null
   let open: number[] = []
-  for (let l = 0; l < track.lanes; l++) if (!isBlocked(track, column, l)) open.push(l)
+  for (let l = 0; l < track.lanes; l++) if (ignoreBlocked || !isBlocked(track, column, l)) open.push(l)
   if (open.length === 0) open = Array.from({ length: track.lanes }, (_, l) => l)
   const preferredOpen = open.includes(preferredLane)
   if (preferredOpen && !occupantOf(preferredLane)) return { lane: preferredLane, occupant: null, detour: null }
@@ -471,6 +549,12 @@ export interface MoveRules {
    * tickets, c'est l'appelant qui les lui donne.
    */
   bettedSouls?: ReadonlySet<SoulId>
+  /**
+   * Personnalités des âmes (GDD §6.5) : celles qui se résolvent contre le plateau — Le Résolu
+   * traverse les éboulis, L'Ogre bouscule ce qu'il dépasse, Le Parasite suit son hôte, Le
+   * Martyr accumule ses rancunes. Les autres se jouent sur la distance (`MoveContext.souls`).
+   */
+  personalities?: Personalities
 }
 
 /** Règles de déplacement imposées par le pouvoir de boss, à fusionner avec celles du joueur. */
@@ -494,6 +578,18 @@ function leapDistance(state: RaceState, soul: SoulId, fallback: number): number 
   // L'arrivée ne se franchit pas par un Bond : on s'arrête sur la dernière case avant.
   const target = next >= state.track.columns ? state.track.columns - 1 : next
   return Math.max(0, target - from)
+}
+
+/**
+ * L'âme immédiatement devant une autre, ou null : la plus proche strictement en avant, le
+ * couloir le plus bas départageant deux âmes de la même colonne (Le Parasite).
+ */
+function soulAheadOf(souls: readonly Soul[], soul: SoulId): Soul | null {
+  const me = souls.find((s) => s.id === soul)
+  if (!me) return null
+  const ahead = souls.filter((s) => s.id !== soul && s.position > me.position)
+  if (ahead.length === 0) return null
+  return ahead.reduce((best, s) => (s.position < best.position || (s.position === best.position && s.lane < best.lane) ? s : best))
 }
 
 /** L'âme immédiatement derrière une colonne, ou null (face Aimant). */
@@ -578,8 +674,18 @@ export function applyMove(state: RaceState, move: Move, rules: MoveRules = {}): 
   let fusion = state.fusion
   let links = state.links
   let chained = state.chained
+  let grudges = state.grudges
   const souls = state.souls.map((s) => ({ ...s }))
   const follow: Move[] = []
+  // Personnalité de l'âme qui bouge : elle change le choix de la case (Le Résolu) et ce que
+  // sa collision fait aux autres (L'Ogre).
+  const personality = personalityOf(rules.personalities, move.soul)
+  const throughBlocked = personality === 'resolu'
+  /** Une rancune de plus pour le Martyr qui vient d'être bousculé (GDD §6.5). */
+  const grudge = (id: SoulId): void => {
+    if (personalityOf(rules.personalities, id) !== 'martyr') return
+    grudges = { ...grudges, [id]: (grudges[id] ?? 0) + 1 }
+  }
 
   if (distance < 0 && from === 0) {
     blockedAtStart = true
@@ -589,7 +695,7 @@ export function applyMove(state: RaceState, move: Move, rules: MoveRules = {}): 
     // à chaque colonne. La dernière case du plateau se partage (les arrivées s'y empilent).
     const over: SoulId[] = []
     for (;;) {
-      const choice = chooseCell(track, souls, to, fromLane, mover.id, rules.frozenLanes)
+      const choice = chooseCell(track, souls, to, fromLane, mover.id, rules.frozenLanes, throughBlocked)
       toLane = choice.lane
       detour = choice.detour
       if (!choice.occupant || to >= maxCell) break
@@ -598,7 +704,7 @@ export function applyMove(state: RaceState, move: Move, rules: MoveRules = {}): 
       if (rules.bat && fusion === null && !move.induced) {
         fusion = { front: choice.occupant.id, back: mover.id }
         to = Math.max(0, to - 1)
-        const behind = chooseCell(track, souls, to, fromLane, mover.id, rules.frozenLanes)
+        const behind = chooseCell(track, souls, to, fromLane, mover.id, rules.frozenLanes, throughBlocked)
         toLane = behind.lane
         detour = behind.detour
         break
@@ -608,7 +714,13 @@ export function applyMove(state: RaceState, move: Move, rules: MoveRules = {}): 
     }
     if (over.length > 0) {
       collision = { kind: 'jump', over }
+      // Dépassée, chaque âme percutée nourrit sa rancune — c'est le Martyr qui la garde.
+      for (const id of over) grudge(id)
       if (!move.induced) {
+        // L'Ogre : ce qu'il dépasse, il l'écrase. L'âme percutée recule après le saut.
+        if (personality === 'ogre') {
+          for (const id of over) follow.push({ ...simpleMove('artefact', id, -OGRE_PUSH, [{ id: 'ogre', personality: 'ogre', value: OGRE_PUSH }]), induced: true })
+        }
         // Boss Cerbère : la percutée est mordue et recule après le saut.
         if (rules.bite) for (const id of over) follow.push({ ...simpleMove('artefact', id, -rules.bite, [{ id: 'bite', value: rules.bite }]), induced: true })
         // Boss Le Porte-chaînes : la percutée est immobilisée pour les tours suivants.
@@ -620,17 +732,19 @@ export function applyMove(state: RaceState, move: Move, rules: MoveRules = {}): 
     if (to > 0) {
       // Colonne pleine en reculant : échange de place avec l'occupante de la case retenue.
       // La ligne de départ se partage.
-      let choice = chooseCell(track, souls, to, fromLane, mover.id, rules.frozenLanes)
+      let choice = chooseCell(track, souls, to, fromLane, mover.id, rules.frozenLanes, throughBlocked)
       // Semelles de plomb : on n'échange plus avec une âme en zone de fin, on se range derrière,
       // tant qu'on y reste. Dès qu'on sort de la zone, la règle normale (échange) reprend.
       while (rules.semelles && choice.occupant && isInBetZone(track, to) && to > 0) {
         to -= 1
-        choice = chooseCell(track, souls, to, fromLane, mover.id, rules.frozenLanes)
+        choice = chooseCell(track, souls, to, fromLane, mover.id, rules.frozenLanes, throughBlocked)
       }
       toLane = choice.lane
       detour = choice.detour
       if (choice.occupant && to > 0) {
         const other = at(souls, choice.occupant.id, 'âme')
+        // Échangée ou poussée, l'âme subit : une rancune de plus si c'est le Martyr.
+        grudge(other.id)
         if (rules.pushBack) {
           // Boss Phlégyas : dans le Styx on ne s'échange pas, on se pousse — les deux reculent.
           const pushed = Math.max(0, to - 1)
@@ -666,6 +780,23 @@ export function applyMove(state: RaceState, move: Move, rules: MoveRules = {}): 
       if (id === move.soul || distance === 0) continue
       follow.push({ ...simpleMove('artefact', id, distance, [{ id: state.fusion ? 'camelPack' : 'cocytusChain' }]), induced: true })
     }
+    // Le Parasite : quand l'âme qui le précède avance franchement, il suit dans la foulée.
+    // On lit les positions d'AVANT le déplacement : c'est bien son hôte du moment qui vient
+    // de bouger, pas celui qu'il aura une fois tout le monde replacé.
+    if (rules.personalities && distance >= PARASITE_TRIGGER && to > from) {
+      for (const s of state.souls) {
+        if (s.id === move.soul || personalityOf(rules.personalities, s.id) !== 'parasite') continue
+        if (soulAheadOf(state.souls, s.id)?.id === move.soul) {
+          follow.push({ ...simpleMove('artefact', s.id, PARASITE_STEP, [{ id: 'parasite', personality: 'parasite', value: PARASITE_STEP }]), induced: true })
+        }
+      }
+    }
+    // Le Martyr : tout ce qu'il a encaissé lui revient d'un bloc en entrant en zone de fin.
+    const owed = grudges[move.soul] ?? 0
+    if (personality === 'martyr' && owed > 0 && from < track.betThresholdColumn && to >= track.betThresholdColumn) {
+      follow.push({ ...simpleMove('artefact', move.soul, owed, [{ id: 'grudge', personality: 'martyr', value: owed }]), induced: true })
+      grudges = { ...grudges, [move.soul]: 0 }
+    }
     // Face Aimant : l'âme juste derrière prend la case libérée.
     if (move.effects.includes('magnet') && to > from) {
       const behind = soulBehind(state, from, move.soul)
@@ -700,7 +831,7 @@ export function applyMove(state: RaceState, move: Move, rules: MoveRules = {}): 
   }
 
   return {
-    state: { ...state, souls, nextFinishOrder, frozen: state.frozen, links, fusion, chained },
+    state: { ...state, souls, nextFinishOrder, frozen: state.frozen, links, fusion, chained, grudges },
     result: { move, from, to, fromLane, toLane, detour, blockedAtStart, collision, crossedFinish, frozen: false },
     follow,
     coins,

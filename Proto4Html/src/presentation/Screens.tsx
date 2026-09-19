@@ -3,7 +3,10 @@ import { fmtMultiplier } from '../core/rules/bets'
 import type { ShopItem } from '../core/shop/items'
 import { LOCK_ART } from './art'
 import { ItemArt } from './ItemArt'
-import { COLLECTION, DEBT, ENDINGS, GAME_NAME, ITEM_KINDS, LANGUAGES, MENU, OPTIONS, RARITIES, STATS, UI, UNLOCK, fill } from './texts'
+import type { PersonalityId } from '../core/rules/personalities'
+import { personalityEffect, personalityName } from './messages'
+import { PersonalityMark } from './PersonalityMark'
+import { COLLECTION, DEBT, ENDINGS, GAME_NAME, ITEM_KINDS, LANGUAGES, MENU, OPTIONS, RARITIES, REVEAL, STATS, UI, UNLOCK, fill, ordinal } from './texts'
 import type { Options, Stats } from './storage'
 
 
@@ -256,6 +259,55 @@ export function UnlockScreen({ item, remaining, onDone }: { item: ShopItem; rema
       <div className="end-actions">
         <button type="button" className="btn btn-primary" onClick={onDone}>
           {UNLOCK.next}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+interface RevealProps {
+  /** Nom de l'âme qui se découvre, et sa place dans la course qui vient de finir. */
+  name: string
+  rank: number
+  personality: PersonalityId
+  onDone: () => void
+}
+
+/**
+ * Révélation de personnalité (GDD §6.5) : l'écran joué à la fin de la première course d'un
+ * cercle, à partir du troisième. Il reprend la mise en scène du descellement d'objet — même
+ * respiration, même bouton — parce que c'est le même moment de jeu : quelque chose change
+ * pour la suite du run, et le joueur doit l'avoir lu avant de reparier dessus.
+ */
+export function RevealScreen({ name, rank, personality, onDone }: RevealProps) {
+  const [shown, setShown] = useState(false)
+  useEffect(() => {
+    const t = setTimeout(() => setShown(true), 50)
+    return () => clearTimeout(t)
+  }, [])
+  return (
+    <div className={'screen panel-screen unlock-screen' + (shown ? ' unlock-shown' : '')}>
+      <h1>{REVEAL.title}</h1>
+      <p className="unlock-intro">{fill(REVEAL.intro, { who: name, rank: rank === 1 ? REVEAL.rankFirst : ordinal(rank) })}</p>
+      <div className="unlock-card">
+        <article className="coll-item reveal-card">
+          <header>
+            <span>{ITEM_KINDS.personality}</span>
+          </header>
+          <div className="shop-body">
+            <PersonalityMark personality={personality} className="reveal-mark" />
+            <div className="shop-text">
+              <h3>{personalityName(personality)}</h3>
+              <p className="small">{REVEAL.lead}</p>
+              <p className="small">{personalityEffect(personality)}</p>
+            </div>
+          </div>
+        </article>
+      </div>
+      <p className="unlock-added small">{fill(REVEAL.kept, { who: name })}</p>
+      <div className="end-actions">
+        <button type="button" className="btn btn-primary" onClick={onDone}>
+          {REVEAL.next}
         </button>
       </div>
     </div>

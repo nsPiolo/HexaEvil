@@ -1,9 +1,12 @@
 /** Types des objets de boutique. Les données (noms, prix, textes) vivent dans config/shop.json. */
+import type { PersonalityId } from '../rules/personalities'
+
 /**
  * Artefacts implémentés, numérotés comme dans docs/proto4/artefacts.md. Un id ne peut entrer
  * dans `config/shop.json` que s'il figure ici : le chargeur refuse un objet sans code derrière.
- * Manque encore le Sceau du stagiaire (n°25), qui porte sur les personnalités — système absent
- * du proto — et les objets qui demandent des dés Âme modélisés.
+ * Manque encore le Sceau du stagiaire (n°25), qui ouvre un emplacement de personnalité de plus
+ * — le proto n'en compte pas, une âme porte une personnalité et rien ne limite le nombre d'âmes
+ * marquées — et les objets qui demandent des dés Âme modélisés.
  */
 export const ARTEFACT_IDS = [
   // Dés et combinaisons
@@ -27,7 +30,7 @@ export const FORGE_IDS = ['limee', 'retournee', 'doree', 'explosive', 'bond', 'm
 export type ForgeId = (typeof FORGE_IDS)[number]
 
 export type Rarity = 'common' | 'rare' | 'legendary'
-export type ItemKind = 'artefact' | 'die' | 'forge'
+export type ItemKind = 'artefact' | 'die' | 'forge' | 'personality'
 /** Échelle d'impact (boutique-README § Échelle d'impact) : ce que l'objet change dans la partie. */
 export type Impact = 'faible' | 'moyen' | 'fort' | 'extreme'
 export const IMPACTS: readonly Impact[] = ['faible', 'moyen', 'fort', 'extreme']
@@ -85,7 +88,19 @@ export interface ForgeItem extends ItemBase {
   target: number
 }
 
-export type ShopItem = ArtefactItem | DieItem | ForgeItem
+/**
+ * Masque : il pose une personnalité (GDD §6.5) sur une âme choisie à l'achat, pour tout le
+ * run. Un masque par personnalité, plus un masque brisé qui en retire une (`personality`
+ * à null). Acheter un masque sur une âme déjà marquée remplace ce qu'elle portait.
+ */
+export interface PersonalityItem extends ItemBase {
+  kind: 'personality'
+  id: string
+  /** Personnalité posée, ou null pour l'objet qui en retire une. */
+  personality: PersonalityId | null
+}
+
+export type ShopItem = ArtefactItem | DieItem | ForgeItem | PersonalityItem
 
 export interface ShopConfig {
   slots: number

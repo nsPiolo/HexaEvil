@@ -11,7 +11,7 @@ Faire de la vitrine une grammaire lisible en une visite : chaque objet annonce s
 Déjà conforme (à conserver) :
 
 - Carte-objet standardisée : type (`KIND_LABEL`), rareté, nom, description, aperçu des faces pour les dés (`FaceChip`), prix rouge quand trop cher (`shop-price-over`), carte lisible même inachetable.
-- Flux de ciblage en deux temps pour dés et forge (`pending` → choix du dé / de la face, avec « Cible conseillée » et faces déjà forgées désactivées) : c'est la « comparaison bloquante » voulue pour le seul achat destructif. À garder tel quel.
+- Flux de ciblage en deux temps pour dés et forge (`pending` → choix du dé / de la face, faces déjà forgées désactivées) : c'est la « comparaison bloquante » voulue pour le seul achat destructif. À garder tel quel. Pas de cible conseillée : la boutique montre l'état du dé, le joueur juge seul.
 - Renouvellement de la vitrine payant (`rerollCost`), inventaire replié sous la boutique, message d'erreur (`bet-refusal`).
 
 Écarts :

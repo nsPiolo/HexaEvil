@@ -12,7 +12,8 @@ import type { BetTypeId } from '../core/rules/betTypes'
 import type { BossEffect } from '../core/rules/boss'
 import type { MoveNote } from '../core/rules/race'
 import type { PurchaseLog } from '../core/shop/shop'
-import { BET_REFUSALS, BET_TYPE_TEXTS, BOSS_EFFECTS, CANCEL_REFUSALS, MOVE_NOTES, PURCHASE_LOG, UI, fill, plural } from './texts'
+import type { PersonalityId } from '../core/rules/personalities'
+import { BET_REFUSALS, BET_TYPE_TEXTS, BOSS_EFFECTS, CANCEL_REFUSALS, MOVE_NOTES, PERSONALITIES, PURCHASE_LOG, PURCHASE_REPLACED, UI, fill, plural } from './texts'
 
 /** Intitulé d'un type de pari : « Duel », « Duel ». */
 export function betLabel(type: BetTypeId): string {
@@ -37,12 +38,23 @@ export function dieName(kind: string): string {
   return shop.items.find((i) => i.id === kind)?.name ?? kind
 }
 
+/** Nom d'une personnalité dans la langue du moment : « Le Martyr », « The Martyr ». */
+export function personalityName(id: PersonalityId): string {
+  return PERSONALITIES[id].name
+}
+
+/** La règle d'une personnalité, en une phrase : ce que le joueur lit au survol d'un jeton marqué. */
+export function personalityEffect(id: PersonalityId): string {
+  return PERSONALITIES[id].effect
+}
+
 /** Mention portée par un déplacement : « Morsure », « Clepsydre : -1 → +1 ». */
 export function noteText(note: MoveNote): string {
   return fill(MOVE_NOTES[note.id], {
     ...(note.value === undefined ? {} : { value: note.value }),
     ...(note.from === undefined ? {} : { from: note.from }),
     ...(note.to === undefined ? {} : { to: note.to }),
+    ...(note.personality === undefined ? {} : { who: personalityName(note.personality) }),
   })
 }
 
@@ -56,10 +68,22 @@ function signed(value: number): string {
   return value > 0 ? `+${value}` : String(value)
 }
 
-/** Ligne de journal d'un achat, d'une revente ou d'un décapage. */
-export function purchaseLogText(log: PurchaseLog): string {
+/**
+ * Ligne de journal d'un achat, d'une revente ou d'un décapage. `soulName` traduit l'id d'âme
+ * d'un masque en nom affiché : le moteur ne connaît que des numéros, et le nom d'une âme
+ * change avec la langue comme le reste de la configuration.
+ */
+export function purchaseLogText(log: PurchaseLog, soulName: (id: number) => string = String): string {
   const text = PURCHASE_LOG[log.kind]
   switch (log.kind) {
+    case 'personalityGiven':
+      return fill(text, {
+        who: soulName(log.soul),
+        personality: personalityName(log.personality),
+        replaced: log.replaced === null ? '' : fill(PURCHASE_REPLACED, { personality: personalityName(log.replaced) }),
+      })
+    case 'personalityRemoved':
+      return fill(text, { who: soulName(log.soul), personality: personalityName(log.removed) })
     case 'decap':
       return fill(text, { die: dieName(log.dieKind), n: log.dieIndex + 1, value: signed(log.value) })
     case 'artefactSold':

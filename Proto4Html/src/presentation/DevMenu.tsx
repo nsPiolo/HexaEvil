@@ -31,7 +31,7 @@ export function DevMenu({ carry, onApply, onClose }: Props) {
           if (!valid) return
           onApply({
             money: Math.round(parsed),
-            inventory: carry?.inventory ?? { artefacts: [], dice: [] },
+            inventory: carry?.inventory ?? { artefacts: [], dice: [], personalities: {} },
             raceIndex: (circle - 1) * per + (race - 1),
             lateBetCharges: carry?.lateBetCharges ?? 0,
           })

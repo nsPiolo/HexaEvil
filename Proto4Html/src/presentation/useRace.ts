@@ -39,8 +39,10 @@ import {
   type RaceOptions,
   type RaceState,
   type Roll,
+  type SoulsContext,
 } from '../core/rules/race'
 import { randomSeed, seededRng, type Rng } from '../core/rules/rng'
+import { TRICKSTER_ONE_IN, judgeFactor, soulWith } from '../core/rules/personalities'
 import { circleAt, isBeyondWritten } from '../core/rules/circles'
 import { bossValue, generateBossEffects, hasBoss, type BossEffect } from '../core/rules/boss'
 import { betLabel, betRefusalText, describeBossEffects, dieName, noteText, purchaseLogText } from './messages'
@@ -51,7 +53,7 @@ import { isArtefactId, type ArtefactId, type ShopItem } from '../core/shop/items
 import { applyPurchase, artefactSlotsAt, decapFace, effectivePrice, effectiveRerollCost, findItem, generateVitrine, maxAlteredFaces, opponentNegativesFlipped, resaleValue, sellArtefact, type Inventory, type PriceRules, type PurchaseTarget } from '../core/shop/shop'
 import { demonLevelAtRace, rankOfLevel } from './demon'
 import { e2eMode, seedForRace } from './urlParams'
-import { BETS, LOG, MOVE, UI, fill, plural } from './texts'
+import { BETS, LOG, MOVE, UI, fill, ordinal, plural } from './texts'
 
 export type Phase = 'prep' | 'idle' | 'rolling' | 'pairing' | 'resolving' | 'opponent' | 'finished'
 
@@ -221,8 +223,10 @@ export function moveRules(inventory: Inventory): MoveRules {
 }
 
 /** Règlement des paris : tous les artefacts d'argent, dans l'ordre documenté par `settleBets`. */
-export function settleOptions(inventory: Inventory, circle: number, pickLost: (n: number) => number): SettleOptions {
+export function settleOptions(inventory: Inventory, circle: number, pickLost: (n: number) => number, gainFactor = 1): SettleOptions {
   const o: SettleOptions = {}
+  // Le Juge (personnalité) : il pèse sur tous les gains de la course, pas sur un type de pari.
+  if (gainFactor !== 1) o.gainFactor = gainFactor
   if (has(inventory, 'livreDesComptes')) {
     o.refundRatio = param('livreDesComptes', 'refundRatio', 0.5)
     o.pickLost = pickLost
@@ -262,6 +266,8 @@ export function opponentRolls(u: Pick<RaceUi, 'inventory' | 'doubledStakes' | 'r
 /** Options du lancer adverse pour cette course : Face retournée du joueur, pouvoirs du boss. */
 function opponentOptions(u: RaceUi): OpponentOptions {
   const o: OpponentOptions = { flipNegatives: opponentNegativesFlipped(u.inventory) }
+  const trickster = tricksterOf(u)
+  if (trickster) o.trickster = trickster
   const boost = bossValue(u.boss, 'opponentBoost')
   if (boost !== null) o.boost = boost
   if (hasBoss(u.boss, 'targetBettedSouls')) {
@@ -349,7 +355,35 @@ export function bettedSouls(bets: readonly Bet[]): Set<number> {
   return new Set(bets.filter((b) => b.status === 'open').flatMap((b) => [...b.souls]))
 }
 
-/** Contexte des modificateurs du joueur (Clepsydre, Sceau), identique en résolution et en prévisualisation. */
+/**
+ * Ce que les personnalités (GDD §6.5) ont besoin de lire du plateau pour modifier une
+ * distance : qui porte quoi, où chacun se trouve, où commence la zone de fin.
+ *
+ * Les positions sont celles d'avant la résolution du tour, pas celles du moment où chaque
+ * déplacement s'applique : `buildMoves` construit toute la file d'un coup, et c'est ce que
+ * le joueur a sous les yeux quand il ordonne ses combinaisons. Un Condamné qui entre en zone
+ * de fin par sa première combinaison n'en profite donc qu'au tour suivant — la
+ * prévisualisation dit exactement ce qui sera joué, ce qui compte davantage ici.
+ */
+export function soulsContext(u: Pick<RaceUi, 'race' | 'inventory'>): SoulsContext {
+  return {
+    personalities: u.inventory.personalities,
+    positions: u.race.souls.map((so) => so.position),
+    betThresholdColumn: u.race.track.betThresholdColumn,
+  }
+}
+
+/**
+ * Le Tricheur en course, s'il y en a un : le dé Âme qui le désigne est relancé une fois sur
+ * quatre. Null sinon — et sans lui, `rollPlayerDice` ne consulte pas le hasard de plus, les
+ * graines de référence des courses sans personnalité restent donc valables.
+ */
+function tricksterOf(u: Pick<RaceUi, 'race' | 'inventory'>): { soul: number; oneIn: number } | null {
+  const soul = soulWith(u.inventory.personalities, 'tricheur', u.race.souls.length)
+  return soul === null ? null : { soul, oneIn: TRICKSTER_ONE_IN }
+}
+
+/** Contexte des modificateurs du joueur (Clepsydre, Sceau, personnalités), identique en résolution et en prévisualisation. */
 function moveContext(u: Pick<RaceUi, 'race' | 'inventory' | 'bets' | 'boss'>): MoveContext {
   return {
     turn: u.race.turn,
@@ -357,6 +391,7 @@ function moveContext(u: Pick<RaceUi, 'race' | 'inventory' | 'bets' | 'boss'>): M
     bettedSouls: bettedSouls(u.bets),
     sealBonus: SEAL_BONUS,
     boss: bossDistanceMods(u.boss),
+    souls: soulsContext(u),
   }
 }
 
@@ -365,7 +400,7 @@ function moveContext(u: Pick<RaceUi, 'race' | 'inventory' | 'bets' | 'boss'>): M
  * les tickets en cours — la case payante ne verse que sur une âme pariée.
  */
 export function raceMoveRules(u: Pick<RaceUi, 'inventory' | 'boss' | 'bets'>): MoveRules {
-  return { ...moveRules(u.inventory), ...bossMoveRules(u.boss), bettedSouls: bettedSouls(u.bets) }
+  return { ...moveRules(u.inventory), ...bossMoveRules(u.boss), bettedSouls: bettedSouls(u.bets), personalities: u.inventory.personalities }
 }
 
 export interface ProdigalityCharge {
@@ -605,6 +640,8 @@ export function useRace({ carry, unlocked, soulCount, lanes, terrains, speed }: 
     if (u.money < price) return UI.shop.notEnoughMoney
     if (item.kind === 'artefact' && u.inventory.artefacts.includes(item.id)) return UI.shop.alreadyOwned
     if (item.kind === 'forge' && !u.inventory.dice.some((d) => d.faces.some((f) => !f.altered))) return UI.shop.noFaceLeft
+    // Masque brisé : rien à retirer tant qu'aucune âme en course n'est marquée.
+    if (item.kind === 'personality' && item.personality === null && !u.race.souls.some((so) => u.inventory.personalities[so.id])) return UI.shop.nothingToStrip
     return null
   }, [shopUnlocked, level])
 
@@ -620,17 +657,22 @@ export function useRace({ carry, unlocked, soulCount, lanes, terrains, speed }: 
     if (refusal) return refusal
     const slots = artefactSlotsAt(shop, level)
     const needsTarget =
-      item.kind === 'forge' || (item.kind === 'die' && item.mode === 'replace') || (item.kind === 'artefact' && u.inventory.artefacts.length >= slots)
+      item.kind === 'forge' ||
+      item.kind === 'personality' ||
+      (item.kind === 'die' && item.mode === 'replace') ||
+      (item.kind === 'artefact' && u.inventory.artefacts.length >= slots)
     if (needsTarget && !target) {
       commit({ ...u, pendingPurchase: itemId })
       return null
     }
     try {
       const { inventory, log: purchase } = applyPurchase(item, u.inventory, target, maxAlteredFaces(shop, level))
+      // Un masque parle d'une âme : le journal la nomme, il ne dit pas « âme n°3 ».
+      const soulName = (id: number): string => u.race.souls[id]?.name ?? `#${id}`
       const freeForge = item.kind === 'forge' && has(u.inventory, 'marteauHephaistos') && !u.forgeFreeUsed
       const price = priceFor(item, u.raceIndex, u.inventory, !u.forgeFreeUsed)
       const lateBetCharges = item.kind === 'artefact' && item.id === 'lateBet' ? config.artefacts.lateBet.chargesPerCircle : u.lateBetCharges
-      let next = pushLog({ ...u, money: u.money - price, inventory, lateBetCharges, forgeFreeUsed: u.forgeFreeUsed || freeForge, vitrine: (u.vitrine ?? []).filter((i) => i !== item), pendingPurchase: null, tally: { ...u.tally, spent: u.tally.spent + price } }, 'shop', freeForge ? fill(LOG.purchaseFreeForge, { text: purchaseLogText(purchase) }) : fill(LOG.purchase, { text: purchaseLogText(purchase), cost: price }))
+      let next = pushLog({ ...u, money: u.money - price, inventory, lateBetCharges, forgeFreeUsed: u.forgeFreeUsed || freeForge, vitrine: (u.vitrine ?? []).filter((i) => i !== item), pendingPurchase: null, tally: { ...u.tally, spent: u.tally.spent + price } }, 'shop', freeForge ? fill(LOG.purchaseFreeForge, { text: purchaseLogText(purchase, soulName) }) : fill(LOG.purchase, { text: purchaseLogText(purchase, soulName), cost: price }))
       // Le Sablier change le plateau : on achète en préparation, personne n'a bougé, le plateau est refait tout de suite.
       if (item.kind === 'artefact' && item.id === 'sablier') {
         const track = createTrack(config.track, raceOptions(inventory, { lanes: u.race.track.lanes, blocked: u.race.track.blocked, specials: u.race.track.specials }, u.boss))
@@ -735,7 +777,7 @@ export function useRace({ carry, unlocked, soulCount, lanes, terrains, speed }: 
           const w = uiRef.current
           const who = w.race.souls[pair.soul[0] ?? 0]?.name ?? '?'
           commit(pushLog({ ...w, opponentRoll: pair }, 'opponent', fill(LOG.opponentRoll, { who, dist: fmt(pair.distance[0] ?? 0) })))
-          if (!(await resolveMoves(id, buildMoves(pair, naturalCombinations(pair), 'opponent', bossContext(uiRef.current.race.turn, uiRef.current.boss)), () => null))) return
+          if (!(await resolveMoves(id, buildMoves(pair, naturalCombinations(pair), 'opponent', bossContext(uiRef.current.race.turn, uiRef.current.boss, soulsContext(uiRef.current))), () => null))) return
         }
         commit({ ...uiRef.current, phase: 'rolling', opponentRoll: null, opponentPreview: [] })
       } else {
@@ -750,6 +792,7 @@ export function useRace({ carry, unlocked, soulCount, lanes, terrains, speed }: 
     const roll = rollPlayerDice(config, u.race.souls.length, rngRef.current, u.inventory.dice, {
       soulDice: soulDiceCount(u.inventory),
       rerollTwins: has(u.inventory, 'relanceJumelle'),
+      ...(tricksterOf(u) ? { trickster: tricksterOf(u)! } : {}),
       ...(bossValue(u.boss, 'lyingSoulDice') !== null ? { lying: bossValue(u.boss, 'lyingSoulDice')! } : {}),
       ...(locked ? { locked } : {}),
     })
@@ -963,7 +1006,7 @@ export function useRace({ carry, unlocked, soulCount, lanes, terrains, speed }: 
       const u = uiRef.current
       const name = u.race.souls[pair.soul[0] ?? 0]?.name ?? '?'
       commit(pushLog({ ...u, opponentRoll: pair }, 'opponent', fill(LOG.opponentRoll, { who: name, dist: fmt(pair.distance[0] ?? 0) })))
-      if (!(await resolveMoves(id, buildMoves(pair, naturalCombinations(pair), 'opponent', bossContext(uiRef.current.race.turn, uiRef.current.boss)), () => null))) return
+      if (!(await resolveMoves(id, buildMoves(pair, naturalCombinations(pair), 'opponent', bossContext(uiRef.current.race.turn, uiRef.current.boss, soulsContext(uiRef.current))), () => null))) return
     }
 
     const u = uiRef.current
@@ -984,14 +1027,22 @@ export function useRace({ carry, unlocked, soulCount, lanes, terrains, speed }: 
         if (!(await wait(config.animation.diceMs, id))) return
         const who = cur2.race.souls[pair.soul[0] ?? 0]?.name ?? '?'
         commit(pushLog({ ...uiRef.current, opponentRoll: pair }, 'opponent', fill(LOG.opponentReplay, { who, dist: fmt(pair.distance[0] ?? 0) })))
-        if (!(await resolveMoves(id, buildMoves(pair, naturalCombinations(pair), 'opponent', bossContext(uiRef.current.race.turn, uiRef.current.boss)), () => null))) return
+        if (!(await resolveMoves(id, buildMoves(pair, naturalCombinations(pair), 'opponent', bossContext(uiRef.current.race.turn, uiRef.current.boss, soulsContext(uiRef.current))), () => null))) return
       }
     }
 
     const after = uiRef.current
     let done = pushLog({ ...after, race: endTurn(after.race, after.boss), phase: 'finished', resolvingIndex: null }, 'system', fill(LOG.raceEnd, { turn: ended.turn }))
     const finalRace = done.race
-    const settlement = settleBets(done.bets, ranking(finalRace), settleOptions(u.inventory, circleOf(u.raceIndex).circle, (n) => rngRef.current.int(n)))
+    const ranked = ranking(finalRace)
+    // Le Juge (personnalité) : sa place change tous les gains de la course. Dit avant le
+    // détail des tickets, sinon le joueur lirait des montants sans savoir d'où vient l'écart.
+    const judge = judgeFactor(u.inventory.personalities, ranked)
+    if (judge !== 1) {
+      const soul = ranked.find((r) => u.inventory.personalities[r.soul.id] === 'juge')
+      done = pushLog(done, 'system', fill(judge > 1 ? LOG.judgeTop : LOG.judgeLast, { who: soul?.soul.name ?? '?', rank: ordinal(soul?.rank ?? 0) }))
+    }
+    const settlement = settleBets(done.bets, ranked, settleOptions(u.inventory, circleOf(u.raceIndex).circle, (n) => rngRef.current.int(n), judge))
     for (const b of settlement.bets) {
       const names = b.souls.map((id) => finalRace.souls[id]?.name ?? `#${id}`).join(betType(b.type).ordered ? ' > ' : ', ')
       done = pushLog(done, 'bet', b.status === 'won' ? fill(LOG.betWon, { type: betLabel(b.type), souls: names, net: b.payout - b.stake, stake: b.stake }) : fill(LOG.betLost, { type: betLabel(b.type), souls: names, stake: b.stake }))

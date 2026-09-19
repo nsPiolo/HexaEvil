@@ -1,10 +1,11 @@
 # Objets achetables — images à générer (Gemini)
 
-Les quarante-huit objets de la boutique (`Proto4Html/config/shop.json`) : trente
-artefacts, sept dés et onze opérations de forge. Chacun reçoit une **vignette carrée**
-posée à gauche de son nom dans la carte de vitrine, et en réduction dans la
-pastille d'inventaire. **Les quarante-huit sont peintes et installées** (2026-09-19) ; ce
-fichier reste la référence pour en ajouter une, ou en refaire une qui ne tient pas à 18 px.
+Les cinquante-neuf objets de la boutique (`Proto4Html/config/shop.json`) : trente
+artefacts, sept dés, onze opérations de forge et onze masques de personnalité. Chacun
+reçoit une **vignette carrée** posée à gauche de son nom dans la carte de vitrine, et en
+réduction dans la pastille d'inventaire. **Les cinquante-neuf sont peintes et installées**
+(2026-09-19). Ce fichier reste la référence pour en ajouter une, ou en refaire une qui ne
+tient pas à 18 px.
 
 | Où | Sélecteur | Taille affichée |
 |---|---|---|
@@ -142,7 +143,7 @@ Un seul prompt, dont seule la **phrase d'objet** change d'une vignette à l'autr
 > outline, panel or edging drawn around the image. No text, no letters, no numbers, no logo,
 > no user interface, no hands, no character.
 
-## Les quarante-sept phrases d'objet
+## Les phrases d'objet
 
 Six objets sont sombres par nature — `sablier`, `livreDesComptes`, `colere`,
 `limee`, `retournee`, `sceau`. Leur phrase porte une mention explicite d'arête de
@@ -239,9 +240,41 @@ montre l'outil ou la marque, pas le dé.
 | `gel.webp` | Face de gel | a blacksmith's tongs gripping a metal plate that has frozen instead of glowing, blue-white frost creeping up the jaws |
 | `aimant.webp` | Face aimant | a squat grey bar lodestone, pitted and dark, iron filings and two bent nails clinging in dense tufts to each end |
 
+### Masques de personnalité (`kind: "personality"`)
+
+Les onze masques sont le seul endroit du catalogue où les vignettes doivent se
+**ressembler volontairement**. Une personnalité (GDD §6.5) n'est pas un objet de plus
+dans la main du joueur : c'est une marque posée sur une âme, et dix marques différentes
+doivent se lire comme dix variantes d'une même chose, pas comme dix objets. La phrase est
+donc rigoureusement la même pour tous — même masque, même matière, même cordon, même
+cadrage — et **seul le symbole gravé au front change**.
+
+C'est aussi la seule entorse à la règle « aucun symbole peint sur l'objet » de la
+direction artistique commune, et elle est assumée : ici le symbole **est** l'information.
+Il reste **géométrique** — pas une lettre, pas un chiffre, ce que le squelette interdit
+toujours — et c'est le même que celui affiché sur le jeton de l'âme marquée
+(`PERSONALITY_GLYPH`, `Proto4Html/src/presentation/PersonalityMark.tsx`) : le joueur doit
+reconnaître sur la piste ce qu'il a acheté en vitrine.
+
+Le masque brisé, lui, ne porte rien : c'est le même masque fendu en deux, front nu.
+
+| Fichier | Objet | Phrase d'objet |
+|---|---|---|
+| `masqueMartyr.webp` | Masque du Martyr | a plain oval face-mask of pale bone-coloured ceramic, featureless except for two narrow empty eye slits, hanging from a short frayed leather cord, a cold pale rim light along its whole edge, and one geometric mark branded dark into its forehead: an equal-armed cross with plain square ends |
+| `masqueAmbitieux.webp` | Masque de l'Ambitieux | a plain oval face-mask of pale bone-coloured ceramic, featureless except for two narrow empty eye slits, hanging from a short frayed leather cord, a cold pale rim light along its whole edge, and one geometric mark branded dark into its forehead: a solid triangle pointing upwards |
+| `masqueTricheur.webp` | Masque du Tricheur | a plain oval face-mask of pale bone-coloured ceramic, featureless except for two narrow empty eye slits, hanging from a short frayed leather cord, a cold pale rim light along its whole edge, and one geometric mark branded dark into its forehead: a ring crossed out by two diagonal strokes forming an X inside it |
+| `masqueCondamne.webp` | Masque du Condamné | a plain oval face-mask of pale bone-coloured ceramic, featureless except for two narrow empty eye slits, hanging from a short frayed leather cord, a cold pale rim light along its whole edge, and one geometric mark branded dark into its forehead: a horizontal arrow striking a vertical bar at its tip |
+| `masqueParasite.webp` | Masque du Parasite | a plain oval face-mask of pale bone-coloured ceramic, featureless except for two narrow empty eye slits, hanging from a short frayed leather cord, a cold pale rim light along its whole edge, and one geometric mark branded dark into its forehead: a narrow chevron lying on its side, pointing left like an arrowhead |
+| `masqueJuge.webp` | Masque du Juge | a plain oval face-mask of pale bone-coloured ceramic, featureless except for two narrow empty eye slits, hanging from a short frayed leather cord, a cold pale rim light along its whole edge, and one geometric mark branded dark into its forehead: two interlaced curls stacked one above the other, like an old section mark |
+| `masqueResolu.webp` | Masque du Résolu | a plain oval face-mask of pale bone-coloured ceramic, featureless except for two narrow empty eye slits, hanging from a short frayed leather cord, a cold pale rim light along its whole edge, and one geometric mark branded dark into its forehead: a ring cut through by a single diagonal stroke |
+| `masqueOpposant.webp` | Masque de l'Opposant | a plain oval face-mask of pale bone-coloured ceramic, featureless except for two narrow empty eye slits, hanging from a short frayed leather cord, a cold pale rim light along its whole edge, and one geometric mark branded dark into its forehead: two parallel horizontal arrows pointing in opposite directions |
+| `masqueConstant.webp` | Masque du Constant | a plain oval face-mask of pale bone-coloured ceramic, featureless except for two narrow empty eye slits, hanging from a short frayed leather cord, a cold pale rim light along its whole edge, and one geometric mark branded dark into its forehead: three short horizontal bars stacked evenly one above the other |
+| `masqueOgre.webp` | Masque de l'Ogre | a plain oval face-mask of pale bone-coloured ceramic, featureless except for two narrow empty eye slits, hanging from a short frayed leather cord, a cold pale rim light along its whole edge, and one geometric mark branded dark into its forehead: a thick saltire, two heavy strokes crossing in an X |
+| `masqueBrise.webp` | Masque brisé | a plain oval face-mask of pale bone-coloured ceramic, featureless except for two narrow empty eye slits, hanging from a short frayed leather cord, a cold pale rim light along its whole edge, cracked clean in two down the middle with the halves slightly apart and the fracture edges chipped, its forehead completely bare with no mark of any kind |
+
 ## Générer : `npm run gen:objets`
 
-Le script `Proto4Html/scripts/gen-images.mjs` appelle Gemini pour les seize objets
+Le script `Proto4Html/scripts/gen-images.mjs` appelle Gemini pour les objets
 (famille `objets` ; la famille `boss` fait les portraits, voir [`prompts-boss.md`](prompts-boss.md)).
 Il **lit ce document** — le squelette de prompt et les trois tableaux de phrases — donc
 il n'existe pas de copie des prompts ailleurs : éditer une phrase ci-dessus suffit à

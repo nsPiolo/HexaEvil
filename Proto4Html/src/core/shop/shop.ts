@@ -6,12 +6,19 @@ import type { RaceConfig } from '../config/schema'
 import { baseDie, type DistanceDie, type Face } from '../rules/dice'
 import { growWithCircle } from '../rules/growth'
 import type { Rng } from '../rules/rng'
+import { NO_PERSONALITIES, type Personalities, type PersonalityId } from '../rules/personalities'
 import type { ArtefactId, DieItem, ForgeId, Rarity, ShopConfig, ShopItem } from './items'
 
 /** Ce que le joueur emporte de course en course. */
 export interface Inventory {
   artefacts: ArtefactId[]
   dice: DistanceDie[]
+  /**
+   * Âmes marquées : la personnalité de chaque âme, par id d'âme (GDD §6.5). Elle tient tout
+   * le run — posée par un masque de la boutique ou révélée en fin de première course de
+   * cercle — et voyage donc ici, avec les artefacts et les dés, jusque dans la sauvegarde.
+   */
+  personalities: Personalities
 }
 
 export function priceAtCircle(base: number, circle: number, growth: number): number {
@@ -91,7 +98,16 @@ export function resaleValue(shop: ShopConfig, price: number): number {
  */
 export function generateVitrine(shop: ShopConfig, inventory: Inventory, unlocked: readonly string[], rng: Rng, level = Number.POSITIVE_INFINITY): ShopItem[] {
   const open = new Set(unlocked)
-  const pool0 = shop.items.filter((it) => open.has(it.id) && it.minRank <= level && !(it.kind === 'artefact' && inventory.artefacts.includes(it.id)))
+  // Le masque brisé n'a rien à retirer tant qu'aucune âme n'est marquée : il reste en réserve
+  // plutôt que d'occuper un des trois emplacements avec un bouton qui refuserait l'achat.
+  const nothingToStrip = Object.keys(inventory.personalities).length === 0
+  const pool0 = shop.items.filter(
+    (it) =>
+      open.has(it.id) &&
+      it.minRank <= level &&
+      !(it.kind === 'artefact' && inventory.artefacts.includes(it.id)) &&
+      !(it.kind === 'personality' && it.personality === null && nothingToStrip),
+  )
   let pool = pool0
   const out: ShopItem[] = []
   while (out.length < shop.slots && pool.length > 0) {
@@ -155,6 +171,8 @@ export type PurchaseTarget = {
   faceIndex?: number
   /** Artefact à détruire pour faire de la place, quand les emplacements sont pleins. */
   replaceArtefact?: ArtefactId
+  /** Âme que le masque marque, ou dont il retire la personnalité. */
+  soul?: number
 }
 
 /**
@@ -170,6 +188,8 @@ export type PurchaseLog =
   | { kind: 'dieAdded'; name: string; count: number }
   | { kind: 'dieReplaced'; name: string; dieKind: string; dieIndex: number }
   | { kind: 'faceForged'; name: string; dieKind: string; dieIndex: number; value: number }
+  | { kind: 'personalityGiven'; soul: number; personality: PersonalityId; replaced: PersonalityId | null }
+  | { kind: 'personalityRemoved'; soul: number; removed: PersonalityId }
 
 export interface PurchaseResult {
   inventory: Inventory
@@ -242,9 +262,25 @@ export function applyPurchase(item: ShopItem, inventory: Inventory, target: Purc
       const dice = inventory.dice.map((d, i) => (i === target.dieIndex ? { ...d, faces } : d))
       return { inventory: { ...inventory, dice }, log: { kind: 'faceForged', name: item.name, dieKind: die.kind, dieIndex: target.dieIndex, value: face.value } }
     }
+    // Masque : il change une âme, pas le matériel du joueur. C'est le seul achat dont l'effet
+    // se lit sur la piste plutôt que dans sa main (GDD §6.5).
+    case 'personality': {
+      if (!target || target.soul === undefined) throw new Error('choisissez l’âme à marquer')
+      const soul = target.soul
+      const worn = inventory.personalities[soul] ?? null
+      if (item.personality === null) {
+        if (worn === null) throw new Error('cette âme n’a pas de personnalité')
+        const personalities = { ...inventory.personalities }
+        delete personalities[soul]
+        return { inventory: { ...inventory, personalities }, log: { kind: 'personalityRemoved', soul, removed: worn } }
+      }
+      if (worn === item.personality) throw new Error('cette âme porte déjà cette personnalité')
+      const personalities = { ...inventory.personalities, [soul]: item.personality }
+      return { inventory: { ...inventory, personalities }, log: { kind: 'personalityGiven', soul, personality: item.personality, replaced: worn } }
+    }
   }
 }
 
 export function defaultInventory(config: RaceConfig): Inventory {
-  return { artefacts: [], dice: Array.from({ length: config.dice.distanceDice }, () => baseDie(config)) }
+  return { artefacts: [], dice: Array.from({ length: config.dice.distanceDice }, () => baseDie(config)), personalities: NO_PERSONALITIES }
 }

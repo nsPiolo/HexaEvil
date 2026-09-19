@@ -1,4 +1,5 @@
 import { ConfigError } from '../config/load'
+import { isPersonalityId } from '../rules/personalities'
 import { IMPACTS, IMPACT_OF_RARITY, RANK_OF_RARITY, isArtefactId, isForgeId, type Impact, type Rarity, type ShopConfig, type ShopItem } from './items'
 
 function fail(field: string, detail: string): never {
@@ -71,8 +72,17 @@ function item(raw: unknown, field: string): ShopItem {
       if (wildFace !== null && wildFace >= faces.length) fail(`${field}.wildFace`, `index de face hors du dé (${faces.length} faces)`)
       return { ...base, kind, id, faces, costPerUse, mode, wildFace }
     }
+    // Masque : `personality` nomme la personnalité posée, `null` l'objet qui en retire une.
+    // La clé doit être présente, même à null : un masque sans effet serait un objet muet.
+    case 'personality': {
+      if (o.personality === undefined) fail(`${field}.personality`, 'personnalité attendue, ou null pour le masque qui en retire une')
+      if (o.personality === null) return { ...base, kind, id, personality: null }
+      const personality = str(o.personality, `${field}.personality`)
+      if (!isPersonalityId(personality)) fail(`${field}.personality`, `personnalité « ${personality} » sans implémentation`)
+      return { ...base, kind, id, personality }
+    }
     default:
-      return fail(`${field}.kind`, 'artefact, die ou forge attendu')
+      return fail(`${field}.kind`, 'artefact, die, forge ou personality attendu')
   }
 }
 

@@ -284,6 +284,7 @@ export function GameScreen({ carry, unlocked, speed, onFinished, onMenu }: Props
                   sans aucun panneau. */}
               <ShopPanel
                 vitrine={ui.vitrine ?? []}
+                souls={ui.race.souls}
                 unlocked={shopUnlocked}
                 money={ui.money}
                 price={price}
@@ -321,6 +322,7 @@ export function GameScreen({ carry, unlocked, speed, onFinished, onMenu }: Props
             preview={preview}
             selection={selection}
             bettedSouls={bettedSouls}
+            personalities={ui.inventory.personalities}
             tieColumns={tieColumns}
             {...(placingTribune ? { onPlaceTribune: (c: number, l: number) => setItemError(actions.putTribune(c, l)) } : {})}
           />
@@ -415,7 +417,7 @@ export function GameScreen({ carry, unlocked, speed, onFinished, onMenu }: Props
       {finished && resultsOpen && (
         <div className="popup-backdrop" onClick={() => setResultsOpen(false)} role="presentation">
           <div className="popup popup-wide" role="dialog" aria-label={HUD.raceResult} data-testid="results-modal" onClick={(e) => e.stopPropagation()}>
-            <Ranking race={ui.race} settlement={ui.settlement} money={ui.money} price={price} racesLeft={racesLeft} speed={speed} animate={!resultsSeen} continueLabel={HUD.nextRace} onContinue={() => onFinished(ui)} onClose={() => setResultsOpen(false)} />
+            <Ranking race={ui.race} settlement={ui.settlement} money={ui.money} price={price} racesLeft={racesLeft} speed={speed} personalities={ui.inventory.personalities} animate={!resultsSeen} continueLabel={HUD.nextRace} onContinue={() => onFinished(ui)} onClose={() => setResultsOpen(false)} />
           </div>
         </div>
       )}

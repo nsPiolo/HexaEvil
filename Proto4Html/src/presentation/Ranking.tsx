@@ -2,6 +2,8 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { config } from '../core/config'
 import { betType, type Settlement } from '../core/rules/bets'
 import { ranking, type RaceState } from '../core/rules/race'
+import type { Personalities } from '../core/rules/personalities'
+import { PersonalityMark } from './PersonalityMark'
 import { MoneyGauge } from './MoneyGauge'
 import { soulColor } from './souls'
 import { BET_TYPE_TEXTS, HUD, RESULTS, UI, fill } from './texts'
@@ -15,6 +17,8 @@ interface Props {
   price: number
   racesLeft: number
   speed: number
+  /** Personnalités des âmes (GDD §6.5) : leur signe suit le nom dans le classement. */
+  personalities?: Personalities
   /** Vrai à la première ouverture : les tickets se révèlent un à un ; faux ensuite (tout révélé). */
   animate: boolean
   continueLabel: string
@@ -38,7 +42,7 @@ export function arrivalNote(rank: number, finishOrder: number | null): string | 
   return fill(finishOrder < rank ? RESULTS.arrivedEarlier : RESULTS.arrivedLater, { n: ordinal(finishOrder) })
 }
 
-export function Ranking({ race, settlement, money, price, racesLeft, speed, animate, continueLabel, onContinue, onClose }: Props) {
+export function Ranking({ race, settlement, money, price, racesLeft, speed, animate, personalities, continueLabel, onContinue, onClose }: Props) {
   const ranked = ranking(race)
   const bets = settlement?.bets ?? []
   // Révélation séquentielle (spec 06/C1) : `shown` = tickets déjà retournés. Initialisé une
@@ -75,6 +79,9 @@ export function Ranking({ race, settlement, money, price, racesLeft, speed, anim
         <span className="rank">{rank}</span>
         <span className="rank-dot" style={{ background: soulColor(soul.id) }} />
         <span className="rank-name">{soul.name}</span>
+        {/* Le signe de l'âme marquée : à la lecture du classement, c'est lui qui explique
+            un écart — et pour Le Juge, ce que ses gains viennent de devenir. */}
+        {personalities?.[soul.id] && <PersonalityMark personality={personalities[soul.id]!} className="rank-mark" titled />}
         <span className="rank-pos">
           case {soul.position}
           {race.track.lanes > 1 && <span className="muted"> · couloir {soul.lane + 1}</span>}

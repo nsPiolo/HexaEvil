@@ -3,15 +3,21 @@ import { shop } from '../core/config'
 import { riskOf, sortByRisk, type ShopItem } from '../core/shop/items'
 import { artefactSlotsAt, findItem, maxAlteredFaces, resaleValue } from '../core/shop/shop'
 import type { Inventory as Inv, PurchaseTarget } from '../core/shop/shop'
+import type { Soul } from '../core/rules/race'
+import { soulColor } from './souls'
+import { personalityEffect, personalityName } from './messages'
+import { PersonalityMark } from './PersonalityMark'
 import { FaceChip } from './Inventory'
 import { ItemArt } from './ItemArt'
 import { MoneyGauge } from './MoneyGauge'
-import { HUD, ITEM_KINDS, RARITIES, SHOP, UI, fill } from './texts'
+import { BOARD, HUD, ITEM_KINDS, RARITIES, SHOP, UI, fill } from './texts'
 import { dieName } from './messages'
 import { priceFor, rerollCostFor } from './useRace'
 
 interface Props {
   vitrine: readonly ShopItem[]
+  /** Âmes de la course : un masque se pose sur l'une d'elles, choisie ici (GDD §6.5). */
+  souls: readonly Soul[]
   /** Faux tant qu'aucun pari n'est posé : la vitrine laisse place à un état vide narratif (spec 02/C2). */
   unlocked: boolean
   money: number
@@ -38,12 +44,11 @@ interface Props {
 }
 
 
-export function ShopPanel({ vitrine, unlocked, money, price, staked, raceIndex, inventory, forgeFree, level, onSell, onDecap, pending, onBuy, onCancel, onReroll, onLeave, onGoToBets, onClose }: Props) {
+export function ShopPanel({ vitrine, souls, unlocked, money, price, staked, raceIndex, inventory, forgeFree, level, onSell, onDecap, pending, onBuy, onCancel, onReroll, onLeave, onGoToBets, onClose }: Props) {
   const [error, setError] = useState<string | null>(null)
   /** Objet dont le bouton affiche « Confirmer » (spec 04/C4) ; retombe seul après confirmResetMs. */
   const [confirming, setConfirming] = useState<string | null>(null)
   const pendingItem = pending ? vitrine.find((i) => i.id === pending) ?? null : null
-  const hintValue = pendingItem?.kind === 'forge' ? pendingItem.target : null
   const slots = artefactSlotsAt(shop, level)
   const artefactsFull = inventory.artefacts.length >= slots
   const maxAltered = maxAlteredFaces(shop, level)
@@ -119,7 +124,16 @@ export function ShopPanel({ vitrine, unlocked, money, price, staked, raceIndex, 
       {pendingItem && (
         <div className="shop-target">
           <h3>
-            {pendingItem.name} — {pendingItem.kind === 'artefact' ? SHOP.replaceArtefact : pendingItem.kind === 'die' ? UI.shop.pickDie : UI.shop.pickFace}
+            {pendingItem.name} —{' '}
+            {pendingItem.kind === 'artefact'
+              ? SHOP.replaceArtefact
+              : pendingItem.kind === 'personality'
+                ? pendingItem.personality === null
+                  ? SHOP.pickSoulStrip
+                  : SHOP.pickSoul
+                : pendingItem.kind === 'die'
+                  ? UI.shop.pickDie
+                  : UI.shop.pickFace}
           </h3>
           {/* Emplacements pleins : on choisit l'artefact sacrifié. Il est détruit, pas revendu. */}
           {pendingItem.kind === 'artefact' && (
@@ -134,8 +148,44 @@ export function ShopPanel({ vitrine, unlocked, money, price, staked, raceIndex, 
               </div>
             </>
           )}
+          {/* Masque : on choisit l'âme. Celles qui portent déjà quelque chose le disent —
+              poser un masque dessus remplace, le masque brisé ne peut viser qu'elles. */}
+          {pendingItem.kind === 'personality' && (
+            <>
+              <p className="small muted">{pendingItem.personality === null ? SHOP.stripWarning : SHOP.markWarning}</p>
+              <div className="shop-souls">
+                {souls.map((soul) => {
+                  const worn = inventory.personalities[soul.id] ?? null
+                  const strip = pendingItem.personality === null
+                  const refused = strip ? worn === null : worn === pendingItem.personality
+                  return (
+                    <button
+                      key={soul.id}
+                      type="button"
+                      className="btn shop-soul"
+                      disabled={refused}
+                      style={{ ['--soul' as string]: soulColor(soul.id) }}
+                      onClick={() => attempt(pendingItem.id, { dieIndex: 0, soul: soul.id })}
+                      title={worn ? fill(BOARD.personality, { name: personalityName(worn), effect: personalityEffect(worn) }) : undefined}
+                    >
+                      <span className="shop-soul-name">{soul.name}</span>
+                      <span className="small muted">
+                        {worn ? (
+                          <>
+                            <PersonalityMark personality={worn} /> {personalityName(worn)}
+                          </>
+                        ) : (
+                          SHOP.soulPlain
+                        )}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            </>
+          )}
           {pendingItem.kind === 'die' && <p className="small muted">{SHOP.compare}</p>}
-          {pendingItem.kind !== 'artefact' && (
+          {pendingItem.kind !== 'artefact' && pendingItem.kind !== 'personality' && (
           <div className="shop-dice">
             {inventory.dice.map((d, di) => (
               <div key={di} className="shop-die">
@@ -169,9 +219,9 @@ export function ShopPanel({ vitrine, unlocked, money, price, staked, raceIndex, 
                       <button
                         key={fi}
                         type="button"
-                        className={'face-btn' + (f.value === hintValue && !f.altered ? ' face-btn-hint' : '')}
+                        className="face-btn"
                         disabled={!!f.altered}
-                        title={f.altered ? UI.shop.alreadyForged : f.value === hintValue ? UI.shop.suggested : undefined}
+                        title={f.altered ? UI.shop.alreadyForged : undefined}
                         onClick={() => attempt(pendingItem.id, { dieIndex: di, faceIndex: fi })}
                       >
                         <FaceChip face={f} />

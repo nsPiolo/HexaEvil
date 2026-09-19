@@ -2,11 +2,11 @@
 
 Prototype jouable de la course décrite dans
 [`../docs/proto4/GDD.md`](../docs/proto4/GDD.md) (§2), de ses paris (§3), d'une
-première boutique (§6 : artefacts, dés spéciaux, forge) et de la structure de run
-en neuf cercles avec prix à payer (§4), habillée selon
+première boutique (§6 : artefacts, dés spéciaux, forge, personnalités d'âmes) et de
+la structure de run en neuf cercles avec prix à payer (§4), habillée selon
 [`../docs/proto4/interface.md`](../docs/proto4/interface.md). Pas encore de cartes
-action, de personnalités ni de règles spéciales de boss. Le catalogue complet
-prévu est listé dans [`../docs/proto4/boutique-README.md`](../docs/proto4/boutique-README.md).
+action. Le catalogue complet prévu est listé dans
+[`../docs/proto4/boutique-README.md`](../docs/proto4/boutique-README.md).
 
 React + TypeScript, hors Unity. Aucune dépendance au-delà de React.
 
@@ -44,10 +44,22 @@ npm run build
   s'insère dans la transition de cercle, juste avant l'annonce du cercle suivant,
   et le nom du démon change dans les bulles (« Démon assistant »…) comme dans le
   HUD (« Coach : Assistant »). Le grade se déduit du cercle, rien n'est sauvegardé
-  en plus. Il conditionne les types de paris ouverts (ci-dessus). **Pas encore
-  d'effet sur la boutique** : le déblocage par rang des objets viendra avec les
-  personnalités. Grades et lignes dans `texts.ts`
+  en plus. Il conditionne les types de paris ouverts (ci-dessus) et le rayon de la
+  boutique (`minRank` de chaque objet : les masques de personnalité sortent au
+  grade 1, les plus forts au grade 2). Grades et lignes dans `texts.ts`
   (`DEMON_RANKS`), assemblage dans `src/presentation/demon.ts`.
+
+- **Personnalités d'âmes** (GDD §6.5, [`../docs/proto4/personnalites.md`](../docs/proto4/personnalites.md)) :
+  dix comportements collés à une âme pour tout le run — Le Martyr, L'Ambitieux, Le
+  Tricheur, Le Condamné, Le Parasite, Le Juge, Le Résolu, L'Opposant, Le Constant,
+  L'Ogre. Une âme marquée porte un signe sur son jeton ; la règle se lit au survol,
+  avant les paris. Deux façons d'en attribuer une : **la révélation**, à la fin de la
+  première course de chaque cercle à partir du troisième — l'âme la mieux classée qui
+  n'en a pas encore en reçoit une, tirée au sort, sur un écran dédié — et les
+  **masques** de la boutique, un par personnalité, plus un masque brisé qui en retire
+  une. Règles pures dans `src/core/rules/personalities.ts`, câblées là où chacune se
+  résout (distance, plateau, dé Âme, règlement des paris) ; elles voyagent dans
+  l'inventaire, donc dans la sauvegarde.
 - Carte des neuf cercles entre deux courses : anneaux concentriques, le premier au
   centre, trois points par cercle reliés par une spirale (le troisième est le
   boss). Courses jouées en braise, prochaine course en or avec halo, à venir en
@@ -249,6 +261,7 @@ src/core/config            schéma + validation
 src/core/rules/race.ts     règles pures : plateau, lancer, combinaisons, collisions, classement
 src/core/rules/bets.ts     les dix paris : validité, évaluation, règlement, décote
 src/core/rules/dice.ts     dés Distance du joueur, face par face
+src/core/rules/personalities.ts  les dix personnalités d'âmes : effets, révélation, tirage
 src/core/shop/             catalogue (types, chargement de shop.json), vitrine, achats, forge
 src/core/rules/rng.ts      aléatoire déterministe (graine affichée à l'écran)
 src/core/__tests__         tests des règles

@@ -65,6 +65,7 @@ export let MAP = pack.MAP
 export let STATS = pack.STATS
 export let COLLECTION = pack.COLLECTION
 export let UNLOCK = pack.UNLOCK
+export let REVEAL = pack.REVEAL
 export let DEBT = pack.DEBT
 export let OPTIONS = pack.OPTIONS
 export let BETS = pack.BETS
@@ -86,6 +87,8 @@ export let CANCEL_REFUSALS = pack.CANCEL_REFUSALS
 export let ITEM_KINDS = pack.ITEM_KINDS
 export let RARITIES = pack.RARITIES
 export let PURCHASE_LOG = pack.PURCHASE_LOG
+export let PURCHASE_REPLACED = pack.PURCHASE_REPLACED
+export let PERSONALITIES = pack.PERSONALITIES
 export let MOVE = pack.MOVE
 export let MOVE_NOTES = pack.MOVE_NOTES
 export let LOG = pack.LOG
@@ -113,6 +116,7 @@ export function setLanguage(lang: Language): void {
   STATS = pack.STATS
   COLLECTION = pack.COLLECTION
   UNLOCK = pack.UNLOCK
+  REVEAL = pack.REVEAL
   DEBT = pack.DEBT
   OPTIONS = pack.OPTIONS
   BETS = pack.BETS
@@ -134,6 +138,8 @@ export function setLanguage(lang: Language): void {
   ITEM_KINDS = pack.ITEM_KINDS
   RARITIES = pack.RARITIES
   PURCHASE_LOG = pack.PURCHASE_LOG
+  PURCHASE_REPLACED = pack.PURCHASE_REPLACED
+  PERSONALITIES = pack.PERSONALITIES
   MOVE = pack.MOVE
   MOVE_NOTES = pack.MOVE_NOTES
   LOG = pack.LOG
@@ -147,6 +153,14 @@ export function setLanguage(lang: Language): void {
  */
 export function ordinalOf(circle: number): string {
   return CIRCLES[circle - 1]?.ordinal ?? pack.fmt.ordinal(circle)
+}
+
+/**
+ * Rang d'une âme au classement, dans la langue du moment : « 2e », « 2nd ». Les cercles ont
+ * leur forme écrite (`ordinalOf`) ; un rang de course n'en a pas besoin, il se compte.
+ */
+export function ordinal(n: number): string {
+  return pack.fmt.ordinal(n)
 }
 
 /**

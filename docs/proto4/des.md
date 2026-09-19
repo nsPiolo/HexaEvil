@@ -24,12 +24,19 @@ Les faces des dés spéciaux peuvent ensuite être forgées (voir [`forge.md`](f
 | 8 | Dé Âme pipé | Âme | 2 faces d'une âme choisie | remplace | Moyen | 50 | 0 |
 | 9 | Dé du Meneur | Âme | meneur / traînard / 3 âmes | remplace | Fort | 85 | 2 |
 | 10 | Dé de Cerbère ⚠ | Âme + Distance | dé à 6 faces mixte | ajoute | Extrême | 160 | 4 |
+| 11 | Dé de Minos ⚠ | Âme + Distance | dé à 6 faces mixte (tour adverse) | ajoute | Extrême | 140 | 4 |
+| 12 | Dé du Damné ⚠ | Distance | `2, 3, 4, 5` | remplace | Fort | 95 | 2 |
 
 **État du proto** : les sept dés **Distance** (n° 1 à 7) sont implémentés. Les
 trois dés **Âme** (n° 8 à 10) ne le sont pas : `rollPlayerDice` tire aujourd'hui
 une âme au hasard (`rng.int(soulCount)`) sans objet « dé Âme » derrière. Les
 modéliser est un chantier à part, qui débloquerait d'un coup ces trois dés et les
-trois faces de dé Âme de [`forge.md`](forge.md).
+cinq faces de dé Âme de [`forge.md`](forge.md).
+
+Les dés **11 et 12** sont nouveaux et non implémentés : ils recyclent des idées du
+catalogue de cartes abandonné (voir [`cartes.md`](cartes.md)) et attendent la fin
+du chantier des archétypes d'âmes. Le **Dé de Minos** a en plus un prérequis
+propre, décrit dans sa fiche.
 
 ## Fiches
 
@@ -94,6 +101,43 @@ de 2. *Un dé que le joueur ne contrôle pas du tout, qui ajoute du chaos payant
 plus de collisions pour la Bourse percée, plus de retournements pour le Martyr.
 C'est l'objet « je joue autrement ce run » (inspi §5).*
 
+### Dés mixtes et dés à contrepartie
+
+**11. Dé de Minos ⚠ — 140, ajoute, rang 4.** Dé mixte à six faces, lancé **après
+la révélation de la paire adverse et avant sa résolution** — pas au moment de
+votre lancer. Faces : `Cible +1`, `Cible -1`, `Report`, `Bride`, `Rien`, `Rien`.
+« Cible » désigne l'âme visée par la paire adverse. `Report` : la paire adverse
+s'applique à l'âme immédiatement derrière sa cible. `Bride` : la distance de la
+paire adverse vaut `1`, quelle que soit sa face.
+
+*Le seul objet du catalogue qui agit **entre** la révélation du tour adverse et sa
+résolution. Il condense les trois cartes TA du catalogue abandonné (44 Ordre
+inversé, 49 Mainmise, 50 Cadenas) en un seul objet subi plutôt que choisi, ce qui
+règle leur problème d'origine : elles demandaient une main de cartes et une
+fenêtre de décision, le dé ne demande que la fenêtre.*
+
+**Prérequis d'implémentation** : une **fenêtre TA** dans la boucle de tour. Le
+proto affiche aujourd'hui la paire adverse puis la résout après une pause fixe ;
+il faut en faire un temps d'arrêt où un effet peut s'intercaler. C'est le seul
+objet de cette vague qui demande une modification de la boucle de tour — à
+planifier avec l'ergonomie du tour adverse ([`ergonomie-ecrans.md`](ergonomie-ecrans.md)).
+Se marie avec l'**Œil de Charon** et le **Fouet du contremaître** (on voit la
+paire plus tôt) ; avec le **Miroir de Narcisse**, la fenêtre se déplace avant
+votre lancer mais le dé reste jouable.
+
+**12. Dé du Damné ⚠ — 95, remplace, rang 2.** Faces `2, 3, 4, 5`. Espérance 3,5,
+la plus haute du catalogue, aucune face négative ni nulle. Contrepartie :
+l'adversaire lance **une paire de plus à chaque tour**, pour toute la course.
+
+*Le pendant de la Prodigalité : celle-ci paie sa vitesse en pièces, celui-ci la
+paie en chaos. La différence compte, parce que le chaos frappe aussi les paris de
+l'adversaire et pas seulement votre bourse — c'est un dé pour qui parie sur le
+désordre (Bourse percée, Martyr, paris de dernière place) plutôt que pour qui
+parie sur un vainqueur. Recyclé de la carte 35 (Dé chargé), dont il reprend la
+contrepartie exacte de la **Pièce à deux faces** (artefact n° 17). À surveiller :
+les deux ensemble font **trois paires adverses par tour**, ce qui est sans doute
+au-delà de ce qu'une course de 14 colonnes supporte.*
+
 ## Compositions à tester
 
 | Composition | Question |
@@ -104,6 +148,8 @@ C'est l'objet « je joue autrement ce run » (inspi §5).*
 | Prodigalité + Comptable + Dorée | l'économie de course s'auto-alimente-t-elle ? |
 | Meneur + Face du meneur (forge) | le joueur peut-il viser la tête à chaque tour ? Trop fort ? |
 | Cerbère seul | le chaos supplémentaire est-il amusant ou frustrant ? |
+| Damné + base | une espérance de 3,5 par dé raccourcit-elle trop la course, malgré la paire adverse en plus ? |
+| Minos + Œil de Charon | voir la paire adverse puis pouvoir la tordre : reste-t-il un tour adverse ? |
 
 ## Sources d'inspiration
 

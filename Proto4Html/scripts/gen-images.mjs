@@ -38,7 +38,7 @@ const FAMILLES = {
     doc: 'docs/proto4/prompts-objets.md',
     out: 'docs/proto4/raw/objects',
     ratio: '1:1',
-    quoi: 'les quarante-huit objets de la boutique',
+    quoi: 'les objets de la boutique',
   },
   boss: {
     doc: 'docs/proto4/prompts-boss.md',

@@ -133,7 +133,7 @@
     },
     "colere": {
       "name": "Wrath Die",
-      "description": "Replaces a Distance die with a -2, 0, 3, 4 die: same average, far more variance.",
+      "description": "Replaces a Distance die with a -2, 0, 3, 4 die: wrath knows no measure.",
       "warning": "one face at −2: a two-space step back is possible"
     },
     "glace": {
@@ -148,24 +148,24 @@
     },
     "decathlon": {
       "name": "Decathlon Die",
-      "description": "Replaces a Distance die with a ten-faced -3, -2, -1, -1, 0, 1, 1, 2, 2, 3 die: the whole range, from a long step back to a long leap, but four faces out of ten go backwards."
+      "description": "Replaces a Distance die with a ten-faced -3, -2, -1, -1, 0, 1, 1, 2, 2, 3 die: the whole range, from a long step back to a long leap."
     },
     "limee": {
       "name": "Filed Face",
-      "description": "The chosen face is worth 0: the soul is named but does not move. Suggested target: the -1."
+      "description": "The chosen face is worth 0: the soul is named but does not move."
     },
     "doree": {
       "name": "Gilded Face",
-      "description": "The chosen face is worth +1 and earns 5 coins every time it comes up. Suggested target: the 1."
+      "description": "The chosen face is worth +1 and earns 5 coins every time it comes up."
     },
     "retournee": {
       "name": "Turned Face",
-      "description": "The chosen face is worth +1. The catch: the opponent’s -1s are worth +1 too, for the rest of the run. Suggested target: the -1.",
+      "description": "The chosen face is worth +1. The catch: the opponent’s -1s are worth +1 too, for the rest of the run.",
       "warning": "the opponent’s −1s are worth +1 too for the rest of the run"
     },
     "sceau": {
       "name": "Bettor’s Seal",
-      "description": "The chosen face is worth +1, or +3 if the soul moved is one you have a bet on. Suggested target: the 1."
+      "description": "The chosen face is worth +1, or +3 if the soul moved is one you have a bet on."
     },
     "relanceJumelle": {
       "name": "Twin Reroll",
@@ -173,7 +173,7 @@
     },
     "quatriemeTete": {
       "name": "Cerberus’s Fourth Head",
-      "description": "The roll includes one more Soul die: more choice, and one more unused die."
+      "description": "The roll includes one more Soul die: four souls named, still two pairings."
     },
     "fioleDeSang": {
       "name": "Vial of Blood",
@@ -282,7 +282,7 @@
     },
     "miroir": {
       "name": "Mirror Face",
-      "description": "The face copies the value of the other Distance die in the roll, for better or worse."
+      "description": "The face copies the value of the other Distance die in the roll."
     },
     "feuFollet": {
       "name": "Will-o’-the-Wisp Face",
@@ -300,6 +300,52 @@
     "aimant": {
       "name": "Magnet Face",
       "description": "The face is worth +1 and the soul just behind moves forward 1 too, into the space it left."
+    },
+    "masqueMartyr": {
+      "name": "Mask of the Martyr",
+      "description": "Marks a soul for the whole run. Its advances lose one space (never below 1), but every time it is rammed or swapped it holds a grudge — and the whole debt comes back at once as it enters the closing zone."
+    },
+    "masqueAmbitieux": {
+      "name": "Mask of the Ambitious",
+      "description": "Marks a soul for the whole run. Advances of 3 or more gain a space, setbacks lose one: it rarely finishes mid-pack."
+    },
+    "masqueTricheur": {
+      "name": "Mask of the Cheat",
+      "description": "Marks a soul for the whole run. One time in four, the Soul die that names it is rerolled — yours as well as your opponent’s.",
+      "warning": "it cheats against you too: one Soul die in four that names it goes elsewhere"
+    },
+    "masqueCondamne": {
+      "name": "Mask of the Condemned",
+      "description": "Marks a soul for the whole run. Its first-turn advances lose a space; the ones it starts from the closing zone gain one."
+    },
+    "masqueParasite": {
+      "name": "Mask of the Parasite",
+      "description": "Marks a soul for the whole run. Whenever the soul right ahead of it moves forward 2 spaces or more, it moves forward 1 straight after."
+    },
+    "masqueJuge": {
+      "name": "Mask of the Judge",
+      "description": "Marks a soul for the whole run. It does not run faster, it keeps the books: in the top 3, all your winnings for the race are multiplied by 1.5. Your losses do not move.",
+      "warning": "if it finishes last, your winnings for the race are halved"
+    },
+    "masqueResolu": {
+      "name": "Mask of the Resolute",
+      "description": "Marks a soul for the whole run. Blocked spaces do not exist for it: it stops there like on any other, and never swerves lane."
+    },
+    "masqueOpposant": {
+      "name": "Mask of the Contrarian",
+      "description": "Marks a soul for the whole run. It reads the Distance die backwards: a +2 sends it back two spaces, a -1 moves it forward one."
+    },
+    "masqueConstant": {
+      "name": "Mask of the Steady",
+      "description": "Marks a soul for the whole run. Whatever the Distance die says, it moves forward one space. Never more, never less, never backwards."
+    },
+    "masqueOgre": {
+      "name": "Mask of the Ogre",
+      "description": "Marks a soul for the whole run. The soul it rams on its way past moves back one extra space."
+    },
+    "masqueBrise": {
+      "name": "Broken Mask",
+      "description": "Strips a marked soul of its personality: it goes back to being a damned soul like any other, until something marks it again."
     }
   }
 }

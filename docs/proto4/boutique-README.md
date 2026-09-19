@@ -6,16 +6,25 @@ est un point de départ pour la configuration du POC (GDD §9.1).
 
 | Fichier | Contenu | Minimum demandé | Fourni | Implémenté |
 |---|---|---:|---:|---:|
-| [`personnalites.md`](personnalites.md) | Personnalités à donner aux âmes | 10 | 14 | 0 |
-| [`artefacts.md`](artefacts.md) | Passifs permanents du run | 20 | 31 | 30 |
-| [`forge.md`](forge.md) | Altérations de face de dé | 10 | 14 | 11 |
-| [`des.md`](des.md) | Dés spéciaux | 4 | 9 | 6 |
-| [`cartes.md`](cartes.md) | Cartes action consommables | 50 | 60 | 0 |
+| [`personnalites.md`](personnalites.md) | Personnalités à donner aux âmes | 10 | 18 | 10 |
+| [`artefacts.md`](artefacts.md) | Passifs permanents du run | 20 | 41 | 30 |
+| [`forge.md`](forge.md) | Altérations de face de dé | 10 | 20 | 11 |
+| [`des.md`](des.md) | Dés spéciaux | 4 | 12 | 7 |
+| [`cartes.md`](cartes.md) | ~~Cartes action consommables~~ — **abandonné**, idées recyclées | — | 60 | 0 |
 
 Reste à faire, et pourquoi : le **Sceau du stagiaire** (artefact n° 25) attend les
-personnalités ; les trois **dés Âme** et les trois **faces de dé Âme** attendent que
+personnalités ; les trois **dés Âme** et les cinq **faces de dé Âme** attendent que
 les dés Âme soient modélisés — aujourd'hui `rollPlayerDice` tire une âme au hasard
 sans objet derrière.
+
+Les **cartes action sont abandonnées** (19 septembre 2026) : le système demandait
+une main et six fenêtres de jeu dans la boucle de tour pour de l'agentivité que la
+forge, les dés et les artefacts couvrent déjà. Les idées retenues ont été
+converties en **artefacts 33 à 42**, **faces de forge 15 à 20** et **dés 11 et
+12** — la table de conversion complète est dans [`cartes.md`](cartes.md). Cette
+vague n'est pas implémentée : elle est planifiée **après les archétypes d'âmes**.
+Un seul objet demande une modification de la boucle de tour, le **Dé de Minos**
+(fenêtre de jeu après la révélation de la paire adverse).
 
 Les objets marqués ✔ dans les listes sont implémentés dans `Proto4Html`
 (catalogue et prix dans `Proto4Html/config/shop.json`). Dans le proto, la boutique
@@ -77,7 +86,7 @@ de fin de cercle.
 - Le menu `Collection` de l'accueil liste les objets descellés et compte les
   scellés **sans les nommer** (voir [`interface.md`](interface.md) § Collection).
 
-Socle livré aujourd'hui (**9 objets sur 48**), réparti sur les trois familles pour
+Socle livré aujourd'hui (**9 objets sur 59**), réparti sur les trois familles pour
 qu'une vitrine de trois puisse toujours offrir autre chose qu'une seule sorte de
 geste : Clepsydre fêlée, Bourse percée, Tirelire du stagiaire, Semelles de plomb,
 Dé des Limbes, Dé du Décathlon, Face limée, Face dorée, Face de gel.
@@ -88,10 +97,12 @@ jouait donc sur la seule variance. Le Décathlon, qui échange la vitesse contre
 choix de la valeur, ouvre l'autre geste — freiner une âme — dès le premier cercle ;
 la Colère reste au catalogue, scellée comme les autres.
 
-Un run complet jusqu'au neuvième cercle descelle 9 objets. Avec 39 objets scellés,
-il faut cinq runs complets pour ouvrir tout le catalogue : c'est le chiffre à
+Un run complet jusqu'au neuvième cercle descelle 9 objets. Avec 50 objets scellés,
+il faut six runs complets pour ouvrir tout le catalogue : c'est le chiffre à
 surveiller si le rythme paraît trop lent — il se règle par `unlockedAtStart`, sans
-toucher au code.
+toucher au code. Les onze masques de personnalité sont entrés au catalogue scellés, ce
+qui a allongé le compte d'un run : c'est assumé, parce que le système se découvre de
+toute façon par la révélation du troisième cercle, sans rien acheter.
 
 Code : `Proto4Html/src/core/shop/unlocks.ts` (tirage et partage descellé/scellé),
 `storage.ts` (clé `sinnersbet.unlocks.v1`), `App.tsx` (révélation de fin de cercle).

@@ -50,14 +50,17 @@ export const RACES_PER_CIRCLE = 3
  * de confirmation), Face explosive 55 (danger ⚠). Tous les prix dépassent 15 : à 0 pièce
  * apportée (20 d'avance − 5 de mise), tout est trop cher (04-D).
  *
- * Re-cherchée trois fois : à l'élargissement du catalogue (16 → 47 objets), au passage de la
- * vitrine de 4 à 3 objets, puis à l'arrivée du Dé du Décathlon (47 → 48 objets, le tirage se
- * fait sur tout le catalogue en mode e2e). Contraintes à retrouver si elle saute encore :
+ * Re-cherchée quatre fois : à l'élargissement du catalogue (16 → 47 objets), au passage de la
+ * vitrine de 4 à 3 objets, à l'arrivée du Dé du Décathlon (47 → 48 objets, le tirage se fait
+ * sur tout le catalogue en mode e2e), puis à celle des onze masques de personnalité (48 → 59).
+ * Les trois objets attendus n'ont jamais changé : c'est la graine qui les redonne qu'on
+ * cherche, pour que les attentes ci-dessous restent lisibles d'une version à l'autre.
+ * Contraintes à retrouver si elle saute encore :
  * `SHOP_SLOTS` objets triés sûr, ambitieux, danger ; un dé à remplacer, sûr, sous le seuil de
  * confirmation et payable à 67 ; un artefact ambitieux entre 68 et 95 (achetable à 95, refusé
  * à 67) ; un objet à contrepartie ; rien sous 16.
  */
-export const SHOP_SEED = 4766
+export const SHOP_SEED = 22165
 export const SHOP_SEED_EXPECT = {
   order: ['Sûr', 'Ambitieux', 'Danger ⚠'],
   danger: { name: 'Face explosive', warning: "sans percussion, l'âme recule d'une case après coup", impact: 'fort' },
@@ -65,6 +68,31 @@ export const SHOP_SEED_EXPECT = {
   die: { name: 'Dé des Limbes', price: 30, faces: ['+1', '+1', '+2', '+2'] },
   cheapest: 30,
 }
+
+/**
+ * Vitrine du cercle 1 qui contient un masque de personnalité (GDD §6.5), pour le test d'achat :
+ * Masque du Résolu 50, Face du parieur 55, Dé de Glace 60. Le masque est le moins cher des
+ * trois, donc achetable sans que le test ait à choisir entre les cartes.
+ *
+ * Contrainte à retrouver si elle saute : un objet `kind: personality` dont `personality` n'est
+ * pas null, à 50 pièces ou moins, dans la vitrine de la première ouverture.
+ */
+export const MASK_SEED = 4
+export const MASK_SEED_EXPECT = {
+  name: 'Masque du Résolu',
+  personality: 'Le Résolu',
+  /** Le glyphe du Résolu (`PERSONALITY_GLYPH`, presentation/PersonalityMark.tsx). */
+  glyph: '⊘',
+  /** Âmes en course au cercle 1 : autant de choix proposés par le masque. */
+  souls: 5,
+}
+
+/**
+ * Première course du cercle 3 : c'est à sa fin que joue la première révélation de
+ * personnalité (`revealsPersonality`, core/rules/personalities.ts). Index de course =
+ * (3 − 1) × RACES_PER_CIRCLE.
+ */
+export const REVEAL_RACE_INDEX = 6
 
 /**
  * Cercle 1, course 1 : au tour 1, les trois dés Âme désignent Virgile et les dés Distance font

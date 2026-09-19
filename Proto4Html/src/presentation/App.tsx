@@ -10,6 +10,8 @@ import { defaultInventory, findItem } from '../core/shop/shop'
 import type { ShopItem } from '../core/shop/items'
 import { allIds, drawUnlock, lockedItems, unlockedIds, unlockedItems } from '../core/shop/unlocks'
 import { circleAt } from '../core/rules/circles'
+import { ranking } from '../core/rules/race'
+import { drawPersonality, revealTarget, revealsPersonality, type PersonalityId } from '../core/rules/personalities'
 import { randomSeed, seededRng } from '../core/rules/rng'
 import { circleBg } from './art'
 import { bossAnnounce, bossIntro, circleFailure, circleSuccess, rankOfLevel, spokenBy } from './demon'
@@ -17,7 +19,7 @@ import { DevMenu } from './DevMenu'
 import { Dialogue } from './Dialogue'
 import { GameScreen } from './GameScreen'
 import { MapScreen } from './MapScreen'
-import { CollectionScreen, DebtScreen, EndScreen, Menu, OptionsScreen, Splash, StatsScreen, UnlockScreen } from './Screens'
+import { CollectionScreen, DebtScreen, EndScreen, Menu, OptionsScreen, RevealScreen, Splash, StatsScreen, UnlockScreen } from './Screens'
 import { applyLanguage, startingLanguage } from './i18n'
 import { clearRun, loadOptions, loadRun, loadStats, loadUnlocks, saveOptions, saveRun, saveUnlocks, updateStats, type Options, type RunSave, type Stats } from './storage'
 import { DEV, INTRO, MENU, UI, fill, type Line } from './texts'
@@ -35,11 +37,28 @@ type Screen =
   | { kind: 'game'; carry: SessionCarry; key: number }
   | { kind: 'dialogue'; lines: readonly Line[]; then: Screen; skip?: string; background?: string }
   | { kind: 'unlock'; item: ShopItem; remaining: number; then: Screen }
+  | { kind: 'reveal'; name: string; rank: number; personality: PersonalityId; then: Screen }
   | { kind: 'debt'; carry: SessionCarry; price: number; borrow: number; circle: number }
   | { kind: 'end'; end: 'gameover' | 'escape'; price: number; money: number; carry?: SessionCarry }
 
 function toSave(carry: SessionCarry, bestCircle: number): RunSave {
   return { ...carry, bestCircle, savedAt: Date.now() }
+}
+
+/**
+ * Révélation de fin de première course (GDD §6.5) : l'âme la mieux classée qui n'a pas encore
+ * de personnalité en reçoit une, tirée au sort. Rien si tout le monde est déjà marqué.
+ *
+ * Le choix de l'âme n'est pas aléatoire, et c'est le point : le joueur peut le prévoir en
+ * regardant le classement, donc la révélation se lit comme une conséquence de la course qu'il
+ * vient de jouer, pas comme une surprise posée dessus.
+ */
+function drawReveal(ui: RaceUi): { soul: number; name: string; rank: number; personality: PersonalityId } | null {
+  const ranked = ranking(ui.race)
+  const soul = revealTarget(ranked, ui.inventory.personalities)
+  const entry = ranked.find((r) => r.soul.id === soul)
+  if (soul === null || !entry) return null
+  return { soul, name: entry.soul.name, rank: entry.rank, personality: drawPersonality(ui.inventory.personalities, seededRng(randomSeed())) }
 }
 
 /** Paramètre d'un objet de boutique, par son id. */
@@ -214,12 +233,21 @@ export default function App() {
     }
 
     if (raceInCircle < config.run.racesPerCircle) {
-      persist(carry, circle)
-      const next: Screen = { kind: 'map', carry }
+      // Première course d'un cercle, à partir du troisième : une âme révèle sa personnalité,
+      // qui la suit jusqu'à la fin du run. Elle part donc dans la sauvegarde avec le reste.
+      const reveal = revealsPersonality(circle, raceInCircle) ? drawReveal(ui) : null
+      const after: SessionCarry = reveal
+        ? { ...carry, inventory: { ...carry.inventory, personalities: { ...carry.inventory.personalities, [reveal.soul]: reveal.personality } } }
+        : carry
+      persist(after, circle)
+      const next: Screen = { kind: 'map', carry: after }
+      const shown: Screen = reveal ? { kind: 'reveal', name: reveal.name, rank: reveal.rank, personality: reveal.personality, then: next } : next
       if (raceInCircle === config.run.racesPerCircle - 1) {
-        setScreen({ kind: 'dialogue', lines: bossAnnounce(circle), then: next })
+        setScreen({ kind: 'dialogue', lines: bossAnnounce(circle), then: shown })
+      } else if (shown.kind === 'map') {
+        toMap(after)
       } else {
-        toMap(carry)
+        setScreen(shown)
       }
       return
     }
@@ -329,6 +357,19 @@ export default function App() {
             lines={screen.lines}
             {...(screen.skip === undefined ? {} : { skipLabel: screen.skip })}
             {...(screen.background === undefined ? {} : { background: screen.background })}
+            onDone={() => {
+              const then = screen.then
+              if (then.kind === 'game') startGame(then.carry)
+              else setScreen(then)
+            }}
+          />
+        )
+      case 'reveal':
+        return (
+          <RevealScreen
+            name={screen.name}
+            rank={screen.rank}
+            personality={screen.personality}
             onDone={() => {
               const then = screen.then
               if (then.kind === 'game') startGame(then.carry)

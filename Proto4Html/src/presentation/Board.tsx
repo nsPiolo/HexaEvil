@@ -1,4 +1,7 @@
 import { isBlocked, isInBetZone, specialAt, type MoveResult, type RaceState } from '../core/rules/race'
+import { personalityOf, type Personalities } from '../core/rules/personalities'
+import { PersonalityMark } from './PersonalityMark'
+import { personalityEffect, personalityName } from './messages'
 import { blockedArt, cellArt } from './art'
 import { fmtDistance, soulColor } from './souls'
 import { bettingClosed } from '../core/rules/bets'
@@ -25,6 +28,8 @@ interface Props {
   selection?: BoardSelection | null
   /** Âmes visées par un pari ouvert : un petit marqueur à la base du jeton. */
   bettedSouls?: ReadonlySet<number>
+  /** Personnalités des âmes (GDD §6.5) : un signe sur le jeton, la règle au survol. */
+  personalities?: Personalities
   /** Colonnes à surligner brièvement (départage « même colonne, le plus bas devant »). */
   tieColumns?: readonly number[]
   /** Tribune infernale : pose en cours ; chaque case permise devient cliquable. */
@@ -52,7 +57,7 @@ export function consequenceGlyphs(r: MoveResult): { glyph: string; title: string
  * EN BAS, au plus près du joueur. Les cases bloquées sont hachurées. Les âmes qui partagent
  * une case (départ, dernière case) s'empilent visuellement.
  */
-export function Board({ race, lastResult, activeSoul, highlightSoul = null, onHoverSoul, preview = null, selection = null, bettedSouls, tieColumns = [], onPlaceTribune }: Props) {
+export function Board({ race, lastResult, activeSoul, highlightSoul = null, onHoverSoul, preview = null, selection = null, bettedSouls, personalities, tieColumns = [], onPlaceTribune }: Props) {
   const closed = bettingClosed(race)
   const { track } = race
   const cols = Array.from({ length: track.totalCells }, (_, i) => i)
@@ -182,7 +187,11 @@ export function Board({ race, lastResult, activeSoul, highlightSoul = null, onHo
           if (picked) tokenClass.push('token-picked')
           if (selection && !canPick) tokenClass.push('token-unpickable')
           if (fanned) tokenClass.push('token-fanned')
-          const label = lanes > 1 ? `${soul.name} · couloir ${soul.lane + 1}` : soul.name
+          const worn = personalityOf(personalities, soul.id)
+          // La personnalité s'ajoute au titre du jeton : c'est la première chose à lire avant
+          // de parier, et elle doit s'obtenir sans ouvrir de panneau (GDD §1.3).
+          const base = lanes > 1 ? `${soul.name} · couloir ${soul.lane + 1}` : soul.name
+          const label = worn ? `${base} — ${personalityName(worn)} : ${personalityEffect(worn)}` : base
           const zoneNote = !selection && isInBetZone(track, soul.position) ? BETS.overThreshold : ''
           const title = selection && why ? `${label} — ${why}` : zoneNote ? `${label} — ${zoneNote}` : label
           // L'enveloppe `.token` couvre toute la case (les jetons empilés se recouvrent) : elle laisse
@@ -194,18 +203,21 @@ export function Board({ race, lastResult, activeSoul, highlightSoul = null, onHo
               ¤
             </span>
           ) : null
+          const soulMark = worn ? <PersonalityMark personality={worn} className="token-mark" /> : null
           return (
             <div key={soul.id} className={tokenClass.join(' ')} data-testid={`token-${soul.id}`} data-soul={soul.name} data-cell={soul.position} data-state={picked ? 'picked' : isActive ? 'active' : 'idle'} style={{ ...cellStyle(soul.position, soul.lane, offset), ['--soul' as string]: soulColor(soul.id) }}>
               {selection ? (
                 <button type="button" className="token-btn" disabled={!canPick} onClick={() => selection.onToggle(soul.id)} aria-pressed={picked} title={title} {...hover} onFocus={() => onHoverSoul?.(soul.id)} onBlur={() => onHoverSoul?.(null)}>
                   <span className="token-body">
                     {soul.name.slice(0, 2)}
+                    {soulMark}
                     {betMark}
                   </span>
                 </button>
               ) : (
                 <span className="token-body" title={title} {...hover}>
                   {soul.name.slice(0, 2)}
+                  {soulMark}
                   {betMark}
                 </span>
               )}
@@ -249,10 +261,12 @@ export function Board({ race, lastResult, activeSoul, highlightSoul = null, onHo
         {race.souls.map((soul) => {
           const { picked, canPick, why } = pickState(soul.id, soul.position)
           const hot = activeSoul === soul.id || highlightSoul === soul.id || previewSoul === soul.id
+          const legendMark = personalityOf(personalities, soul.id)
           const inner = (
             <>
               <span className="lane-dot" style={{ background: soulColor(soul.id) }} />
               <span style={{ color: soulColor(soul.id) }}>{soul.name}</span>
+              {legendMark && <PersonalityMark personality={legendMark} className="legend-mark" titled />}
               <span className="lane-pos">
                 case {soul.position}
                 {lanes > 1 && ` · c${soul.lane + 1}`}

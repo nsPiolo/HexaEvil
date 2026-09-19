@@ -10,6 +10,7 @@
 import type { BetRefusal, BetTier, CancelRefusal } from '../../core/rules/bets'
 import type { BetTypeId } from '../../core/rules/betTypes'
 import type { BossEffectId } from '../../core/rules/boss'
+import type { PersonalityId } from '../../core/rules/personalities'
 import type { MoveNoteId } from '../../core/rules/race'
 import type { ItemKind, Rarity } from '../../core/shop/items'
 import type { PurchaseLog } from '../../core/shop/shop'
@@ -579,6 +580,14 @@ const SHOP = {
   sellTitle: 'Revente à 40 % du prix du cercle : {back} pièces, et l’emplacement se libère.',
   decapTitle: 'Décaper cette face : elle retrouve sa valeur d’origine pour {cost} pièces.',
   replace: 'Remplacer ce dé',
+  /** Masques (GDD §6.5) : l'achat se termine par le choix de l'âme marquée. */
+  pickSoul: 'quelle âme marquer ?',
+  pickSoulStrip: 'quelle âme libérer ?',
+  markWarning: `Le masque tient jusqu'à la fin du run et remplace ce que l'âme portait déjà.`,
+  stripWarning: `Seules les âmes marquées peuvent être libérées.`,
+  soulPlain: 'sans personnalité',
+  mark: 'Marquer',
+  strip: 'Retirer',
 } as const
 
 /** Écran de course : frise de sous-phases, file de combinaisons, prévisualisation (spec 05). */
@@ -646,6 +655,7 @@ const BOARD = {
   zoneClosed: 'plus de pari',
   zoneClosedTitle: 'Une âme a franchi le seuil : plus aucun pari sur cette course.',
   tieColumn: 'Même colonne : le couloir le plus bas devant.',
+  personality: 'Personnalité — {name} : {effect}',
 } as const
 
 /** Modale de fin de course (spec 06). */
@@ -802,6 +812,25 @@ const HELP = {
       ],
     },
     {
+      id: 'personnalites',
+      title: 'Les personnalités des âmes',
+      icon: '🎭',
+      blocks: [
+        { kind: 'p', text: 'À partir du **troisième cercle**, à la fin de la première course, une âme révèle sa personnalité. Ce n’est pas un tirage : c’est **la mieux classée de celles qui n’en avaient pas**. La personnalité, elle, est tirée au sort — et elle reste attachée à cette âme **jusqu’à la fin de votre évasion**.' },
+        { kind: 'p', text: 'Une âme marquée porte un signe sur son jeton. Passez la souris dessus : la règle est écrite en toutes lettres. Elle est visible **avant les paris**, et c’est tout l’intérêt — une personnalité ne se déclenche pas, elle se lit.' },
+        {
+          kind: 'ul',
+          items: [
+            'certaines changent la **lecture du dé** : Le Constant avance toujours d’une case, L’Opposant prend l’inverse de ce que le dé annonce ;',
+            'd’autres changent l’**amplitude** : L’Ambitieux amplifie les grands écarts, Le Martyr traîne puis rattrape d’un coup, Le Condamné part lent et finit lancé ;',
+            'd’autres encore changent le **plateau** : Le Résolu traverse les cases bloquées, L’Ogre écrase ce qu’il dépasse, Le Parasite suit l’âme qui le précède ;',
+            'Le Juge, lui, ne court pas différemment : il **change vos gains** selon sa propre place. Surveillez-le même sans parier dessus.',
+          ],
+        },
+        { kind: 'p', text: 'La boutique vend un **masque** par personnalité : vous choisissez l’âme, et le masque remplace ce qu’elle portait. Le masque brisé, lui, libère une âme marquée.' },
+      ],
+    },
+    {
       id: 'grades',
       title: 'Les grades du stagiaire',
       icon: '👑',
@@ -899,7 +928,7 @@ const CANCEL_REFUSALS: Readonly<Record<CancelRefusal, string>> = {
   alreadySettled: 'Ce pari est déjà réglé.',
 }
 
-const ITEM_KINDS: Readonly<Record<ItemKind, string>> = { artefact: 'Artefact', die: 'Dé', forge: 'Forge' }
+const ITEM_KINDS: Readonly<Record<ItemKind, string>> = { artefact: 'Artefact', die: 'Dé', forge: 'Forge', personality: 'Masque' }
 const RARITIES: Readonly<Record<Rarity, string>> = { common: 'commun', rare: 'rare', legendary: 'légendaire' }
 
 /** Ligne de journal d'un achat. `{name}` est l'objet, `{die}` le dé visé, `{n}` son numéro. */
@@ -911,7 +940,12 @@ const PURCHASE_LOG: Readonly<Record<PurchaseLog['kind'], string>> = {
   dieAdded: '{name} rejoint le lancer : {count} dés Distance.',
   dieReplaced: '{name} remplace le {die} n°{n}.',
   faceForged: '{name} gravée sur le {die} n°{n}, face {value}.',
+  personalityGiven: '{who} porte désormais {personality}{replaced}.',
+  personalityRemoved: '{who} perd {personality} : plus rien ne la distingue.',
 }
+
+/** Ce que remplace un masque posé sur une âme déjà marquée : glissé dans `personalityGiven`. */
+const PURCHASE_REPLACED = ' (à la place de {personality})'
 
 /** Récit d'un déplacement dans le journal. Les quatre dernières s'ajoutent à `move`. */
 const MOVE = {
@@ -944,7 +978,74 @@ const MOVE_NOTES: Readonly<Record<MoveNoteId, string>> = {
   stand: 'Tribune infernale',
   trap: 'Piège',
   boost: 'Tremplin',
+  personalityDie: '{who} lit {from} → {to}',
+  personalityMove: '{who} : {from} → {to}',
+  grudge: 'Rancunes du Martyr : +{value}',
+  ogre: `L'Ogre bouscule : −{value}`,
+  parasite: 'Le Parasite suit : +{value}',
 }
+
+/**
+ * Les dix personnalités (GDD §6.5). `name` est le nom affiché partout — jeton, masque de
+ * boutique, journal — et `effect` la règle en une phrase, celle que le joueur lit au survol
+ * d'un jeton marqué. Le symbole est gravé sur la vignette du masque, pas écrit ici.
+ */
+const PERSONALITIES: Readonly<Record<PersonalityId, { name: string; effect: string }>> = {
+  martyr: {
+    name: 'Le Martyr',
+    effect: `Avance d'une case de moins (jamais moins de 1). Chaque fois qu'on le percute ou qu'on l'échange, il garde rancune : tout lui revient d'un bloc en entrant en zone de fin.`,
+  },
+  ambitieux: {
+    name: `L'Ambitieux`,
+    effect: `Ses avancées de 3 ou plus gagnent une case, ses reculs en perdent une. Il finit rarement au milieu.`,
+  },
+  tricheur: {
+    name: 'Le Tricheur',
+    effect: `Une fois sur quatre, le dé Âme qui le désigne est relancé — le vôtre comme celui de l'adversaire.`,
+  },
+  condamne: {
+    name: 'Le Condamné',
+    effect: `Ses avancées du premier tour perdent une case ; celles qu'il entame depuis la zone de fin en gagnent une.`,
+  },
+  parasite: {
+    name: 'Le Parasite',
+    effect: `Dès que l'âme juste devant lui avance de 2 cases ou plus, il avance de 1 dans la foulée.`,
+  },
+  juge: {
+    name: 'Le Juge',
+    effect: `Ne court pas différemment, mais compte : dans le top 3, vos gains de la course sont multipliés par 1,5 ; dernier, ils sont divisés par deux. Vos pertes ne bougent pas.`,
+  },
+  resolu: {
+    name: 'Le Résolu',
+    effect: `Les cases bloquées n'existent pas pour lui : il s'y arrête comme sur n'importe quelle autre, sans jamais dévier de couloir.`,
+  },
+  opposant: {
+    name: `L'Opposant`,
+    effect: `Lit l'inverse du dé Distance : un +2 le fait reculer de deux cases, un -1 l'avance d'une.`,
+  },
+  constant: {
+    name: 'Le Constant',
+    effect: `Quel que soit le dé Distance, il avance d'une case. Jamais plus, jamais moins, jamais en arrière.`,
+  },
+  ogre: {
+    name: `L'Ogre`,
+    effect: `L'âme qu'il dépasse en la percutant recule d'une case de plus.`,
+  },
+}
+
+/**
+ * Révélation de personnalité : l'écran joué à la fin de la première course d'un cercle, à
+ * partir du troisième. L'âme n'est pas tirée au sort — c'est la mieux classée qui n'avait
+ * encore rien à dire d'elle-même, et le texte le dit pour que le joueur voie la règle.
+ */
+const REVEAL = {
+  title: 'Une âme se découvre',
+  intro: `{who} a fini {rank} de la course. Le stagiaire feuillette son dossier, siffle entre ses dents, et vous tend la fiche.`,
+  rankFirst: 'en tête',
+  lead: 'Désormais, et pour tout ce qui reste de votre évasion :',
+  kept: 'Cette personnalité reste attachée à {who} jusqu’à la fin du run. Un masque de la boutique peut la remplacer, ou la retirer.',
+  next: 'Continuer',
+} as const
 
 /** Journal de la course, sous le plateau. */
 const LOG = {
@@ -988,6 +1089,8 @@ const LOG = {
   dieUnpaid: `{name} : pas assez d'argent, la face vaut 0.`,
   angelReplay: `L'Ange rejoue le dernier tour.`,
   raceEnd: `Une âme a franchi l'arrivée : fin de course au tour {turn}.`,
+  judgeTop: 'Le Juge ({who}) finit {rank} : vos gains de la course sont multipliés par 1,5.',
+  judgeLast: `Le Juge ({who}) finit dernier : vos gains de la course sont divisés par deux. Vos pertes, elles, restent entières.`,
   bookRefund: 'Livre des comptes : {n} pièces remboursées.',
   balmRefund: 'Baume du perdant : {n} pièces rendues sur les mises perdues.',
   tally: 'Bilan des paris : {net}. Argent : {money}.',
@@ -1061,7 +1164,7 @@ const UI = {
   game: { steps: 'Étapes', auto: 'auto', autoTitle: 'Mode test : enchaîne les tours tout seul', activeArtefacts: 'Artefacts actifs', noArtefact: 'Aucun artefact. La boutique en propose entre les paris et la course.' },
   inventory: { label: 'Inventaire', distanceDice: 'Dés Distance', baseDie: 'Dé de base' },
   ranking: { final: 'Classement final', tally: 'Bilan des paris', none: 'Aucun pari sur cette course.' },
-  shop: { closed: 'La boutique est fermée.', notInWindow: 'Objet absent de la vitrine.', notEnoughMoney: 'Pas assez d’argent.', alreadyOwned: 'Déjà possédé.', noFaceLeft: 'Plus aucune face à forger.', sellFailed: 'Revente impossible.', decapCost: 'Le décapage coûte {cost} pièces.', pickDie: 'quel dé remplacer ?', pickFace: 'quelle face forger ?', alreadyForged: 'Déjà forgée', suggested: 'Cible conseillée', slotsFull: 'Emplacements pleins', afterBets: 'Paris posés : ce qui reste est à dépenser… ou à garder.', till: 'Le stagiaire tient la caisse.' },
+  shop: { closed: 'La boutique est fermée.', notInWindow: 'Objet absent de la vitrine.', notEnoughMoney: 'Pas assez d’argent.', alreadyOwned: 'Déjà possédé.', noFaceLeft: 'Plus aucune face à forger.', nothingToStrip: 'Aucune âme marquée dans cette course.', sellFailed: 'Revente impossible.', decapCost: 'Le décapage coûte {cost} pièces.', pickDie: 'quel dé remplacer ?', pickFace: 'quelle face forger ?', alreadyForged: 'Déjà forgée', slotsFull: 'Emplacements pleins', afterBets: 'Paris posés : ce qui reste est à dépenser… ou à garder.', till: 'Le stagiaire tient la caisse.' },
   /** Refus d'un objet déclenché à la main, depuis l'écran de course. */
   artefacts: {
     notOwned: 'Artefact non possédé.',
@@ -1091,7 +1194,8 @@ const UI = {
  * affichées que lorsqu'il y a quelque chose à annoncer.
  */
 const fmt: Fmt = {
-  ordinal: (n) => `${n}e`,
+  // « 1er » et non « 1e » : la règle vaut pour les rangs de classement comme pour les cercles.
+  ordinal: (n) => (n === 1 ? '1er' : `${n}e`),
   plural: (n) => (n > 1 ? 's' : ''),
   odds: (m) => String(m).replace('.', ','),
 }
@@ -1112,6 +1216,7 @@ export const FR = {
   STATS,
   COLLECTION,
   UNLOCK,
+  REVEAL,
   DEBT,
   OPTIONS,
   BETS,
@@ -1133,6 +1238,8 @@ export const FR = {
   ITEM_KINDS,
   RARITIES,
   PURCHASE_LOG,
+  PURCHASE_REPLACED,
+  PERSONALITIES,
   MOVE,
   MOVE_NOTES,
   LOG,
