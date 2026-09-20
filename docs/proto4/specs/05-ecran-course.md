@@ -35,6 +35,14 @@ Déjà conforme (à conserver) :
   - présentation : en phase `pairing`, la **première combinaison de la file** est prévisualisée en continu sur le plateau ; survoler une autre carte de la file prévisualise celle-ci **seulement si elle est la première** non résolue (sinon `title` : « résolue après les précédentes ») ;
   - rendu : jeton fantôme (contour pointillé, semi-transparent, couleur de l'âme) sur la case d'arrivée calculée + réutilisation des glyphes de bulle existants pour la conséquence (`↷`, `⇄`, `↕`, `✕`, `🏁`) ; l'âme concernée s'allume comme pendant la résolution (`activeSoul`) ;
   - la prévisualisation disparaît dès `resolve()`.
+- **C2 bis** — Prévisualisation de **toute** la file, et non plus de la seule première carte. Révise C2 ci-dessus et lève l'interdiction qui figurait en hors périmètre.
+  - présentation : chaque carte de la file a son fantôme, dans l'ordre du joueur. Dès qu'il y en a deux, chaque fantôme porte son **numéro d'ordre** (`.ghost-n`) : deux fantômes côte à côte ne disent plus lequel se joue en premier, et l'ordre est précisément ce que le joueur règle. Le repère `.combo-preview` reste sur chaque carte prévisualisée, il relie la carte à son fantôme.
+  - noyau : `previewQueue(ui)` (`presentation/useRace.ts`) remplace `previewNext`. Elle enchaîne `applyMove` sur l'état que laisse le déplacement précédent, exactement comme `resolveMoves`, déplacements induits compris (lien, aimant, souffle, tribune) — ceux-là avancent l'état sans recevoir de fantôme, n'étant issus d'aucune carte.
+  - *raison du renversement* : la deuxième combinaison se joue sur un plateau déjà bougé par la première. La montrer sur le plateau d'avant, ou ne pas la montrer du tout, revenait à cacher au joueur l'effet de l'ordre qu'il est en train de choisir.
+  - *limite assumée* : la Roue d'Ixion est appliquée par `resolveMoves`, pas par `applyMove` ; elle ne joue qu'une fois par cercle, sur un franchissement d'arrivée qui clôt la course. Elle n'est pas rejouée dans le fantôme.
+- **C7** — Bulle de personnalité sur le jeton. Une âme qui porte un masque affiche au survol (et au focus clavier en mode sélection) une bulle dessinée : le signe, le nom de la personnalité, sa règle. Même dessin que la bulle des cases spéciales (`.cell-tip`), même règle de débordement — elle sort vers le haut, sauf sur le couloir du haut, et s'aligne sur le bord du jeton aux deux premières et deux dernières cases, où centrée elle sortirait du plateau.
+  - *raison* : l'énoncé tenait dans le `title` du système, qui attend une seconde, ne se met pas en forme et tient sur une ligne. La personnalité est la première chose à lire avant de parier (GDD §1.3).
+  - la légende sous le plateau garde l'énoncé complet en `aria-label` : c'est elle qui porte l'information pour qui ne voit pas la bulle.
 - **C3 (P2)** — Frise de sous-phases : rangée de pastilles `préparer · lancer · ordonner · résoudre · adversaire` au-dessus des dés du joueur, l'étape courante en surbrillance (mapping : `prep`→préparer, `idle|rolling`→lancer, `pairing`→ordonner, `resolving`→résoudre, `opponent`→adversaire, `finished`→aucune). La phrase d'aide `hint()` reste (elle précise, la frise situe). Libellés dans `texts.ts`. La frise est conçue pour accueillir plus tard l'« allumage » des cartes actions par moment de jeu.
 - **C4 (P2)** — Survol dé Âme ↔ plateau : survoler (ou focus clavier) un dé Âme lancé allume le jeton correspondant sur le plateau et son entrée de légende (prop `highlightSoul` sur `Board`, distincte d'`activeSoul` — même rendu, autre source). Fonctionne aussi pour les cartes de la file.
 - **C5 (P2)** — Bouton qui pulse : en phase `pairing` avec appariement complet, si aucune interaction pendant `config.animation.idlePulseMs` (nouveau, défaut 5000, mis à l'échelle par la vitesse), « Résoudre » pulse doucement (animation CSS). Toute interaction réarme le délai. Jamais d'état muet.
@@ -48,6 +56,8 @@ Déjà conforme (à conserver) :
 - [ ] File `[C +3, A −1]` avec une âme sur la case cible de C : le fantôme de C apparaît **devant** l'âme percutée (saut), avec le glyphe `↷` ; passer la combinaison `A −1` en tête change la prévisualisation.
 - [ ] La prévisualisation coïncide toujours avec le déplacement réellement joué ensuite (mêmes règles) — vérifié par les tests de `previewMove` et un test croisé preview vs move effectif.
 - [ ] `previewMove` ne modifie ni l'état de course ni la séquence RNG (deux appels successifs = même résultat ; résoudre après preview = résoudre sans preview).
+- [ ] File de deux combinaisons : **deux** fantômes, numérotés 1 et 2, et le second est calculé sur la case où la première a posé son âme.
+- [ ] Une âme masquée survolée montre sa bulle ; le classement de fin de course, lui, ne montre plus aucun masque.
 - [ ] La frise indique « ordonner » pendant l'appariement et « adversaire » pendant la paire adverse.
 - [ ] Survoler un dé Âme allume le bon jeton ; quitter le survol l'éteint.
 - [ ] Après 5 s sans interaction avec appariement complet, « Résoudre » pulse ; cliquer un dé arrête le pulse.
@@ -55,4 +65,6 @@ Déjà conforme (à conserver) :
 
 ## Hors périmètre
 
-Prévisualisation en chaîne de toute la file (interdit par la conception : une seule combinaison projetée) ; main de cartes et fenêtres EC/TA jouables (pas de cartes) ; modification du tour adverse.
+Main de cartes et fenêtres EC/TA jouables (pas de cartes) ; modification du tour adverse.
+
+*(La prévisualisation en chaîne de toute la file était ici, « interdite par la conception ». Elle ne l'est plus : voir C2 bis.)*

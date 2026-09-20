@@ -183,5 +183,11 @@ test.describe('03 · Écran Paris (le ticket de guichet)', () => {
     await expect(flames).toBeVisible()
     await panel.getByRole('button', { name: '20', exact: true }).click()
     await expect(flames).toHaveCount(0)
+    // Le jeton posé garde sa taille de logement une fois l'animation finie. Garde-fou : un
+    // sélecteur `.stake-socket-over .stake-chip-active` cassé en deux l'avait laissé réduit
+    // et à demi transparent en permanence, ce qu'aucun test ne voyait.
+    const posed = panel.getByTestId('stake-socket').locator('.stake-chip-active')
+    await expect.poll(async () => Math.round((await posed.boundingBox())!.width)).toBe(78)
+    await expect(posed).toHaveCSS('opacity', '1')
   })
 })

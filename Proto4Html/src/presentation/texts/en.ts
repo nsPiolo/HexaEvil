@@ -642,6 +642,8 @@ const RACE = {
   afterPrevious: 'Resolved after the ones before it: only the first is previewed.',
   previewTitle: 'Next move: {name} {dist} → space {to}',
   previewGhost: 'Preview',
+  previewTitleN: 'Move {n}: {name} {dist} → space {to}',
+  previewGhostN: 'Preview {n}',
   dragSoul: 'Drag onto a Distance die to pair (or click, then click a Distance die)',
   dropHere: 'Drop the Soul die here',
   dragCard: 'Drag to change the resolution order',

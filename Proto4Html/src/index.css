@@ -250,6 +250,33 @@ p { margin: 0; }
 .cell-tip-below { bottom: auto; top: calc(100% + 6px); }
 .cell:hover .cell-tip { opacity: 1; visibility: visible; }
 
+/* Bulle d'une âme marquée : même dessin que celle d'une case, mais accrochée au jeton. Le
+   survol vient du corps (l'enveloppe `.token` ne prend pas les événements), d'où le frère
+   suivant ; et le jeton survolé passe au-dessus de ses voisins, sinon un jeton rendu plus tard
+   recouvre la bulle — `.token` porte un `z-index`, donc son contexte d'empilement enferme la
+   bulle, que son propre `z-index` ne peut plus faire sortir. */
+/* Numéro d'ordre d'un fantôme, quand la file en montre plusieurs. Même coin que le signe de
+   personnalité d'un vrai jeton (`.token-mark`, ancré sur la case) : un fantôme n'en porte
+   jamais, la place est libre et les deux repères se lisent au même endroit. */
+.ghost-n {
+  position: absolute; top: -5px; left: -7px;
+  width: 15px; height: 15px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg); color: var(--ink);
+  border: 1px solid var(--muted);
+  font-size: 0.6rem; font-weight: 700; line-height: 1;
+  z-index: 3; pointer-events: none;
+}
+
+.token-tip { max-width: 210px; }
+.token-tip-start { left: 0; transform: none; }
+.token-tip-end { left: auto; right: 0; transform: none; }
+.token-tip-name { font-weight: 700; }
+.token-body:hover ~ .token-tip,
+.token-btn:hover ~ .token-tip,
+.token-btn:focus-visible ~ .token-tip { opacity: 1; visibility: visible; }
+.token:has(.token-body:hover), .token:has(.token-btn:hover), .token:has(.token-btn:focus-visible) { z-index: 7; }
+
 /* Seuil franchi : la tête de colonne l'écrit. Départage : la colonne entière s'allume brièvement. */
 .head-closed { color: var(--bad) !important; }
 .cell-tie { animation: tie-flash 1.2s ease-out both; }
@@ -344,7 +371,6 @@ p { margin: 0; }
 .pmark { font-size: 0.72rem; line-height: 1; color: var(--ink); }
 .token-mark { position: absolute; top: -4px; left: -6px; width: 15px; height: 15px; border-radius: 50%; background: var(--bg); color: var(--ink); font-size: 0.62rem; display: flex; align-items: center; justify-content: center; border: 1px solid var(--line); z-index: 3; pointer-events: none; }
 .legend-mark { margin-left: 2px; opacity: 0.85; cursor: help; }
-.rank-mark { margin-left: 4px; opacity: 0.85; cursor: help; }
 /* Choix de l'âme à marquer, en boutique : une carte par âme, sa couleur en liseré. */
 .shop-souls { display: flex; flex-wrap: wrap; gap: 8px; }
 .shop-soul { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; border-left: 3px solid var(--soul, var(--line)); }
@@ -771,15 +797,7 @@ p { margin: 0; }
    et les flammes baissent : sans ça, il masque le trou allumé qu'on vient viser. */
 .stake-socket-armed, .stake-socket-over { background-position: center bottom; }
 .stake-socket-over { transform: scale(1.05); filter: drop-shadow(0 0 10px var(--ember)); }
-.stake-socket-over /* Jeton All-in (cercles au-delà des écrits) : il porte un mot, pas un nombre, donc une chasse
-   plus petite pour tenir dans les 52 px, et un liseré d'or pour qu'il se distingue des paliers
-   sans dépendre de sa seule couleur — le mot et l'infobulle disent déjà ce qu'il fait. */
-.stake-chip-allin { font-size: 0.68rem; letter-spacing: 0.01em; box-shadow: 0 0 0 2px var(--gold), 0 0 12px rgba(224, 168, 60, 0.45); }
-/* Posé dans le logement, sa place sur le rebord redevient un creux comme les autres : le
-   liseré doré n'a plus rien à cercler. */
-.stake-chip-allin.stake-chip-gone { box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.85); }
-
-.stake-chip-active { transform: translateY(-12px) scale(0.84); opacity: 0.45; }
+.stake-socket-over .stake-chip-active { transform: translateY(-12px) scale(0.84); opacity: 0.45; }
 .stake-socket-over .stake-flames { opacity: 0.3; }
 /* Les flammes sont peintes par-dessus le jeton posé : si lui seul grossissait au survol,
    il leur passerait au travers. Elles suivent donc le même transform. */
@@ -797,6 +815,9 @@ p { margin: 0; }
 }
 
 .stake-chip {
+  /* Relief du creux, partagé : la place vide et le jeton All-in posé doivent le dessiner à
+     l'identique, sinon le second reste cerclé d'or alors qu'il n'y a plus de jeton à cercler. */
+  --chip-well: inset 0 3px 7px rgba(0, 0, 0, 0.85), inset 0 -2px 3px rgba(255, 255, 255, 0.16), 0 0 0 1px rgba(0, 0, 0, 0.4);
   position: relative;
   display: grid; place-items: center;
   width: 52px; height: 52px; padding: 0;
@@ -811,15 +832,25 @@ p { margin: 0; }
 .stake-chip:active:not(:disabled) { cursor: grabbing; }
 .stake-chip:disabled { filter: grayscale(0.85) brightness(0.55); cursor: not-allowed; }
 .stake-chip-dragging { opacity: 0.3; }
-/* Le jeton posé : sa place sur le rebord reste creuse, on voit d'où il vient. Estompée
-   (alpha + flou), elle marque le vide sans venir concurrencer les jetons restants. */
+/* Le jeton posé : sa place sur le rebord reste creuse, on voit d'où il vient, et la rangée ne
+   se décale pas à chaque changement de mise. Encore faut-il voir le creux : estompé (alpha 0,4
+   et flou de 3 px), il disparaissait sur les décors clairs, et la rangée semblait alors mal
+   calée sous le logement — trois jetons poussés d'un demi-cran, sans rien pour dire pourquoi.
+   Il est donc net et en relief : puits sombre, arête claire en bas, filet extérieur. Les deux
+   arêtes le font tenir aussi bien sur un décor clair que sur un décor sombre. */
 .stake-chip-gone {
-  background: radial-gradient(circle at 50% 46%, rgba(0, 0, 0, 0.82), rgba(0, 0, 0, 0.45) 58%, transparent 70%);
-  box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.85);
-  opacity: 0.4;
-  filter: blur(3px);
+  background: radial-gradient(circle at 50% 46%, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.4) 58%, rgba(0, 0, 0, 0.2) 70%, transparent 74%);
+  box-shadow: var(--chip-well);
   cursor: default;
 }
+/* Jeton All-in (cercles au-delà des écrits) : il porte un mot, pas un nombre, donc une chasse
+   plus petite pour tenir dans les 52 px, et un liseré d'or pour qu'il se distingue des paliers
+   sans dépendre de sa seule couleur — le mot et l'infobulle disent déjà ce qu'il fait. */
+.stake-chip-allin { font-size: 0.68rem; letter-spacing: 0.01em; box-shadow: 0 0 0 2px var(--gold), 0 0 12px rgba(224, 168, 60, 0.45); }
+/* Posé dans le logement, sa place sur le rebord redevient un creux comme les autres : le
+   liseré doré n'a plus rien à cercler. */
+.stake-chip-allin.stake-chip-gone { box-shadow: var(--chip-well); }
+
 .stake-chip-active {
   z-index: 1;
   width: 78px; height: 78px; font-size: 1.35rem;
@@ -832,6 +863,12 @@ p { margin: 0; }
   display: flex; align-items: center; gap: 8px;
   padding: 14px 28px 24px;
 }
+/* Cinq jetons (le cinquième est l'All-in) : 5 × 52 + 4 × 8 + 56 de gouttière = 348 px, quand la
+   colonne des mises descend à 268 px à 1280. Le plateau se resserre donc plutôt que de mordre
+   sur la colonne des âmes : 5 × 44 + 4 × 6 + 16 = 260 px, qui tient partout. */
+.stake-tray[data-count='5'] { gap: 6px; padding-left: 8px; padding-right: 8px; }
+.stake-tray[data-count='5'] .stake-chip { width: 44px; height: 44px; font-size: 0.85rem; }
+.stake-tray[data-count='5'] .stake-chip-allin { font-size: 0.6rem; }
 .bet-summary { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 0.9rem; }
 .bet-refusal { min-height: 1.2em; color: var(--bad); opacity: 0; transition: opacity 150ms; margin-top: -6px; }
 .bet-refusal-on { opacity: 1; }

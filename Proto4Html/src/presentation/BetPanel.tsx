@@ -369,7 +369,10 @@ export function BetPanel({ race, money, stakes, allIn = null, price, bets, open,
                 {stake}
               </span>
             </div>
-            <div className="stake-tray" role="group" aria-label={BETS.trayLabel}>
+            {/* `data-count` : à cinq jetons (All-in compris) la rangée ne tient plus dans la
+                colonne la plus étroite (268 px à 1280). Le CSS resserre alors le plateau au
+                lieu de le laisser déborder sur la colonne voisine. */}
+            <div className="stake-tray" role="group" aria-label={BETS.trayLabel} data-count={stakes.length + (allIn !== null ? 1 : 0)}>
               {stakes.map((v) => {
                 const chosen = v === stake
                 const tooRich = v > money

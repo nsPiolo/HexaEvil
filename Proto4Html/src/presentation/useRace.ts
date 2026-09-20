@@ -25,7 +25,6 @@ import {
   isInBetZone,
   naturalCombinations,
   placeTribune,
-  previewMove,
   ranking,
   rollOpponentPair,
   rollPlayerDice,
@@ -555,19 +554,40 @@ export function applyProdigality(roll: Roll, combinations: readonly Combination[
 }
 
 /**
- * Prévisualisation du prochain déplacement (spec 05/C2) : en appariement, le premier
- * déplacement de la file — cumul compris si deux combinaisons visent la même âme — passé
- * par les mêmes règles que `resolve` (Prodigalité, Clepsydre, Sceau, puis `previewMove`).
- * Null hors appariement ou file vide. Ne touche ni l'état ni le hasard.
+ * Prévisualisation de la file (spec 05/C2) : un fantôme par carte de la file, dans l'ordre du
+ * joueur, cumul compris si deux combinaisons visent la même âme. Passée par les mêmes règles
+ * que `resolve` (Prodigalité, puis `applyMove`). Vide hors appariement ou file vide. Ne touche
+ * ni l'état ni le hasard.
+ *
+ * **Chaque déplacement se calcule sur l'état que laisse le précédent**, comme `resolveMoves`.
+ * Les montrer tous sur le plateau d'avant serait un mensonge et non une approximation : la
+ * deuxième combinaison percute, échange ou se déporte selon où la première a posé les âmes.
+ * Les déplacements induits (lien, aimant, souffle, tribune) n'ont pas de fantôme à eux — ils ne
+ * viennent d'aucune carte — mais ils avancent l'état, sinon la carte suivante mentirait.
+ *
+ * Limite assumée : la Roue d'Ixion, qui renvoie au départ l'âme qui franchit l'arrivée, est
+ * appliquée par `resolveMoves` et non par `applyMove`. Elle ne joue qu'une fois par cercle et
+ * sur le franchissement de l'arrivée, où la course s'achève ; la recopier ici dupliquerait la
+ * résolution pour un fantôme qu'on ne verra pas.
  */
-export function previewNext(u: RaceUi): MoveResult | null {
-  if (u.phase !== 'pairing' || !u.roll || u.combinations.length === 0) return null
+export function previewQueue(u: RaceUi): MoveResult[] {
+  if (u.phase !== 'pairing' || !u.roll || u.combinations.length === 0) return []
   const { roll } = applyProdigality(u.roll, u.combinations, u.inventory.dice, u.money)
-  const first = buildMoves(roll, u.combinations, 'player', moveContext(u))[0]
-  if (!first) return null
-  // Mêmes règles qu'à la résolution (Bond, Semelles, Bât…) : le fantôme ne doit jamais mentir.
-  const result = previewMove(u.race, first.soul, first.distance, first.effects, raceMoveRules(u))
-  return { ...result, move: first }
+  const rules = raceMoveRules(u)
+  // `shown` : seuls les déplacements issus d'une carte reçoivent un fantôme, les induits sont
+  // joués pour l'état seulement. Même file ouverte que `resolveMoves`, mêmes insertions.
+  const queue = buildMoves(roll, u.combinations, 'player', moveContext(u)).map((move) => ({ move, shown: true }))
+  const out: MoveResult[] = []
+  let race = u.race
+  for (let i = 0; i < queue.length; i++) {
+    const entry = queue[i]
+    if (!entry) continue
+    const { state, result, follow } = applyMove(race, entry.move, rules)
+    if (entry.shown) out.push({ ...result, move: entry.move })
+    race = state
+    queue.splice(i + 1, 0, ...follow.map((move) => ({ move, shown: false })))
+  }
+  return out
 }
 
 function initial(seed: number, carry: SessionCarry, terrain: Terrain, base: RaceOptions): RaceUi {

@@ -1,3 +1,4 @@
+import { Fragment } from 'react'
 import { isBlocked, isInBetZone, specialAt, type MoveResult, type RaceState } from '../core/rules/race'
 import { personalityOf, type Personalities } from '../core/rules/personalities'
 import { PersonalityMark } from './PersonalityMark'
@@ -24,7 +25,8 @@ interface Props {
   highlightSoul?: number | null
   onHoverSoul?: (id: number | null) => void
   /** Prochain déplacement prévisualisé : jeton fantôme sur la case d'arrivée (spec 05/C2). */
-  preview?: MoveResult | null
+  /** Fantômes de la file, dans l'ordre du joueur : un par carte (`previewQueue`). */
+  preview?: readonly MoveResult[]
   selection?: BoardSelection | null
   /** Âmes visées par un pari ouvert : un petit marqueur à la base du jeton. */
   bettedSouls?: ReadonlySet<number>
@@ -59,7 +61,7 @@ export function consequenceGlyphs(r: MoveResult): { glyph: string; title: string
  * EN BAS, au plus près du joueur. Les cases bloquées sont hachurées. Les âmes qui partagent
  * une case (départ, dernière case) s'empilent visuellement.
  */
-export function Board({ race, lastResult, activeSoul, highlightSoul = null, onHoverSoul, preview = null, selection = null, bettedSouls, personalities, tieColumns = [], onPlaceTribune, onPlaceMarker }: Props) {
+export function Board({ race, lastResult, activeSoul, highlightSoul = null, onHoverSoul, preview = [], selection = null, bettedSouls, personalities, tieColumns = [], onPlaceTribune, onPlaceMarker }: Props) {
   const closed = bettingClosed(race)
   const { track } = race
   const cols = Array.from({ length: track.totalCells }, (_, i) => i)
@@ -75,8 +77,9 @@ export function Board({ race, lastResult, activeSoul, highlightSoul = null, onHo
   // (`.cells.track`), d'où une variable et non plus une hauteur fixe : les jetons se placent
   // en pourcentage, ils suivent sans rien savoir de la taille réelle.
   const trackHeight = lanes > 1 ? lanes * laneHeight : SINGLE_LANE_HEIGHT
-  const previewSoul = preview?.move.soul ?? null
-  const previewGlyphs = preview ? consequenceGlyphs(preview) : []
+  // Une âme peut être visée par deux cartes : le `Set` sert à l'allumer dans la légende et sur
+  // son jeton, il ne compte pas les fantômes.
+  const previewSouls = new Set(preview.map((p) => p.move.soul))
 
   // Plusieurs âmes sur la même case (départ, dernière case) : on les empile.
   const occupants = new Map<string, number[]>()
@@ -187,7 +190,7 @@ export function Board({ race, lastResult, activeSoul, highlightSoul = null, onHo
           // Éventail (spec 08/C7) : survoler un jeton ou sa légende écarte la pile pour que chacun se lise.
           const fanned = stack.length > 1 && highlightSoul !== null && stack.includes(highlightSoul)
           const offset = (index - (stack.length - 1) / 2) * (fanned ? stackGap * 1.7 : stackGap)
-          const isActive = activeSoul === soul.id || highlightSoul === soul.id || previewSoul === soul.id
+          const isActive = activeSoul === soul.id || highlightSoul === soul.id || previewSouls.has(soul.id)
           const isLast = lastResult?.move.soul === soul.id
           const { picked, canPick, why } = pickState(soul.id, soul.position)
           const tokenClass = ['token']
@@ -200,12 +203,14 @@ export function Board({ race, lastResult, activeSoul, highlightSoul = null, onHo
           if (selection && !canPick) tokenClass.push('token-unpickable')
           if (fanned) tokenClass.push('token-fanned')
           const worn = personalityOf(personalities, soul.id)
-          // La personnalité s'ajoute au titre du jeton : c'est la première chose à lire avant
-          // de parier, et elle doit s'obtenir sans ouvrir de panneau (GDD §1.3).
-          const base = lanes > 1 ? `${soul.name} · couloir ${soul.lane + 1}` : soul.name
-          const label = worn ? `${base} — ${personalityName(worn)} : ${personalityEffect(worn)}` : base
+          // La personnalité ne tient plus dans le titre du système : c'est la première chose à
+          // lire avant de parier (GDD §1.3), donc elle passe dans une bulle dessinée, comme les
+          // cases spéciales (`.cell-tip`). Elle s'affiche tout de suite au lieu d'attendre la
+          // seconde du navigateur, et la règle y tient sur deux lignes au lieu d'une. La légende
+          // sous le plateau garde l'énoncé complet en `aria-label`, pour qui ne voit pas la bulle.
+          const label = lanes > 1 ? `${soul.name} · couloir ${soul.lane + 1}` : soul.name
           const zoneNote = !selection && isInBetZone(track, soul.position) ? BETS.overThreshold : ''
-          const title = selection && why ? `${label} — ${why}` : zoneNote ? `${label} — ${zoneNote}` : label
+          const title = selection && why ? `${label} · ${why}` : zoneNote ? `${label} · ${zoneNote}` : label
           // L'enveloppe `.token` couvre toute la case (les jetons empilés se recouvrent) : elle laisse
           // passer les clics, c'est le corps du jeton qui porte le survol, le titre et le bouton.
           const hover = { onMouseEnter: () => onHoverSoul?.(soul.id), onMouseLeave: () => onHoverSoul?.(null) }
@@ -216,6 +221,22 @@ export function Board({ race, lastResult, activeSoul, highlightSoul = null, onHo
             </span>
           ) : null
           const soulMark = worn ? <PersonalityMark personality={worn} className="token-mark" /> : null
+          /* Bulle de personnalité. Placée après le corps du jeton : l'enveloppe `.token` ne prend
+             pas le survol (elle couvre toute la case et laisse passer les clics), c'est donc le
+             corps qui la déclenche, en frère suivant. Elle sort vers le haut, sauf sur le couloir
+             du haut d'où elle sortirait du plateau — même règle que `.cell-tip`. */
+          // La bulle fait jusqu'à 210 px pour une case de moins de 80 : centrée, elle sort du
+          // plateau aux deux bouts, et `.board` défile en x, donc il la coupe. Aux deux premières
+          // et deux dernières cases, elle s'aligne sur le bord du jeton plutôt que sur son milieu.
+          const tipSide = soul.position <= 1 ? ' token-tip-start' : soul.position >= track.totalCells - 2 ? ' token-tip-end' : ''
+          const soulTip = worn ? (
+            <span className={'cell-tip token-tip' + tipSide + (soul.lane === lanes - 1 ? ' cell-tip-below' : '')} role="tooltip" data-testid={`token-tip-${soul.id}`}>
+              <span className="token-tip-name">
+                <PersonalityMark personality={worn} /> {personalityName(worn)}
+              </span>
+              <span>{personalityEffect(worn)}</span>
+            </span>
+          ) : null
           return (
             <div key={soul.id} className={tokenClass.join(' ')} data-testid={`token-${soul.id}`} data-soul={soul.name} data-cell={soul.position} data-state={picked ? 'picked' : isActive ? 'active' : 'idle'} style={{ ...cellStyle(soul.position, soul.lane, offset), ['--soul' as string]: soulColor(soul.id) }}>
               {selection ? (
@@ -233,6 +254,7 @@ export function Board({ race, lastResult, activeSoul, highlightSoul = null, onHo
                   {betMark}
                 </span>
               )}
+              {soulTip}
               {isLast && lastResult && (
                 <span key={`${race.turn}-${lastResult.from}-${lastResult.to}-${lastResult.toLane}`} className={'bubble' + (lastResult.move.source === 'opponent' ? ' bubble-opp' : '')}>
                   {fmtDistance(lastResult.move.distance)}
@@ -247,32 +269,40 @@ export function Board({ race, lastResult, activeSoul, highlightSoul = null, onHo
             </div>
           )
         })}
-        {preview && previewSoul !== null && (
-          <>
-            <div className="token token-ghost" data-testid="ghost-token" data-soul={race.souls[previewSoul]?.name} data-cell={preview.to} style={{ ...cellStyle(preview.to, preview.toLane), ['--soul' as string]: soulColor(previewSoul) }} title={fill(RACE.previewTitle, { name: race.souls[previewSoul]?.name ?? '?', dist: fmtDistance(preview.move.distance), to: preview.to })} aria-label={RACE.previewGhost}>
-              <span className="token-body">{race.souls[previewSoul]?.name.slice(0, 2)}</span>
-              <span className="bubble bubble-ghost">
-                {fmtDistance(preview.move.distance)}
-                {previewGlyphs.map((g) => (
-                  <span key={g.glyph} title={g.title}>
-                    {' '}
-                    {g.glyph}
-                  </span>
-                ))}
-              </span>
-            </div>
-            {preview.collision?.kind === 'swap' && (
-              <div className="token token-ghost token-ghost-2" style={{ ...cellStyle(preview.collision.otherTo, preview.fromLane), ['--soul' as string]: soulColor(preview.collision.with) }} title={GLOSSARY.echanger}>
-                <span className="token-body">{race.souls[preview.collision.with]?.name.slice(0, 2)}</span>
+        {/* Un fantôme par carte de la file, numéroté dès qu'il y en a deux : sans le chiffre,
+            deux fantômes côte à côte ne disent plus lequel se joue en premier, et l'ordre est
+            précisément ce que le joueur est en train de régler. */}
+        {preview.map((p, i) => {
+          const ghost = p.move.soul
+          const name = race.souls[ghost]?.name ?? '?'
+          return (
+            <Fragment key={`${ghost}-${i}`}>
+              <div className="token token-ghost" data-testid={`ghost-token-${i}`} data-soul={name} data-cell={p.to} style={{ ...cellStyle(p.to, p.toLane), ['--soul' as string]: soulColor(ghost) }} title={fill(preview.length > 1 ? RACE.previewTitleN : RACE.previewTitle, { n: i + 1, name, dist: fmtDistance(p.move.distance), to: p.to })} aria-label={preview.length > 1 ? fill(RACE.previewGhostN, { n: i + 1 }) : RACE.previewGhost}>
+                <span className="token-body">{name.slice(0, 2)}</span>
+                {preview.length > 1 && <span className="ghost-n" aria-hidden="true">{i + 1}</span>}
+                <span className="bubble bubble-ghost">
+                  {fmtDistance(p.move.distance)}
+                  {consequenceGlyphs(p).map((g) => (
+                    <span key={g.glyph} title={g.title}>
+                      {' '}
+                      {g.glyph}
+                    </span>
+                  ))}
+                </span>
               </div>
-            )}
-          </>
-        )}
+              {p.collision?.kind === 'swap' && (
+                <div className="token token-ghost token-ghost-2" style={{ ...cellStyle(p.collision.otherTo, p.fromLane), ['--soul' as string]: soulColor(p.collision.with) }} title={GLOSSARY.echanger}>
+                  <span className="token-body">{race.souls[p.collision.with]?.name.slice(0, 2)}</span>
+                </div>
+              )}
+            </Fragment>
+          )
+        })}
       </div>
       <ul className="legend" aria-label={UI.board.souls}>
         {race.souls.map((soul) => {
           const { picked, canPick, why } = pickState(soul.id, soul.position)
-          const hot = activeSoul === soul.id || highlightSoul === soul.id || previewSoul === soul.id
+          const hot = activeSoul === soul.id || highlightSoul === soul.id || previewSouls.has(soul.id)
           const legendMark = personalityOf(personalities, soul.id)
           const inner = (
             <>

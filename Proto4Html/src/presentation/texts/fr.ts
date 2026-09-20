@@ -637,6 +637,8 @@ const RACE = {
   afterPrevious: 'Résolue après les précédentes : seule la première est prévisualisée.',
   previewTitle: 'Prochain déplacement : {name} {dist} → case {to}',
   previewGhost: 'Prévisualisation',
+  previewTitleN: 'Déplacement {n} : {name} {dist} → case {to}',
+  previewGhostN: 'Prévisualisation {n}',
   dragSoul: 'Glisser sur un dé Distance pour associer (ou cliquer, puis cliquer un dé Distance)',
   dropHere: 'Déposer le dé Âme ici',
   dragCard: 'Glisser pour changer l’ordre de résolution',

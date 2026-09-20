@@ -15,7 +15,7 @@ import { Ranking } from './Ranking'
 import { ShopPanel } from './ShopPanel'
 import { OpponentSlot, PhaseStrip, PlayerSlot } from './PlaySlots'
 import { HELP, HUD, ITEMS, RACE, UI, fill, ordinalOf } from './texts'
-import { MARKER_KINDS, betBase, bettedSouls as bettedSoulsOf, bossPowerText, canBetNow, circleOf, freeCharges, has, itemName, markerCount, maxStake, previewNext, rollsBeforeSleep, stakedOpen, useRace, type RaceUi, type SessionCarry } from './useRace'
+import { MARKER_KINDS, betBase, bettedSouls as bettedSoulsOf, bossPowerText, canBetNow, circleOf, freeCharges, has, itemName, markerCount, maxStake, previewQueue, rollsBeforeSleep, stakedOpen, useRace, type RaceUi, type SessionCarry } from './useRace'
 
 interface Props {
   carry: SessionCarry
@@ -231,7 +231,7 @@ export function GameScreen({ carry, unlocked, speed, onFinished, onMenu }: Props
   const bettedSouls = useMemo(() => bettedSoulsOf(ui.bets), [ui.bets])
 
   const activeSoul = ui.phase === 'resolving' || ui.phase === 'opponent' ? (ui.lastResult?.move.soul ?? null) : null
-  const preview = useMemo(() => previewNext(ui), [ui])
+  const preview = useMemo(() => previewQueue(ui), [ui])
   const n = ui.inventory.artefacts.length
 
   // Sélection d'âmes sur le plateau : panneau de paris ouvert et pari possible.
@@ -480,7 +480,7 @@ export function GameScreen({ carry, unlocked, speed, onFinished, onMenu }: Props
       {finished && resultsOpen && (
         <div className="popup-backdrop" onClick={() => setResultsOpen(false)} role="presentation">
           <div className="popup popup-wide" role="dialog" aria-label={HUD.raceResult} data-testid="results-modal" onClick={(e) => e.stopPropagation()}>
-            <Ranking race={ui.race} settlement={ui.settlement} money={ui.money} price={price} racesLeft={racesLeft} speed={speed} personalities={ui.inventory.personalities} animate={!resultsSeen} continueLabel={HUD.nextRace} onContinue={() => onFinished(ui)} onClose={() => setResultsOpen(false)} />
+            <Ranking race={ui.race} settlement={ui.settlement} money={ui.money} price={price} racesLeft={racesLeft} speed={speed} animate={!resultsSeen} continueLabel={HUD.nextRace} onContinue={() => onFinished(ui)} onClose={() => setResultsOpen(false)} />
           </div>
         </div>
       )}

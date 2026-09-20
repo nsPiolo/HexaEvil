@@ -68,7 +68,8 @@ interface PlayerProps {
   ui: RaceUi
   speed: number
   /** Prochain déplacement prévisualisé (première carte de la file). */
-  preview: MoveResult | null
+  /** Fantômes de la file (`previewQueue`), un par carte et dans le même ordre. */
+  preview: readonly MoveResult[]
   highlightSoul: number | null
   onHoverSoul: (id: number | null) => void
   onStart: () => void
@@ -383,7 +384,9 @@ export function PlayerSlot({ ui, speed, preview, highlightSoul, onHoverSoul, onS
             <ol className={'combos' + (pairing ? ' combos-queue' : '')} aria-label={RACE.queue} title={GLOSSARY.combinaison}>
               {cards.map((card, i) => {
                 const id = card.soul
-                const previewed = pairing && preview !== null && i === 0
+                // Chaque carte a désormais son fantôme, pas seulement la première : le repère
+                // reste utile, il dit quel fantôme du plateau répond à quelle carte.
+                const previewed = pairing && preview[i] !== undefined
                 const active = resolvingIndex !== null && card.indices.includes(resolvingIndex)
                 const cls = ['combo']
                 if (active) cls.push('combo-active')

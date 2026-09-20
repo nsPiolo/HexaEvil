@@ -52,7 +52,7 @@ test.describe('05 · Écran Course (association, file, prévisualisation)', () =
     await toPairing(page)
     await page.getByTestId('die-soul-0').click()
     await page.getByTestId('die-dist-0').click()
-    const ghost = page.getByTestId('ghost-token')
+    const ghost = page.getByTestId('ghost-token-0')
     await expect(ghost).toBeVisible()
     const soulName = await ghost.getAttribute('data-soul')
     const cell = Number(await ghost.getAttribute('data-cell'))
@@ -61,10 +61,19 @@ test.describe('05 · Écran Course (association, file, prévisualisation)', () =
     await expect(playerSlot(page).getByTestId('combo-0')).toContainText('Prévisualisation')
     const soulId = Number((await token(page, 0).page().locator(`[data-testid^="token-"][data-soul="${soulName}"]`).getAttribute('data-testid'))!.replace('token-', ''))
     expect(await cellOf(page, soulId)).not.toBe(cell)
+    // Deuxième combinaison : elle a son fantôme elle aussi, et les deux se numérotent pour
+    // dire dans quel ordre ils se joueront. Le second est calculé sur le plateau que laisse
+    // le premier, pas sur celui d'avant.
     await page.getByTestId('die-soul-1').click()
     await page.getByTestId('die-dist-1').click()
+    const ghosts = page.locator('[data-testid^="ghost-token-"]')
+    await expect(ghosts).toHaveCount(2)
+    await expect(ghosts.nth(0)).toHaveAttribute('title', /^Déplacement 1 : /)
+    await expect(ghosts.nth(1)).toHaveAttribute('title', /^Déplacement 2 : /)
+    await expect(playerSlot(page).getByTestId('combo-1')).toContainText('Prévisualisation')
     await resolveTurn(page)
     await expect(ghost).toHaveCount(0)
+    await expect(ghosts).toHaveCount(0)
     expect(await cellOf(page, soulId)).toBe(cell)
   })
 
@@ -139,7 +148,7 @@ test.describe('05 · Écran Course (association, file, prévisualisation)', () =
     await expect(slot.getByTestId(/^combo-\d+$/)).toHaveCount(1)
     await expect(soul0).toBeDisabled()
     await expect(page.getByTestId('die-dist-1')).toBeDisabled()
-    await expect(page.getByTestId('ghost-token')).toBeVisible()
+    await expect(page.getByTestId('ghost-token-0')).toBeVisible()
     await page.getByTestId('die-soul-1').dragTo(page.getByTestId('die-dist-0'))
     await expect(slot.getByTestId(/^combo-\d+$/)).toHaveCount(2)
     const names = async () => Promise.all([0, 1].map((i) => slot.getByTestId(`combo-${i}`).locator('.combo-soul').innerText()))

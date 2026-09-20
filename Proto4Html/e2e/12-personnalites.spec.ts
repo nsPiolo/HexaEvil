@@ -25,10 +25,14 @@ test.describe('12 · Personnalités des âmes', () => {
     await souls.first().click()
     // La boutique masque la piste : on en sort pour voir le jeton.
     await shop.getByRole('button', { name: 'Retour aux paris' }).click()
-    // Le jeton de l'âme marquée porte le signe, et son titre énonce la règle.
+    // Le jeton de l'âme marquée porte le signe, et sa bulle énonce la règle au survol.
     const marked = token(page, 0)
     await expect(marked.locator('.token-mark')).toHaveText(M.glyph)
-    await expect(marked.getByRole('button')).toHaveAttribute('title', new RegExp(M.personality))
+    const tip = page.getByTestId('token-tip-0')
+    await expect(tip).toBeHidden()
+    await marked.getByRole('button').hover()
+    await expect(tip).toBeVisible()
+    await expect(tip).toContainText(M.personality)
     // Et la légende du plateau le redit, pour l'âme marquée seulement.
     await expect(board(page).locator('.legend .pmark')).toHaveCount(1)
   })

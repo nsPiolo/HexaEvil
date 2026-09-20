@@ -134,7 +134,7 @@ test.describe('08 · Corrections post-test', () => {
     await expect(card.locator('.combo-parts .face')).toHaveText(['+2', '−1'])
     await expect(page.getByText(/cumulé/)).toHaveCount(0)
     // Prévisualisation du déplacement total : Virgile 0 → 1.
-    const ghost = page.getByTestId('ghost-token')
+    const ghost = page.getByTestId('ghost-token-0')
     await expect(ghost).toHaveAttribute('data-soul', 'Virgile')
     await expect(ghost).toHaveAttribute('data-cell', '1')
     // Les badges d'ordre ne comptent que la carte visible : tous à 1.
