@@ -107,6 +107,13 @@ export function loadConfig(raw: unknown): RaceConfig {
   if (stakes[0]! > raceAllowance) fail('economy.stakes', `la plus petite mise (${stakes[0]}) dépasse l'avance de course (${raceAllowance}) : l'avance doit toujours permettre le pari minimum`)
   const stakeGrowthPerCircle = num(economy.stakeGrowthPerCircle, 'economy.stakeGrowthPerCircle')
   if (stakeGrowthPerCircle < 0) fail('economy.stakeGrowthPerCircle', 'doit être ≥ 0')
+  // Un cercle d'apparition par jeton, sinon on ne saurait pas lequel est verrouillé. Le premier
+  // jeton s'ouvre forcément au cercle 1 : c'est lui que l'avance garantit, et sans lui un joueur
+  // sans le sou n'aurait aucune mise à poser.
+  const stakeUnlockCircle = intArray(economy.stakeUnlockCircle, 'economy.stakeUnlockCircle')
+  if (stakeUnlockCircle.length !== stakes.length) fail('economy.stakeUnlockCircle', `autant d'entrées que economy.stakes (${stakes.length} attendues, ${stakeUnlockCircle.length} reçues)`)
+  if (stakeUnlockCircle.some((c) => c < 1)) fail('economy.stakeUnlockCircle', 'cercles ≥ 1 attendus')
+  if (stakeUnlockCircle[0] !== 1) fail('economy.stakeUnlockCircle', 'le plus petit jeton doit être ouvert dès le cercle 1')
   // Sous 1, les jetons rétréciraient de cercle en cercle au-delà des écrits, là où le prix de
   // sortie, lui, continue de composer : le mode démon deviendrait injouable sans prévenir.
   const beyondStakeGrowth = num(economy.beyondStakeGrowth, 'economy.beyondStakeGrowth')
@@ -221,7 +228,7 @@ export function loadConfig(raw: unknown): RaceConfig {
     track: { columns, cellsAfterFinish, betThresholdRatio },
     dice: { distanceFaces, distanceDice, soulDice },
     opponent: { rollsPerTurn },
-    economy: { startingMoney, raceAllowance, allowanceGrowthPerCircle, stakes, stakeGrowthPerCircle, beyondStakeGrowth, multipliers, betUnlockLevel, decay: { exponent, minMultiplier } },
+    economy: { startingMoney, raceAllowance, allowanceGrowthPerCircle, stakes, stakeGrowthPerCircle, stakeUnlockCircle, beyondStakeGrowth, multipliers, betUnlockLevel, decay: { exponent, minMultiplier } },
     run: { racesPerCircle, escapeCircle, beyondPriceGrowth, circles },
     artefacts: { lateBet: { chargesPerCircle }, sablier: { betThresholdRatio: sablierRatio } },
     animation: { stepMs, diceMs, pauseMs, betRevealMs, idlePulseMs, gaugeMs, betConfirmMs },

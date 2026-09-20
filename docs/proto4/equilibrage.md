@@ -391,13 +391,14 @@ désormais : l'avance reste linéaire, donc au vingt-cinquième cercle le premie
 l'avance (500) et le deuxième 1 610. C'est voulu — après avoir payé un cercle, l'avance seule
 doit encore permettre de parier.
 
-| Cercle | 15 | 16 | 18 | 20 | 25 |
-|---|---:|---:|---:|---:|---:|
-| Gros jeton, avant | 400 | 425 | 475 | 525 | 650 |
-| Gros jeton, après | 400 | 540 | 985 | 1 795 | 8 045 |
-| Prix de sortie | 10 020 | 13 550 | 24 650 | 44 950 | 201 450 |
-| Prix / gros jeton, avant | 25 | 32 | 52 | 86 | 310 |
-| **Prix / gros jeton, après** | **25** | **25** | **25** | **25** | **25** |
+| Cercle | 15 | 16 | 18 | 20 |
+|---|---:|---:|---:|---:|
+| Gros jeton (échelle du 20 septembre) | 130 | 175 | 320 | 585 |
+| Prix de sortie | 10 020 | 13 550 | 24 650 | 44 950 |
+| **Prix / gros jeton** | **77** | **77** | **77** | **77** |
+
+(Le rapport valait 25 quand l'échelle était trois fois plus grosse ; ce qui compte ici est qu'il
+ne bouge plus, pas sa valeur. Au-delà du quinzième, c'est l'All-in qui porte les grosses mises.)
 
 **Le jeton « All-in »**, cinquième jeton du plateau, n'apparaît lui aussi qu'au-delà des cercles
 écrits. Les quatre paliers suivent maintenant la courbe des prix, mais ils restent une offre
@@ -409,6 +410,61 @@ refusée serait un bouton qui ment.
 
 Pourquoi pas avant le quinzième : jusque-là l'échelle suffit, et un All-in au premier cercle
 n'est pas un pari, c'est un jet de dé sur toute la partie.
+
+## L'échelle divisée par trois, et trois jetons aux premiers cercles
+
+**Le constat, rapporté en jeu le 20 septembre 2026** : en misant toujours le plus gros jeton sur
+« Vainqueur pur », on atteint le quatrième cercle sans avoir jamais ouvert un autre guichet. Le
+jeu n'incite pas à poser plusieurs paris, alors que c'est ce qu'il vend.
+
+La cause est un rapport. Le plus gros jeton valait **le tiers du prix de sortie** au premier
+cercle (50 contre 150) et le sixième au neuvième : deux tickets gagnants suffisaient à payer un
+cercle, donc un seul type de pari suffisait. Ce n'est pas une affaire de cotes, c'est une affaire
+de plafond : tant qu'un ticket peut porter un cercle, rien n'oblige à en poser deux.
+
+**Deux changements dans `economy`.**
+
+`stakes` passe de `5 · 10 · 20 · 50` à `5 · 10 · 15 · 20`, et `stakeGrowthPerCircle` de 0,5 à
+**0,4**. Le plus gros jeton vaut désormais `20 × (1 + 0,4 × (N − 1))` : environ **le tiers** de ce
+qu'il valait, à tous les cercles. Le rapport au prix de sortie passe de 3 à 8 au premier cercle.
+
+`stakeUnlockCircle` (`1 · 1 · 4 · 1`) est nouveau : il dit à partir de quel cercle chaque jeton
+est offert. Le troisième palier (15) n'ouvre qu'au **quatrième cercle**. Entre 5 et 20, un
+quatrième palier ne se choisit pas, il se subit ; il s'insère quand l'échelle s'est assez écartée.
+Le premier jeton doit rester ouvert dès le cercle 1, le chargeur le vérifie : c'est celui que
+l'avance garantit.
+
+| Cercle | 1 | 2 | 3 | 4 | 5 | 9 | 15 |
+|---|---|---|---|---|---|---|---|
+| Avant | 5·10·20·50 | 10·15·30·75 | 10·20·40·100 | 15·25·50·125 | 15·30·60·150 | 25·50·100·250 | 40·80·160·400 |
+| **Après** | **5·10·20** | **5·15·30** | **10·20·35** | **10·20·35·45** | **15·25·40·50** | **20·40·65·85** | **35·65·100·130** |
+
+**Mesuré** (`npm run balance -- --runs=200`, avant / après) :
+
+| Profil | Plus loin atteint | Cercle médian | Retour sur mise |
+|---|---|---|---|
+| `débutant` (1 ticket) | 1 → 1 | 0 → 0 | ×0,86 → ×0,87 |
+| `appliqué` (3 tickets étalés) | 3 → 3 | 1 → **1** | ×1,15 → ×1,14 |
+| `joueur` (8 tickets gourmands) | 4 → 0 | 0 → 0 | ×0,87 → ×0,60 |
+| `affûté` (1 ticket, 50 % du solde) | **8 → 5** | 1 → 0 | ×1,25 → ×1,36 |
+
+C'est le renversement cherché : `affûté`, le profil qui joue un seul ticket — exactement le jeu
+rapporté —, perd trois cercles de portée, et `appliqué`, celui qui étale ses tickets, devient le
+profil qui va le plus loin (46 % franchissent le premier cercle contre 37 % avant). Le retour sur
+mise d'`affûté` ne baisse pas, il monte : ses paris sont toujours aussi bons, il ne peut
+simplement plus engager assez pour composer.
+
+**Ce que la mesure ne dit pas.** Les profils du simulateur posent un nombre de tickets **fixe**
+(`TICKETS`, sim/profiles.ts) et misent un pourcentage fixe du solde. Ils ne réagissent donc pas
+comme un joueur, qui posera plus de tickets maintenant que chacun coûte moins. Essai fait en
+triplant `TICKETS` : `appliqué` ne bouge pas (son budget le plafonnait déjà) et les profils
+focalisés **baissent**, parce qu'ils s'étalent sur des types à faible probabilité plutôt que sur
+plusieurs âmes du même type. Autrement dit le simulateur mesure la borne basse du changement.
+
+**Le jeu est plus dur qu'avant**, et ça se voit. Si c'est trop, le levier est
+`stakeGrowthPerCircle` : le remonter vers 0,5 rapproche de l'ancienne échelle sans toucher au
+reste. Baisser la courbe des prix (`run.circles[].price`, +35 % par cercle) est l'autre levier,
+plus lourd : ces prix sont figés dans des assertions e2e.
 
 ## Régler quelque chose
 

@@ -128,10 +128,9 @@ test.describe('03 · Écran Paris (le ticket de guichet)', () => {
     // Mise de départ : le premier palier est dans le logement, sa place sur le rebord est vide.
     await expect(socket).toContainText('5')
     await expect(panel.getByRole('button', { name: '5', exact: true })).toHaveAttribute('aria-pressed', 'true')
-    // Solde 25 (5 + l'avance de 20) : 50 est hors de portée, donc ni cliquable ni déplaçable.
-    const tooRich = panel.getByRole('button', { name: '50', exact: true })
-    await expect(tooRich).toBeDisabled()
-    await expect(tooRich).toHaveAttribute('title', 'Solde insuffisant (25 ¤)')
+    // Le cercle 1 n'offre que trois paliers : 5 · 10 · 20, le quatrième n'ouvre qu'au quatrième
+    // cercle (`economy.stakeUnlockCircle`).
+    await expect(panel.locator('.stake-tray .stake-chip')).toHaveText(['', '10', '20'])
     // Au clic.
     await panel.getByRole('button', { name: '20', exact: true }).click()
     await expect(socket).toContainText('20')
@@ -143,6 +142,14 @@ test.describe('03 · Écran Paris (le ticket de guichet)', () => {
     await expect(panel.getByText('Solde après mise : 15 ¤')).toBeVisible()
     // Seule la mise maximum prend feu : le reste du temps le logement reste froid.
     await expect(socket.locator('.stake-flames')).toHaveCount(0)
+    // Jeton hors de portée : depuis que l'avance couvre toute l'échelle au départ, il n'y en a
+    // plus au premier tour, il faut avoir dépensé. Solde 25, un ticket de 20 posé, reste 5.
+    await panel.getByRole('button', { name: '20', exact: true }).click()
+    await panel.getByRole('button', { name: 'Poser le pari' }).click()
+    const tooRich = panel.getByRole('button', { name: '20', exact: true })
+    await expect(tooRich).toBeDisabled()
+    await expect(tooRich).toHaveAttribute('title', 'Solde insuffisant (5 ¤)')
+    await expect(panel.getByRole('button', { name: '5', exact: true })).toBeEnabled()
   })
 
   /**
@@ -157,8 +164,8 @@ test.describe('03 · Écran Paris (le ticket de guichet)', () => {
 
     await start(page, { race: WRITTEN * RACES_PER_CIRCLE, money: 5000 })
     const panel = betsPanel(page)
-    // L'échelle compose au lieu de suivre la droite : 40·80·160·400 au quinzième, ×1,35 au seizième.
-    await expect(panel.locator('.stake-tray .stake-chip')).toHaveText(['', '110', '215', '540', 'All-in'])
+    // L'échelle compose au lieu de suivre la droite : 35·65·100·130 au quinzième, ×1,35 au seizième.
+    await expect(panel.locator('.stake-tray .stake-chip')).toHaveText(['', '90', '135', '175', 'All-in'])
     // 5000 de bourse plus l'avance du cercle : le jeton annonce la somme, il ne la cache pas.
     const allin = panel.locator('.stake-chip-allin')
     await expect(allin).toHaveAttribute('aria-label', 'All-in : 5320 ¤')
@@ -179,9 +186,9 @@ test.describe('03 · Écran Paris (le ticket de guichet)', () => {
     const panel = betsPanel(page)
     const flames = panel.getByTestId('stake-socket').locator('.stake-flames')
     await expect(flames).toHaveCount(0)
-    await panel.getByRole('button', { name: '50', exact: true }).click()
-    await expect(flames).toBeVisible()
     await panel.getByRole('button', { name: '20', exact: true }).click()
+    await expect(flames).toBeVisible()
+    await panel.getByRole('button', { name: '10', exact: true }).click()
     await expect(flames).toHaveCount(0)
     // Le jeton posé garde sa taille de logement une fois l'animation finie. Garde-fou : un
     // sélecteur `.stake-socket-over .stake-chip-active` cassé en deux l'avait laissé réduit

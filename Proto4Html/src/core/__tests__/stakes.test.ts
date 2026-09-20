@@ -15,8 +15,30 @@ const cfg = loadConfig(rawConfig)
 const eco = cfg.economy
 
 describe('échelle des mises par cercle', () => {
-  it('au cercle 1, c’est l’échelle de la configuration', () => {
-    expect(stakesAtCircle(cfg, 1)).toEqual([...eco.stakes])
+  it('au cercle 1, c’est l’échelle de la configuration, moins les jetons pas encore ouverts', () => {
+    expect(stakesAtCircle(cfg, 1)).toEqual(eco.stakes.filter((_, i) => eco.stakeUnlockCircle[i] === 1))
+  })
+
+  it('un jeton retardé n’apparaît qu’à son cercle, et l’échelle reste ordonnée quand il s’insère', () => {
+    for (let i = 0; i < eco.stakes.length; i++) {
+      const from = eco.stakeUnlockCircle[i]!
+      if (from === 1) continue
+      // La veille il n'est pas là, le jour même il y est : c'est la seule chose que le cercle change.
+      expect(stakesAtCircle(cfg, from - 1)).toHaveLength(stakesAtCircle(cfg, from).length - 1)
+      expect(stakesAtCircle(cfg, from)).toHaveLength(eco.stakes.filter((_, k) => eco.stakeUnlockCircle[k]! <= from).length)
+    }
+  })
+
+  it('la config refuse un tableau d’ouverture mal formé', () => {
+    type Raw = { economy: { stakeUnlockCircle: number[] } }
+    const clone = (): Raw => JSON.parse(JSON.stringify(rawConfig)) as Raw
+    const short = clone()
+    short.economy.stakeUnlockCircle = [1, 1]
+    expect(() => loadConfig(short)).toThrow(/stakeUnlockCircle/)
+    // Sans le plus petit jeton dès le premier cercle, un joueur sans le sou n'a rien à poser.
+    const late = clone()
+    late.economy.stakeUnlockCircle = [2, 1, 4, 1]
+    expect(() => loadConfig(late)).toThrow(/cercle 1/)
   })
 
   it('grandit avec le cercle, arrondie à 5, comme les prix de la boutique', () => {
@@ -64,8 +86,9 @@ describe('échelle des mises par cercle', () => {
       return circleAt(cfg.run, n).price / l[l.length - 1]!
     }
     // Les deux taux sont égaux par construction : seul l'arrondi à 5 fait bouger le rapport.
+    // Comparaison relative : à l'arrondi à 5 près, et le rapport se compte en dizaines.
     const at15 = ratio(written)
-    for (let k = 1; k <= 10; k++) expect(ratio(written + k)).toBeCloseTo(at15, 0)
+    for (let k = 1; k <= 10; k++) expect(ratio(written + k) / at15).toBeCloseTo(1, 1)
   })
 
   it('croissance nulle : la même échelle partout', () => {
